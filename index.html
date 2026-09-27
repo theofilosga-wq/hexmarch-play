@@ -2023,7 +2023,7 @@ const LOOK={
   'Titan':{body:'giant',fists:1},
   // Gnome Tinkers: tiny bodies, huge hats, goggles, gears
   'Gearmaster':{body:'gnome',head:'tophat',hand:'gear',crown:0},
-  'Bombardier':{body:'gnome',head:'pointhat',hand:'bomb'},
+  'Bombardier':{body:'gyro',head:'goggles'}, // gnome pilot in a one-seat gyrocopter, propeller spinning, bomb slung underneath
   'Spring Duelist':{body:'gnome',head:'pointhat',hand:'rapier',spring:1},
   'Tinker':{body:'gnome',head:'goggles',hand:'wrench'},
   'Sprocket':{body:'gnome',head:'goggles',wheel:1},
@@ -2059,7 +2059,7 @@ const LOOK={
   'Mire Witch':{body:'robe',head:'witch',hand:'staff'},
   'Censor':{body:'robe',head:'hood',hand:'bell'},
   'Penitent':{body:'brute',head:'skullhelm',chains:1},
-  'Soul Thief':{body:'wraith',head:'hood'},
+  'Soul Thief':{body:'wraith',head:'hood'}, // hovering wraith, no legs, torn cloth trailing behind it
   'Acolyte':{body:'imp',head:'hood',hand:'candle'},
   // Hourglass Order: hourglass bodies, clock halos
   'Chronarch':{body:'hourglass',head:'halo',hand:'hourstaff',cape:1},
@@ -2077,7 +2077,9 @@ function drawMini(u,sx,sy,sc,col,spent,face){
   const S=CAM.S*sc,V=CAM.S*Math.sin(CAM.tilt)*sc,f=face||1;
   const light=mix(col,'#ffffff',0.42),dark=mix(col,'#000000',0.55),acc=FIG_ACCENT[fac]||'#ffffff';
   const top=sy-0.14*V;
-  const X=x=>sx+x*S*f,Y=y=>top-y*V;
+  let lift=0; // hovering figures (gyrocopter, wraith) float this much above their base; every later shape moves up with it
+  const X=x=>sx+x*S*f,Y=y=>top-(y+lift)*V;
+  const hoverShadow=r=>{ctx.save();ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(sx+0.04*S,top-0.01*V,r*S,r*S*Math.cos(CAM.tilt),0,0,7);ctx.fill();ctx.restore()};
   const g=(x0,x1)=>{const gr=ctx.createLinearGradient(sx+x0*S,0,sx+x1*S,0);gr.addColorStop(0,light);gr.addColorStop(0.5,col);gr.addColorStop(1,dark);return gr};
   const ink='rgba(0,0,0,.6)';
   const path=(pts,fill,stroke)=>{ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke!==false){ctx.strokeStyle=stroke||ink;ctx.lineWidth=1;ctx.stroke()}};
@@ -2104,7 +2106,31 @@ function drawMini(u,sx,sy,sc,col,spent,face){
     case 'imp':path([[-0.18,0],[0.18,0],[0.12,0.36],[-0.12,0.36]],g(-0.18,0.18));headY=0.46;headR=0.12;handY=0.26;handX=0.22;offX=-0.22;height=0.72;break;
     case 'gnome':path([[-0.2,0],[0.2,0],[0.14,0.3],[-0.14,0.3]],g(-0.2,0.2));circ(0,0.38,0.12,'#f2c7a5');line([[-0.08,0.33],[0,0.24],[0.08,0.33]],0.07,'#e8e8e8');headY=0.38;headR=0.12;handY=0.22;handX=0.24;offX=-0.24;height=0.8;break;
     case 'hourglass':path([[-0.27,0],[0.27,0],[0.05,0.34],[0.27,0.66],[-0.27,0.66],[-0.05,0.34]],g(-0.27,0.27));path([[-0.2,0.05],[0.2,0.05],[0.03,0.3],[-0.03,0.3]],'rgba(255,224,138,.8)',false);headY=0.8;break;
-    case 'wraith':ctx.globalAlpha*=0.8;path([[-0.2,0.08],[-0.1,0],[0,0.08],[0.1,0],[0.2,0.08],[0.16,0.64],[-0.16,0.64]],g(-0.2,0.2));ctx.globalAlpha/=0.8;headY=0.78;break;
+    case 'wraith':{ // Soul Thief: a legless wraith floating above its base, torn cloth streaming behind and below it
+      lift=0.16+0.04*Math.sin(t*1.8+u.id);hoverShadow(0.26);
+      const pale=mix(col,'#ffffff',0.32);
+      ctx.save();ctx.globalAlpha*=0.72; // torn strips of cloth streaming behind and down to the base, each waving on its own
+      for(let i=0;i<4;i++){const w=Math.sin(t*2.6+i*1.7)*0.07,x0=-0.16+i*0.1;path([[x0-0.06,0.26],[x0+0.06,0.26],[x0-0.16+w*2,0.02+i*0.03],[x0-0.38+w,-0.14+i*0.05]],i%2?pale:col,'rgba(0,0,0,.45)')}
+      ctx.restore();
+      ctx.save();ctx.shadowColor=acc;ctx.shadowBlur=S*0.25;ctx.globalAlpha*=0.9; // the shroud: wide shoulders, ragged hem, faint pale glow
+      path([[-0.26,0.68],[0.26,0.68],[0.29,0.4],[0.19,0.12],[0.09,0.26],[0,0.08],[-0.09,0.26],[-0.19,0.12],[-0.29,0.4]],g(-0.29,0.29));
+      ctx.restore();
+      line([[0.18,0.56],[0.38,0.46],[0.44,0.54]],0.035,'#e9e4d4');line([[-0.18,0.56],[-0.02,0.44],[0.1,0.5]],0.03,'#e9e4d4'); // bony arms, one clutching a stolen soul
+      glow(0.46,0.56,0.045,acc);
+      headY=0.82;break}
+    case 'gyro':{ // Bombardier: a gnome pilot in a brass one-seat gyrocopter with a spinning rotor, a tail fin and a bomb slung under the hull
+      lift=0.18+0.03*Math.sin(t*2.2+u.id);hoverShadow(0.36);
+      line([[-0.3,0],[0.3,0]],0.025,'#8a8f99');line([[-0.18,0],[-0.18,0.15]],0.02,'#8a8f99');line([[0.18,0],[0.18,0.15]],0.02,'#8a8f99'); // landing skids
+      line([[-0.28,0.3],[-0.56,0.4]],0.05,'#8a8f99');path([[-0.58,0.34],[-0.46,0.36],[-0.48,0.6],[-0.64,0.64]],col); // tail boom and fin (behind)
+      path([[-0.32,0.14],[0.32,0.14],[0.36,0.44],[-0.36,0.44]],g(-0.36,0.36));path([[-0.36,0.42],[0.36,0.42],[0.36,0.48],[-0.36,0.48]],'#c99a3a'); // hull tub with brass rim
+      for(const x of [-0.24,-0.08,0.08,0.24])circ(x,0.28,0.025,'#e0b45a',false); // rivets
+      circ(0,0.6,0.12,'#f2c7a5');line([[-0.08,0.55],[0,0.46],[0.08,0.55]],0.07,'#e8e8e8'); // the pilot: gnome head and beard (flight cap + goggles come from the head kit)
+      line([[0,0.7],[0,0.96]],0.035,'#6b6f7a'); // mast
+      ctx.save();ctx.globalAlpha*=0.25;ctx.fillStyle='#e6e8ee';ctx.beginPath();ctx.ellipse(X(0),Y(0.98),S*0.54,S*0.54*Math.cos(CAM.tilt)*0.35,0,0,7);ctx.fill();ctx.restore(); // rotor blur disc
+      for(let i=0;i<3;i++){const a=t*16+i*Math.PI*2/3;line([[0,0.98],[Math.cos(a)*0.54,0.98+Math.sin(a)*0.06]],0.035,'#d9dde6')} // three spinning blades
+      circ(0,0.98,0.05,'#c99a3a');
+      circ(0.08,0.06,0.08,'#2b2230');glow(0.13,0.15,0.025,'#ffb347'); // the bomb, fuse lit
+      headY=0.6;headR=0.12;height=1.1;break}
     case 'shard':path([[-0.18,0],[0.18,0],[0.22,0.3],[0,0.8],[-0.2,0.35]],g(-0.22,0.22));line([[-0.02,0.1],[0,0.7]],0.02,'rgba(255,255,255,.6)');circ(-0.06,0.45,0.03,'#0b0e14',false);circ(0.07,0.45,0.03,'#0b0e14',false);headY=null;height=0.85;break;
     case 'golem':{sphere(0,0.34,0.36,mix(col,'#3a1a0a',0.35));const k=0.5+0.5*Math.sin(t*3);line([[-0.2,0.2],[-0.05,0.4],[0.12,0.25],[0.25,0.45]],0.03,`rgba(255,${150+60*k},60,.95)`);sphere(0,0.78,0.15,mix(col,'#3a1a0a',0.3));circ(-0.05,0.8,0.03,'#ffd35c',false);circ(0.06,0.8,0.03,'#ffd35c',false);headY=null;height=0.95;break}
     case 'giant':{const rock=mix(col,'#6b5a45',0.35);path([[-0.34,0],[0.34,0],[0.4,0.55],[0.24,0.82],[-0.24,0.82],[-0.4,0.55]],g(-0.4,0.4));path([[-0.36,0.5],[-0.2,0.62],[0,0.52],[0.2,0.64],[0.38,0.5],[0.26,0.46],[-0.24,0.44]],'rgba(110,150,80,.8)',false);
@@ -2205,7 +2231,7 @@ function drawMini(u,sx,sy,sc,col,spent,face){
   if(fac==='fire'&&!spent&&L.body!=='golem'){ctx.save();ctx.globalAlpha*=0.6;for(let i=0;i<3;i++){const k=((t*0.7+i/3)%1);circ(Math.sin(i*2.3+t)*0.2,0.2+k*height,0.02*(1-k)+0.005,'#ffb347',false)}ctx.restore()}
   if(fac==='ice'&&!spent){ctx.save();ctx.globalAlpha*=0.5;for(let i=0;i<3;i++){const k=((t*0.3+i/3)%1);circ(Math.cos(i*2+t*0.5)*0.3,height*(1-k),0.015,'#ffffff',false)}ctx.restore()}
   ctx.restore();
-  return top-height*V;
+  return top-(height+lift)*V;
 }
 
 /* Flat map tokens: each army has its own token outline, so armies read apart at a glance. */
