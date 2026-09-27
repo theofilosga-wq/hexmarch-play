@@ -421,7 +421,7 @@ function trk(){return TRACK||(G&&G.stats)||null}
 function tFx(fac,unit,name){if(!trk()||SIM)return null;const k=fac+'|'+(unit||'')+'|'+(name||'Other');trk().fx=trk().fx||{};return trk().fx[k]=trk().fx[k]||{dmg:0,hits:0,kills:0,lk:0,heal:0,uses:0,blocked:0,apGranted:0,moved:0,stasisTurns:0}}
 function srcFx(){const s=CUR_SRC&&tStat(CUR_SRC);if(!s)return null;const ult=CUR_TAG==='Ult';return tFx(s.fac,ult?'':s.name,CUR_NAME)}
 function tStat(u){if(!trk()||SIM||!u||u.kind==='wall')return null;const T=trk();let s=T.units[u.id];
-  if(!s){const p=G.players[u.poss?u.poss.owner:u.owner];s=T.units[u.id]={id:u.id,name:u.name,owner:p?p.id:u.owner,fac:p?p.fac:null,pawn:!!u.pawn,leader:!!u.leader,summon:!!u.summon,plain:!u.ability,maxhp:u.maxhp,dmg:0,dmgBasic:0,dmgAbil:0,dmgUlt:0,dmgDot:0,dmgRet:0,dmgOther:0,taken:0,kills:0,leaderKills:0,died:null,diedBy:null,attacks:0,abils:0,moves:0,hexes:0,healed:0,firstAct:null,blocked:0,apGranted:0,moved:0}}
+  if(!s){const p=G.players[u.poss?u.poss.owner:u.owner];s=T.units[u.id]={id:u.id,name:u.name,owner:p?p.id:u.owner,fac:p?p.fac:null,pawn:!!u.pawn,leader:!!u.leader,summon:!!u.summon,plain:!u.ability,maxhp:u.maxhp,dmg:0,dmgBasic:0,dmgAbil:0,dmgUlt:0,dmgDot:0,dmgRet:0,dmgOther:0,taken:0,kills:0,leaderKills:0,died:null,diedBy:null,attacks:0,abils:0,moves:0,hexes:0,healed:0,firstAct:null,blocked:0,apGranted:0,moved:0,onHomeAttacks:0}}
   return s}
 // Support value (damage blocked, AP granted, units moved, stasis turns): credited to the current effect (CUR_SRC/CUR_NAME) and the acting unit.
 function tSup(field,n){if(!trk()||SIM||!(n>0))return;const e=srcFx();if(e)e[field]=(e[field]||0)+n;const s=CUR_SRC&&tStat(CUR_SRC);if(s&&field in s)s[field]+=n}
@@ -1020,6 +1020,101 @@ function genTerrain(){
     });
   }
 }
+/* "Bands" territory (optional, newGame({tiles:'bands'}); the default game still uses genTerrain above).
+   One set of tile shapes is drawn for the first seat and copied to every other seat by rotating it around the centre,
+   so all players get an equivalent layout. Each army gets three bands of its colour: HOME (about 40% of its tiles, next
+   to its deployment zone), FRONTIER (about 35%, between home and the middle, inside its own wedge of the board) and
+   FAR OUTPOSTS (about 25%, small clusters on the ring just outside no man's land or on a neighbour's flank).
+   About 55% of the paintable board is coloured (the classic layout paints about 72%).
+   Guarantees: each army keeps a walkable route from its deployment zone to the Heart over neutral or own-colour ground,
+   and owns at least one tile within 3 hexes of the Heart ring. */
+const BANDS={share:0.55,home:0.40,frontier:0.35,far:0.25};
+function hexRound(x,y){const r=y/1.5,q=x/S3-r/2;let rq=Math.round(q),rr=Math.round(r),rs=Math.round(-q-r);const dq=Math.abs(rq-q),dr=Math.abs(rr-r),ds=Math.abs(rs+q+r);
+  if(dq>dr&&dq>ds)rq=-rr-rs;else if(dr>ds)rr=-rq-rs;return [rq,rr]}
+function genTerrainBands(){
+  G.terr={};
+  const ps=G.players,n=ps.length,R=G.R,hr=heartR();
+  const ang=p=>{const [x,y]=pix(p.home[0],p.home[1]);return Math.atan2(y,x)};
+  const a0=ang(ps[0]);
+  // rotate a hex around the centre by the angle between seat 0 and seat k (exact for 60-degree multiples, rounded otherwise)
+  const image=(q,r,k)=>{if(k===0)return [q,r];const t=ang(ps[k])-a0,[x,y]=pix(q,r);return hexRound(x*Math.cos(t)-y*Math.sin(t),x*Math.sin(t)+y*Math.cos(t))};
+  const paintable=(q,r)=>inR(q,r)&&!isNoMans(q,r)&&featAt(q,r)!=='rock';
+  const pool=allCells().filter(([q,r])=>paintable(q,r));
+  const quota=Math.floor(pool.length*BANDS.share/n);
+  const home=ps[0].home,dc=(q,r)=>hd(q,r,0,0),dh=(q,r)=>hd(q,r,home[0],home[1]);
+  const wedge=(q,r)=>{const [x,y]=pix(q,r);let d=Math.atan2(y,x)-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return Math.abs(d)};
+  const half=Math.PI/n;
+  // Rings from the edge inward: the outer two rings are HOME ground, the ring just outside no man's land (plus the flanks
+  // between two neighbours' home rings) is FAR ground, everything between is FRONTIER. Home and frontier stay inside the seat's own wedge.
+  const farRing=hr+3;
+  const band=(q,r)=>{const c=dc(q,r),w=wedge(q,r);if(c===farRing)return 'far';if(c>=R-1)return w<=half?'home':(w>half*0.75&&c>=R-3?'far':null);if(w>half*0.75&&c>=R-3)return 'far';return w<=half?'frontier':null};
+  // template tiles for seat 0, and the set of every hex any copy occupies (so copies never overlap)
+  const tpl=new Set(),taken=new Set();
+  const canAdd=(q,r)=>{if(!paintable(q,r)||taken.has(key(q,r)))return false;const imgs=[];for(let k=0;k<n;k++){const [a,b]=image(q,r,k);const kk=key(a,b);if(!paintable(a,b)||taken.has(kk)||imgs.includes(kk))return false;imgs.push(kk)}return true};
+  const add=(q,r)=>{tpl.add(key(q,r));for(let k=0;k<n;k++){const [a,b]=image(q,r,k);taken.add(key(a,b))}};
+  const want={home:Math.round(quota*BANDS.home),frontier:Math.round(quota*BANDS.frontier)};want.far=quota-want.home-want.frontier;
+  const got={home:0,frontier:0,far:0};
+  const cands=b=>pool.filter(([q,r])=>band(q,r)===b&&canAdd(q,r));
+  const grow=(b,size)=>{const c=cands(b);if(!c.length)return false;
+    // home tiles favour the deployment side, frontier tiles the middle of the wedge, far tiles the ring near the Heart
+    const wf=([q,r])=>b==='home'?Math.exp(-dh(q,r)/3):b==='frontier'?Math.exp(-wedge(q,r)*2):(dc(q,r)===farRing?1:0.6);
+    let tot=0;const ws=c.map(x=>{const w=wf(x);tot+=w;return w});let t=RNG()*tot,seed=c[c.length-1];for(let i=0;i<c.length;i++){t-=ws[i];if(t<=0){seed=c[i];break}}
+    const patch=[seed];add(seed[0],seed[1]);got[b]++;let tries=0;
+    while(patch.length<size&&got[b]<want[b]&&tries++<24){const p=patch[Math.floor(RNG()*patch.length)],d=DIRS[Math.floor(RNG()*6)],q=p[0]+d[0],r=p[1]+d[1];
+      if(band(q,r)!==b||!canAdd(q,r))continue;add(q,r);patch.push([q,r]);got[b]++}
+    return true};
+  let guard=0;
+  while((got.home<want.home||got.frontier<want.frontier||got.far<want.far)&&guard++<600){
+    if(got.home<want.home&&!grow('home',3+Math.floor(RNG()*3)))want.home=got.home;
+    if(got.frontier<want.frontier&&!grow('frontier',2+Math.floor(RNG()*3)))want.frontier=got.frontier;
+    if(got.far<want.far&&!grow('far',2+Math.floor(RNG()*2)))want.far=got.far;
+  }
+  // guarantee 2: a tile within 3 hexes of the Heart ring (the first paintable ring outside no man's land)
+  if(![...tpl].some(k=>{const [q,r]=k.split(',').map(Number);return dc(q,r)<=farRing})){
+    const c=pool.filter(([q,r])=>dc(q,r)===farRing&&canAdd(q,r)).sort((x,y)=>wedge(x[0],x[1])-wedge(y[0],y[1]));if(c.length)add(c[0][0],c[0][1]);
+  }
+  const paintAll=()=>{G.terr={};for(const k of tpl){const [q,r]=k.split(',').map(Number);for(let k2=0;k2<n;k2++){const [a,b]=image(q,r,k2);G.terr[key(a,b)]=ps[k2].fac}}};
+  paintAll();
+  // guarantee 1: every army can walk from its deployment zone to the Heart over neutral or own ground.
+  // If a copy is walled off, the blocking enemy tiles on the cheapest route are removed together with their rotated twins.
+  for(let pass=0;pass<8;pass++){
+    let fixed=true;
+    for(const p of ps){const route=bandsRoute(p);if(!route)continue;if(!route.length)break;fixed=false;
+      for(const k of route){const [q,r]=k.split(',').map(Number);
+        // find which template tile this hex is a copy of, and drop that tile everywhere
+        for(const tk of [...tpl]){const [tq,tr]=tk.split(',').map(Number);for(let k2=0;k2<n;k2++){const [a,b]=image(tq,tr,k2);if(a===q&&b===r){tpl.delete(tk);break}}}}
+      paintAll()}
+    if(fixed)break;
+  }
+  // With 5 seats the copies are rounded, so a copy of the near-Heart tile may land one ring out; give such a seat its own tile there.
+  for(const p of ps){if(pool.some(([q,r])=>G.terr[key(q,r)]===p.fac&&dc(q,r)<=farRing))continue;
+    const [hx,hy]=pix(p.home[0],p.home[1]);const c=pool.filter(([q,r])=>dc(q,r)===farRing&&!G.terr[key(q,r)]).sort((x,y)=>{const [ax,ay]=pix(x[0],x[1]),[bx,by]=pix(y[0],y[1]);return Math.hypot(ax-hx,ay-hy)-Math.hypot(bx-hx,by-hy)});
+    if(c.length)G.terr[key(c[0][0],c[0][1])]=p.fac}
+}
+// Route check for the bands layout: null when the deployment zone already reaches the Heart over neutral/own ground,
+// otherwise the enemy-coloured hexes on the cheapest route ([] means no route at all, e.g. rock).
+function bandsRoute(p){
+  const f=p.fac,zone=zoneOf(p);if(!zone.length)return [];
+  const dist=new Map(),prev=new Map();const q0=[];
+  for(const k of zone){dist.set(k,0);q0.push(k)}
+  // 0-1 BFS: neutral/own hexes cost 0, enemy hexes cost 1
+  const dq=[...q0];let best=null;
+  while(dq.length){const k=dq.shift();const [q,r]=k.split(',').map(Number);const d=dist.get(k);
+    if(hd(q,r,0,0)<=heartR()){if(best==null||d<dist.get(best))best=k;continue}
+    for(const [a,b] of DIRS){const x=q+a,y=r+b,kk=key(x,y);if(!passable(x,y))continue;const t=G.terr[kk],c=t&&t!==f?1:0,nd=d+c;
+      if(dist.has(kk)&&dist.get(kk)<=nd)continue;dist.set(kk,nd);prev.set(kk,k);if(c)dq.push(kk);else dq.unshift(kk)}}
+  if(best==null)return [];
+  if(dist.get(best)===0)return null;
+  const out=[];let k=best;while(k&&!zone.includes(k)){const [q,r]=k.split(',').map(Number);const t=G.terr[k];if(t&&t!==f)out.push(k);k=prev.get(k)}
+  return out;
+}
+// Report for the map preview: coloured share of the paintable board and whether the two bands guarantees hold for each army.
+function terrainReport(){
+  const pool=allCells().filter(([q,r])=>!isNoMans(q,r)&&featAt(q,r)!=='rock');
+  const col=pool.filter(([q,r])=>G.terr[key(q,r)]).length;
+  const players=G.players.map(p=>({fac:p.fac,path:bandsRoute(p)==null,near:pool.some(([q,r])=>G.terr[key(q,r)]===p.fac&&hd(q,r,0,0)<=heartR()+3),tiles:pool.filter(([q,r])=>G.terr[key(q,r)]===p.fac).length}));
+  return {pool:pool.length,coloured:col,pct:100*col/pool.length,players};
+}
 function newGame(c){
   const n=c.n,teams=!!c.teams&&(n===4||n===6),T=teams?n/2:n;
   G={v:17,botLevel:c.botLevel||'normal',timer:c.timer||0,claim:{},col:null,outposts:[],eggs:[],wells:[],relics:[],relicsOn:c.relics!==false,stats:{units:{},abil:{},ults:[],events:[],fx:{}},fxSeq:0,fxLog:[],feat:{},R:BOARD_R[n],heartR:n<=3?1:2,heartCount:{},mode:c.mode,teams,players:[],units:[],nid:1,cur:0,ap:0,apMax:RULES.BASE_AP,round:1,log:[],score:{},over:null,
@@ -1033,7 +1128,8 @@ function newGame(c){
   if(c.collapse!==false&&COLLAPSE_START[c.mode])G.col={start:collapseStart(c.mode,n),ring:G.R,stop:G.heartR+(n>=4?2:3)};
   G.outposts=outpostPoints(n,G.R);
   genFeatures();
-  genTerrain();
+  // Tile layout: 'classic' (default, today's clusters) or 'bands' (rotated bands, see genTerrainBands). Only set on G when not classic.
+  if(c.tiles==='bands'){G.tiles='bands';genTerrainBands()}else genTerrain();
   G.players.forEach(p=>{p.zone=zoneOf(p)});
   G.players.forEach(deploy);
   addLog(null,`${MODES[G.mode].name}${teams?', teams of 2':''}.`);
@@ -1313,7 +1409,7 @@ function splashDmg(u,dmg){return u.aoe==='splash'?1:Math.max(1,Math.floor(dmg/2)
 function attack(u,t){
   G.ap-=2;u.acted=true;G.amode=null;G.aim=null;
   const bg=bodyguardFor(u,t);if(bg){addLog(bg.owner,`${bg.name} steps in front of ${t.name}!`);fx(bg,'bodyguard','#e8b84e');t=bg}
-  const F=facOf(u),dmg=basicDmg(u,t),extra=splashTargets(u,t);CUR_SRC=u;CUR_TAG='Basic';CUR_NAME='Basic attack';{const s=tStat(u);if(s){s.attacks++;if(s.firstAct==null)s.firstAct=G.round}}
+  const F=facOf(u),dmg=basicDmg(u,t),extra=splashTargets(u,t);CUR_SRC=u;CUR_TAG='Basic';CUR_NAME='Basic attack';{const s=tStat(u);if(s){s.attacks++;if(onHome(u))s.onHomeAttacks=(s.onHomeAttacks||0)+1;if(s.firstAct==null)s.firstAct=G.round}}
   const adj=distUU(u,t)===1;
   const kind=u.at==='lob'?'lob':(u.at==='melee'||(u.at==='fwd'&&u.rng===1))?'slash':'bolt';
   vfx({k:kind,from:nearCell(u,t),to:[t.q,t.r],col:F.color,aoe:u.aoe,extra:extra.map(v=>[v.q,v.r])});
