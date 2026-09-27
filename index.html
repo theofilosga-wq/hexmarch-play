@@ -412,15 +412,21 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;return G.teams?
 const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:3,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1};
 const APV=0.35;
 let G=null,SIM=false,CUR_SRC=null,CUR_TAG=null,CUR_NAME=null;
+// Random source. The live game never calls setRNG, so it stays Math.random; headless sims install a seeded generator for reproducible runs.
+let RNG=Math.random;function setRNG(f){RNG=f||Math.random;}
 // Stats tracking: games keep their tallies in G.stats (shown on the score card); simulations may point TRACK elsewhere.
 let TRACK=null;
 function trk(){return TRACK||(G&&G.stats)||null}
 // Per-effect tally: damage, kills, heals and uses for each ability, Ultimate and passive effect, keyed "army|unit|effect".
-function tFx(fac,unit,name){if(!trk()||SIM)return null;const k=fac+'|'+(unit||'')+'|'+(name||'Other');trk().fx=trk().fx||{};return trk().fx[k]=trk().fx[k]||{dmg:0,hits:0,kills:0,lk:0,heal:0,uses:0}}
+function tFx(fac,unit,name){if(!trk()||SIM)return null;const k=fac+'|'+(unit||'')+'|'+(name||'Other');trk().fx=trk().fx||{};return trk().fx[k]=trk().fx[k]||{dmg:0,hits:0,kills:0,lk:0,heal:0,uses:0,blocked:0,apGranted:0,moved:0,stasisTurns:0}}
 function srcFx(){const s=CUR_SRC&&tStat(CUR_SRC);if(!s)return null;const ult=CUR_TAG==='Ult';return tFx(s.fac,ult?'':s.name,CUR_NAME)}
 function tStat(u){if(!trk()||SIM||!u||u.kind==='wall')return null;const T=trk();let s=T.units[u.id];
-  if(!s){const p=G.players[u.poss?u.poss.owner:u.owner];s=T.units[u.id]={id:u.id,name:u.name,owner:p?p.id:u.owner,fac:p?p.fac:null,pawn:!!u.pawn,leader:!!u.leader,summon:!!u.summon,plain:!u.ability,maxhp:u.maxhp,dmg:0,dmgBasic:0,dmgAbil:0,dmgUlt:0,dmgDot:0,dmgRet:0,dmgOther:0,taken:0,kills:0,leaderKills:0,died:null,diedBy:null,attacks:0,abils:0,moves:0,hexes:0,healed:0,firstAct:null}}
+  if(!s){const p=G.players[u.poss?u.poss.owner:u.owner];s=T.units[u.id]={id:u.id,name:u.name,owner:p?p.id:u.owner,fac:p?p.fac:null,pawn:!!u.pawn,leader:!!u.leader,summon:!!u.summon,plain:!u.ability,maxhp:u.maxhp,dmg:0,dmgBasic:0,dmgAbil:0,dmgUlt:0,dmgDot:0,dmgRet:0,dmgOther:0,taken:0,kills:0,leaderKills:0,died:null,diedBy:null,attacks:0,abils:0,moves:0,hexes:0,healed:0,firstAct:null,blocked:0,apGranted:0,moved:0}}
   return s}
+// Support value (damage blocked, AP granted, units moved, stasis turns): credited to the current effect (CUR_SRC/CUR_NAME) and the acting unit.
+function tSup(field,n){if(!trk()||SIM||!(n>0))return;const e=srcFx();if(e)e[field]=(e[field]||0)+n;const s=CUR_SRC&&tStat(CUR_SRC);if(s&&field in s)s[field]+=n}
+// Same, credited to an earlier caster by unit id (a shield, guard or wall placed before the hit lands). id -1 = a talent, credited to the army only.
+function tSupBy(id,fac,name,field,n){if(!trk()||SIM||id==null||!(n>0))return;const s=id>=0?trk().units[id]:null;if(id>=0&&!s)return;const e=tFx(s?s.fac:fac,s?s.name:'',name);if(e)e[field]=(e[field]||0)+n;if(s&&field in s)s[field]+=n}
 const HOOKS={fx(){},turn(){},over(){},changed(){}};
 const nowMs=()=>typeof performance!=='undefined'?performance.now():0;
 const pix=(q,r)=>[S3*(q+r/2),1.5*r];
@@ -977,7 +983,7 @@ function genFeatures(){
   for(const [f,c] of Object.entries(counts)){
     let placed=0,guard=0;const orbits=Math.max(1,Math.round(c/sym));
     while(placed<orbits&&guard++<500){
-      const cells0=ringCells();const [q,r]=cells0[Math.floor(Math.random()*cells0.length)];
+      const cells0=ringCells();const [q,r]=cells0[Math.floor(RNG()*cells0.length)];
       let orbit=[[q,r]];for(let i=1;i<sym;i++){let p=orbit[orbit.length-1];for(let k=0;k<step;k++)p=rot60(p);orbit.push(p)}
       if(new Set(orbit.map(p=>key(...p))).size!==orbit.length)continue;
       if(!orbit.every(([a,b])=>ok(a,b)))continue;
@@ -997,18 +1003,18 @@ function genTerrain(){
   const w=(f,q,r)=>Math.exp(-hd(q,r,f.home[0],f.home[1])/tau);
   const left=facs.map(()=>quota);
   const pick=(f)=>{let tot=0;const c=[];for(const [q,r] of pool){if(G.terr[key(q,r)])continue;const x=w(f,q,r);c.push([q,r,x]);tot+=x}
-    let t=Math.random()*tot;for(const e of c){t-=e[2];if(t<=0)return e}return c[c.length-1]};
+    let t=RNG()*tot;for(const e of c){t-=e[2];if(t<=0)return e}return c[c.length-1]};
   let guard=0;
   while(left.some(x=>x>0)&&guard++<4000){
     facs.forEach((f,i)=>{
       if(left[i]<=0)return;
       const seed=pick(f);if(!seed)return;
       const patch=[[seed[0],seed[1]]];G.terr[key(seed[0],seed[1])]=f.fac;left[i]--;
-      const size=2+Math.floor(Math.random()*3);let tries=0;
+      const size=2+Math.floor(RNG()*3);let tries=0;
       while(patch.length<size&&left[i]>0&&tries++<30){
-        const b=patch[Math.floor(Math.random()*patch.length)],d=DIRS[Math.floor(Math.random()*6)],q=b[0]+d[0],r=b[1]+d[1];
+        const b=patch[Math.floor(RNG()*patch.length)],d=DIRS[Math.floor(RNG()*6)],q=b[0]+d[0],r=b[1]+d[1];
         if(!inR(q,r)||isNoMans(q,r)||G.terr[key(q,r)]||featAt(q,r)==='rock')continue;
-        if(Math.random()>w(f,q,r)/w(f,b[0],b[1])+0.15)continue;
+        if(RNG()>w(f,q,r)/w(f,b[0],b[1])+0.15)continue;
         G.terr[key(q,r)]=f.fac;patch.push([q,r]);left[i]--;
       }
     });
@@ -1023,7 +1029,7 @@ function newGame(c){
     const s=c.seats[i],team=teams?i%T:i,spot=teams?team*2+Math.floor(i/T):i;
     G.players.push({id:i,fac:s.fac,ctrl:s.ctrl,team,spot,alive:true,leaderless:false,bank:0});G.score[team]=0;
   }
-  G.players.forEach(p=>{p.home=spawnPoints(G.players.length,G.R)[p.spot];p.formation=(c.formations&&c.formations[p.id])||DEFAULT_FORMATION[n];const ts=TALENTS[p.fac];p.talent=c.seats[p.id].talent&&ts.some(t=>t.k===c.seats[p.id].talent)?c.seats[p.id].talent:(c.randomTalents?ts[Math.floor(Math.random()*3)].k:ts[0].k)});
+  G.players.forEach(p=>{p.home=spawnPoints(G.players.length,G.R)[p.spot];p.formation=(c.formations&&c.formations[p.id])||DEFAULT_FORMATION[n];const ts=TALENTS[p.fac];p.talent=c.seats[p.id].talent&&ts.some(t=>t.k===c.seats[p.id].talent)?c.seats[p.id].talent:(c.randomTalents?ts[Math.floor(RNG()*3)].k:ts[0].k)});
   if(c.collapse!==false&&COLLAPSE_START[c.mode])G.col={start:collapseStart(c.mode,n),ring:G.R,stop:G.heartR+(n>=4?2:3)};
   G.outposts=outpostPoints(n,G.R);
   genFeatures();
@@ -1075,7 +1081,7 @@ function beginTurn(){
     if(cells(u).some(([q,r])=>featAt(q,r)==='shrine')&&u.hp<u.maxhp){const h=Math.min(2,u.maxhp-u.hp);u.hp=r2(u.hp+h);fx(u,'+'+h,'#9ff0c0');vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'})}
     if(F.homeHeal&&onHome(u)&&u.hp<u.maxhp){const h=Math.min(F.homeHeal,u.maxhp-u.hp);u.hp=r2(u.hp+h);fx(u,'+'+h,'#5fd68e')}
     if(u.size===2&&talent(p,'oldmountain')&&u.hp<u.maxhp){u.hp=r2(Math.min(u.maxhp,u.hp+1));fx(u,'+1','#5fd68e')}
-    if(talent(p,'aegis')&&!(u.st.shield>0))u.st.shield=1;
+    if(talent(p,'aegis')&&!(u.st.shield>0)){u.st.shield=1;u.st.shieldBy=-1}
     if(G.units.some(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&utal(v,'grip')&&distUU(u,v)===1))chillT(u,1);
     if(hasTrait(u,'regen')&&u.hp<u.maxhp){u.hp=r2(Math.min(u.maxhp,u.hp+1));fx(u,'+1','#5fd68e')}
   }
@@ -1177,7 +1183,11 @@ function kill(t){
 function hurt(t,n,col,tick){
   if(!alive(t)||n<=0)return 0;
   if(t.st&&t.st.stasis>0){fx(t,'stasis','#c81ca6');return 0}
-  if(t.st&&t.st.shield>0){const a=Math.min(t.st.shield,n);t.st.shield-=a;n-=a;fx(t,'blocked','#d7c9ff');if(n<=0)return 0}
+  const hostile=!(CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)===tm(t.kind==='wall'?t.creator:t.owner));
+  if(t.st&&t.st.shield>0){const a=Math.min(t.st.shield,n);t.st.shield-=a;n-=a;fx(t,'blocked','#d7c9ff');
+    if(hostile){const by=t.st.shieldBy;if(by!=null&&by>=0)tSupBy(by,null,ABIL.ward.name,'blocked',a);else tSupBy(-1,G.players[t.owner].fac,'Arcane Ward (talent)','blocked',a)}
+    if(n<=0)return 0}
+  if(t.kind==='wall'&&t.by!=null&&hostile)tSupBy(t.by,null,t.abil,'blocked',Math.min(n,Math.max(0,t.hp)));
   if(trk()&&!SIM&&t.kind!=='wall'){const d=tStat(t),sc=tStat(CUR_SRC),eff=Math.min(n,Math.max(0,t.hp));d.taken+=eff;
     if(sc&&CUR_SRC!==t&&tm(CUR_SRC.owner)!==tm(t.owner)){sc.dmg+=eff;sc['dmg'+(tick?'Dot':CUR_TAG||'Other')]+=eff;const e=srcFx();if(e){e.dmg+=eff;e.hits++}}
     else if(!sc&&CUR_NAME==='Burning ground'){const e=tFx('fire','','Burning ground');e.dmg+=eff;e.hits++}}
@@ -1308,6 +1318,7 @@ function attack(u,t){
   const kind=u.at==='lob'?'lob':(u.at==='melee'||(u.at==='fwd'&&u.rng===1))?'slash':'bolt';
   vfx({k:kind,from:nearCell(u,t),to:[t.q,t.r],col:F.color,aoe:u.aoe,extra:extra.map(v=>[v.q,v.r])});
   addLog(u.owner,`${u.name} hits ${t.kind==='wall'?`a ${t.wall} wall`:t.name} for ${dmg}${extra.length?` and ${extra.length} more (${AOE[u.aoe].name.toLowerCase()})`:''}.`);
+  if(t.kind!=='wall'&&t.st.guard>0)tSupBy(t.st.guardBy,null,ABIL.shieldwall.name,'blocked',Math.min(Math.max(0,t.hp),afterDef(effAtk(u),Math.max(0,effDef(t)-t.st.guard))-afterDef(effAtk(u),effDef(t))));
   hurt(t,dmg);
   for(const v of extra)hurt(v,splashDmg(u,dmg),F.color);
   if(alive(t)&&t.kind!=='wall'&&F.onHit==='chill')chillT(t,1);
@@ -1417,36 +1428,41 @@ function hitDmg(u,t,A){
   return A.pierce?base:afterDef(base,effDef(t));
 }
 function applyHit(u,t,A){
-  const d=hitDmg(u,t,A);if(d>0)hurt(t,d,facOf(u).color);
+  const d=hitDmg(u,t,A);
+  if(d>0&&!A.pierce&&t.kind!=='wall'&&t.st.guard>0&&tm(u.owner)!==tm(t.owner)){const base=A.useAtk?effAtk(u)+(A.atkBonus||0):(A.dmg||0);tSupBy(t.st.guardBy,null,ABIL.shieldwall.name,'blocked',Math.min(Math.max(0,t.hp),afterDef(base,Math.max(0,effDef(t)-t.st.guard))-d))}
+  if(d>0)hurt(t,d,facOf(u).color);
   if(!alive(t))return;
   if(A.chill)chillT(t,A.chill);
-  if(A.freeze){if(t.st.fimm>0||hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t)))fx(t,'resists','#5cc8ff');else{t.st.frozen=Math.max(t.st.frozen||0,A.freeze);fx(t,'frozen','#5cc8ff')}}
+  if(A.freeze){if(t.st.fimm>0||hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t)))fx(t,'resists','#5cc8ff');else{if(!(t.st.frozen>0))tSup('stasisTurns',1);t.st.frozen=Math.max(t.st.frozen||0,A.freeze);fx(t,'frozen','#5cc8ff')}}
   if(A.curse)applyCurse(u,t,A.curse);
-  if(A.guard){t.st.guard=Math.max(t.st.guard||0,A.guard);fx(t,`+${A.guard} DEF`,'#e8b84e')}
-  if(A.shield){t.st.shield=Math.max(t.st.shield||0,A.shield);fx(t,`+${A.shield} shield`,'#d7c9ff')}
+  if(A.guard){t.st.guard=Math.max(t.st.guard||0,A.guard);t.st.guardBy=u.id;fx(t,`+${A.guard} DEF`,'#e8b84e')}
+  if(A.shield){t.st.shield=Math.max(t.st.shield||0,A.shield);t.st.shieldBy=u.id;fx(t,`+${A.shield} shield`,'#d7c9ff')}
   if(A.heal){const h=Math.min(A.heal,t.maxhp-t.hp);if(h>0){t.hp=r2(t.hp+h);fx(t,'+'+h,'#5fd68e')}t.st.chill=0;t.st.frozen=0}
 }
 function slamOf(src){return RULES.SLAM+(src&&src.kind!=='wall'&&facOf(src).slam?facOf(src).slam:0)+(src&&utal(src,'horizon')?1:0)}
-function pushUnit(t,d,n,src){
+function pushUnit(t,d,n,src,quiet){
   if(!alive(t)||t.kind==='wall')return;
-  const slam=slamOf(src);
+  const slam=slamOf(src),oq=t.q,or=t.r;
   if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slam,'#12d69a');fx(t,'immovable','#d9a45b');return}
   for(let s=0;s<n;s++){
     const q=t.q+DIRS[d][0],r=t.r+DIRS[d][1];
     if(!solid(q,r)){addLog(t.owner,`${t.name} is hurled ${inR(q,r)?'into the void':'off the edge'}!`);fx(t,'LOST','#12d69a');vfx({k:'fall',at:[t.q,t.r],to:[q,r]});t.hp=0;kill(t);return}
     const o=unitAt(q,r);
-    if((o&&o!==t)||featAt(q,r)==='rock'){hurt(t,slam,'#12d69a');return}
+    if((o&&o!==t)||featAt(q,r)==='rock'){hurt(t,slam,'#12d69a');break}
     setAnim(t);t.q=q;t.r=r;
   }
+  if(!quiet&&(t.q!==oq||t.r!==or))tSup('moved',1);
 }
 function pullUnit(t,src,n){
+  const oq=t.q,or=t.r;
   for(let s=0;s<n;s++){
-    if(!alive(t)||!alive(src))return;
-    if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slamOf(src),'#12d69a');return}
-    if(distUU(src,t)<=1)return;
+    if(!alive(t)||!alive(src))break;
+    if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slamOf(src),'#12d69a');break}
+    if(distUU(src,t)<=1)break;
     const [cq,cr]=nearCell(src,t);
-    pushUnit(t,dirTo(t.q,t.r,cq,cr),1,src);
+    pushUnit(t,dirTo(t.q,t.r,cq,cr),1,src,true);
   }
+  if(alive(t)&&(t.q!==oq||t.r!==or))tSup('moved',1);
 }
 // Titan Toss: thrown 3 hexes over anything. Landing on a unit or rock hurts both and it drops short.
 function tossUnit(t,d,src){
@@ -1454,19 +1470,22 @@ function tossUnit(t,d,src){
   const [a,b]=at(3);
   if(!solid(a,b)){addLog(t.owner,`${t.name} is thrown ${inR(a,b)?'into the void':'off the edge'}!`);vfx({k:'fall',at:[t.q,t.r],to:[a,b]});t.hp=0;kill(t);return}
   const m=occ();const o=m.get(key(a,b));
-  if(!o&&featAt(a,b)!=='rock'){setAnim(t);t.q=a;t.r=b;return}
+  if(!o&&featAt(a,b)!=='rock'){setAnim(t);t.q=a;t.r=b;tSup('moved',1);return}
   hurt(t,2,'#d9a45b');if(o&&o!==t&&o.kind!=='wall')hurt(o,2,'#d9a45b');else if(o&&o.kind==='wall')hurt(o,2);
   if(!alive(t))return;
-  for(const s of [2,1]){const [x,y]=at(s);if(passable(x,y)&&!occ().get(key(x,y))){setAnim(t);t.q=x;t.r=y;return}}
+  for(const s of [2,1]){const [x,y]=at(s);if(passable(x,y)&&!occ().get(key(x,y))){setAnim(t);t.q=x;t.r=y;tSup('moved',1);return}}
 }
 // Gravity Well: enemies within 2 step 1 hex toward it. Blocked units stay put; over a void or the edge, they fall.
 function wellPull(w){
   const src=byId(w.src),team=tm(w.owner);
   const vs=G.units.filter(v=>v.kind!=='wall'&&v.size!==2&&tm(v.owner)!==team&&hd(v.q,v.r,w.q,w.r)<=2&&hd(v.q,v.r,w.q,w.r)>0).sort((a,b)=>hd(a.q,a.r,w.q,w.r)-hd(b.q,b.r,w.q,w.r));
   if(vs.length)vfx({k:'buff',at:[w.q,w.r],col:'#12d69a'});
+  // Everything the well does (kills, units dragged) is credited to the Gravity Well ability of the mage who opened it, also on later turns.
+  const old=CUR_SRC,ot=CUR_TAG,on=CUR_NAME;CUR_SRC=src;CUR_TAG='Abil';CUR_NAME=ABIL.well.name;
   for(const v of vs){if(!alive(v)||v.st.stasis)continue;const d=dirTo(v.q,v.r,w.q,w.r),q=v.q+DIRS[d][0],r=v.r+DIRS[d][1];
-    if(!solid(q,r)){const old=CUR_SRC,on=CUR_NAME;CUR_SRC=src;CUR_NAME='Gravity well';addLog(v.owner,`${v.name} is dragged into the void!`);vfx({k:'fall',at:[v.q,v.r],to:[q,r]});v.hp=0;kill(v);CUR_SRC=old;CUR_NAME=on;continue}
-    if(featAt(q,r)==='rock'||occ().get(key(q,r)))continue;setAnim(v);v.q=q;v.r=r}
+    if(!solid(q,r)){addLog(v.owner,`${v.name} is dragged into the void!`);vfx({k:'fall',at:[v.q,v.r],to:[q,r]});v.hp=0;kill(v);continue}
+    if(featAt(q,r)==='rock'||occ().get(key(q,r)))continue;setAnim(v);v.q=q;v.r=r;tSup('moved',1)}
+  CUR_SRC=old;CUR_TAG=ot;CUR_NAME=on;
 }
 function useAbility(u,k,q,r){
   const A=ABIL[k],F=facOf(u);
@@ -1475,16 +1494,16 @@ function useAbility(u,k,q,r){
   const tgt=unitAt(q,r);
   if(!SIM){const area=A.special?[]:shapeCells(u,k,q,r);vfx({k:'ab',ab:k,shape:A.shape||A.special,from:[u.q,u.r],to:[q,r],cells:area.slice(0,40),col:F.color,fac:G.players[u.owner].fac,push:!!(A.push||A.pull),curse:!!A.curse,heal:!!(A.heal||A.shield||A.guard)})}
   switch(A.special){
-    case 'gainap':{const g=Math.min(A.amount,RULES.AP_CAP-G.ap);G.ap+=Math.max(0,g);fx(u,`+${A.amount} AP`,'#c81ca6');break}
-    case 'quicken':if(tgt&&tgt!==u){tgt.moved=false;tgt.acted=false;fx(tgt,'fresh turn','#c81ca6')}break;
-    case 'stasis':if(tgt){tgt.st.stasis=Math.max(tgt.st.stasis||0,1);fx(tgt,'stasis','#c81ca6')}break;
+    case 'gainap':{const g=Math.min(A.amount,RULES.AP_CAP-G.ap);G.ap+=Math.max(0,g);tSup('apGranted',g);fx(u,`+${A.amount} AP`,'#c81ca6');break}
+    case 'quicken':if(tgt&&tgt!==u){tgt.moved=false;tgt.acted=false;tSup('moved',1);fx(tgt,'fresh turn','#c81ca6')}break;
+    case 'stasis':if(tgt){if(!(tgt.st.stasis>0))tSup('stasisTurns',1);tgt.st.stasis=Math.max(tgt.st.stasis||0,1);fx(tgt,'stasis','#c81ca6')}break;
     case 'echo':if(tgt){applyHit(u,tgt,A);if(alive(tgt))applyHit(u,tgt,A)}break;
-    case 'wall':{const mk=(a,b)=>G.units.push({id:G.nid++,kind:'wall',wall:A.wall,owner:-1,creator:u.owner,q:a,r:b,dir:0,size:1,hp:A.hp,maxhp:A.hp,def:0,ttl:3,st:{},name:A.wall==='ice'?'Ice wall':A.wall==='light'?'Light wall':'Stone wall'});mk(q,r);
+    case 'wall':{const mk=(a,b)=>G.units.push({id:G.nid++,kind:'wall',wall:A.wall,owner:-1,creator:u.owner,by:u.id,abil:A.name,q:a,r:b,dir:0,size:1,hp:A.hp,maxhp:A.hp,def:0,ttl:3,st:{},name:A.wall==='ice'?'Ice wall':A.wall==='light'?'Light wall':'Stone wall'});mk(q,r);
       if(A.wall==='light'){const d=distUC(u,q,r);const m=occ();const nb=DIRS.map(([a,b])=>[q+a,r+b]).filter(([a,b])=>passable(a,b)&&!m.get(key(a,b))).sort((x,y)=>Math.abs(distUC(u,x[0],x[1])-d)-Math.abs(distUC(u,y[0],y[1])-d))[0];if(nb)mk(nb[0],nb[1])}break}
     case 'void':{const kk=key(q,r);G.voids[kk]=1;delete G.terr[kk];delete G.paint[kk];break}
-    case 'swap':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b}break;
+    case 'swap':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b;tSup('moved',2)}break;
     case 'rally':for(const v of abilityTargets(u,k,u.q,u.r)){v.st.emp=1;fx(v,'+2 ATK','#e8b84e');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}break;
-    case 'overclock':for(const v of abilityTargets(u,k,u.q,u.r))if(v!==u&&v.moved){v.moved=false;fx(v,'move again','#ff6ec7');vfx({k:'buff',at:[v.q,v.r],col:'#ff6ec7'})}break;
+    case 'overclock':for(const v of abilityTargets(u,k,u.q,u.r))if(v!==u&&v.moved){v.moved=false;tSup('moved',1);fx(v,'move again','#ff6ec7');vfx({k:'buff',at:[v.q,v.r],col:'#ff6ec7'})}break;
     case 'dash':if(tgt){if(distUU(u,tgt)>1){const s=dashSpot(u,tgt);if(s){setAnim(u);u.q=s.q;u.r=s.r;u.dir=s.dir}}applyHit(u,tgt,A)}break;
     case 'bulldoze':if(tgt){const oq=tgt.q,or=tgt.r;applyHit(u,tgt,A);
       if(alive(tgt)){const [cq,cr]=nearCell(u,tgt);pushUnit(tgt,dirTo(cq,cr,tgt.q,tgt.r),1,u)}
@@ -1499,7 +1518,7 @@ function useAbility(u,k,q,r){
     case 'turret':{const T={id:G.nid++,owner:u.owner,leader:false,pawn:true,summon:true,ttl:4,name:'Turret',icon:'turret',glyph:'♜',hp:7,maxhp:7,atk:3,def:2,mov:0,mt:'line',at:'bolt',aoe:null,rng:3,rmin:1,size:1,dir:0,q,r,
       moved:true,acted:true,cd:0,mom:false,rage:false,stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,guard:0,stasis:0,curses:{}},ability:null,trait:'construct',home:u.home};G.units.push(T);fx(T,'built','#ff6ec7');break}
     case 'recall':if(tgt&&tgt!==u){const m=occ();let best=null;for(const [a,b] of cells(u))for(const [dq,dr] of DIRS){const d=fitDir(m,tgt,a+dq,b+dr);if(d>=0&&!best)best={q:a+dq,r:b+dr,dir:d}}
-      if(best){vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color});setAnim(tgt);tgt.q=best.q;tgt.r=best.r;tgt.dir=best.dir;fx(tgt,'portal','#8f5cff')}}break;
+      if(best){vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color});setAnim(tgt);tgt.q=best.q;tgt.r=best.r;tgt.dir=best.dir;tSup('moved',1);fx(tgt,'portal','#8f5cff')}}break;
     case 'duel':if(tgt){tgt.st.duel={by:u.id,ttl:2};fx(tgt,'challenged','#eef0f4')}break;
     case 'well':{const w={q,r,owner:u.owner,src:u.id,ttl:3};(G.wells=G.wells||[]).push(w);wellPull(w);break}
     case 'possess':if(tgt&&possessable(tgt)){tgt.poss={owner:tgt.owner,home:tgt.home};tgt.owner=u.owner;tgt.home=u.home;tgt.moved=false;tgt.acted=false;tgt.st.stasis=0;tgt.st.frozen=0;fx(tgt,'possessed','#e8e23a');addLog(u.owner,`${tgt.name} is possessed!`)}break;
@@ -1534,15 +1553,15 @@ function ultEffect(p){
   const mine=()=>G.units.filter(v=>v.kind!=='wall'&&v.owner===p.id);
   switch(p.fac){
     case 'fire':for(const v of foes()){const onRed=cells(v).some(([q,r])=>terrAt(q,r)==='fire');hurt(v,onRed?2:1,F.color)}break;
-    case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,1);if((talent(p,'frostthrone')||ice.some(i=>distUU(i,v)<=2))&&!hasTrait(v,'unstoppable'))v.st.frozen=Math.max(v.st.frozen||0,1)}break}
+    case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,1);if((talent(p,'frostthrone')||ice.some(i=>distUU(i,v)<=2))&&!hasTrait(v,'unstoppable')){if(!(v.st.frozen>0))tSup('stasisTurns',1);v.st.frozen=Math.max(v.st.frozen||0,1)}}break}
     case 'giants':{const gs=mine();for(const v of foes()){const g=gs.filter(x=>alive(x)).sort((a,b)=>distUU(a,v)-distUU(b,v))[0];const aval=talent(p,'avalanche');if(!g||distUU(g,v)>(aval?4:3))continue;hurt(v,afterDef(aval?3:2,effDef(v)),F.color);
       if(alive(v)){const [cq,cr]=nearCell(g,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,g)}}break}
-    case 'gnomes':{const add=talent(p,'surge')?6:4;G.ap=Math.min(RULES.AP_CAP+add,G.ap+add)}for(const v of mine())v.moved=false;break;
+    case 'gnomes':{const add=talent(p,'surge')?6:4,ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+add,G.ap+add);tSup('apGranted',G.ap-ap0);let m=0;for(const v of mine()){if(v.moved)m++;v.moved=false}tSup('moved',m)}break;
     case 'arcane':{const ts=foes().sort((a,b)=>worth(b)-worth(a)).slice(0,talent(p,'starcaller')?5:3);for(const v of ts){vfx({k:'bolt',from:[v.q,v.r-3],to:[v.q,v.r],col:F.color});hurt(v,4,F.color)}break}
-    case 'warband':G.ap=Math.min(RULES.AP_CAP+2,G.ap+2);for(const v of mine()){v.st.emp=1;v.acted=false;v.mom=false;fx(v,'+2 ATK','#e8b84e')}break;
+    case 'warband':{const ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+2,G.ap+2);tSup('apGranted',G.ap-ap0)}for(const v of mine()){v.st.emp=1;v.acted=false;v.mom=false;fx(v,'+2 ATK','#e8b84e')}break;
     case 'rift':{const ts=foes().filter(v=>v.q||v.r).sort((a,b)=>hd(b.q,b.r,0,0)-hd(a.q,a.r,0,0));for(const v of ts)if(alive(v))pushUnit(v,dirTo(0,0,v.q,v.r),v.leader?1:talent(p,'gravitylord')?2:1,src);break}
     case 'curse':for(const v of foes()){const dur=RULES.CURSE_TURNS;for(const c of Object.keys(v.st.curses||{}))v.st.curses[c]=Math.max(v.st.curses[c],dur);const had=curseCount(v);applyCurse(src||v,v,'agony');if(had>=2)applyCurse(src||v,v,'rot');if(talent(p,'rites')){applyCurse(src||v,v,'frailty');applyCurse(src||v,v,'feeble')}}break;
-    case 'chrono':p.extraTurn=true;break;
+    case 'chrono':p.extraTurn=true;tSup('stasisTurns',G.players.filter(x=>x.alive&&x.team!==team).length);break;
   }
   CUR_SRC=null;CUR_TAG=null;CUR_NAME=null;
 }
@@ -1579,12 +1598,12 @@ function relicSpots(){const m=occ();const free=([q,r])=>passable(q,r)&&!m.get(ke
   const outs=(G.outposts||[]).filter(o=>solid(o[0],o[1])&&free(o));
   if(outs.length)return outs;
   return allCells().filter(c=>isRoad(c[0],c[1])&&free(c)&&!G.units.some(u=>u.kind!=='wall'&&distUC(u,c[0],c[1])<=2))}
-function placeRelic(x){const sp=relicSpots();if(!sp.length){x.q=null;x.r=null;return false}const c=sp[Math.floor(Math.random()*sp.length)];x.q=c[0];x.r=c[1];x.carrier=null;return true}
+function placeRelic(x){const sp=relicSpots();if(!sp.length){x.q=null;x.r=null;return false}const c=sp[Math.floor(RNG()*sp.length)];x.q=c[0];x.r=c[1];x.carrier=null;return true}
 function spawnRelics(){
   if(!G.relicsOn||G.round<RULES.RELIC_FROM||(G.round-RULES.RELIC_FROM)%RULES.RELIC_EVERY)return;
   const max=G.players.length<=3?2:3;if((G.relics||[]).length>=max)return;
   const kinds=RKEYS.filter(k=>!G.relics.some(x=>x.kind===k));if(!kinds.length)return;
-  const x={kind:kinds[Math.floor(Math.random()*kinds.length)],q:null,r:null,carrier:null};
+  const x={kind:kinds[Math.floor(RNG()*kinds.length)],q:null,r:null,carrier:null};
   if(placeRelic(x)){G.relics.push(x);addLog(null,`A relic appears on the flank: ${RELICS[x.kind].name}.`);vfx({k:'relic',at:[x.q,x.r],col:RELICS[x.kind].col})}
 }
 function pickupRelics(){
@@ -1686,7 +1705,7 @@ function moveEval(u,o,ctx){
   if(home(v)&&!home(u))s+=2.5;if(home(u)&&!home(v))s-=2;
   if(ctx.fireIn&&f!=='fire'){const red=x=>cells(x).some(([q,r])=>terrAt(q,r)==='fire');if(red(v))s-=3;if(red(u))s+=2.5}
   if(ctx.pushers&&u.size!==2){const edge=x=>{for(const [dq,dr] of DIRS)if(!solid(x.q+dq,x.r+dr))return 1;return 0};s-=(edge(v)-edge(u))*(u.leader?10:2.5)}
-  return s+Math.random()*0.6;
+  return s+RNG()*0.6;
 }
 function botAims(u,k,ctx){
   const A=ABIL[k];let a=aimCells(u,k);
@@ -1729,15 +1748,15 @@ function botStep(){
     if(canTeamUlt(pid)){const q=partnerOf(pid);const ts=simScore(team,()=>useUlt(true))-base-RULES.TEAM_ULT_COST*APV-4+(q.fac==='chrono'?12:q.fac==='gnomes'?6:0);consider(ts,()=>useUlt(true))}}
   if(!best)return false;
   if(lvl!=='hard'&&!SIM){
-    const noise=lvl==='easy'?6:2;cands.forEach(c=>c.r=c.s+Math.random()*noise);cands.sort((a,b)=>b.r-a.r);
-    if(lvl==='easy'&&Math.random()<0.12)return false;// sometimes ends the turn early
-    const pool=lvl==='easy'?cands.slice(0,5):cands.slice(0,2);best=pool[Math.floor(Math.random()*pool.length)];
+    const noise=lvl==='easy'?6:2;cands.forEach(c=>c.r=c.s+RNG()*noise);cands.sort((a,b)=>b.r-a.r);
+    if(lvl==='easy'&&RNG()<0.12)return false;// sometimes ends the turn early
+    const pool=lvl==='easy'?cands.slice(0,5):cands.slice(0,2);best=pool[Math.floor(RNG()*pool.length)];
   }
   best.fn();
   return true;
 }
 
-const BALANCE={"modes":{"regicide":{"games":864,"firstWin":0.5481481481481482,"avgRounds":20.677083333333332,"table":{"fire":{"all":0.4010416666666667,"score":0.46875,"vs":{"ice":0.25,"giants":0.4166666666666667,"gnomes":0.625,"arcane":0.16666666666666666,"warband":0.3333333333333333,"rift":0.7083333333333334,"curse":0.3333333333333333,"chrono":0.375},"draws":0.13541666666666666},"ice":{"all":0.359375,"score":0.3880208333333333,"vs":{"fire":0.5416666666666666,"giants":0.25,"gnomes":0.2916666666666667,"arcane":0.20833333333333334,"warband":0.5416666666666666,"rift":0.3333333333333333,"curse":0.25,"chrono":0.4583333333333333},"draws":0.057291666666666664},"giants":{"all":0.5520833333333334,"score":0.5729166666666666,"vs":{"fire":0.5,"ice":0.7083333333333334,"gnomes":0.5833333333333334,"arcane":0.875,"warband":0.2916666666666667,"rift":0.625,"curse":0.375,"chrono":0.4583333333333333},"draws":0.041666666666666664},"gnomes":{"all":0.484375,"score":0.515625,"vs":{"fire":0.25,"ice":0.7083333333333334,"giants":0.375,"arcane":0.20833333333333334,"warband":0.375,"rift":0.7916666666666666,"curse":0.4166666666666667,"chrono":0.75},"draws":0.0625},"arcane":{"all":0.5677083333333334,"score":0.5677083333333334,"vs":{"fire":0.8333333333333334,"ice":0.7916666666666666,"giants":0.125,"gnomes":0.7916666666666666,"warband":0.5416666666666666,"rift":0.375,"curse":0.7083333333333334,"chrono":0.375},"draws":0},"warband":{"all":0.484375,"score":0.5338541666666666,"vs":{"fire":0.3333333333333333,"ice":0.4166666666666667,"giants":0.625,"gnomes":0.5833333333333334,"arcane":0.4583333333333333,"rift":0.5833333333333334,"curse":0.25,"chrono":0.625},"draws":0.09895833333333333},"rift":{"all":0.4010416666666667,"score":0.4088541666666667,"vs":{"fire":0.20833333333333334,"ice":0.6666666666666666,"giants":0.375,"gnomes":0.16666666666666666,"arcane":0.625,"warband":0.4166666666666667,"curse":0.3333333333333333,"chrono":0.4166666666666667},"draws":0.015625},"curse":{"all":0.4635416666666667,"score":0.53125,"vs":{"fire":0.4166666666666667,"ice":0.5833333333333334,"giants":0.5833333333333334,"gnomes":0.3333333333333333,"arcane":0.2916666666666667,"warband":0.4583333333333333,"rift":0.6666666666666666,"chrono":0.375},"draws":0.13541666666666666},"chrono":{"all":0.5052083333333334,"score":0.5130208333333334,"vs":{"fire":0.625,"ice":0.5416666666666666,"giants":0.5,"gnomes":0.25,"arcane":0.625,"warband":0.375,"rift":0.5833333333333334,"curse":0.5416666666666666},"draws":0.015625}}},"warlord":{"games":864,"firstWin":0.5052508751458576,"avgRounds":16.31597222222222,"table":{"fire":{"all":0.4635416666666667,"score":0.4635416666666667,"vs":{"ice":0.375,"giants":0.2916666666666667,"gnomes":0.7083333333333334,"arcane":0.25,"warband":0.4583333333333333,"rift":0.7083333333333334,"curse":0.7083333333333334,"chrono":0.20833333333333334},"draws":0},"ice":{"all":0.40625,"score":0.4140625,"vs":{"fire":0.625,"giants":0.16666666666666666,"gnomes":0.4166666666666667,"arcane":0.4583333333333333,"warband":0.375,"rift":0.5,"curse":0.3333333333333333,"chrono":0.375},"draws":0.015625},"giants":{"all":0.59375,"score":0.5989583333333334,"vs":{"fire":0.7083333333333334,"ice":0.8333333333333334,"gnomes":0.4583333333333333,"arcane":0.9166666666666666,"warband":0.5416666666666666,"rift":0.5416666666666666,"curse":0.2916666666666667,"chrono":0.4583333333333333},"draws":0.010416666666666666},"gnomes":{"all":0.5208333333333334,"score":0.5234375,"vs":{"fire":0.2916666666666667,"ice":0.5833333333333334,"giants":0.5416666666666666,"arcane":0.25,"warband":0.5416666666666666,"rift":0.6666666666666666,"curse":0.625,"chrono":0.6666666666666666},"draws":0.005208333333333333},"arcane":{"all":0.4791666666666667,"score":0.4791666666666667,"vs":{"fire":0.75,"ice":0.5416666666666666,"giants":0.08333333333333333,"gnomes":0.75,"warband":0.375,"rift":0.5416666666666666,"curse":0.5833333333333334,"chrono":0.20833333333333334},"draws":0},"warband":{"all":0.5833333333333334,"score":0.5885416666666666,"vs":{"fire":0.5416666666666666,"ice":0.625,"giants":0.4166666666666667,"gnomes":0.4583333333333333,"arcane":0.625,"rift":0.7083333333333334,"curse":0.5,"chrono":0.7916666666666666},"draws":0.010416666666666666},"rift":{"all":0.4322916666666667,"score":0.4322916666666667,"vs":{"fire":0.2916666666666667,"ice":0.5,"giants":0.4583333333333333,"gnomes":0.3333333333333333,"arcane":0.4583333333333333,"warband":0.2916666666666667,"curse":0.5833333333333334,"chrono":0.5416666666666666},"draws":0},"curse":{"all":0.4427083333333333,"score":0.4557291666666667,"vs":{"fire":0.2916666666666667,"ice":0.5416666666666666,"giants":0.6666666666666666,"gnomes":0.375,"arcane":0.4166666666666667,"warband":0.4583333333333333,"rift":0.4166666666666667,"chrono":0.375},"draws":0.026041666666666668},"chrono":{"all":0.5416666666666666,"score":0.5442708333333334,"vs":{"fire":0.7916666666666666,"ice":0.625,"giants":0.5416666666666666,"gnomes":0.2916666666666667,"arcane":0.7916666666666666,"warband":0.20833333333333334,"rift":0.4583333333333333,"curse":0.625},"draws":0.005208333333333333}}}}};
+const BALANCE={"version":"v17a","generated":"2026-09-27","modes":{"ffa":{"games":400,"armies":{"rift":{"winPct":16.3,"firstOutPct":28.5},"gnomes":{"winPct":9.0,"firstOutPct":46.3},"giants":{"winPct":34.6,"firstOutPct":5.4},"arcane":{"winPct":61.1,"firstOutPct":10},"fire":{"winPct":14.6,"firstOutPct":23.7},"warband":{"winPct":9.6,"firstOutPct":32.6},"chrono":{"winPct":11.7,"firstOutPct":38.9},"ice":{"winPct":23.4,"firstOutPct":21.7},"curse":{"winPct":40.9,"firstOutPct":12.8}}},"team":{"games":400,"armies":{"gnomes":{"winPct":55.0},"ice":{"winPct":54.7},"arcane":{"winPct":39.2},"curse":{"winPct":50.3},"giants":{"winPct":42.2},"rift":{"winPct":45.3},"warband":{"winPct":52.9},"chrono":{"winPct":56.8},"fire":{"winPct":53.1}}},"duel":{"games":400,"armies":{"chrono":{"winPct":42.4},"rift":{"winPct":45.3},"giants":{"winPct":53.8},"ice":{"winPct":40.2},"gnomes":{"winPct":64.5},"fire":{"winPct":56.3},"arcane":{"winPct":38.5},"warband":{"winPct":68.2},"curse":{"winPct":32.5}},"firstPct":51.5}}};
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -2639,13 +2658,14 @@ function renderSetup(){
       <select data-tal="${i}" aria-label="Leader talent for player ${i+1}" title="Leader talent">${TALENTS[s.fac].map(t=>`<option value="${t.k}" ${s.talent===t.k?'selected':''}>Talent: ${t.name}</option>`).join('')}</select></div>`;
   }
   const mx=f=>Math.max(...FKEYS.map(k=>PROFILE[k][f]));
-  const BM=BALANCE&&BALANCE.modes[cfg.mode==='warlord'?'warlord':'regicide'];
-  const facs=FKEYS.map(k=>{const F=FAC[k],Pp=PROFILE[k],B=BM&&BM.table[k];
+  const bm=balMode(),BM=BALANCE&&BALANCE.modes&&BALANCE.modes[bm],BT=BAL_TXT[bm];
+  const mxWin=BM?Math.max(...FKEYS.map(k=>BM.armies[k]?BM.armies[k].winPct:0),1):1;
+  const facs=FKEYS.map(k=>{const F=FAC[k],Pp=PROFILE[k],B=BM&&BM.armies[k];
     const bar=(lab,v,m,txt,cls)=>`<span>${lab}</span><div class="m"><i class="${cls||''}" style="width:${Math.max(4,v/m*100)}%"></i></div><b>${txt}</b>`;
     return `<div class="fac"><h3><span class="dot" style="width:14px;height:14px;background:${F.color}"></span>${F.name}</h3>
     <p class="theme">${F.theme}</p><p><b>Passive.</b> ${F.passive}</p><p><b>Ultimate: ${ULTS[k].name}.</b> ${ULTS[k].text}</p>
     <div class="homeline"><span class="sw" style="background:${hexA(F.color,.55)}"></span><span>${F.home}</span></div>
-    <div class="profile" aria-label="Army profile">${bar('HP',Pp.hp,mx('hp'),Pp.hp)}${bar('ATK',Pp.atk,mx('atk'),Pp.atk)}${bar('DEF',Pp.def,mx('def'),Pp.def.toFixed(1))}${bar('Speed',Pp.mob,mx('mob'),Pp.mob.toFixed(1))}${bar('Range',Pp.rng,mx('rng'),Pp.rng.toFixed(1))}${B?bar('Score',B.score,1,Math.round(B.score*100)+'%','win'):''}</div>
+    <div class="profile" aria-label="Army profile">${bar('HP',Pp.hp,mx('hp'),Pp.hp)}${bar('ATK',Pp.atk,mx('atk'),Pp.atk)}${bar('DEF',Pp.def,mx('def'),Pp.def.toFixed(1))}${bar('Speed',Pp.mob,mx('mob'),Pp.mob.toFixed(1))}${bar('Range',Pp.rng,mx('rng'),Pp.rng.toFixed(1))}${B?bar('Wins',B.winPct,mxWin,Math.round(B.winPct)+'%','win'):''}</div>
     <div class="hint">${Pp.n} units · ${Pp.ab} with abilities · ${Pp.pawns} pawns</div>
     <div class="roster">${F.units.map(d=>unitRow(F,d)).join('')}</div></div>`}).join('');
   $('#setupView').innerHTML=`
@@ -2653,9 +2673,9 @@ function renderSetup(){
       <div class="field"><div class="label">Players</div>${seg([[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6']],cfg.n,'n')}</div>
       <div class="field"><div class="label">Sides</div>${seg([['0','Free for all'],['1','Teams of 2',!teamsAllowed()]],tOn?'1':'0','teams')}
         <div class="hint">${teamsAllowed()?'Teammates start on neighbouring corners. Turns alternate between sides.':'Teams of 2 need 4 or 6 players.'}</div></div>
-      <div class="field"><div class="label">Game mode</div>${seg(Object.keys(MODES).map(m=>[m,MODES[m].name]),cfg.mode,'mode')}
+      <div class="field"><div class="label">Game mode</div>${seg(Object.keys(MODES).filter(m=>m!=='conquest').map(m=>[m,MODES[m].name]),cfg.mode,'mode')}
         <div class="hint">${MODES[cfg.mode].desc}</div></div>
-      <div class="field"><div class="label">The Collapse</div>${COLLAPSE_START[cfg.mode]?seg([['1','On'],['0','Off']],cfg.collapse===false?'0':'1','col'):'<span class="hint">Not used in Conquest: its points already end the game.</span>'}
+      <div class="field"><div class="label">The Collapse</div>${COLLAPSE_START[cfg.mode]?seg([['1','On'],['0','Off']],cfg.collapse===false?'0':'1','col'):''}
         ${COLLAPSE_START[cfg.mode]?`<div class="hint">From round ${collapseStart(cfg.mode,cfg.n)}, the outer ring crumbles into the void; each later ring falls a little later (2, 3, 4 rounds) until only the middle is left. You get a warning a full round before each ring falls.</div>`:''}</div>
       <div class="field"><div class="label">Opening</div>${seg([['1','Secret deployment'],['0','Quick start']],cfg.deploy===false?'0':'1','dep')}
         <div class="hint">${cfg.deploy===false?'Armies start in their default formation and round 1 begins at once.':'Before round 1, each side arranges its army in its own zone, hidden from the others. Presets make it one tap.'}</div></div>
@@ -2668,7 +2688,7 @@ function renderSetup(){
       <div class="field"><div class="label">Seats</div><div class="seats">${seats}</div>
         <div class="hint">Humans share this device and pass it around. Bots play themselves.</div></div>
       <button class="btn primary" id="startBtn" style="width:100%;padding:12px">Start on this device</button>
-      <p class="hint" style="margin:12px 0 0">Each army has 10 slots (a giant takes 2). <b>Score</b> is the army’s result in the bot tournament, counting a draw as half a win. <button class="btn sm" id="balBtn2" style="margin-top:6px">See the full tournament</button></p>
+      <p class="hint" style="margin:12px 0 0">Each army has 10 slots (a giant takes 2). ${BM?`<b>Wins</b> is how often Hard bots won with that army in ${BM.games} simulated games of ${BT.name} (War Room ${BALANCE.version}); a fair army would win ${BT.fair}% of the time.${BT.note(cfg)}`:''} <button class="btn sm" id="balBtn2" style="margin-top:6px">See the War Room numbers</button></p>
     </div>
     <div class="card" id="onlineBox" style="grid-column:1"></div>
     <div style="grid-row:1 / span 2;grid-column:2"><div class="label">Nine armies, no two alike</div><div class="facs">${facs}</div></div>`;
@@ -3104,7 +3124,7 @@ function showRules(){
   <li><b>Veterans.</b> A killing blow earns a star: +1 ATK, up to 3. Giants need 2 kills per star.</li></ul>
   <h3>Abilities</h3><p>Most non-pawn units have one. It deals its own fixed spell damage (ATK bonuses don't change it) and rests 1 to 5 of your turns afterwards. Shapes: blasts, cones, lines, rings, arcs, auras and single targets. Tap Aim, tap a gold hex to preview, tap again to fire.</p>
   <h3>Pillar 1: the Centre</h3><ul>
-  <li><b>The Heart</b> (gold hexes): a side holds it while it is the only side with units on it. Holding it gives every unit of that side +1 ATK and +1 DEF, heals your units standing on it 1 HP per turn, and scores 1 point per turn in Warlord and Conquest.</li>
+  <li><b>The Heart</b> (gold hexes): a side holds it while it is the only side with units on it. Holding it gives every unit of that side +1 ATK and +1 DEF, heals your units standing on it 1 HP per turn, and scores 1 point per turn in Warlord.</li>
   <li><b>The Throne</b> (centre hex): the unit on it gets +${THRONE.atk} ATK, +1 range if ranged and double-speed cooldowns. Its side gets +1 AP and +${THRONE.charge} Ultimate charge per turn.</li>
   <li><b>Centre lock:</b> Heart points and the Throne's AP and charge only start in round ${RULES.CENTRE_FROM}, so going first doesn't grab the centre for free.</li>
   <li>The grey ring around the Heart is no man's land.</li></ul>
@@ -3159,19 +3179,30 @@ function showQuick(){
   <div class="row" style="margin-top:14px"><button class="btn primary" id="closeM">Close</button><button class="btn" id="toRules">Full rules</button></div></div>`;
   o.hidden=false;$('#closeM').onclick=closeModal;$('#toRules').onclick=showRules;
 }
+/* War Room numbers in the setup screen. BALANCE (built by build.py from sim/results/agg.json) holds, per simulated set-up,
+   how often Hard bots won with each army. Three set-ups are simulated: 4-player free for all, 2v2 teams and 1 against 1, all in Warlord. */
+const BAL_TXT={
+  ffa:{name:'4-player free for all',fair:25,note:c=>c.n!==4?' Measured with 4 players; you have '+c.n+', so treat it as a rough guide.':''},
+  team:{name:'teams of 2, four players',fair:50,note:c=>c.n!==4?' Measured as 2 against 2; you have '+c.n+' players, so treat it as a rough guide.':''},
+  duel:{name:'1 against 1',fair:50,note:()=>''}};
+function balMode(){return cfg.n===2?'duel':(cfg.teams&&teamsAllowed())?'team':'ffa'}
+function balVerdict(win,fair){const r=win/fair;return r>=1.5?'too strong':r>=1.2?'strong':r>=0.8?'about right':r>=0.5?'weak':'too weak'}
 function showBalance(which){
-  which=which||(cfg.mode==='warlord'?'warlord':'regicide');const BAL=BALANCE.modes[which];
-  const o=$('#overlay');
-  if(!BALANCE){return}
-  const T=BAL.table,ks=FKEYS.filter(k=>T[k]).sort((a,b)=>T[b].score-T[a].score);
-  const cell=v=>{const d=v-0.5,a=Math.min(0.55,Math.abs(d)*1.1);return `background:${d>=0?`rgba(77,143,214,${a})`:`rgba(217,105,74,${a})`}`};
-  const rows=ks.map(a=>`<tr><th class="rowh"><span class="dot" style="width:9px;height:9px;background:${FAC[a].color};margin-right:6px"></span>${FAC[a].name}</th>${ks.map(b=>a===b?'<td class="self">–</td>':`<td style="${cell(T[a].vs[b]+ (1-T[a].vs[b]-T[b].vs[a])/2)}">${Math.round(100*T[a].vs[b])}%</td>`).join('')}<td class="sc" style="${cell(T[a].score)}">${Math.round(100*T[a].score)}%</td><td>${Math.round(100*T[a].draws)}%</td></tr>`).join('');
-  o.innerHTML=`<div class="modal wide"><h2>Balance tournament</h2>
-  <div class="seg" style="margin-bottom:10px"><button data-bm="regicide" aria-pressed="${which==='regicide'}">Regicide</button><button data-bm="warlord" aria-pressed="${which==='warlord'}">Warlord</button></div>
-  <p>${BAL.games} bot-versus-bot games of ${MODES[which].name}, 1 against 1. Every pairing was played the same number of times from both seats. Each row shows how often that army <b>won</b> against the army in each column. Games still going after 60 rounds count as draws.</p>
-  <p><b>Score</b> counts a draw as half a win, so 50% is perfectly even. Every army lands between ${Math.round(100*Math.min(...ks.map(k=>T[k].score)))}% and ${Math.round(100*Math.max(...ks.map(k=>T[k].score)))}%. The player who moves first won ${Math.round(100*BAL.firstWin)}% of decided games.</p>
-  <div class="tablewrap"><table class="mx"><thead><tr><th></th>${ks.map(b=>`<th title="${FAC[b].name}">${FAC[b].name.split(' ').pop()}</th>`).join('')}<th>Score</th><th>Draws</th></tr></thead><tbody>${rows}</tbody></table></div>
-  <p class="hint" style="margin-top:10px">Blue cells favour the row army, orange cells favour the column army. Bots play simply, so strong one-sided matchups (like Covenant against Conclave) are worth testing with real players.</p>
+  if(!BALANCE||!BALANCE.modes)return;
+  if(!BALANCE.modes[which])which=balMode();
+  const M=BALANCE.modes[which]||BALANCE.modes[Object.keys(BALANCE.modes)[0]];if(!M)return;
+  const o=$('#overlay'),BT=BAL_TXT[which],fair=BT.fair,ffa=which==='ffa';
+  const ks=FKEYS.filter(k=>M.armies[k]).sort((a,b)=>M.armies[b].winPct-M.armies[a].winPct);
+  const cell=v=>{const d=(v-fair)/fair,a=Math.min(0.55,Math.abs(d)*0.8);return `background:${d>=0?`rgba(77,143,214,${a})`:`rgba(217,105,74,${a})`}`};
+  const rows=ks.map(a=>{const A=M.armies[a],d=Math.round(A.winPct-fair);return `<tr><th class="rowh"><span class="dot" style="width:9px;height:9px;background:${FAC[a].color};margin-right:6px"></span>${FAC[a].name}</th><td class="sc" style="${cell(A.winPct)}">${Math.round(A.winPct)}%</td><td>${d>0?'+':''}${d} pts</td>${ffa?`<td>${Math.round(A.firstOutPct)}%</td>`:''}<td>${balVerdict(A.winPct,fair)}</td></tr>`}).join('');
+  const gs=Object.values(BALANCE.modes).map(m=>m.games),same=gs.every(g=>g===gs[0]);
+  const lo=Math.round(Math.min(...ks.map(k=>M.armies[k].winPct))),hi=Math.round(Math.max(...ks.map(k=>M.armies[k].winPct)));
+  o.innerHTML=`<div class="modal wide"><h2>War Room numbers</h2>
+  <p class="hint">War Room ${BALANCE.version} · ${same?gs[0]+' games per mode':M.games+' games'} · Hard bots</p>
+  <div class="seg" style="margin-bottom:10px">${['ffa','team','duel'].filter(m=>BALANCE.modes[m]).map(m=>`<button data-bm="${m}" aria-pressed="${which===m}">${({ffa:'Free for all',team:'Teams of 2',duel:'1 against 1'})[m]}</button>`).join('')}</div>
+  <p>${M.games} bot-versus-bot games of Warlord, ${BT.name}, armies drawn at random with random leader talents. <b>Wins</b> is how often the army won. With ${ffa?'four sides':'two sides'} on the board a perfectly fair army would win <b>${fair}%</b> of the time; the armies land between ${lo}% and ${hi}%.${ffa?' <b>First out</b> is how often that army was the first side eliminated.':''}${which==='duel'&&M.firstPct!=null?` The player who moves first won ${Math.round(M.firstPct)}% of the games.`:''}</p>
+  <div class="tablewrap"><table class="mx"><thead><tr><th></th><th>Wins</th><th>Against fair</th>${ffa?'<th>First out</th>':''}<th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="hint" style="margin-top:10px">Blue means the army wins more than a fair share, orange less. Bots play simply, so the numbers show what the rules reward, not what a clever human would do. The full breakdown per unit, ability and Ultimate is in the War Room page.</p>
   <div class="row" style="margin-top:14px"><button class="btn primary" id="closeM">Close</button></div></div>`;
   o.hidden=false;$('#closeM').onclick=closeModal;o.querySelectorAll('button[data-bm]').forEach(b=>b.onclick=()=>showBalance(b.dataset.bm));
 }
