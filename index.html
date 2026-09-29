@@ -498,14 +498,24 @@ let RNG=Math.random;function setRNG(f){RNG=f||Math.random;}
 let TRACK=null;
 function trk(){return TRACK||(G&&G.stats)||null}
 // Per-effect tally: damage, kills, heals and uses for each ability, Ultimate and passive effect, keyed "army|unit|effect".
-function tFx(fac,unit,name){if(!trk()||SIM)return null;const k=fac+'|'+(unit||'')+'|'+(name||'Other');trk().fx=trk().fx||{};return trk().fx[k]=trk().fx[k]||{dmg:0,hits:0,kills:0,lk:0,heal:0,uses:0,blocked:0,apGranted:0,moved:0,stasisTurns:0,chills:0}}
+function tFx(fac,unit,name){if(!trk()||SIM)return null;const k=fac+'|'+(unit||'')+'|'+(name||'Other');trk().fx=trk().fx||{};return trk().fx[k]=trk().fx[k]||{dmg:0,hits:0,kills:0,lk:0,heal:0,uses:0,blocked:0,apGranted:0,moved:0,stasisTurns:0,chills:0,readyUnused:0,gapSum:0,gapN:0}}
+// Plan check (synergy counters, one per army): num/den pairs that say whether the army's plan is happening, e.g. Frost's share of Ice Lance and Shatter Strike hits that got the cold double.
+function tPlan(fac,num,den){if(!trk()||SIM||!fac)return;const T=trk();T.plan=T.plan||{};const e=T.plan[fac]=T.plan[fac]||{num:0,den:0};e.num+=num;e.den+=den}
+// Damage-based plan checks, called from hurt() for every hostile hit: chrono = damage in a turn with Quicken or Time Warp active, gnomes = damage by machines, giants = damage from abilities and the Ultimate, fire = damage on or from red ground (burning ground included), curse = damage from curse ticks and Requiem.
+function planDmg(fac,src,t,eff,tick){switch(fac){
+  case 'chrono':tPlan(fac,G.combo?eff:0,eff);break;
+  case 'gnomes':tPlan(fac,src&&src.machine?eff:0,eff);break;
+  case 'giants':tPlan(fac,!tick&&(CUR_TAG==='Abil'||CUR_TAG==='Ult')?eff:0,eff);break;
+  case 'fire':tPlan(fac,(tick&&CUR_NAME==='Burning ground')||(src&&src.kind!=='wall'&&onHome(src))||cells(t).some(([q,r])=>terrAt(q,r)==='fire')?eff:0,eff);break;
+  case 'curse':tPlan(fac,CUR_NAME==='Curse ticks'||CUR_NAME===ABIL.requiem.name?eff:0,eff);break;
+}}
 // Warlord points by source, per player: heart (holding the Heart), outpost (holding an Outpost), takedown (killing an enemy Leader).
 function tPts(pid,kind,n){if(!trk()||SIM||!(n>0))return;const T=trk();T.points=T.points||{};const e=T.points[pid]=T.points[pid]||{heart:0,outpost:0,takedown:0};e[kind]=(e[kind]||0)+n}
 // Bonus damage that rides on a hit (Tempo, Final Second, Shatter): credited as its own effect row so the War Room shows what the mechanic adds.
 function tBonus(u,name,n,hpBefore){if(!trk()||SIM||!(n>0))return;const s=tStat(u);if(!s)return;const e=tFx(s.fac,s.name,name);if(e){e.dmg+=Math.min(n,Math.max(0,hpBefore));e.hits++}}
 function srcFx(){const s=CUR_SRC&&tStat(CUR_SRC);if(!s)return null;const ult=CUR_TAG==='Ult';return tFx(s.fac,ult?'':s.name,CUR_NAME)}
 function tStat(u){if(!trk()||SIM||!u||u.kind==='wall')return null;const T=trk();let s=T.units[u.id];
-  if(!s){const p=G.players[u.poss?u.poss.owner:u.owner];s=T.units[u.id]={id:u.id,name:u.name,owner:p?p.id:u.owner,fac:p?p.fac:null,pawn:!!u.pawn,leader:!!u.leader,summon:!!u.summon,machine:u.machine||null,plain:!u.ability,maxhp:u.maxhp,dmg:0,dmgBasic:0,dmgAbil:0,dmgUlt:0,dmgDot:0,dmgRet:0,dmgOther:0,taken:0,kills:0,leaderKills:0,died:null,diedBy:null,attacks:0,abils:0,moves:0,hexes:0,healed:0,firstAct:null,blocked:0,apGranted:0,moved:0,onHomeAttacks:0}}
+  if(!s){const p=G.players[u.poss?u.poss.owner:u.owner];s=T.units[u.id]={id:u.id,name:u.name,owner:p?p.id:u.owner,fac:p?p.fac:null,pawn:!!u.pawn,leader:!!u.leader,summon:!!u.summon,machine:u.machine||null,plain:!u.ability,maxhp:u.maxhp,dmg:0,dmgBasic:0,dmgAbil:0,dmgUlt:0,dmgDot:0,dmgRet:0,dmgOther:0,taken:0,kills:0,leaderKills:0,died:null,diedBy:null,attacks:0,abils:0,moves:0,hexes:0,healed:0,firstAct:null,blocked:0,apGranted:0,moved:0,onHomeAttacks:0,lastAbil:null}}
   return s}
 // Support value (damage blocked, AP granted, units moved, stasis turns): credited to the current effect (CUR_SRC/CUR_NAME) and the acting unit.
 function tSup(field,n){if(!trk()||SIM||!(n>0))return;const e=srcFx();if(e)e[field]=(e[field]||0)+n;const s=CUR_SRC&&tStat(CUR_SRC);if(s&&field in s)s[field]+=n}
@@ -534,6 +544,7 @@ const ATTACKS={
   bolt:{label:'Bolt',text:r=>`Shoots along the 6 straight lines up to ${r} hexes. The first unit or wall in the way blocks it.`},
   diag:{label:'Diagonal bolt',text:r=>`Shoots along the 6 diagonals up to ${r} steps. The first unit or wall in the way blocks it.`},
   lob:{label:'Lob',text:(r,m)=>`Lobs over everything onto any hex ${m} to ${r} away. Helpless against adjacent enemies.`},
+  reach:{label:'Spear',text:r=>`Thrusts along the 6 straight lines up to ${r} hexes, over a friendly unit standing in between (second rank). The first enemy or wall in the way is the target.`},
   none:{label:'No attack',text:()=>`Cannot attack.`},
 };
 const CURSES={
@@ -585,29 +596,34 @@ const ABIL={
   smash:{name:'Smash',cost:2,cd:4,aim:'dir',shape:'arc',hits:'foe',dmg:4,push:1,wallDmg:2,
     desc:'Sweep the 3 hexes in front: 4 spell damage minus DEF to each enemy there, knocking them 1 hex back (2 slam damage if it can\u2019t move). Walls in the sweep take double damage (8).'},
 
-  // Gnome workshop (v19): every build ability places a machine (see MACHINES). Machines never move; all builds are refused while 5 machines stand on the board.
-  mortar:{name:'Build Mortar',cost:2,cd:4,aim:'empty',range:2,special:'build',machine:'mortar',bot:'mortar',
-    desc:'Build a Mortar on an empty hex within 2: 8 HP, 3 ATK, 1 DEF, lobs shells onto any hex 2 to 4 away. It never moves and falls apart after 4 of your turns. Not while 5 of your machines are on the board.'},
-  flameturret:{name:'Flame Turret',cost:2,cd:3,aim:'empty',range:2,special:'build',machine:'flame',bot:'flame',
-    desc:'Build a Flame Turret on an empty hex within 2: 7 HP, 2 ATK, 1 DEF. Its attack sprays fire over the 3 hexes in front of it toward an adjacent target: every enemy there takes the hit (2 minus DEF). It never moves and falls apart after 4 of your turns. Not while 5 of your machines are on the board.'},
-  coil:{name:'Tesla Coil',cost:2,cd:4,aim:'empty',range:3,special:'build',machine:'coil',bot:'coil',
-    desc:'Plant a Tesla Coil on an empty hex within 3: 6 HP, 1 DEF, cannot move or attack. At the start of each of your turns every enemy within 2 hexes of it takes 1 damage ignoring DEF. Falls apart after 4 of your turns. Not while 5 of your machines are on the board.'},
+  // Gnome workshop (v19, reworked 29 Sep 2026): every build ability places a machine (see MACHINES) on an EMPTY HEX NEXT TO the builder. Machines never move
+  // and FIRE ON THEIR OWN, for free, at the start of the gnomes' turn (machineFire); nobody aims them and they have no manual attack. Cap 4 on the board, 4 turns each.
+  mortar:{name:'Build Mortar',cost:2,cd:4,aim:'empty',range:1,special:'build',machine:'mortar',bot:'mortar',
+    desc:'Build a Mortar on an empty hex next to the Gearmaster: 8 HP, 3 ATK, 1 DEF. At the start of each of your turns it lobs a shell for free at one enemy 2 to 4 hexes away (3 minus DEF). It never moves and falls apart after 4 of your turns. Not while 4 of your machines are on the board.'},
+  flameturret:{name:'Flame Turret',cost:2,cd:3,aim:'empty',range:1,special:'build',machine:'flame',bot:'flame',
+    desc:'Build a Flame Turret on an empty hex next to the Flamewright: 7 HP, 2 ATK, 1 DEF. At the start of each of your turns it sprays fire for free over the 3 hexes in front of it toward the nearest enemy: every enemy there takes 2 minus DEF. It never moves and falls apart after 4 of your turns. Not while 4 of your machines are on the board.'},
+  coil:{name:'Tesla Coil',cost:2,cd:4,aim:'empty',range:1,special:'build',machine:'coil',bot:'coil',
+    desc:'Plant a Tesla Coil on an empty hex next to the Sparkwright: 6 HP, 1 DEF. At the start of each of your turns every enemy within 2 hexes of it takes 1 damage ignoring DEF, for free. Falls apart after 4 of your turns. Not while 4 of your machines are on the board.'},
   bomb:{name:'Gizmo Bomb',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'all',dmg:3,pierce:1,
     desc:'Lob a bomb 2 to 4 hexes. Everything on or next to it takes 3 damage, ignoring DEF, your own units included.'},
 
-  meteor:{name:'Meteor',cost:3,cd:3,aim:'hex',range:5,rmin:2,shape:'blast',size:1,hits:'foe',dmg:3,pierce:1,
-    desc:'Call a meteor 2 to 5 hexes away. Every enemy on or next to it takes 3 damage, ignoring DEF.'},
-  ward:{name:'Ward',cost:1,cd:3,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',shield:3,bot:'shield',
-    desc:'Give a friendly unit within 3 (or itself) a shield that soaks the next 3 damage.'},
-  chain:{name:'Chain Lightning',cost:3,cd:3,aim:'unit',hits:'foe',los:'lob',range:4,rmin:2,special:'chain',dmg:3,pierce:1,bounce:2,bounceDmg:1,
-    desc:'3 damage to an enemy 2 to 4 hexes away, then it jumps to up to 2 more enemies within 2 of the last one for 1 each. Ignores DEF.'},
-  beam:{name:'Arcane Beam',cost:2,cd:3,aim:'dir',shape:'line',size:5,hits:'foe',dmg:2,pierce:1,
-    desc:'A beam 5 hexes long that passes through everyone in its path: 2 damage each, ignoring DEF.'},
+  // Circle of Priests (v19d, key 'arcane' kept in code): heal, shield, holy ground and walls of light. Almost no damage of its own; the Zealot hits harder for every point it was healed this turn.
+  sanctuary:{name:'Sanctuary',cost:2,cd:2,aim:'self',shape:'aura',size:2,hits:'ally',heal:3,bot:'sanctuary',
+    desc:'The High Priest and every ally within 2 hexes of him heal 3.'},
+  mend:{name:'Mend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',heal:4,bot:'mend',
+    desc:'Heal one ally within 3 (or the Cleric itself) by 4.'},
+  aegis:{name:'Aegis',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',shield:3,bot:'shield',
+    desc:'A shield of 3 on an ally within 3 (or the Warden itself): it soaks the next 3 damage that unit would take.'},
+  grove:{name:'Grove',cost:2,cd:3,aim:'hex',range:2,shape:'blast',size:1,hits:'none',special:'grove',bot:'grove',
+    desc:'A hex within 2 and its 6 neighbours become holy ground for 3 turns (never the Heart): every unit standing on it, friend or foe, heals 1 at the start of its owner\u2019s turn. Grace: a priest that ends its turn there heals 1 more.'},
+  lightwall:{name:'Wall of Light',cost:2,cd:3,aim:'empty',range:3,special:'wall',wall:'light',hp:6,bot:'wall',
+    desc:'Raise a wall of light (6 HP) on an empty hex within 3. It blocks movement and every shot for 3 of your turns, then fades.'},
 
-  forward:{name:'Forward!',cost:1,cd:3,aim:'self',shape:'aura',size:2,hits:'ally',special:'forward',bot:'forward',
-    desc:'Every other Warband unit within 2 of the Warlord may take one free step of 1 hex this turn, even if it has already moved and even if it is engaged. The step costs no AP and does not use the unit’s move.'},
-  interpose:{name:'Interpose',cost:1,cd:3,aim:'unit',hits:'ally',los:'lob',range:1,special:'interpose',bot:'interpose',
-    desc:'Swap places with an adjacent friendly unit. Until your next turn, basic attacks aimed at any friendly unit next to the Shieldbearer hit the Shieldbearer instead.'},
+  // Iron Warband (v19c, the phalanx): the Warlord carries two abilities. March moves the block, Rally sharpens it.
+  march:{name:'March',cost:1,cd:2,aim:'dir',special:'march',free:1,bot:'march',
+    desc:'An order, not an action: the Warlord and every Warband unit within 2 hexes of him step 1 hex in the chosen direction, for free, keeping formation. Units in front go first; a unit whose hex ahead is blocked, or that is frozen, stays. The step uses nobody’s move or action (the Warlord may still attack or Rally), and works while engaged.'},
+  rally:{name:'Rally',cost:1,cd:3,aim:'self',shape:'aura',size:2,hits:'ally',special:'rally',bot:'rally',
+    desc:'Every other Warband unit within 2 hexes of the Warlord gets +1 ATK until the start of your next turn (strike-backs included).'},
   charge:{name:'Charge',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:4,special:'dash',dmg:5,
     desc:'Ride to an enemy within 4 and slam into it for 5 damage minus DEF.'},
 
@@ -642,15 +658,11 @@ const ABIL={
     desc:'Every enemy exactly 2 hexes away gets Mire (−1 move).'},
   silence:{name:'Vow of Silence',cost:2,cd:3,aim:'unit',hits:'foe',los:'bolt',range:4,shape:'single',curse:'silence',
     desc:'Straight shot up to 4: the enemy gets Silence and can’t use its ability.'},
-  consecrate:{name:'Consecrate',cost:2,cd:3,aim:'self',shape:'aura',size:1,hits:'ally',heal:2,
+  consecrate:{name:'Consecrate',cost:2,cd:3,aim:'self',shape:'aura',size:1,hits:'ally',heal:2,thaw:1,
     desc:'Heal this unit and every adjacent ally 2 HP, and thaw any Chill or Freeze on them.'},
   // --- signature abilities ---
-  turret:{name:'Build Turret',cost:2,cd:3,aim:'empty',range:2,special:'build',machine:'turret',bot:'turret',
-    desc:'Build a Turret on an empty hex within 2: 7 HP, 3 ATK, 2 DEF, shoots straight lines up to 3. It never moves and falls apart after 4 of your turns. Not while 5 of your machines are on the board.'},
-  barrier:{name:'Barrier',cost:1,cd:3,aim:'empty',range:3,special:'wall',wall:'light',hp:4,bot:'wall',
-    desc:'Raise a wall of light (4 HP) on an empty hex within 3 and the free hex beside it. It blocks all movement, but shots and spells pass straight through. Fades after 3 of your turns.'},
-  recall:{name:'Portal',cost:1,cd:3,aim:'unit',hits:'ally',los:'lob',range:5,special:'recall',bot:'recall',
-    desc:'Open a portal: pull a friendly unit within 5 to a free hex next to the Portal Mage. It keeps its move and action.'},
+  turret:{name:'Build Turret',cost:2,cd:3,aim:'empty',range:1,special:'build',machine:'turret',bot:'turret',
+    desc:'Build a Turret on an empty hex next to the Tinker: 7 HP, 3 ATK, 2 DEF. At the start of each of your turns it shoots for free along a straight line up to 3 hexes at one enemy (3 minus DEF). It never moves and falls apart after 4 of your turns. Not while 4 of your machines are on the board.'},
   well:{name:'Gravity Well',cost:2,cd:3,aim:'hex',range:5,size:2,special:'well',bot:'well',
     desc:'Open a gravity well on a hex within 5 for 3 of your turns. Now and at the start of each of your turns, every enemy within 2 of it is dragged 1 hex toward it (blocked units stay put). Giants are too heavy to move.'},
   rewind:{name:'Rewind',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,special:'rewind',bot:'rewind',
@@ -672,18 +684,18 @@ const TRAITS={
   finalsecond:{name:'Final Second',text:'Its basic attack deals +1 damage to an enemy that a Second Hand has hit this turn.'},
   rage:{name:'Rage',text:'+2 ATK while at half HP or below.'},
   ambush:{name:'Ambush',text:'Never engaged: moves freely even next to enemies. +2 damage on a basic attack against an enemy that has no friendly unit next to it.'},
+  shieldwall:{name:'Shield Wall',text:'Every friendly unit next to a Shieldbearer takes 1 less damage from ranged basic attacks and from abilities (never below 1). The Shieldbearer itself takes 1 less from every hit (never below 1). Curse ticks and burning ground are not hits.'},
   brace:{name:'Brace',text:'While it has not moved this turn, any enemy that ends a move on one of the hexes in front of it (facing away from home) takes 2 damage minus DEF.'},
   martyr:{name:'Martyr',text:'When it dies, adjacent allies heal 3 HP.'},
   swift:{name:'Swift',text:'Never engaged: moves freely even when next to an enemy.'},
-  sniper:{name:'Sniper',text:'+1 damage on a basic attack against targets 3 or more hexes away.'},
+  fervour:{name:'Fervour',text:'Its basic attack deals extra damage equal to the healing it received this turn, up to +3.'},
   regen:{name:'Regenerate',text:'Heals 1 HP at the start of your turn.'},
   scavenger:{name:'Scavenger',text:'Heals 3 HP whenever it kills a unit.'},
   unstoppable:{name:'Unstoppable',text:'Never engaged, and can’t be chilled, frozen or mired.'},
   rebirth:{name:'Rebirth',text:'The first time it dies it leaves an ember egg (4 HP). If the egg survives 3 turns, it hatches with half HP. Enemies can break it.'},
   egg:{name:'Ember Egg',text:'Can\u2019t move or act. Hatches into the Phoenix after 3 turns unless it is broken first.'},
-  beacon:{name:'Beacon',text:'Allies next to it get +1 range on their attacks.'},
-  construct:{name:'Construct',text:'A built machine: it never moves, falls apart when its timer runs out, attacks for 1 AP, gives no Ultimate charge and no veteran star when destroyed, claims no ground, carries no relics, can’t be possessed and doesn’t keep its side alive.'},
-  tesla:{name:'Tesla Coil',text:'Can’t move or attack. At the start of its owner’s turn every enemy within 2 hexes takes 1 damage ignoring DEF. Construct rules apply.'},
+  construct:{name:'Construct',text:'A built machine: it never moves and has no attack button. At the start of its owner’s turn it fires on its own, for free, at what it can reach. It falls apart when its timer runs out, gives no Ultimate charge and no veteran star when destroyed, claims no ground, carries no relics, can’t be possessed and doesn’t keep its side alive.'},
+  tesla:{name:'Tesla Coil',text:'Can’t move. At the start of its owner’s turn every enemy within 2 hexes takes 1 damage ignoring DEF, for free. Construct rules apply.'},
 };
 const hasTrait=(u,t)=>u&&u.trait===t;
 /* ---------- Leader talents: pick one of three per army at the start ---------- */
@@ -700,12 +712,12 @@ const TALENTS={
   gnomes:[{k:'salvage',name:'Salvage',text:'Whenever one of your machines is destroyed or falls apart, the gnome who built it has its ability cooldown reduced by 1.'},
           {k:'springs',name:'Spring-loaded',text:'All your units are Swift: never engaged.'},
           {k:'surge',name:'Clockwork Surge',text:'Clockwork Rush gives 6 AP instead of 4.'}],
-  arcane:[{k:'leylines',name:'Ley Lines',text:'Focus gives +2 ATK instead of +1.'},
-          {k:'aegis',name:'Arcane Ward',text:'Each of your units without a shield gets a 1-point shield at the start of your turn.'},
-          {k:'starcaller',name:'Starcaller',text:'Starfall hits the 5 most valuable enemies instead of 3.'}],
+  arcane:[{k:'martyrdom',name:'Martyrdom',text:'A Cleric\u2019s Mend also heals the Cleric itself by 2.'},
+          {k:'sacredground',name:'Sacred Ground',text:'Groves last 5 turns instead of 3.'},
+          {k:'lastrites',name:'Last Rites',text:'When one of your units dies, your units next to it heal 3.'}],
   warband:[{k:'bloodlust',name:'Bloodlust',text:'Momentum: once per turn, a unit of yours that kills with a basic attack may act again.'},
            {k:'discipline',name:'Shield Discipline',text:'All your units get +1 DEF while next to an ally.'},
-           {k:'warchief',name:'Warchief',text:'Forward! costs no AP and rests only 2 turns.'}],
+           {k:'warchief',name:'Warchief',text:'March costs no AP and rests only 1 turn.'}],
   rift:[{k:'horizon',name:'Event Horizon',text:'Your shoves slam for 4 damage instead of 3.'},
         {k:'phasestep',name:'Phase Step',text:'Your rift gate works from any hex, not just teal ground.'},
         {k:'gravitylord',name:'Gravity Lord',text:'Board Tilt pushes enemies 2 hexes (Leaders 1).'}],
@@ -726,8 +738,8 @@ const ULTS={
   fire:{name:'Wildfire',text:'Every enemy takes 1 damage, ignoring DEF, or 2 if it is standing on red ground.'},
   ice:{name:'Blizzard',text:'Every enemy takes 1 damage and is chilled. Enemies within 2 of any Frost Hold unit are frozen for their next turn.'},
   giants:{name:'Earthquake',text:'Every enemy within 3 of a giant takes 2 damage minus DEF and is shoved 1 hex away from the nearest giant.'},
-  gnomes:{name:'Clockwork Rush',text:'Your side gains 4 AP and every gnome may move again this turn. Every one of your machines is repaired to full HP, gets a fresh attack (machines never move) and +1 ATK until the end of the turn.'},
-  arcane:{name:'Starfall',text:'Stars fall on the 3 most valuable enemies: 4 damage each, ignoring DEF.'},
+  gnomes:{name:'Clockwork Rush',text:'Your side gains 4 AP and every gnome may move again this turn. Every one of your machines is repaired to full HP, gets +1 ATK until the end of the turn and fires again immediately.'},
+  arcane:{name:'Exodus',text:'Every one of your units is healed to full, and every enemy within 2 hexes of any of your units is pushed 1 hex away from it.'},
   warband:{name:'Warhorn',text:'Your side gains 2 AP, and every unit of yours gets +2 ATK this turn and may act again, even if it already acted.'},
   rift:{name:'Board Tilt',text:'The whole board tips: every enemy is pushed 1 hex toward the nearest edge. Off the board or into a void, it dies.'},
   curse:{name:'Doom',text:'Every enemy on the board gets Agony, and every curse it already carries is renewed to full length. Enemies already carrying 2 or more curses also get Rot.'},
@@ -770,42 +782,42 @@ const FAC={
       {name:'Titan',icon:'fist',hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'crush',trait:'unstoppable'}]},
   gnomes:{name:'Gnome Tinkers',color:'#ff6ec7',
     theme:'The summoners of Hexmarch, but they summon only machines: fragile gnomes full of tricks who make you fight their tin before you can catch them.',
-    passive:'Cover: a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1). Workshop: at most 5 machines on the board at once. Machines never move, attack for 1 AP, fall apart after 4 of your turns, and give no Ultimate charge or veteran stars when destroyed.',cover:1,machineCap:5,
+    passive:'Cover: a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1). Workshop: a gnome builds on an empty hex next to itself; at most 4 machines on the board at once. Machines never move, fire on their own for free at the start of your turn, fall apart after 4 of your turns, and give no Ultimate charge or veteran stars when destroyed.',cover:1,machineCap:4,
     home:'Pink ground: +1 move for gnomes (machines get nothing).',homeMov:1,
     units:[
-      {name:'Gearmaster',icon:'crown',leader:1,hp:12,atk:2,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'mortar'},
-      {name:'Tinker',icon:'gear',n:3,hp:6,atk:1,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'turret'},
-      {name:'Sparkwright',icon:'spark',hp:6,atk:1,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'coil'},
-      {name:'Flamewright',icon:'flame',n:2,hp:6,atk:1,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'flameturret'},
+      {name:'Gearmaster',icon:'crown',leader:1,hp:12,atk:2,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'mortar',trait:'swift'},
+      {name:'Tinker',icon:'gear',n:3,hp:7,atk:1,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'turret'},
+      {name:'Sparkwright',icon:'spark',hp:7,atk:1,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'coil'},
+      {name:'Flamewright',icon:'flame',n:2,hp:7,atk:1,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'flameturret'},
       {name:'Bombardier',icon:'bomb',aoe:'splash',n:2,hp:7,atk:2,def:0,mov:3,mt:'fly',at:'lob',rng:3,rmin:2,ab:'bomb',trait:'explosive'}]},
-  arcane:{name:'Arcane Conclave',color:'#8f5cff',
-    theme:'An army of mages. Huge reach, no armour, no pawns.',
-    passive:'Focus: a mage that hasn’t moved this turn gets +1 ATK and +1 range.',focus:1,
-    home:'Violet ground: +1 attack range.',homeRng:1,
+  arcane:{name:'Circle of Priests',color:'#8f5cff',
+    theme:'Healers and druids who win by outlasting: little damage, lots of mending, shields, walls of light and holy ground. Heal through everything, hold the Heart, and let the one Zealot punish whoever comes close.',
+    passive:'Grace: a priest that ends its turn on the Heart or on a Grove heals 1 extra.',grace:1,
+    home:'Indigo ground: your units standing on it heal 1 at the start of your turn.',homeHeal:1,
     units:[
-      {name:'Archmagus',icon:'crown',leader:1,hp:12,atk:2,def:1,mov:1,mt:'walk',at:'bolt',rng:4,ab:'meteor'},
-      {name:'Battlemage',icon:'ward',n:2,hp:9,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'ward',trait:'swift'},
-      {name:'Stormcaller',icon:'lightning',aoe:'splash',n:2,hp:7,atk:3,def:0,mov:2,mt:'walk',at:'lob',rng:3,rmin:2,ab:'chain'},
-      {name:'Arc Lancer',icon:'beam',aoe:'pierce',n:2,hp:6,atk:3,def:0,mov:2,mt:'line',at:'bolt',rng:4,ab:'beam',trait:'sniper'},
-      {name:'Lightweaver',icon:'sun',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'barrier',trait:'beacon'},
-      {name:'Apprentice',icon:'staff',n:2,hp:5,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,trait:'martyr'}]},
+      {name:'High Priest',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'sanctuary'},
+      {name:'Cleric',icon:'hand',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'mend'},
+      {name:'Warden',icon:'ward',n:2,hp:10,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'aegis'},
+      {name:'Druid',icon:'staff',n:2,hp:8,atk:1,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'grove'},
+      {name:'Lightwarden',icon:'sun',n:2,hp:9,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'lightwall'},
+      {name:'Zealot',icon:'hammer',hp:9,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'fervour'}]},
   warband:{name:'Iron Warband',color:'#eef0f4',
-    theme:'A wall of iron that marches as one block: every warrior hits harder with a comrade at his shoulder, while two riders and a raider hunt whoever strays. No spells, no area damage: you learn the game by learning where to stand.',
-    passive:'Battle Line: a Warband unit standing next to at least one other Warband unit has +1 ATK; if the Warlord is one of the units next to it, +2 ATK instead. The Warlord himself gets no bonus. Walls and turrets do not count.',line:1,
+    theme:'The phalanx: swords, spears and shields that move as one block. Shields in front soak the arrows, spears strike over the shields from the second rank, every warrior hits harder with a comrade at his shoulder, and the Warlord marches the whole block forward and rallies it before the clash. Two riders and a raider hunt whoever strays. No spells, no area damage: you learn the game by learning where to stand.',
+    passive:'Battle Line: a Warband unit standing next to at least one other Warband unit has +1 ATK. The Warlord himself gets no bonus. Walls and turrets do not count. (The phalanx +1 DEF was removed in v20c: the block won 43 percent of 4-player games and 85 percent of duels.)',line:1,phalanx:1,
     home:'Bone ground: +1 ATK.',homeAtk:1,
     units:[
-      {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'forward'},
-      {name:'Berserker',icon:'axe',aoe:'cleave',n:2,hp:9,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,rage:1,trait:'rage'},
-      {name:'Shieldbearer',icon:'shield',n:2,hp:12,atk:2,def:2,mov:3,mt:'line',at:'melee',rng:1,ab:'interpose',trait:'bodyguard'},
+      {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'march',ab2:'rally'},
+      {name:'Berserker',icon:'axe',aoe:'cleave',n:2,hp:8,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,rage:1,trait:'rage'},
+      {name:'Shieldbearer',icon:'shield',n:2,hp:12,atk:2,def:2,mov:3,mt:'line',at:'melee',rng:1,trait:'shieldwall'},
       {name:'Outrider',icon:'horseshoe',n:2,hp:8,atk:2,def:1,mov:1,mt:'knight',at:'melee',rng:1,ab:'charge',trait:'charge'},
       {name:'Raider',icon:'knives',hp:7,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,trait:'ambush'},
-      P_({name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:6,atk:3,def:1,rng:2,trait:'brace'})]},
+      {name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:7,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
   rift:{name:'Riftwalkers',color:'#12d69a',
     theme:'Masters of displacement with thin bodies: they rarely kill with blows. They pull, swap and trap enemies into position, then throw them off the board or into a void.',
     passive:'Crushing Pressure: enemies they shove into something take 3 slam damage instead of 2.',slam:1,
     home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move.',gate:1,
     units:[
-      {name:'Rift Sovereign',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'swap'},
+      {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'swap'},
       {name:'Repulsor',icon:'burst',n:2,hp:9,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'repel'},
       {name:'Voidcaller',icon:'void',n:2,hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'voidtrap'},
       {name:'Tidecaller',icon:'wave',n:2,hp:7,atk:2,def:0,mov:2,mt:'diag',at:'bolt',rng:3,ab:'riptide'},
@@ -830,8 +842,8 @@ const FAC={
     passive:'Borrowed Time: up to 2 unspent AP carry over to your next turn.',bank:2,
     home:'Magenta ground: abilities cast from it cost 1 AP less.',cheap:1,
     units:[
-      {name:'Chronarch',icon:'crown',leader:1,hp:14,atk:4,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'timewarp',trait:'finalsecond'},
-      {name:'Second Hand',icon:'clock',n:2,hp:9,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'vanish',trait:'tempo'},
+      {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:4,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'timewarp',trait:'finalsecond'},
+      {name:'Second Hand',icon:'clock',n:2,hp:9,atk:5,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'vanish',trait:'tempo'},
       {name:'Tempo Mage',icon:'hourglass',n:3,hp:7,atk:1,def:0,mov:2,mt:'diag',at:'bolt',rng:3,ab:'quicken'},
       {name:'Rewinder',icon:'rewind',n:2,hp:7,atk:1,def:0,mov:1,mt:'knight',at:'melee',rng:1,ab:'rewind'}]},
 };
@@ -845,8 +857,34 @@ const MACHINES={
 };
 const machineCount=pid=>G.units.filter(u=>u.owner===pid&&u.machine).length;
 const machineCap=pid=>FAC[G.players[pid].fac].machineCap||0;
-// Automation: a machine's basic attack costs 1 AP, everyone else pays 2.
-const atkCost=u=>u.freeAtk>0?0:u.machine?1:2;// Quicken (Hourglass): a free extra basic attack costs nothing
+// A basic attack costs 2 AP. Quicken (Hourglass): a free extra basic attack costs nothing. Machines have no manual attack at all (see machineFire).
+const atkCost=u=>u.freeAtk>0?0:2;
+// Machines fire on their own at the start of their owner's turn (and once more on Clockwork Rush): no AP, no aiming, each picks its own target.
+// Turret: one enemy on a straight line up to 3. Mortar: one enemy 2 to 4 away. Flame Turret: the nearest adjacent enemy plus the two hexes beside it (its 3-hex arc). Coil: 1 damage ignoring DEF to every enemy within 2.
+function machineTargets(c){
+  if(c.st&&c.st.frozen)return [];
+  if(c.machine==='coil')return G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(c.owner)&&distUC(v,c.q,c.r)<=2);
+  return targetsIn(c,atkCells(c)).filter(v=>v.kind!=='wall');
+}
+function machineDmg(c,t){if(c.machine==='coil')return 1;let d=Math.max(1,afterDef(effAtk(c),effDef(t)));if(c.at!=='melee'&&onHill(c))d+=1;if(t.leader&&farGuard(c,t))d=Math.max(1,d-1);return d}
+// The machine finishes a kill if it can, else shoots the Leader, else the weakest enemy in reach.
+function machinePick(c,ts){return ts.slice().sort((a,b)=>{const ka=machineDmg(c,a)>=a.hp?1:0,kb=machineDmg(c,b)>=b.hp?1:0;if(ka!==kb)return kb-ka;if(!!a.leader!==!!b.leader)return (b.leader?1:0)-(a.leader?1:0);return a.hp-b.hp})[0]}
+function machineFire(p,name,tag){
+  const col='#ff6ec7';
+  for(const c of G.units.filter(c=>c.machine&&c.owner===p.id)){
+    if(!alive(c))continue;const ts=machineTargets(c);if(!ts.length)continue;
+    CUR_SRC=c;CUR_TAG=tag||'Basic';CUR_NAME=name;
+    if(trk()&&!SIM){const e=srcFx();if(e)e.uses++;const s=tStat(c);if(s){s.attacks++;if(s.firstAct==null)s.firstAct=G.round}}
+    if(c.machine==='coil'){vfx({k:'ab',ab:'coil',shape:'blast',from:[c.q,c.r],to:[c.q,c.r],cells:ringCells().filter(([a,b])=>hd(a,b,c.q,c.r)<=2),col});addLog(p.id,`${c.name} zaps ${ts.length} enem${ts.length>1?'ies':'y'}.`);
+      for(const v of ts)if(alive(v))hurt(v,1,col)}
+    else{const t=machinePick(c,ts);const extra=c.aoe==='arc'?splashTargets(c,t):[];
+      vfx({k:c.at==='lob'?'lob':c.at==='melee'?'slash':'bolt',from:[c.q,c.r],to:[t.q,t.r],col,aoe:c.aoe,extra:extra.map(v=>[v.q,v.r])});
+      if(extra.length)vfx({k:'ab',ab:'breath',shape:'arc',from:[c.q,c.r],to:[t.q,t.r],cells:[[t.q,t.r],...extra.map(v=>[v.q,v.r])],col});
+      addLog(p.id,`${c.name} fires at ${t.name} for ${machineDmg(c,t)}${extra.length?` and ${extra.length} more (flame arc)`:''}.`);
+      hurt(t,machineDmg(c,t),col);for(const v of extra)if(alive(v))hurt(v,machineDmg(c,v),col)}
+    CUR_SRC=null;CUR_TAG=null;CUR_NAME=null;
+  }
+}
 const MODES={
   regicide:{name:'Regicide',desc:'Lose your Leader and your whole army is out. Last side standing wins.'},
   annihilation:{name:'Annihilation',desc:'You are out only when every unit you own has fallen. Last side standing wins.'},
@@ -955,7 +993,10 @@ function territory(){const n={};for(const k in G.terr){const f=G.terr[k];if(!f)c
 // The side with the most ground gets +1 Ultimate charge each turn.
 function territoryLeader(){const t=territory();let best=null,bv=-1,tie=false;for(const p of G.players){if(!p.alive)continue;const v=t[p.fac]||0;if(v>bv){bv=v;best=p.id;tie=false}else if(v===bv)tie=true}return tie?null:best}
 function terrAt(q,r){const k=key(q,r);const p=G.paint[k];return p?p.fac:G.terr[k]}
-function onHome(u){if(u.kind==='wall')return false;const f=G.players[u.owner].fac;return cells(u).some(([q,r])=>terrAt(q,r)===f)}
+function onHome(u){if(u.kind==='wall')return false;const f=G.players[u.owner].fac;return cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return pt&&pt.kind==='grove'?G.terr[key(q,r)]===f:terrAt(q,r)===f})}
+// Grove (Circle of Priests): painted holy ground, G.paint[k].kind==='grove'. Heals every unit on it 1 at the start of its owner's turn.
+const onGrove=u=>u.kind!=='wall'&&cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return !!(pt&&pt.kind==='grove')});
+const groveAt=(q,r)=>{const pt=G.paint[key(q,r)];return pt&&pt.kind==='grove'?pt:null};
 function heartBuff(u){return u.kind!=='wall'&&G.holder!==null&&G.holder===tm(u.owner)}
 function nearCell(u,t){let best=cells(u)[0],bd=99;for(const c of cells(u)){const d=distUC(t,c[0],c[1]);if(d<bd){bd=d;best=c}}return best}
 
@@ -964,28 +1005,38 @@ function nearCell(u,t){let best=cells(u)[0],bd=99;for(const c of cells(u)){const
 const afterDef=(base,def)=>Math.max(Math.ceil(base/2),base-def);
 function curseCount(u){return u.st&&u.st.curses?Object.keys(u.st.curses).length:0}
 function hasCurse(u,c){return !!(u.st&&u.st.curses&&u.st.curses[c]>0)}
-const curseDmg=n=>n?0.5+1.5*(n-1):0;
+const curseDmg=n=>n?0.5+1.0*(n-1):0;// v20b: was 1.5 per extra curse (Covenant 58 percent in 4-player)
 // Curse ticks vs Leaders: -1 (v17); with 4 or more players in free-for-all -2 (28 Sep 2026: the Hierophant killed 131 leaders in 400 games, the next unit 71). Never below half a point.
 const curseHit=(u,n)=>n?(u&&u.leader?Math.max(0.5,curseDmg(n)-(G.players.length>=4&&!G.teams?2:1)):curseDmg(n)):0;
 function dotOf(u){return curseHit(u,curseCount(u))}
 function pendingDot(u){const c=u.st&&u.st.curses;if(!c)return 0;const ds=Object.values(c);let tot=0;for(let t=1;t<=5;t++){const n=ds.filter(x=>x>=t).length;if(!n)break;tot+=curseHit(u,n)}return tot}
 // Battle Line (Iron Warband): +1 ATK with a comrade of the same army at distance 1, +2 if that comrade is the Warlord. The Warlord himself gets nothing.
-function lineBonus(u){if(u.kind==='wall'||u.leader)return 0;const F=facOf(u);if(!F.line)return 0;let b=0;for(const v of G.units){if(v.id===u.id||v.kind==='wall'||v.summon||v.owner!==u.owner||distUU(u,v)!==1)continue;if(v.leader)return 2;b=1}return b}
+function lineBonus(u){if(u.kind==='wall'||u.leader)return 0;const F=facOf(u);if(!F.line)return 0;let b=0;for(const v of G.units){if(v.id===u.id||v.kind==='wall'||v.summon||v.owner!==u.owner||distUU(u,v)!==1)continue;b=1}return b}// v20b: the Warlord's shoulder no longer doubles the bonus (Warband was 39 / 73 / 80 percent)
+// Phalanx (Iron Warband): comrades (same owner, no walls or summons) standing next to a unit. 2 or more = +1 DEF; also the plan check.
+function comradesAdj(u){if(u.kind==='wall')return 0;let n=0;for(const v of G.units){if(v.id===u.id||v.kind==='wall'||v.summon||v.owner!==u.owner||distUU(u,v)!==1)continue;n++}return n}
+// Melee-type attacks: melee, the pawns' forward strike and the Spearman's reach. Everything else is ranged (hill bonus, Shield Wall).
+const meleeAt=at=>at==='melee'||at==='fwd'||at==='reach';
+// Shield Wall (Shieldbearer trait): a hostile hit on a Warband unit is 1 lighter (never below 1) when the unit is a Shieldbearer (every hit) or stands
+// next to one (ranged basic attacks and abilities only). Returns the Shieldbearer that gets the credit, or null.
+function shieldWallFor(t,src,tag){if(!t||t.kind==='wall'||t.summon||!facOf(t).phalanx)return null;
+  const ranged=tag==='Abil'||(tag==='Basic'&&src&&src.kind!=='wall'&&!meleeAt(src.at));if(!ranged)return null;// v20c: the Shieldbearer itself is only shielded from ranged hits too
+  if(hasTrait(t,'shieldwall'))return t;
+  return G.units.find(v=>v!==t&&v.kind!=='wall'&&v.owner===t.owner&&hasTrait(v,'shieldwall')&&distUU(v,t)===1)||null}
 // Cover (Gnome Tinkers): a gnome standing next to one of its own machines. Machines themselves get no Cover.
 function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;return G.units.some(v=>v.machine&&v.owner===t.owner&&distUU(v,t)===1)}
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(F.focus&&!u.moved?1:0)+(onThrone(u)?THRONE.atk:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(F.focus&&!u.moved&&utal(u,'leylines')?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0);
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)?THRONE.atk:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0);
   return Math.max(0,a);
 }
 function effDef(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
   return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0));
 }
-function effRng(u){const F=facOf(u);const ranged=u.at!=='melee'&&u.at!=='fwd'&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(ranged&&G.units.some(v=>v!==u&&v.kind!=='wall'&&hasTrait(v,'beacon')&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)+(F.focus&&!u.moved&&ranged?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill')?1:0))}
+function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill')?1:0))}
 // A flyer can perch on a rock: out of reach of walkers, but its attacks lose 1 range.
 const perched=u=>u.mt==='fly'&&u.kind!=='wall'&&featAt(u.q,u.r)==='rock';
-function abilCost(u,k){const F=facOf(u);if((k==='forward'&&utal(u,'warchief'))||(k==='quicken'&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0))}
+function abilCost(u,k){const F=facOf(u);if((k==='march'&&utal(u,'warchief'))||(k==='quicken'&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0))}
 // Chilled: 1 less move while st.chill > 0 (it counts down at the end of the unit's own turn).
 function effMov(u){const F=facOf(u);if(!u.mov)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
@@ -1017,8 +1068,12 @@ function makeUnit(p,d){
   const F=FAC[p.fac];
   return {id:G.nid++,owner:p.id,leader:!!d.leader,pawn:!!d.pawn,name:d.name,icon:d.icon,glyph:glyphOf(d),hp:d.hp,maxhp:d.hp,atk:d.atk,def:d.def,
     mov:d.mov,mt:d.mt,at:d.at,aoe:d.aoe||null,rng:d.rng,rmin:d.rmin||(d.at==='lob'?2:1),size:F.size||1,dir:0,q:0,r:0,moved:false,acted:false,cd:0,mom:false,rage:!!d.rage,
-    stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:d.ab||null,trait:d.trait||null,home:p.home};
+    stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:d.ab||null,ability2:d.ab2||null,cd2:0,trait:d.trait||null,home:p.home};
 }
+// Units may carry a second ability (the Warlord: March and Rally). Cooldowns: u.cd for the first, u.cd2 for the second.
+function abilsOf(u){const o=[];if(u.ability)o.push(u.ability);if(u.ability2)o.push(u.ability2);return o}
+function cdOf(u,k){return k&&k===u.ability2?(u.cd2||0):(u.cd||0)}
+function setCd(u,k,n){if(k&&k===u.ability2)u.cd2=n;else u.cd=n}
 /* ---------- deployment ----------
  Each army starts inside its own deployment zone: the 20 hexes nearest its start point.
  Presets arrange the army by role; players can then move units around inside the zone before round 1. */
@@ -1037,7 +1092,7 @@ function zoneOf(p){
     .slice(0,RULES.ZONE).map(([q,r])=>key(q,r));
 }
 const inZone=(p,q,r)=>!!(p.zone&&p.zone.includes(key(q,r)));
-function roleOf(u){if(u.leader)return 'leader';if(u.pawn)return 'pawn';const ranged=u.at!=='melee'&&u.at!=='fwd';if(ranged)return 'ranged';
+function roleOf(u){if(u.leader)return 'leader';if(u.pawn)return 'pawn';const ranged=!meleeAt(u.at);if(ranged)return 'ranged';if(u.at==='reach')return 'melee';
   if(u.mt==='fly'||u.mt==='knight'||u.mov>=3&&u.def<2)return 'fast';if(u.def>=2||u.maxhp>=12)return 'tank';return 'melee'}
 // target [depth, |lateral|, depth weight, lateral weight] per role, in hex steps from the start point
 const FORM_T={
@@ -1270,12 +1325,10 @@ function computeHolder(){
 }
 function teamName(t){if(G.teams)return 'Team '+'ABC'[t];return FAC[G.players.find(p=>p.team===t).fac].name}
 function beginTurn(){
-  const p=P(G.cur);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;
-  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=false;u.freeAtk=0;u.freeMove=0;u.atkd=false;delete u.step;if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u))u.cd--;if(u.st){u.st.guardAll=0}}
-  // Tesla Coils zap first, so a coil on its last turn still gets its third tick: 1 damage ignoring DEF to every enemy within 2.
-  for(const c of G.units.filter(c=>c.machine==='coil'&&c.owner===p.id)){const vs=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&distUC(v,c.q,c.r)<=2);if(!vs.length)continue;
-    CUR_SRC=c;CUR_TAG='Abil';CUR_NAME='Tesla Coil';{const e=srcFx();if(e)e.uses++}vfx({k:'ab',ab:'coil',shape:'blast',from:[c.q,c.r],to:[c.q,c.r],cells:ringCells().filter(([a,b])=>hd(a,b,c.q,c.r)<=2),col:'#ff6ec7'});
-    for(const v of vs)if(alive(v))hurt(v,1,'#ff6ec7');CUR_SRC=null;CUR_TAG=null;CUR_NAME=null}
+  const p=P(G.cur);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
+  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=false;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u))u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u))u.cd2--;if(u.st){u.st.rally=0}}// Rally (+1 ATK) lasts until the start of your next turn
+  // Gnome machines fire on their own before the timers run, so a machine on its last turn still gets its last shot (tracked per machine as 'Auto-fire').
+  machineFire(p,'Auto-fire','Basic');
   // Wall gates: count the hexes next to each giant that walls deny it this turn (tracking only; the rule itself lives in freeFor).
   if(FAC[p.fac].gateBlock&&trk()&&!SIM){const m=occ();for(const u of G.units){if(u.owner!==p.id||u.size!==2)continue;let n=0;for(const [q,r] of cells(u))for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;if(passable(a,b)&&!m.get(key(a,b))&&gated(m,a,b))n++}if(n){const e=tFx(p.fac,u.name,'Gated by walls');if(e){e.blocked+=n;e.uses++}}}}
   for(const u of G.units)if(u.cut===p.id)delete u.cut;// Final Second stamps from this side's previous turn
@@ -1289,7 +1342,7 @@ function beginTurn(){
     G.units.push(u);addLog(p.id,`${u.name} rises from the ashes!`);fx(u,'reborn','#ffb03d');vfx({k:'buff',at:[u.q,u.r],col:'#ffb03d'})}
   if(G.wells){for(const w of G.wells.filter(w=>w.owner===p.id)){wellPull(w);if(--w.ttl<=0)G.wells.splice(G.wells.indexOf(w),1)}}
   if(G.traps)for(const k of Object.keys(G.traps)){const t=G.traps[k];if(t.owner===p.id&&--t.ttl<=0){delete G.traps[k];addLog(p.id,'A Void Trap closes.')}}
-  for(const w of G.units.filter(w=>w.kind==='wall'&&w.creator===p.id)){w.ttl--;if(w.ttl<=0){G.units.splice(G.units.indexOf(w),1);addLog(p.id,`A ${w.wall} wall ${w.wall==='ice'?'melts':'crumbles'}.`)}}
+  for(const w of G.units.filter(w=>w.kind==='wall'&&w.creator===p.id)){w.ttl--;if(w.ttl<=0){G.units.splice(G.units.indexOf(w),1);addLog(p.id,w.wall==='light'?'A Wall of Light fades.':`A ${w.wall} wall ${w.wall==='ice'?'melts':'crumbles'}.`)}}
   for(const k of Object.keys(G.paint)){const pt=G.paint[k];if(pt.owner===p.id&&--pt.ttl<=0)delete G.paint[k]}
   const fireIn=G.players.some(x=>x.alive&&x.fac==='fire');
   const coldIn=G.players.some(x=>x.alive&&x.fac==='ice'&&x.team!==p.team);
@@ -1298,16 +1351,17 @@ function beginTurn(){
     const n=curseCount(u);
     if(n){CUR_SRC=u.st.curseBy!=null?byId(u.st.curseBy):null;CUR_TAG=null;CUR_NAME='Curse ticks';hurt(u,curseHit(u,n),'#e8e23a',true);CUR_SRC=null;CUR_NAME=null;if(!alive(u))continue;for(const c of Object.keys(u.st.curses)){if(--u.st.curses[c]<=0)delete u.st.curses[c]}}
     if(fireIn&&p.fac!=='fire'&&cells(u).some(([q,r])=>terrAt(q,r)==='fire')){CUR_SRC=null;CUR_NAME='Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;if(!alive(u))continue}
-    if(G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r))&&u.hp<u.maxhp){u.hp=r2(Math.min(u.maxhp,u.hp+1));fx(u,'+1','#ffd766')}
-    if(cells(u).some(([q,r])=>featAt(q,r)==='shrine')&&u.hp<u.maxhp){const h=Math.min(2,u.maxhp-u.hp);u.hp=r2(u.hp+h);fx(u,'+'+h,'#9ff0c0');vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'})}
-    if(F.homeHeal&&onHome(u)&&u.hp<u.maxhp){const h=Math.min(F.homeHeal,u.maxhp-u.hp);u.hp=r2(u.hp+h);fx(u,'+'+h,'#5fd68e')}
-    if(u.size===2&&talent(p,'oldmountain')&&onHome(u)&&u.hp<u.maxhp){u.hp=r2(Math.min(u.maxhp,u.hp+1));fx(u,'+1','#5fd68e')}
-    if(talent(p,'aegis')&&!(u.st.shield>0)){u.st.shield=1;u.st.shieldBy=-1}
+    if(G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r)))healUnit(u,1,'#ffd766','Heart healing');
+    if(cells(u).some(([q,r])=>featAt(q,r)==='shrine')&&healUnit(u,2,'#9ff0c0','Shrine'))vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'});
+    if(F.homeHeal&&onHome(u))healUnit(u,F.homeHeal,'#5fd68e','Indigo ground (home)');
+    // Grove (Circle of Priests): holy ground heals 1 at the start of its owner's turn, friend or foe; credited to the Druid who raised it.
+    {const g=cells(u).map(([q,r])=>groveAt(q,r)).find(Boolean);if(g&&healUnit(u,1,'#9ff0c0','Grove',g.by))vfx({k:'buff',at:[u.q,u.r],col:'#8f5cff'})}
+    if(u.size===2&&talent(p,'oldmountain')&&onHome(u))healUnit(u,1,'#5fd68e','Old Mountain (talent)');
     if(u.leader&&talent(p,'glacial')&&!(u.st.shield>0)){u.st.shield=2;u.st.shieldBy=-2;fx(u,'ice shield','#bfefff')}
     if(G.units.some(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&utal(v,'grip')&&distUU(u,v)===1))chillT(u,2,{fac:'ice',name:'Winter’s Grip (talent)'});
     // Frost Hold's cold: blue ground under you chills you at the start of your turn.
     if(coldIn&&cells(u).some(([q,r])=>terrAt(q,r)==='ice')&&chillT(u,2,{fac:'ice',name:'Blue ground cold'}))fx(u,'chilled','#5cc8ff');
-    if(hasTrait(u,'regen')&&u.hp<u.maxhp){u.hp=r2(Math.min(u.maxhp,u.hp+1));fx(u,'+1','#5fd68e')}
+    if(hasTrait(u,'regen'))healUnit(u,1,'#5fd68e','Regenerate (trait)');
   }
   // Ultimate charge: +2 per Outpost held, +1 for the Throne.
   {let c=0;const held=[];for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall')for(const [q,r] of cells(u)){if(isOutpost(q,r)){c+=1;held.push(u.name)}if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM)c+=THRONE.charge}
@@ -1321,8 +1375,9 @@ function beginTurn(){
   const bank=Math.min(p.bank||0,bankOf(p));p.bank=0;if(bank)addLog(p.id,`Borrowed Time: +${bank} AP carried over.`);
   const leaderUp=G.units.some(u=>u.owner===p.id&&u.leader),throneUp=G.round>=RULES.CENTRE_FROM&&G.units.some(u=>u.kind!=='wall'&&tm(u.owner)===p.team&&onThrone(u));
   const relicAP=(G.relics||[]).filter(x=>x.kind==='hourglass'&&x.carrier!=null&&byId(x.carrier)&&byId(x.carrier).owner===p.id).length;
-  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:G.round===RULES.TRUCE+1&&G.cur===0?3:0};
-  G.apMax=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank-G.apParts.first);G.ap=G.apMax;
+  // The first player's −3 AP on its round-2 turn (G.apParts.first) was removed on 29 Sep 2026: the owner said it "feels bad". The first-player win rate is measured after; if it drifts, the second player gets a gift (e.g. Ultimate charge) instead of a penalty.
+  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0};
+  G.apMax=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);G.ap=G.apMax;
   const target=heartTarget();
   G.scoredAt=G.scoredAt||{};
   if((G.mode==='conquest'||G.mode==='warlord')&&G.holder===p.team&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.scoredAt[p.team]!==G.round){G.scoredAt[p.team]=G.round;// a team scores once per round, not once per partner
@@ -1343,19 +1398,23 @@ function beginTurn(){
 function endTurn(){
   if(G.over)return;
   const p=P(G.cur);
-  p.bank=Math.max(0,Math.min(G.ap,bankOf(p)));
+  p.bank=Math.max(0,Math.min(G.ap,bankOf(p)));tReady(p);G.combo=false;
   claimGround(p);
   for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){
     if(u.st.chill>0)u.st.chill--;
     if(u.st.frozen>0){u.st.frozen--;if(!u.st.frozen){u.st.fimm=1;if(!u.st.stun)u.st.chill=Math.max(u.st.chill||0,1);u.st.stun=0}}else if(u.st.fimm>0)u.st.fimm--;// a thawed unit is chilled for 1 turn (not after a stun)
-    u.st.emp=0;u.st.rush=0;u.swings=0;u.freeAtk=0;u.freeMove=0;delete u.step;
+    u.st.emp=0;u.st.rush=0;u.swings=0;u.freeAtk=0;u.freeMove=0;
     if(u.st.duel&&--u.st.duel.ttl<=0)delete u.st.duel;
   }
+  // Grace (Circle of Priests): a priest that ends its turn on the Heart or on a Grove heals 1 extra.
+  if(FAC[p.fac].grace)for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&(onGrove(u)||cells(u).some(([q,r])=>isHeart(q,r))))healUnit(u,1,'#d7c9ff','Grace (passive)');
   for(const u of G.units)if(u.cut===p.id)delete u.cut;
   for(const u of G.units)if(u.poss&&u.owner===p.id){u.owner=u.poss.owner;u.home=u.poss.home;delete u.poss;u.moved=true;u.acted=true;addLog(u.owner,`${u.name}’s soul returns.`)}
   if(p.extraTurn){p.extraTurn=false;addLog(p.id,'Time Stop: another turn!');beginTurn();return}
   advance();
 }
+// Cooldown meaning: at the end of its owner's turn, an ability that was ready, affordable (its cost within the turn's starting AP) and not used counts one ready-but-unused turn.
+function tReady(p){if(!trk()||SIM)return;for(const u of G.units){if(u.owner!==p.id||u.kind==='wall'||u.st.frozen||hasCurse(u,'silence'))continue;for(const k of abilsOf(u)){if(cdOf(u,k)>0||G.apMax<abilCost(u,k))continue;const s=tStat(u);if(!s)continue;const e=tFx(s.fac,s.name,ABIL[k].name);if(e)e.readyUnused=(e.readyUnused||0)+1}}}
 function advance(){
   let i=G.cur;
   for(let k=0;k<G.players.length;k++){
@@ -1391,7 +1450,7 @@ function kill(t){
   vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:facOf(t).color,big:t.size===2,leader:t.leader});
   const k=CUR_SRC;
   if(trk()&&!SIM){const d=tStat(t);d.died=G.round;d.diedBy=k?(tm(k.owner)===tm(t.owner)?'self':k.name):(G.col&&G.col.justFell?'collapse':'other');
-    const ks=k&&tm(k.owner)!==tm(t.owner)?tStat(k):null;if(ks){ks.kills++;if(t.leader)ks.leaderKills++;const e=srcFx();if(e){e.kills++;if(t.leader)e.lk++}}
+    const ks=k&&tm(k.owner)!==tm(t.owner)?tStat(k):null;if(ks){ks.kills++;if(t.leader)ks.leaderKills++;const e=srcFx();if(e){e.kills++;if(t.leader)e.lk++}if(ks.fac==='rift')tPlan('rift',0,1)}
     if(t.leader)trk().events.push({k:'leaderDown',round:G.round,fac:d.fac,by:ks?ks.fac:null,byUnit:ks?ks.name:null})}
   salvage(t);
   // Veterans: a star per kill (+1 ATK each, up to 3). Giants count as two soldiers, so they need 2 kills per star. Machines and eggs give no star.
@@ -1418,7 +1477,9 @@ function kill(t){
     for(const [a,b] of ring)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:G.players[t.owner].fac,ttl:2,owner:t.owner};
     if(trk()&&!SIM){const e=tFx(G.players[t.owner].fac,t.name,'Living Fuse');if(e)e.uses++}CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
   if(utal(t,'chorus'))for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner))applyCurse(t,v,'agony');
-  if(hasTrait(t,'martyr'))for(const v of near)if(alive(v)&&tm(v.owner)===tm(t.owner)&&v.hp<v.maxhp){const h=Math.min(3,v.maxhp-v.hp);v.hp=r2(v.hp+h);fx(v,'+'+h,'#5fd68e')}
+  if(hasTrait(t,'martyr'))for(const v of near)if(alive(v)&&tm(v.owner)===tm(t.owner))healUnit(v,3,'#5fd68e','Martyr (trait)');
+  // Last Rites (Circle of Priests talent): when one of your units dies, your units next to it heal 3.
+  if(utal(t,'lastrites'))for(const v of near)if(alive(v)&&v.owner===t.owner)healUnit(v,3,'#d7c9ff','Last Rites (talent)');
   if(hasTrait(t,'rebirth')&&!t.reborn&&solid(t.q,t.r)&&!unitAt(t.q,t.r)){G.units.push({id:G.nid++,owner:t.owner,leader:false,pawn:false,summon:true,egg:true,hatch:cloneU(t),ttl:3,name:'Ember Egg',icon:'egg',glyph:'●',hp:4,maxhp:4,atk:0,def:0,mov:0,mt:'walk',at:'none',aoe:null,rng:0,rmin:1,size:1,dir:0,q:t.q,r:t.r,moved:true,acted:true,cd:0,mom:false,rage:false,stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:null,trait:'egg',home:t.home});addLog(t.owner,`${t.name} collapses into an ember egg. Break it before it hatches!`)}
   const p=P(t.owner);
   if(G.mode==='warlord'&&t.leader&&!p.leaderless){p.leaderless=true;addLog(t.owner,`${FAC[p.fac].name} has lost its Leader and fights on leaderless.`)}
@@ -1428,16 +1489,30 @@ function kill(t){
 function hurt(t,n,col,tick){
   if(!alive(t)||n<=0)return 0;
   const hostile=!(CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)===tm(t.kind==='wall'?t.creator:t.owner));
+  // Shield Wall (Warband): 1 less from a hostile hit, never below 1. Not on curse ticks or burning ground.
+  if(hostile&&!tick&&n>1&&t.kind!=='wall'){const sb=shieldWallFor(t,CUR_SRC,CUR_TAG);if(sb){n-=1;fx(t,'shield wall','#eef0f4');tSupBy(sb.id,null,'Shield Wall (passive)','blocked',Math.min(1,Math.max(0,t.hp-n)))}}
   if(t.st&&t.st.shield>0){const a=Math.min(t.st.shield,n);t.st.shield-=a;n-=a;fx(t,'blocked','#d7c9ff');
-    if(hostile){const by=t.st.shieldBy;if(by!=null&&by>=0)tSupBy(by,null,ABIL.ward.name,'blocked',a);else tSupBy(-1,G.players[t.owner].fac,by===-2?'Glacial Armour (talent)':'Arcane Ward (talent)','blocked',a)}
+    if(hostile){const by=t.st.shieldBy;if(by!=null&&by>=0)tSupBy(by,null,ABIL.aegis.name,'blocked',a);else if(by===-2)tSupBy(-1,G.players[t.owner].fac,'Glacial Armour (talent)','blocked',a)}
     if(n<=0)return 0}
   if(t.kind==='wall'&&t.by!=null&&hostile)tSupBy(t.by,null,t.abil,'blocked',Math.min(n,Math.max(0,t.hp)));
   if(trk()&&!SIM&&t.kind!=='wall'){const d=tStat(t),sc=tStat(CUR_SRC),eff=Math.min(n,Math.max(0,t.hp));d.taken+=eff;
-    if(sc&&CUR_SRC!==t&&tm(CUR_SRC.owner)!==tm(t.owner)){sc.dmg+=eff;sc['dmg'+(tick?'Dot':CUR_TAG||'Other')]+=eff;const e=srcFx();if(e){e.dmg+=eff;e.hits++}}
-    else if(!sc&&CUR_NAME==='Burning ground'){const e=tFx('fire','','Burning ground');e.dmg+=eff;e.hits++}}
+    if(sc&&CUR_SRC!==t&&tm(CUR_SRC.owner)!==tm(t.owner)){sc.dmg+=eff;sc['dmg'+(tick?'Dot':CUR_TAG||'Other')]+=eff;const e=srcFx();if(e){e.dmg+=eff;e.hits++}planDmg(sc.fac,CUR_SRC,t,eff,tick)}
+    else if(!sc&&CUR_NAME==='Burning ground'){const e=tFx('fire','','Burning ground');e.dmg+=eff;e.hits++;planDmg('fire',null,t,eff,true)}
+    else if(!sc&&CUR_NAME==='Curse ticks')planDmg('curse',null,t,eff,true);
+    if(hostile&&G.players[t.owner].fac==='arcane')tPlan('arcane',0,eff)}// priests' plan check: healing (healUnit) per damage taken
   t.hp=r2(t.hp-n);fx(t,'−'+n,col||'#ff6161');
   if(t.hp<=0)kill(t);
   return n;
+}
+// Healing with tracking. name = the effect row ("Grove", "Heart healing"...); by = the id of an earlier caster to credit (a Druid's Grove); with neither, the current effect (CUR_SRC/CUR_NAME) gets it.
+// Also feeds Fervour (Zealot: u.fv = healing received this turn) and the priests' plan check (healing per damage taken).
+function healUnit(t,n,col,name,by){
+  if(!alive(t)||t.kind==='wall'||!(n>0))return 0;const h=Math.min(n,t.maxhp-t.hp);if(h<=0)return 0;t.hp=r2(t.hp+h);t.fv=(t.fv||0)+h;
+  if(SIM)return h;
+  if(trk()){const s=tStat(t);if(s)s.healed+=h;let e=null;
+    if(by!=null&&by>=0){const bs=trk().units[by];if(bs)e=tFx(bs.fac,bs.name,name||'Other')}else if(name)e=tFx(G.players[t.owner].fac,'',name);else e=CUR_SRC&&CUR_NAME?srcFx():tFx(G.players[t.owner].fac,'','Passive healing (Heart, shrines, traits)');
+    if(e)e.heal+=h;if(G.players[t.owner].fac==='arcane')tPlan('arcane',h,0)}
+  HOOKS.fx(t,'+'+h,col||'#5fd68e');return h;
 }
 function afterAction(){
   pickupRelics();computeHolder();
@@ -1451,12 +1526,10 @@ function afterAction(){
 function moveOpts(u,ignoreState){
   const out=new Map();
   if(u.kind==='wall'||u.st.frozen)return out;
-  // Forward! (Warband): a unit with a free step may shift 1 hex for no AP, on top of its normal move and even while engaged.
   // Rewind (Hourglass): a free extra move (u.freeMove) works even after the unit has moved and costs no AP.
-  const canMove=ignoreState||(!u.moved&&G.ap>=1)||u.freeMove>0,canStep=!ignoreState&&u.step!=null;
-  if(!canMove&&!canStep)return out;
-  const m=occ(),N=canMove?(engaged(u)?Math.min(1,effMov(u)):effMov(u)):0;
-  if(canStep)for(const [dq,dr] of DIRS){const a=u.q+dq,b=u.r+dr;const d=fitDir(m,u,a,b);if(d>=0)out.set(key(a,b),{q:a,r:b,dir:d,step:true})}
+  const canMove=ignoreState||(!u.moved&&G.ap>=1)||u.freeMove>0;
+  if(!canMove)return out;
+  const m=occ(),N=engaged(u)?Math.min(1,effMov(u)):effMov(u);
   const add=(q,r,gate)=>{if(q===u.q&&r===u.r)return;const k=key(q,r);if(out.has(k))return;const d=fitDir(m,u,q,r);if(d>=0)out.set(k,{q,r,dir:d,gate:!!gate})};
   if(N>0){
     if(u.mt==='walk'||u.mt==='march'){
@@ -1481,8 +1554,6 @@ function moveOpts(u,ignoreState){
   return out;
 }
 function doMove(u,o){
-  if(o.step){// a free Forward! step: no AP, the unit's own move stays available
-    const by=u.step;delete u.step;setAnim(u);u.q=o.q;u.r=o.r;u.dir=o.dir;G.amode=null;G.aim=null;{const s=tStat(u);if(s)s.hexes+=1}tSupBy(by,null,ABIL.forward.name,'moved',1);braceCheck(u);afterAction();return}
   if(u.freeMove>0){u.freeMove--;tSupBy(u.rwBy,null,ABIL.rewind.name,'moved',1)}else{G.ap-=1;u.moved=true}setAnim(u);u.mdist=hd(u.q,u.r,o.q,o.r);{const s=tStat(u);if(s){s.moves++;s.hexes+=u.mdist}}
   u.q=o.q;u.r=o.r;u.dir=o.dir;if(o.gate)G.gateUsed=true;G.amode=null;G.aim=null;braceCheck(u);afterAction();
 }
@@ -1507,7 +1578,7 @@ function rayCells(u,R,vecs,m,out){
   for(const [oq,or] of cells(u))for(const [dq,dr] of vecs)for(let s=1;s<=R;s++){
     const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const k=key(q,r);const o=m.get(k);if(o===u)continue;
     const f=G.feat&&G.feat[k];if(f==='rock'){if(o&&o!==u)out.add(k);break}
-    if(!G.voids[k])out.add(k);if((o&&o.wall!=='light')||f==='forest')break;
+    if(!G.voids[k])out.add(k);if(o||f==='forest')break;
   }
 }
 function atkCells(u,m){
@@ -1515,6 +1586,9 @@ function atkCells(u,m){
   switch(u.at){
     case 'melee':for(const [oq,or] of cells(u))for(const [dq,dr] of DIRS){const q=oq+dq,r=or+dr,k=key(q,r);if((passable(q,r)||(u.mt==='fly'&&solid(q,r)&&m.get(k)))&&m.get(k)!==u)out.add(k)}break;
     case 'fwd':rayCells(u,R,fwdVecs(u),m,out);break;
+    // Spear reach: straight lines up to R; a friendly unit in between does not block (the spear strikes over the shield), an enemy, a wall, a rock or a forest does.
+    case 'reach':for(const [oq,or] of cells(u))for(const [dq,dr] of DIRS)for(let s=1;s<=R;s++){const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const k=key(q,r);const o=m.get(k);if(o===u)continue;
+      const f=G.feat&&G.feat[k];if(f==='rock'){if(o)out.add(k);break}if(!G.voids[k])out.add(k);if(f==='forest')break;if(o&&o.kind!=='wall'&&tm(o.owner)===tm(u.owner))continue;if(o)break}break;
     case 'bolt':rayCells(u,R,DIRS,m,out);break;
     case 'diag':rayCells(u,R,DIAG,m,out);break;
     case 'lob':for(const [q,r] of allCells()){const d=distUC(u,q,r);if(d>=u.rmin&&d<=R)out.add(key(q,r))}break;
@@ -1527,26 +1601,28 @@ const onHill=v=>v.kind!=='wall'&&cells(v).some(([q,r])=>featAt(q,r)==='hill');
 const hidden=(u,v)=>inForest(v)&&distUU(u,v)>RULES.FOREST_HIDE;
 function targetsIn(u,set){return G.units.filter(v=>v!==u&&isFoe(u,v)&&!hidden(u,v)&&cells(v).some(([q,r])=>set.has(key(q,r))))}
 function attackTargets(u){
-  if(u.kind==='wall'||u.egg||u.at==='none'||(u.acted&&!(u.freeAtk>0))||G.ap<atkCost(u)||u.st.frozen||truce())return [];
+  if(u.kind==='wall'||u.egg||u.machine||u.at==='none'||(u.acted&&!(u.freeAtk>0))||G.ap<atkCost(u)||u.st.frozen||truce())return [];// machines fire on their own (machineFire)
   let ts=targetsIn(u,atkCells(u));
   if(u.st.duel){const c=byId(u.st.duel.by);if(c)ts=ts.filter(v=>v===c)}
   return ts;
 }
 // Surround: +1 damage when the target touches 2 or more of the attacker's units (the attacker counts if adjacent).
 function surrounded(u,t){if(t.kind==='wall')return false;let n=0;for(const v of G.units){if(v.kind==='wall'||v.egg||tm(v.owner)!==tm(u.owner))continue;if(distUU(v,t)===1&&++n>=2)return true}return false}
-// Bodyguard covers an adjacent friendly Leader. Interpose (Shieldbearer ability, st.guardAll) covers every adjacent friendly unit until its side's next turn.
-function bodyguardFor(u,t){if(t.kind==='wall')return null;return G.units.find(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)===tm(t.owner)&&distUU(v,t)===1&&(v.st.guardAll>0||(t.leader&&hasTrait(v,'bodyguard'))))||null}
+// Bodyguard covers an adjacent friendly Leader against basic attacks.
+function bodyguardFor(u,t){if(t.kind==='wall'||!t.leader)return null;return G.units.find(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)===tm(t.owner)&&distUU(v,t)===1&&hasTrait(v,'bodyguard'))||null}
 const ripostes=t=>false;// no unit has Riposte since v19 (the old Repulsor); kept as a hook for strike-back at full damage
 // Retaliation: a melee unit hit by an adjacent attacker strikes back for half damage (Riposte: full). A surrounded unit can't strike back.
-function retaliation(u,t){if(!alive(t)||!alive(u)||t.kind==='wall'||t.at!=='melee'||t.st.frozen||distUU(u,t)!==1||surrounded(u,t))return 0;const d=basicDmg(t,u,true);return ripostes(t)?d:Math.max(1,Math.floor(d/2))}
+function retaliation(u,t){if(!alive(t)||!alive(u)||t.kind==='wall'||!(t.at==='melee'||t.at==='reach')||t.st.frozen||distUU(u,t)!==1||surrounded(u,t))return 0;const d=basicDmg(t,u,true);return ripostes(t)?d:Math.max(1,Math.floor(d/2))}
 // The bonuses a basic attack carries beyond ATK minus DEF, by name, so each can be tracked as its own effect row.
 function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
   if(hasTrait(u,'tempo')&&(u.swings||0)>0)o.push(['Tempo (later strikes)',Math.min(2,u.swings)]);
   if(hasTrait(u,'finalsecond')&&t.cut===u.owner)o.push(['Final Second',1]);
+  // Fervour (Zealot): +1 per point of healing it received this turn, up to +3.
+  if(hasTrait(u,'fervour')&&(u.fv||0)>0)o.push(['Fervour (healing received)',Math.min(3,u.fv)]);
   // Ambush (Raider): +2 against an enemy with no friend beside it.
   if(hasTrait(u,'ambush')&&!G.units.some(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)===tm(t.owner)&&distUU(v,t)===1))o.push(['Ambush (lone target)',2]);
   // Swarmed giant: a two-hex body takes +1 from a melee basic attack while 2 or more enemies touch it.
-  if(t.size===2&&facOf(t).swarmed&&(u.at==='melee'||u.at==='fwd')&&distUU(u,t)===1){let n=0;for(const v of G.units){if(v.kind==='wall'||v.egg||tm(v.owner)===tm(t.owner))continue;if(distUU(v,t)===1&&++n>=2)break}if(n>=2)o.push(['Swarmed giant (+1)',1])}
+  if(t.size===2&&facOf(t).swarmed&&meleeAt(u.at)&&distUU(u,t)===1){let n=0;for(const v of G.units){if(v.kind==='wall'||v.egg||tm(v.owner)===tm(t.owner))continue;if(distUU(v,t)===1&&++n>=2)break}if(n>=2)o.push(['Swarmed giant (+1)',1])}
   return o}
 function basicDmg(u,t,ret){
   const F=facOf(u);let dmg=Math.max(1,afterDef(effAtk(u),effDef(t)));
@@ -1554,12 +1630,11 @@ function basicDmg(u,t,ret){
     if(F.cursePlus&&curseCount(t)>0)dmg+=1;
     for(const [,n] of hitBonuses(u,t,ret))dmg+=n;
     if(surrounded(u,t))dmg+=RULES.SURROUND;
-    const ranged=u.at!=='melee'&&u.at!=='fwd';
+    const ranged=!meleeAt(u.at);
     if(ranged&&onHill(u))dmg+=1;
     if(!ranged&&onHill(t)&&!onHill(u))dmg=Math.max(1,dmg-1);
     if(t.leader&&farGuard(u,t))dmg=Math.max(1,dmg-1);
     if(!ret&&hasTrait(u,'charge')&&u.moved&&(u.mdist||0)>=3)dmg+=2;
-    if(hasTrait(u,'sniper')&&distUU(u,t)>=3)dmg+=1;
     if(t.st.duel&&t.st.duel.by===u.id)dmg+=2;
   }
   return dmg;
@@ -1592,18 +1667,19 @@ function attack(u,t){
   const F=facOf(u);let dmg=basicDmg(u,t);
   // Cover (gnomes): a gnome next to one of its own machines takes 1 less from a hostile basic attack, never below 1.
   let cov=0;if(dmg>1&&t.kind!=='wall'&&tm(u.owner)!==tm(t.owner)&&covered(t)){dmg-=1;cov=1;fx(t,'cover','#ff6ec7')}
-  const extra=splashTargets(u,t),bonuses=hitBonuses(u,t,false),hp0=t.hp,lb=F.line?lineBonus(u):0;CUR_SRC=u;CUR_TAG='Basic';CUR_NAME='Basic attack';{const s=tStat(u);if(s){s.attacks++;if(onHome(u))s.onHomeAttacks=(s.onHomeAttacks||0)+1;if(s.firstAct==null)s.firstAct=G.round}}
+  const extra=splashTargets(u,t),bonuses=hitBonuses(u,t,false),hp0=t.hp,lb=F.line?lineBonus(u):0,ra=u.st.rally?1:0;CUR_SRC=u;CUR_TAG='Basic';CUR_NAME='Basic attack';
+  if(F.phalanx&&!u.summon&&t.kind!=='wall')tPlan(G.players[u.owner].fac,comradesAdj(u)>=2?1:0,1);// Warband plan check: basic attacks made with 2 or more comrades adjacent (the phalanx)
+  {const s=tStat(u);if(s){s.attacks++;if(onHome(u))s.onHomeAttacks=(s.onHomeAttacks||0)+1;if(s.firstAct==null)s.firstAct=G.round}}
   if(cov)tSupBy(-1,G.players[t.owner].fac,'Cover (passive)','blocked',Math.min(1,Math.max(0,hp0-dmg)));
   const adj=distUU(u,t)===1;
-  const kind=u.at==='lob'?'lob':(u.at==='melee'||(u.at==='fwd'&&u.rng===1))?'slash':'bolt';
+  const kind=u.at==='lob'?'lob':(u.at==='melee'||u.at==='reach'||(u.at==='fwd'&&u.rng===1))?'slash':'bolt';
   vfx({k:kind,from:nearCell(u,t),to:[t.q,t.r],col:F.color,aoe:u.aoe,extra:extra.map(v=>[v.q,v.r])});
   addLog(u.owner,`${u.name} hits ${t.kind==='wall'?`a ${t.wall} wall`:t.name} for ${dmg}${extra.length?` and ${extra.length} more (${AOE[u.aoe].name.toLowerCase()})`:''}.`);
   if(hasTrait(u,'tempo'))u.swings=(u.swings||0)+1;// Tempo: later strikes this turn hit harder
   hurt(t,dmg);
   for(const [name,n] of bonuses)tBonus(u,name,n,hp0);
   if(lb&&t.kind!=='wall')tBonus(u,'Battle Line (ATK bonus)',lb,hp0);
-  // Redirected hits: the guard's absorbed damage counts as blocked for Interpose / Bulwark (the ally never took it).
-  if(bg&&bg.st.guardAll>0&&t.kind!=='wall')tSupBy(bg.id,null,ABIL.interpose.name,'blocked',Math.min(dmg,Math.max(0,hp0)));
+  if(ra&&t.kind!=='wall')tBonus(u,'Rally (+1 ATK)',ra,hp0);
   if(hasTrait(u,'tempo')&&t.kind!=='wall')t.cut=u.owner;// Final Second: the Chronarch finishes what a Second Hand opened
   if(u.aoe==='arc'&&extra.length){CUR_NAME='Flame arc';vfx({k:'ab',ab:'breath',shape:'arc',from:[u.q,u.r],to:[t.q,t.r],cells:[[t.q,t.r],...extra.map(v=>[v.q,v.r])],col:F.color})}
   for(const v of extra)hurt(v,u.aoe==='arc'?Math.max(1,afterDef(effAtk(u),effDef(v))):splashDmg(u,dmg),F.color);
@@ -1613,7 +1689,7 @@ function attack(u,t){
   // Bloodlust talent (Warband): Momentum, once per turn a killing blow lets the unit act again.
   if(utal(u,'bloodlust')&&!alive(t)&&t.kind!=='wall'&&!u.mom){u.acted=false;u.mom=true;addLog(u.owner,`Momentum: ${u.name} can act again.`)}
   if(adj&&alive(t)&&alive(u)){
-    if(hasTrait(t,'thorns')&&u.at==='melee'){CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Thorns';hurt(u,1,facOf(t).color)}
+    if(hasTrait(t,'thorns')&&meleeAt(u.at)){CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Thorns';hurt(u,1,facOf(t).color)}
     const rd=retaliation(u,t);if(rd>0&&alive(u)){CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Strike-back';addLog(t.owner,`${t.name} strikes back for ${rd}.`);vfx({k:'slash',from:[t.q,t.r],to:[u.q,u.r],col:facOf(t).color});hurt(u,rd)}
   }
   if(alive(u)&&hasTrait(u,'hitrun')&&u.moved&&!u.hr){u.moved=false;u.hr=true;fx(u,'hit and run','#9ff0c0')}
@@ -1622,7 +1698,7 @@ function attack(u,t){
 }
 
 /* ---------- abilities ---------- */
-function rayUnits(u,R,vecs,m){const res=new Set();for(const [oq,or] of cells(u))for(const [dq,dr] of vecs)for(let s=1;s<=R;s++){const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const f=featAt(q,r);const o=m.get(key(q,r));if(f==='rock'){if(o&&o!==u)res.add(o);break}if(o===u)continue;if(o&&o.wall==='light')continue;if(o){res.add(o);break}if(f==='forest')break}return res}
+function rayUnits(u,R,vecs,m){const res=new Set();for(const [oq,or] of cells(u))for(const [dq,dr] of vecs)for(let s=1;s<=R;s++){const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const f=featAt(q,r);const o=m.get(key(q,r));if(f==='rock'){if(o&&o!==u)res.add(o);break}if(o===u)continue;if(o){res.add(o);break}if(f==='forest')break}return res}
 function dashSpot(u,t){
   const m=occ();let best=null,bd=99;
   for(const [tq,tr] of cells(t))for(const [dq,dr] of DIRS){const a=tq+dq,b=tr+dr;const d=fitDir(m,u,a,b);if(d<0)continue;
@@ -1647,11 +1723,9 @@ function aimCells(u,k){
     if(A.hits==='foe'&&!foe)continue;if(A.hits==='ally'&&foe)continue;
     if(foe&&hidden(u,v))continue;
     if(A.special==='swap'&&(v.size===2||v===u))continue;
-    if(A.special==='quicken'&&(v===u||v.qk||v.at==='none'||v.egg))continue;// a unit can be Quickened only once per turn
+    if(A.special==='quicken'&&(v===u||v.qk||v.at==='none'||v.egg||v.machine))continue;// a unit can be Quickened only once per turn
     if(A.special==='hook'&&(v.size===2||distUU(u,v)<=1))continue;// Chain Hook drags one-hex enemies that are not already beside the Rampart
     if(A.special==='rewind'&&(v===u||!v.mov||v.summon||v.egg))continue;// only a unit that can walk
-    if(A.special==='interpose'&&(v===u||v.size===2||v.summon))continue;
-    if(A.special==='recall'&&(v===u||distUU(u,v)<=1))continue;
     if(A.special==='possess'&&!possessable(v))continue;
     if(A.special==='dash'&&distUU(u,v)>1&&!dashSpot(u,v))continue;
     out.push(...cells(v));
@@ -1690,26 +1764,30 @@ function areaUnits(u,A,area){
 function abilityTargets(u,k,q,r){
   const A=ABIL[k];
   if(A.special==='requiem')return G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&curseCount(v)>0&&distUU(u,v)<=A.range);
-  if(A.aim==='unit'||A.special==='dash'||A.special==='chain'||A.special==='swap'){const t=unitAt(q,r);return t?[t]:[]}
+  if(A.aim==='unit'||A.special==='dash'||A.special==='swap'){const t=unitAt(q,r);return t?[t]:[]}
   return areaUnits(u,A,shapeCells(u,k,q,r));
 }
 // Opening truce: in round 1 nobody may attack or use an ability on enemies.
 const truce=()=>G.round<=RULES.TRUCE;
-const hostileAbil=A=>A.hits==='foe'||A.hits==='all'||A.hits==='any'||['trap','well','requiem','chain','dash'].includes(A.special);
-function canAbil(u){
-  if(!u.ability||u.cd>0||u.kind==='wall')return false;
-  const A=ABIL[u.ability];
+const hostileAbil=A=>A.hits==='foe'||A.hits==='all'||A.hits==='any'||['trap','well','requiem','dash'].includes(A.special);
+function canAbil(u,k){
+  if(u.kind==='wall')return false;
+  if(k==null){if(u.ability&&u.ability2)return canAbil(u,u.ability)||canAbil(u,u.ability2);k=u.ability||u.ability2}
+  if(!k||cdOf(u,k)>0)return false;
+  const A=ABIL[k];
   if(u.acted&&!A.free)return false;// Vanish uses neither the move nor the action
   if(A.afterAtk&&!u.atkd)return false;// Vanish: only after a basic attack this turn
   if(hasCurse(u,'silence')||u.st.frozen)return false;
   if(truce()&&hostileAbil(A))return false;
-  if(G.ap<abilCost(u,u.ability))return false;
+  if(G.ap<abilCost(u,k))return false;
   if(A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner))return false;// the workshop is full
   if(A.aim==='self'){
-    if(A.special==='requiem'||A.hits==='foe')return abilityTargets(u,u.ability,u.q,u.r).length>0;
+    if(A.special==='requiem'||A.hits==='foe')return abilityTargets(u,k,u.q,u.r).length>0;
+    if(A.special==='rally')return abilityTargets(u,k,u.q,u.r).some(v=>v!==u);
     return true;
   }
-  return aimCells(u,u.ability).length>0;
+  if(A.special==='march')return marchMoves(u,-1).length>0;
+  return aimCells(u,k).length>0;
 }
 function applyCurse(src,t,c){
   const F=facOf(src);const dur=RULES.CURSE_TURNS+(F.blight&&onHome(src)?1:0)+(utal(src,'plaguewind')?1:0);
@@ -1729,6 +1807,7 @@ function hitDmg(u,t,A){
 function coldDouble(t,A){if(!A.cold2||t.kind==='wall')return false;return A.cold2==='frozen'?t.st.frozen>0:(t.st.chill>0||t.st.frozen>0)}
 function applyHit(u,t,A){
   const d=hitDmg(u,t,A),hp0=t.hp,x2=coldDouble(t,A);
+  if(A.cold2&&t.kind!=='wall')tPlan(G.players[u.owner].fac,x2?1:0,1);// Frost plan check: Ice Lance / Shatter Strike hits that got the cold double
   if(d>0)hurt(t,d,facOf(u).color);
   if(x2&&d>0)tBonus(u,A.name+' (cold x2)',Math.ceil(d/2),hp0);
   if(!alive(t))return;
@@ -1737,14 +1816,14 @@ function applyHit(u,t,A){
   if(A.stun)freezeT(t,true);
   if(A.curse)applyCurse(u,t,A.curse);
   if(A.shield){t.st.shield=Math.max(t.st.shield||0,A.shield);t.st.shieldBy=u.id;fx(t,`+${A.shield} shield`,'#d7c9ff')}
-  if(A.heal){const h=Math.min(A.heal,t.maxhp-t.hp);if(h>0){t.hp=r2(t.hp+h);fx(t,'+'+h,'#5fd68e')}t.st.chill=0;t.st.frozen=0}
+  if(A.heal){healUnit(t,A.heal,'#5fd68e');if(A.thaw){t.st.chill=0;t.st.frozen=0}}
 }
 function slamOf(src){return RULES.SLAM+(src&&src.kind!=='wall'&&facOf(src).slam?facOf(src).slam:0)+(src&&utal(src,'horizon')?1:0)}
 // Falls: a unit shoved, dragged or thrown onto a lethal hex. Tracked as its own effect rows for the pushing side
 // ("Kill: off the edge", "Kill: into the void", "Kill: into a Void Trap"), and a trap kill is also credited to the Voidcaller's Void Trap.
 function fallKill(t,q,r,src){const tr=G.traps&&G.traps[key(q,r)];const how=tr?'into a Void Trap':inR(q,r)?'into the void':'off the edge';
   addLog(t.owner,`${t.name} is hurled ${how}!`);fx(t,'LOST','#12d69a');vfx({k:'fall',at:[t.q,t.r],to:[q,r]});
-  if(trk()&&!SIM){const s0=src||CUR_SRC;const pf=s0&&s0.kind!=='wall'?G.players[s0.owner].fac:null;if(pf){const e=tFx(pf,'','Kill: '+how);e.uses++;e.kills++;if(t.leader)e.lk++}
+  if(trk()&&!SIM){const s0=src||CUR_SRC;const pf=s0&&s0.kind!=='wall'?G.players[s0.owner].fac:null;if(pf){const e=tFx(pf,'','Kill: '+how);e.uses++;e.kills++;if(t.leader)e.lk++;if(pf==='rift')tPlan('rift',1,CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)!==tm(t.owner)?0:1)}// rift plan check: kills by edge, void or trap
     if(tr){const by=trk().units[tr.by];const e2=tFx(G.players[tr.owner].fac,by?by.name:'','Void Trap');e2.kills++;if(t.leader)e2.lk++}}
   t.hp=0;kill(t)}
 function pushUnit(t,d,n,src,quiet){
@@ -1783,9 +1862,20 @@ function wellPull(w){
     if(featAt(q,r)==='rock'||occ().get(key(q,r)))continue;setAnim(v);v.q=q;v.r=r;tSup('moved',1)}
   CUR_SRC=old;CUR_TAG=ot;CUR_NAME=on;
 }
+// March: which units of the block move, and where. d = direction index (or -1 to ask whether any direction moves anyone). Front units (furthest along d) go first,
+// so a column can step as one; a unit whose hex ahead is not free after the ones before it moved, or that is frozen, stays. Walls, summons and giants never march.
+function marchMoves(u,d){
+  if(d<0){for(let i=0;i<6;i++)if(marchMoves(u,i).length)return [[u,u.q,u.r]];return []}
+  const [dq,dr]=DIRS[d];const [px,py]=pix(dq,dr);
+  const block=G.units.filter(v=>v.kind!=='wall'&&v.owner===u.owner&&!v.summon&&v.size!==2&&!v.st.frozen&&distUU(u,v)<=2)
+    .sort((a,b)=>{const [ax,ay]=pix(a.q,a.r),[bx,by]=pix(b.q,b.r);return (bx*px+by*py)-(ax*px+ay*py)});
+  const m=occ(),out=[];
+  for(const v of block){const a=v.q+dq,b=v.r+dr;if(!passable(a,b)||m.get(key(a,b)))continue;m.delete(key(v.q,v.r));m.set(key(a,b),v);out.push([v,a,b])}
+  return out}
 function useAbility(u,k,q,r){
   const A=ABIL[k],F=facOf(u);
-  G.ap-=abilCost(u,k);if(!A.free)u.acted=true;u.cd=A.cd+1-(k==='forward'&&utal(u,'warchief')?1:0)-(k==='quicken'&&utal(u,'echo')?1:0);G.amode=null;G.aim=null;CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;{const s=tStat(u);if(s){s.abils++;const e=srcFx();if(e)e.uses++;if(s.firstAct==null)s.firstAct=G.round;const key=s.fac+':'+A.name;trk().abil[key]=(trk().abil[key]||0)+1}}
+  G.ap-=abilCost(u,k);if(!A.free)u.acted=true;setCd(u,k,A.cd+1-(k==='march'&&utal(u,'warchief')?1:0)-(k==='quicken'&&utal(u,'echo')?1:0));G.amode=null;G.aim=null;CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;{const s=tStat(u);if(s){s.abils++;const e=srcFx();if(e){e.uses++;if(s.lastAbil!=null){e.gapSum+=G.round-s.lastAbil;e.gapN++}s.lastAbil=G.round}if(s.firstAct==null)s.firstAct=G.round;const key=s.fac+':'+A.name;trk().abil[key]=(trk().abil[key]||0)+1}}
+  if(!SIM&&(A.special==='gainap'||A.special==='quicken'))G.combo=true;// Hourglass plan check: the rest of this turn is a combo turn
   addLog(u.owner,`${u.name} uses ${A.name}.`);
   const tgt=unitAt(q,r);
   if(!SIM){const area=A.special?[]:shapeCells(u,k,q,r);vfx({k:'ab',ab:k,shape:A.shape||A.special,from:[u.q,u.r],to:[q,r],cells:area.slice(0,40),col:F.color,fac:G.players[u.owner].fac,push:!!(A.push||A.pull),curse:!!A.curse,heal:!!(A.heal||A.shield||A.guard)})}
@@ -1804,28 +1894,25 @@ function useAbility(u,k,q,r){
     case 'hook':if(tgt){const fixed=tgt.size===2||hasRelic(tgt,'aegis')||(tgt.leader&&utal(tgt,'glacial'));if(!fixed){const m=occ();let best=null,bd=99;for(const [a,b] of cells(u))for(const [dq,dr] of DIRS){const x=a+dq,y=b+dr;if(!passable(x,y)||m.get(key(x,y)))continue;const dd=hd(x,y,tgt.q,tgt.r);if(dd<bd){bd=dd;best=[x,y]}}
       if(best){vfx({k:'chain',pts:[[u.q,u.r],[tgt.q,tgt.r]],col:F.color});setAnim(tgt);tgt.q=best[0];tgt.r=best[1];tSup('moved',1);fx(tgt,'hooked','#d9a45b');braceCheck(tgt)}}
       if(alive(tgt))applyHit(u,tgt,A)}break;
-    // Forward!: every other Warband unit within 2 gets a free 1-hex step this turn (u.step remembers who shouted, for tracking).
-    case 'forward':for(const v of abilityTargets(u,k,u.q,u.r))if(v!==u&&v.kind!=='wall'&&!v.summon&&!v.st.frozen){v.step=u.id;fx(v,'step!','#eef0f4');vfx({k:'buff',at:[v.q,v.r],col:'#eef0f4'})}break;
-    // Interpose: swap with the adjacent ally, then cover every neighbour until your next turn.
-    case 'interpose':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b;tSup('moved',2)}u.st.guardAll=1;fx(u,'interpose','#eef0f4');break;
-    case 'wall':{const mk=(a,b)=>G.units.push({id:G.nid++,kind:'wall',wall:A.wall,owner:-1,creator:u.owner,by:u.id,abil:A.name,q:a,r:b,dir:0,size:1,hp:A.hp,maxhp:A.hp,def:0,ttl:3,st:{},name:A.wall==='ice'?'Ice wall':A.wall==='light'?'Light wall':'Stone wall'});mk(q,r);
-      if(A.wall==='light'){const d=distUC(u,q,r);const m=occ();const nb=DIRS.map(([a,b])=>[q+a,r+b]).filter(([a,b])=>passable(a,b)&&!m.get(key(a,b))).sort((x,y)=>Math.abs(distUC(u,x[0],x[1])-d)-Math.abs(distUC(u,y[0],y[1])-d))[0];if(nb)mk(nb[0],nb[1])}break}
+    // March: the block (Warlord + Warband units within 2) steps 1 hex in the chosen direction, front units first; blocked units stay.
+    case 'march':{const d=aimDir(u,q,r);let n=0;for(const [v,a,b] of marchMoves(u,d)){setAnim(v);v.q=a;v.r=b;if(v.kind!=='wall')v.dir=d;n++;fx(v,'march','#eef0f4');vfx({k:'buff',at:[a,b],col:'#eef0f4'});{const s=tStat(v);if(s)s.hexes+=1}braceCheck(v)}
+      tSup('moved',n);addLog(u.owner,`The phalanx marches: ${n} unit${n===1?'':'s'} step forward.`);break}
+    case 'wall':G.units.push({id:G.nid++,kind:'wall',wall:A.wall,owner:-1,creator:u.owner,by:u.id,abil:A.name,q,r,dir:0,size:1,hp:A.hp,maxhp:A.hp,def:0,ttl:3,st:{},name:A.wall==='ice'?'Ice wall':A.wall==='light'?'Wall of Light':'Stone wall'});break;
+    // Grove: holy ground (paint kind 'grove') on the hex and its neighbours, never the Heart; 3 turns, 5 with Sacred Ground. Credited to this Druid when it heals (healUnit by).
+    case 'grove':{const area=shapeCells(u,k,q,r).filter(([a,b])=>solid(a,b)&&!isHeart(a,b)&&featAt(a,b)!=='rock');const ttl=utal(u,'sacredground')?5:3;
+      for(const [a,b] of area)G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl,owner:u.owner,kind:'grove',by:u.id};
+      vfx({k:'ab',ab:k,shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:F.color,heal:true});addLog(u.owner,`Holy ground spreads over ${area.length} hexes.`);break}
     // Void Trap: a temporary void for 3 of the caster's turns.
     case 'trap':if(passable(q,r)&&!unitAt(q,r)&&!isHeart(q,r)){G.traps=G.traps||{};G.traps[key(q,r)]={owner:u.owner,by:u.id,ttl:3};vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[q,r],cells:[[q,r]],col:F.color})}break;
     case 'swap':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b;tSup('moved',2)}break;
-    case 'rally':for(const v of abilityTargets(u,k,u.q,u.r)){v.st.emp=1;fx(v,'+2 ATK','#e8b84e');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}break;
+    // Rally: +1 ATK to every other Warband unit within 2 until the start of your next turn (st.rally, cleared in beginTurn).
+    case 'rally':{let n=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.summon)continue;v.st.rally=1;n++;fx(v,'+1 ATK','#e8b84e');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}addLog(u.owner,`Rally: ${n} comrade${n===1?'':'s'} sharpen their blades.`);break}
     case 'dash':if(tgt){if(distUU(u,tgt)>1){const s=dashSpot(u,tgt);if(s){setAnim(u);u.q=s.q;u.r=s.r;u.dir=s.dir;tSup('moved',1);braceCheck(u)}}if(alive(u))applyHit(u,tgt,A)}break;
     case 'requiem':for(const v of abilityTargets(u,k,u.q,u.r)){const d=pendingDot(v);v.st.curses={};vfx({k:'buff',at:[v.q,v.r],col:'#e8e23a'});hurt(v,d,'#e8e23a')}break;
-    case 'chain':if(tgt){const hit=new Set([tgt.id]);let last=tgt;applyHit(u,tgt,A);
-      const pts=[[u.q,u.r],[tgt.q,tgt.r]];
-      for(let j=0;j<A.bounce;j++){const nx=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&!hit.has(v.id)&&distUU(last,v)<=2).sort((a,b)=>distUU(last,a)-distUU(last,b))[0];
-        if(!nx)break;hit.add(nx.id);pts.push([nx.q,nx.r]);hurt(nx,A.bounceDmg,F.color);last=nx}vfx({k:'chain',pts,col:F.color})}break;
     case 'build':{const M=MACHINES[A.machine];if(machineCount(u.owner)>=machineCap(u.owner)){addLog(u.owner,'The workshop is full.');break}
       const T={id:G.nid++,owner:u.owner,leader:false,pawn:false,summon:true,machine:A.machine,builtBy:u.id,ttl:M.ttl,name:M.name,icon:M.icon,glyph:M.glyph,hp:M.hp,maxhp:M.hp,atk:M.atk,def:M.def,mov:M.mov,mt:M.mt,at:M.at,aoe:M.aoe||null,rng:M.rng,rmin:M.rmin||1,size:1,dir:0,q,r,
       moved:true,acted:true,cd:0,mom:false,rage:false,stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:null,trait:M.trait,home:u.home};G.units.push(T);fx(T,'built','#ff6ec7');vfx({k:'buff',at:[q,r],col:F.color});
       if(trk()&&!SIM){tStat(T);const e=tFx(G.players[u.owner].fac,'','Machines built');if(e)e.uses++}break}
-    case 'recall':if(tgt&&tgt!==u){const m=occ();let best=null;for(const [a,b] of cells(u))for(const [dq,dr] of DIRS){const d=fitDir(m,tgt,a+dq,b+dr);if(d>=0&&!best)best={q:a+dq,r:b+dr,dir:d}}
-      if(best){vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color});setAnim(tgt);tgt.q=best.q;tgt.r=best.r;tgt.dir=best.dir;tSup('moved',1);fx(tgt,'portal','#8f5cff')}}break;
     case 'duel':if(tgt){tgt.st.duel={by:u.id,ttl:2};fx(tgt,'challenged','#eef0f4')}break;
     case 'well':{const w={q,r,owner:u.owner,src:u.id,ttl:3};(G.wells=G.wells||[]).push(w);wellPull(w);break}
     case 'possess':if(tgt&&possessable(tgt)){tgt.poss={owner:tgt.owner,home:tgt.home};tgt.owner=u.owner;tgt.home=u.home;tgt.moved=false;tgt.acted=false;tgt.st.frozen=0;fx(tgt,'possessed','#e8e23a');addLog(u.owner,`${tgt.name} is possessed!`)}break;
@@ -1842,7 +1929,8 @@ function useAbility(u,k,q,r){
       }
       if(A.pull){const live=ts.filter(alive).sort((a,b)=>distUU(u,a)-distUU(u,b));for(const t of live)pullUnit(t,u,A.pull)}
       if(A.paint){const cs=A.paint==='center'?[[q,r]]:A.paint==='head'?[[u.q,u.r],...DIRS.map(([a,b])=>[u.q+a,u.r+b])]:area;for(const [a,b] of cs)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:3,owner:u.owner}}
-      if(A.selfHeal&&alive(u)){const h=Math.min(A.selfHeal,u.maxhp-u.hp);if(h>0){u.hp=r2(u.hp+h);fx(u,'+'+h,'#5fd68e')}}
+      if(A.selfHeal&&alive(u))healUnit(u,A.selfHeal,'#5fd68e');
+      if(k==='mend'&&utal(u,'martyrdom')&&alive(u)&&tgt!==u){const o=CUR_NAME;CUR_NAME='Martyrdom (talent)';healUnit(u,2,'#d7c9ff');CUR_NAME=o}
     }
   }
   CUR_SRC=null;CUR_TAG=null;CUR_NAME=null;
@@ -1864,9 +1952,13 @@ function ultEffect(p){
     case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,2);if(talent(p,'frostthrone')||ice.some(i=>distUU(i,v)<=2))freezeT(v,false)}break}
     case 'giants':{const gs=mine();for(const v of foes()){const g=gs.filter(x=>alive(x)).sort((a,b)=>distUU(a,v)-distUU(b,v))[0];const aval=talent(p,'avalanche');if(!g||distUU(g,v)>(aval?4:3))continue;hurt(v,afterDef(aval?3:2,effDef(v)),F.color);
       if(alive(v)){const [cq,cr]=nearCell(g,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,g)}}break}
-    // Clockwork Rush: AP, every gnome may move again, and every machine (they never move) is repaired to full, gets a fresh attack and +1 ATK this turn (timers do not reset).
-    case 'gnomes':{const add=talent(p,'surge')?6:4,ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+add,G.ap+add);tSup('apGranted',G.ap-ap0);let m=0;for(const v of mine()){if(v.machine){if(v.hp<v.maxhp){const h=v.maxhp-v.hp;v.hp=v.maxhp;fx(v,'+'+h,'#5fd68e')}if(v.acted)m++;v.acted=false;v.st.rush=1;fx(v,'overclocked','#ff6ec7');vfx({k:'buff',at:[v.q,v.r],col:'#ff6ec7'})}else{if(v.moved)m++;v.moved=false}}tSup('moved',m)}break;
-    case 'arcane':{const ts=foes().sort((a,b)=>worth(b)-worth(a)).slice(0,talent(p,'starcaller')?5:3);for(const v of ts){vfx({k:'bolt',from:[v.q,v.r-3],to:[v.q,v.r],col:F.color});hurt(v,4,F.color)}break}
+    // Clockwork Rush: AP, every gnome may move again, and every machine (they never move) is repaired to full, gets +1 ATK this turn and fires again at once (timers do not reset). The volley is tracked under the Ultimate.
+    case 'gnomes':{const add=talent(p,'surge')?6:4,ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+add,G.ap+add);tSup('apGranted',G.ap-ap0);let m=0;for(const v of mine()){if(v.machine){if(v.hp<v.maxhp){const h=v.maxhp-v.hp;v.hp=v.maxhp;fx(v,'+'+h,'#5fd68e')}v.st.rush=1;fx(v,'overclocked','#ff6ec7');vfx({k:'buff',at:[v.q,v.r],col:'#ff6ec7'})}else{if(v.moved)m++;v.moved=false}}tSup('moved',m);
+      const SRC=CUR_SRC,TAG=CUR_TAG,NAME=CUR_NAME;machineFire(p,'Ultimate: Clockwork Rush','Ult');CUR_SRC=SRC;CUR_TAG=TAG;CUR_NAME=NAME}break;
+    // Exodus: every priest healed to full; every enemy within 2 of any priest is pushed 1 hex away from the nearest one (giants take the slam instead).
+    case 'arcane':{const ps=mine();for(const v of ps){if(v.hp<v.maxhp){healUnit(v,v.maxhp-v.hp,'#d7c9ff');vfx({k:'buff',at:[v.q,v.r],col:F.color})}}
+      const ts=foes().map(v=>{const a=ps.filter(alive).sort((x,y)=>distUU(x,v)-distUU(y,v))[0];return a&&distUU(a,v)<=2?[v,a]:null}).filter(Boolean).sort((x,y)=>distUU(y[1],y[0])-distUU(x[1],x[0]));
+      for(const [v,a] of ts){if(!alive(v))continue;const [cq,cr]=nearCell(a,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,a)}break}
     case 'warband':{const ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+2,G.ap+2);tSup('apGranted',G.ap-ap0)}for(const v of mine()){v.st.emp=1;v.acted=false;v.mom=false;fx(v,'+2 ATK','#e8b84e')}break;
     case 'rift':{const ts=foes().filter(v=>v.q||v.r).sort((a,b)=>hd(b.q,b.r,0,0)-hd(a.q,a.r,0,0));for(const v of ts)if(alive(v))pushUnit(v,dirTo(0,0,v.q,v.r),v.leader?1:talent(p,'gravitylord')?2:1,src);break}
     case 'curse':for(const v of foes()){const dur=RULES.CURSE_TURNS;for(const c of Object.keys(v.st.curses||{}))v.st.curses[c]=Math.max(v.st.curses[c],dur);const had=curseCount(v);applyCurse(src||v,v,'agony');if(had>=2)applyCurse(src||v,v,'rot');if(talent(p,'rites')){applyCurse(src||v,v,'frailty');applyCurse(src||v,v,'feeble')}}break;
@@ -1926,6 +2018,9 @@ function dropRelic(x,u){
   if(u&&solid(u.q,u.r)){x.q=u.q;x.r=u.r;addLog(null,`The ${RELICS[x.kind].name} falls to the ground.`)}
   else placeRelic(x);
 }
+/* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
+function labClear(){G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
+function labUnit(pid,name,q,r,o){const p=G.players[pid];const d=FAC[p.fac].units.find(x=>x.name===name);if(!d)throw new Error('labUnit: no unit '+name+' in '+p.fac);const u=makeUnit(p,d);u.q=q;u.r=r;u.dir=(o&&o.dir)||0;if(o&&o.hp){u.hp=u.maxhp=o.hp}G.units.push(u);tStat(u);return u}
 /* ---------- bots ---------- */
 function worth(u){let w=5+u.maxhp*0.7+(u.atk+(u.stars||0))*2+(u.ability?3:0)+(relicOf(u)?7:0);if(u.machine)w*=0.7;if(u.leader)w+=G.mode==='regicide'?120:G.mode==='warlord'?110:12;return w}
 function evaluate(team){
@@ -1972,29 +2067,43 @@ function simScore(team,fn){
   return v;
 }
 function threatened(u,foes){return foes.some(f=>distUU(u,f)<=effMov(f)+effRng(f)+1)}
+// Machines are placed where enemies will come: on a flag (Outpost), on the Heart ring once the centre opens, or on the lane toward the nearest enemy. Nothing while the enemy is far away.
+function buildSpot(q,r,ctx){let s=0;const near=ctx.foes.reduce((b,f)=>Math.min(b,distUC(f,q,r)),99);if(near>6)return 0;
+  if(isOutpost(q,r))s+=3;if(hd(q,r,0,0)<=heartR()+1&&G.round>=RULES.CENTRE_FROM-1)s+=3;
+  if(near<=5&&near>=2)s+=1.5;// on the lane: the enemy reaches it soon but not this very turn
+  return s}
 function heuristic(u,k,q,r,ctx){
   const A=ABIL[k],team=tm(u.owner);
   const mine=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)===team);
   switch(A.bot){
     case 'wall':{const near=ctx.foes.filter(f=>distUC(f,q,r)<=3).length;if(!near)return 0;const guardee=mine.some(v=>(v.leader||v.maxhp<=6)&&distUC(v,q,r)===1);let s=2+near+(guardee?4:0);
+      if(hd(q,r,0,0)<=heartR()+1&&G.round>=RULES.CENTRE_FROM-1&&mine.some(v=>distUC(v,q,r)<=2))s+=2;// a wall on the Heart approach, beside our own units
       // a second wall (or a wall beside a rock) that closes a gate in front of a giant is worth building on purpose
       for(const f of ctx.foes){if(f.size!==2||!facOf(f).gateBlock||distUC(f,q,r)>2)continue;const m2=new Map(ctx.m);m2.set(key(q,r),{kind:'wall'});let n=0;
         for(const [a,b] of cells(f))for(const [dq,dr] of DIRS){const x=a+dq,y=b+dr;if(!passable(x,y)||ctx.m.get(key(x,y))||gated(ctx.m,x,y))continue;if(gated(m2,x,y))n++}s+=Math.min(3,n)*2.5}
       return s}
-    // Forward!: count the comrades whose free step reaches a target or closes the Battle Line.
-    case 'forward':{let s=0;const nearest=x=>{let b=99;for(const f of ctx.foes)b=Math.min(b,distUU(x,f));return b};
-      for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.leader||v.st.frozen)continue;let best=0;const dv=nearest(v);
-        for(const [dq,dr] of DIRS){const a=v.q+dq,b=v.r+dr;if(fitDir(ctx.m,v,a,b)<0)continue;const w=Object.assign({},v,{q:a,r:b});let g=(lineBonus(w)-lineBonus(v))*1.5;
-          if(!v.acted&&G.ap-abilCost(u,k)>=2&&countTargets(v,ctx.m)===0&&countTargets(w,ctx.m)>0)g+=4;
-          if(dv<=6&&dv>1&&nearest(w)<dv)g+=1.2;// a free hex toward the fight is a move saved
-          best=Math.max(best,g)}s+=best}
-      return s>=2?s:0}
-    // Interpose: cover threatened neighbours from the swapped-to hex, and pull a fragile or royal friend out of the hotter spot.
-    case 'interpose':{const t=unitAt(q,r);if(!t||t===u||t.kind==='wall'||t.size===2)return 0;const w=Object.assign({},u,{q:t.q,r:t.r});
-      const reach=x=>ctx.foes.reduce((a,f)=>a+(distUU(f,x)<=effMov(f)+effRng(f)+1?effAtk(f):0),0);let s=0;
-      for(const v of mine)if(v.id!==u.id&&v.id!==t.id&&v.owner===u.owner&&distUU(w,v)===1&&threatened(v,ctx.foes))s+=2+(v.leader?3:0)+(v.hp*2<=v.maxhp?1.5:0)+(v.maxhp<=9?1:0);
-      const dt=reach(t),du=reach(u);if(dt>du&&(t.hp<u.hp||t.leader))s+=3+Math.min(6,dt-du)*0.5+(t.leader?3:0);
-      return s>=3?s:0}
+    // March: the block steps together toward the fight. Each moved unit is judged like a free move (moveEval without its AP penalty); the block must
+    // stay a block (comrades adjacent after the step), and a march that walks a fresh unit into striking range is worth most. Nothing when the enemy is far.
+    case 'march':{const d=aimDir(u,q,r);if(d<0)return 0;const mv=marchMoves(u,d);if(mv.length<2)return 0;const nearest=x=>{let b=99;for(const f of ctx.foes)b=Math.min(b,distUU(x,f));return b};
+      if(nearest(u)>7)return 0;let s=0;const after=new Map(mv.map(([v,a,b])=>[v.id,[a,b]]));
+      const adjAfter=v=>{const [a,b]=after.get(v.id)||[v.q,v.r];let n=0;for(const w of G.units){if(w.id===v.id||w.kind==='wall'||w.summon||w.owner!==u.owner)continue;const [c,e]=after.get(w.id)||[w.q,w.r];if(hd(a,b,c,e)===1)n++}return n};
+      for(const [v,a,b] of mv){const o={q:a,r:b,dir:d};let g=moveEval(v,o,ctx)+1.2;if(v.moved)g+=1;// a unit that already used its move gets a second step for free
+        g+=(Math.min(2,adjAfter(v))-Math.min(2,comradesAdj(v)))*1.2;s+=g}
+      const left=G.units.filter(v=>v.kind!=='wall'&&v.owner===u.owner&&!v.summon&&distUU(u,v)<=2).length-mv.length;s-=left*1.5;// units left behind break the block
+      return s>=2.5?s:0}
+    // Rally: +1 ATK on every comrade within 2 until next turn. Worth it before a big exchange: comrades that can still strike this turn (a target in reach,
+    // or one walk away with AP to spare) and comrades standing in contact who will strike back during the enemy turn.
+    // It must outscore the first attack of the turn or it comes too late (units that have already struck gain nothing), so each strike it will sharpen
+    // counts about what one extra damage point is worth in the lookahead; only strikes the AP left can still pay for are counted.
+    case 'rally':{const left=G.ap-abilCost(u,k);let ready=0,walk=0,contact=0;
+      for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.summon||v.st.frozen)continue;
+        const tg=countTargets(v,ctx.m);const canHit=(!v.acted||v.freeAtk>0);
+        if(canHit&&tg>0)ready++;else if(canHit&&!v.moved&&ctx.foes.some(f=>distUU(v,f)<=effMov(v)+effRng(v)))walk++;
+        if((v.at==='melee'||v.at==='reach')&&ctx.foes.some(f=>distUU(v,f)===1))contact++}
+      const strikes=Math.min(ready,Math.floor(left/2)),walks=Math.min(walk,Math.floor(Math.max(0,left-strikes*2)/3));
+      // 2 AP on Rally is 2 AP not spent on a strike: worth it when the AP would go spare anyway (more AP than the strikers can use), or when the block is big.
+      const spare=G.ap-2*ready-3*walk;const s=strikes*2.6+walks*1.6+Math.min(contact,3)*0.8+(spare>=2?2.5:0);
+      return (strikes+walks>=2||(spare>=2&&strikes+contact>=1))&&s>=3.2?s:0}
     // Void Trap: judged by the lookahead (it counts enemies that can now be thrown into a void), plus a little for boxing in enemies and their Leader.
     case 'trap':{const sim=simScore(team,()=>useAbility(byId(u.id),k,q,r))-ctx.base;let s2=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d===1)s2+=f.size===2?0.3:1.2+(f.leader?2:0)}
       for(const v of mine)if(v.size!==2&&distUC(v,q,r)===1&&ctx.foes.some(f=>(ABIL[f.ability]||{}).push||(ABIL[f.ability]||{}).pull))s2-=1.5;return sim+s2}
@@ -2007,7 +2116,17 @@ function heuristic(u,k,q,r,ctx){
     case 'phaseswap':{const t=unitAt(q,r);if(!t||t.size===2)return 0;const sim=simScore(team,()=>useAbility(byId(u.id),k,q,r))-ctx.base;
       const lethalNb=DIRS.some(([dq,dr])=>!solid(u.q+dq,u.r+dr));const near=mine.filter(v=>v!==u&&!v.acted&&distUC(v,u.q,u.r)<=2).length;
       let s2=sim+(lethalNb?2+(t.leader?3:0):0)+(t.at!=='melee'&&near>=1?1.5+near*0.5:0);return s2>1.5?s2:0}
-    case 'shield':{const t=unitAt(q,r);if(!t||t.st.shield||!threatened(t,ctx.foes))return 0;return 5+(t.leader?8:0)}
+    // Aegis: the ally most likely to be hit next: enemy ATK that can reach it, the Leader and fragile or wounded units first.
+    case 'shield':{const t=unitAt(q,r);if(!t||t.kind==='wall'||t.st.shield>0)return 0;let danger=0;for(const f of ctx.foes){const reach=effMov(f)+effRng(f)+(f.mt==='knight'?2:0)+(f.mt==='fly'?1:0);if(distUU(t,f)<=reach)danger+=effAtk(f)}
+      if(!danger)return 0;return 3+Math.min(danger,8)*0.6+(t.leader?6:0)+(t.maxhp<=8?1.5:0)+(t.hp<=4?2:0)}
+    // Mend: the most valuable wounded ally; the Leader, a unit in danger and a Zealot about to strike (Fervour) come first.
+    case 'mend':{const t=unitAt(q,r);if(!t||t.kind==='wall')return 0;const miss=Math.min(A.heal,t.maxhp-t.hp);if(miss<=0)return 0;
+      let s=miss*(0.9+worth(t)/60)+(threatened(t,ctx.foes)?1.5:0)+(t.hp<=3?2:0);if(hasTrait(t,'fervour')&&!t.acted&&countTargets(t,ctx.m)>0&&G.ap-abilCost(u,k)>=atkCost(t))s+=Math.min(3,miss)*1.2;return s>=2?s:0}
+    // Sanctuary: worth it once at least 4 points of healing would land within 2 of the High Priest.
+    case 'sanctuary':{let tot=0,lead=0;for(const v of abilityTargets(u,k,u.q,u.r)){const mm=Math.min(A.heal,v.maxhp-v.hp);tot+=mm;if(v.leader)lead+=mm}if(threatened(u,ctx.foes)&&u.hp<u.maxhp)tot+=1;return tot>=3?tot*0.9+lead*0.5:0}
+    // Grove: under wounded allies (the Leader counts extra) and on the Heart approach once the centre opens; never on top of enemies or over a Grove still standing.
+    case 'grove':{let s=0;const area=shapeCells(u,k,q,r);for(const [a,b] of area){const v=ctx.m.get(key(a,b));if(v&&v.kind!=='wall'){if(tm(v.owner)===team)s+=1.2+(v.hp<v.maxhp?1.5:0)+(v.leader?1.5:0);else s-=1.5}if(groveAt(a,b))s-=0.6}
+      if(hd(q,r,0,0)<=heartR()+1&&G.round>=RULES.CENTRE_FROM-1&&mine.some(v=>distUC(v,q,r)<=3))s+=2.5;return s>=3?s:0}
     // Time Warp: +3 AP when the side is short and has strikers ready, and above all when a Second Hand can finish an adjacent enemy with the strikes the AP buys.
     case 'gainap':{if(G.ap>RULES.AP_CAP-2)return 0;const own=G.units.filter(v=>v.owner===u.owner&&v!==u&&v.kind!=='wall');
       const ready=own.filter(v=>attackTargets(v).length||canAbil(v)).length;let kill=0;
@@ -2031,19 +2150,17 @@ function heuristic(u,k,q,r,ctx){
         const lancers=mine.filter(v=>v.ability==='icelance'&&v.owner===u.owner&&v.cd<=1&&distUU(v,t)<=4+effMov(v));s+=Math.min(2,lancers.length)*2.5+(t.leader?2:0)}
       return s}
     // Mortar: a spot 2 to 4 hexes from enemies (it lobs, so not next to one).
-    case 'mortar':{let s=0,n=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d>=2&&d<=4){n++;s+=2+(f.leader?1.5:0)}else if(d===1)s-=2}if(!n)return 0;return 3+Math.min(s,8)}
+    case 'mortar':{let s=0,n=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d>=2&&d<=4){n++;s+=2+(f.leader?1.5:0)}else if(d===1)s-=2}const poi=buildSpot(q,r,ctx);if(!n)return poi;return 3+Math.min(s,8)+poi}
     // Flame Turret: right where enemies stand or will walk in, ideally in front of a gnome so the enemy has to go through it.
     case 'flame':{let s=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d===1)s+=3+(f.leader?1:0);else if(d===2&&(f.at==='melee'||f.at==='fwd'||f.mov>=2))s+=1.2}
-      if(mine.some(v=>!v.summon&&v.owner===u.owner&&distUC(v,q,r)===1))s+=1;return s>=2.5?s:0}
+      if(mine.some(v=>!v.summon&&v.owner===u.owner&&distUC(v,q,r)===1))s+=1;const poi=buildSpot(q,r,ctx);return s>=2.5?s+poi:poi}
     // Turret: a straight lane toward the nearest enemies (bolt, range 3) and not stuck in melee range.
-    case 'turret':{const n=ctx.foes.filter(f=>distUC(f,q,r)<=4).length;if(!n)return 0;let s=4+Math.min(n,3)*1.5;
+    case 'turret':{const n=ctx.foes.filter(f=>distUC(f,q,r)<=4).length;const poi=buildSpot(q,r,ctx);if(!n)return poi;let s=4+Math.min(n,3)*1.5+poi;
       let lane=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d>3)continue;if(DIRS.some(([dq,dr])=>{for(let k2=1;k2<=3;k2++){const a=q+dq*k2,b=r+dr*k2;if(!inR(a,b))return false;const o=ctx.m.get(key(a,b));if(o){return o===f}}return false}))lane++}
       s+=Math.min(lane,2)*3-ctx.foes.filter(f=>distUC(f,q,r)===1).length*1.5;return s}
     // Tesla Coil: where enemies stand or gather, and on or beside the Heart ring when it can be reached.
     case 'coil':{let s=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d<=2)s+=2+(f.leader?1:0);else if(d===3&&(f.at==='melee'||f.at==='fwd'))s+=0.5}
-      if(hd(q,r,0,0)<=heartR()+1&&G.round>=RULES.CENTRE_FROM-1)s+=3;return s>=2?s:0}
-    case 'recall':{const t=unitAt(q,r);if(!t||t===u)return 0;if(t.leader&&threatened(t,ctx.foes)&&!threatened(u,ctx.foes))return 12;
-      if(!t.acted&&!t.leader&&attackTargets(t).length===0&&ctx.foes.some(f=>distUU(u,f)<=effRng(t)+1))return 5+(t.stars||0);return 0}
+      const poi=buildSpot(q,r,ctx);return s>=2?s+poi:poi}
     case 'well':{let s=0;for(const f of ctx.foes)if(f.size!==2){const d=hd(f.q,f.r,q,r);if(d>=1&&d<=2){s+=2.5;if(DIRS.some(([a,b])=>!solid(f.q+a,f.r+b)))s+=2}}return s>=5?s:0}
     case 'possess':{const t=unitAt(q,r);if(!t||!possessable(t))return 0;const reach=effMov(t)+effRng(t);const n=G.units.filter(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)===tm(t.owner)&&distUU(v,t)<=reach).length;return n?7+Math.min(n,3)*1.5+(t.stars||0)*2:0}
     // Rewind: a free extra walk. Worth it for a striker that has moved and still has a strike (its action or a free Quicken attack) but nothing in reach,
@@ -2067,7 +2184,7 @@ function moveEval(u,o,ctx){
   let s=-1.2;
   if((!u.acted||u.freeAtk>0)&&u.at!=='none'&&G.ap>=(u.freeMove>0?0:1)+atkCost(u)){const tNow=countTargets(u,m),tNew=countTargets(v,m);if(tNew>0&&tNow===0)s+=6+Math.min(tNew,3)}
   if(u.freeMove>0)s+=1.2;// a Rewind move costs no AP
-  if(!u.leader){const pref=u.at==='lob'?Math.min(effRng(u),u.rmin+1):(u.at==='melee'||u.at==='fwd')?1:Math.min(effRng(u),3);s+=(Math.abs(d0-pref)-Math.abs(d1-pref))*2.2}
+  if(!u.leader){const pref=u.at==='lob'?Math.min(effRng(u),u.rmin+1):u.at==='reach'?2:(u.at==='melee'||u.at==='fwd')?1:Math.min(effRng(u),3);s+=(Math.abs(d0-pref)-Math.abs(d1-pref))*2.2}
   const danger=x=>{let d=0;for(const f of foes){const reach=effMov(f)+effRng(f)+(f.mt==='knight'?2:0)+(f.mt==='fly'?1:0);if(distUU(x,f)<=reach)d+=effAtk(f)}return d};
   const frag=u.leader?1.4:(u.maxhp<=6?0.35:0.15);
   s-=(danger(v)-danger(u))*frag*0.5;
@@ -2084,7 +2201,7 @@ function moveEval(u,o,ctx){
     const doomed=x=>G.round>=n-1&&outer(x)>=G.col.ring;
     if(doomed(u)&&!doomed(v))s+=40;if(!doomed(u)&&doomed(v))s-=40;
     if(soon)s+=(outer(u)-outer(v))*1.5}}
-  const ft=x=>cells(x).map(([q,r])=>featAt(q,r));const rangedU=u.at!=='melee'&&u.at!=='fwd';
+  const ft=x=>cells(x).map(([q,r])=>featAt(q,r));const rangedU=!meleeAt(u.at);
   if(rangedU&&ft(v).includes('hill')&&!ft(u).includes('hill'))s+=4;if(rangedU&&ft(u).includes('hill')&&!ft(v).includes('hill'))s-=3;
   if(ft(v).includes('forest')&&!ft(u).includes('forest'))s+=(rangedU||u.maxhp<=7?3:1.5);if(ft(u).includes('forest')&&!ft(v).includes('forest'))s-=(rangedU||u.maxhp<=7?2:1);
   if(u.hp<u.maxhp-1&&ft(v).includes('shrine')&&!ft(u).includes('shrine'))s+=2.5;
@@ -2099,25 +2216,37 @@ function moveEval(u,o,ctx){
   if(ctx.fireIn&&f!=='fire'){const red=x=>cells(x).some(([q,r])=>terrAt(q,r)==='fire');if(red(v))s-=3;if(red(u))s+=2.5}
   if(ctx.pushers&&u.size!==2){const edge=x=>{for(const [dq,dr] of DIRS)if(!solid(x.q+dq,x.r+dr))return 1;return 0};s-=(edge(v)-edge(u))*(u.leader?10:2.5)}
   // Battle Line (Warband): a warrior wants a comrade at his shoulder (the Warlord's shoulder is worth double); the Warlord wants two comrades around him.
-  {const F=facOf(u);if(F.line){if(!u.leader)s+=(lineBonus(v)-lineBonus(u))*1.6;else{const adj=x=>{let n=0;for(const w of G.units)if(w.id!==u.id&&w.kind!=='wall'&&w.owner===u.owner&&distUU(x,w)===1)n++;return Math.min(2,n)};s+=(adj(v)-adj(u))*1.5}}}
+  {const F=facOf(u);if(F.line){if(!u.leader)s+=(lineBonus(v)-lineBonus(u))*1.6;else{const adj=x=>{let n=0;for(const w of G.units)if(w.id!==u.id&&w.kind!=='wall'&&w.owner===u.owner&&distUU(x,w)===1)n++;return Math.min(2,n)};s+=(adj(v)-adj(u))*1.5}}
+  // Phalanx (Warband): 2 or more comrades at your shoulders is +1 DEF and the plan; a Spearman wants a comrade between himself and the enemy;
+  // when shooters are about, a warrior wants a Shieldbearer beside him and the Shieldbearer wants to stand in front.
+  if(F.phalanx&&!u.summon&&d1<=6){const ph=x=>comradesAdj(x)>=2?1:0;s+=(ph(v)-ph(u))*3;
+    if(u.at==='reach'){const behind=x=>foes.some(f=>distUU(x,f)===2&&G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&distUU(w,x)===1&&distUU(w,f)===1));if(behind(v)&&!behind(u))s+=2.5;if(behind(u)&&!behind(v))s-=2}
+    const shooters=foes.some(f=>!meleeAt(f.at)&&f.at!=='none'&&distUU(f,v)<=effMov(f)+effRng(f)+1);
+    if(shooters){const sb=x=>G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&hasTrait(w,'shieldwall')&&distUU(w,x)===1)?1:0;if(!hasTrait(u,'shieldwall'))s+=(sb(v)-sb(u))*1.8;
+      else{const front=x=>{let n=0;for(const w of G.units)if(w!==u&&w.kind!=='wall'&&w.owner===u.owner&&distUU(w,x)===1&&nearest(w)>nearest(x))n++;return Math.min(3,n)};s+=(front(v)-front(u))*1.2}}}}
   // Ambush (Raider): hunt the enemy standing alone.
   if(hasTrait(u,'ambush')&&!u.acted&&G.ap>=3){const lone=x=>foes.some(f=>distUU(x,f)===1&&!G.units.some(w=>w!==f&&w.kind!=='wall'&&tm(w.owner)===tm(f.owner)&&distUU(w,f)===1));if(lone(v)&&!lone(u))s+=3.5}
+  // Circle of Priests: a wounded priest steps onto a Grove (it heals at the turn start and Grace adds 1 at the end); Clerics and Wardens keep the High Priest within reach.
+  if(facOf(u).grace){const gv=x=>onGrove(x)?1:0;if(u.hp<u.maxhp)s+=(gv(v)-gv(u))*2.5;
+    if(u.ability==='mend'||u.ability==='aegis'){const L=G.units.find(w=>w.owner===u.owner&&w.leader);if(L&&L!==u){const near=x=>distUU(x,L)<=3?1:0;s+=(near(v)-near(u))*1.5}}}
   // Brace: don't end a move on the spear points of an un-moved enemy Spearman.
   if(ctx.braces&&ctx.braces.length){let d=0;for(const sp of ctx.braces)if(cells(v).some(([q,r])=>hd(q,r,sp.q,sp.r)===1&&fwdDot(sp,q-sp.q,r-sp.r)>=0.45))d+=afterDef(2,effDef(u));if(d)s-=d*(u.leader?2.5:1.2)}
   // Gnome Tinkers: living gnomes keep a machine between themselves and an enemy within 3.
-  if(!u.summon&&facOf(u).cover){const nearFoe=foes.some(f=>distUU(f,u)<=3||distUU(f,v)<=3);if(nearFoe){const behind=x=>G.units.some(w=>w.machine&&w.owner===u.owner&&distUU(w,x)===1&&nearest(w)<=nearest(x));s+=(behind(v)?3:0)-(behind(u)?2.5:0)}}
+  if(!u.summon&&facOf(u).cover){const nearFoe=foes.some(f=>distUU(f,u)<=3||distUU(f,v)<=3);if(nearFoe){const behind=x=>G.units.some(w=>w.machine&&w.owner===u.owner&&distUU(w,x)===1&&nearest(w)<=nearest(x));s+=(behind(v)?3:0)-(behind(u)?2.5:0)}
+    // A builder with a build in hand (adjacent only) walks to where its machine would see the enemy: 2 to 4 hexes from the nearest foe, never into contact.
+    if(u.ability&&ABIL[u.ability].special==='build'&&u.cd<=1&&!u.acted&&G.ap>=3&&machineCount(u.owner)<machineCap(u.owner)){const spot=x=>{const d=nearest(x);return d>=2&&d<=4};if(spot(v)&&!spot(u))s+=3;if(spot(u)&&!spot(v))s-=2.5;if(d1===1&&!u.leader)s-=2}}
   // Phase Stalker: with Phase Swap ready, perch next to the edge or a void within reach of an enemy, so the swap leaves the enemy there.
   if(u.ability==='phaseswap'&&u.cd<=0&&!u.acted&&G.ap>=1+abilCost(u,'phaseswap')){const perch=x=>DIRS.some(([dq,dr])=>!solid(x.q+dq,x.r+dr))&&foes.some(f=>f.size!==2&&distUU(x,f)<=3);if(perch(v)&&!perch(u))s+=3;if(perch(u)&&!perch(v))s-=2}
   // Repulsor: step behind an enemy that one Repel would throw off the board or into a void.
   if(u.ability==='repel'&&u.cd<=0&&!u.acted&&G.ap>=1+abilCost(u,'repel')){const thr=x=>{let b=0;for(const f of foes)if(distUU(x,f)===1&&pushLethal(f,dirTo(x.q,x.r,f.q,f.r),ABIL.repel.push))b=Math.max(b,10+worth(f)*0.3+(f.leader?15:0));return b};s+=thr(v)-thr(u)}
-  if(o.step)s+=1.4;// a Forward! step costs no AP
   return s+RNG()*0.6;
 }
 function botAims(u,k,ctx){
   const A=ABIL[k];let a=aimCells(u,k);
-  if(A.aim==='hex'&&A.bot!=='kindle')a=a.filter(([q,r])=>ctx.foes.some(f=>distUC(f,q,r)<=A.size));
+  if(A.aim==='hex'&&A.bot!=='kindle'&&A.bot!=='grove')a=a.filter(([q,r])=>ctx.foes.some(f=>distUC(f,q,r)<=A.size));
+  if(A.bot==='grove')a=a.filter(([q,r])=>G.units.some(v=>v.kind!=='wall'&&v.owner===u.owner&&distUC(v,q,r)<=1));
   if(A.bot==='kindle')a=a.filter(([q,r])=>G.units.some(f=>f.kind!=='wall'&&distUC(f,q,r)<=1));
-  if(A.aim==='empty'&&A.special!=='vanish'){const reach=A.special==='build'?5:3;a=a.filter(([q,r])=>ctx.foes.some(f=>distUC(f,q,r)<=reach))}
+  if(A.aim==='empty'&&A.special!=='vanish'){const reach=A.special==='build'?5:3;a=a.filter(([q,r])=>ctx.foes.some(f=>distUC(f,q,r)<=reach)||(A.special==='build'&&buildSpot(q,r,ctx)>0))}
   const seen=new Set();
   return a.filter(([q,r])=>{const t=A.aim==='unit'?unitAt(q,r):null;const kk=t?'u'+t.id:key(q,r);if(seen.has(kk))return false;seen.add(kk);return true});
 }
@@ -2137,8 +2266,8 @@ function botStep(){
   for(const u of G.units.filter(u=>u.owner===pid&&u.kind!=='wall')){
     const uid=u.id;
     for(const t of attackTargets(u)){const tid=t.id;consider(simScore(team,()=>attack(byId(uid),byId(tid)))-base-atkCost(u)*APV,()=>attack(byId(uid),byId(tid)))}
-    if(canAbil(u)){
-      const k=u.ability,A=ABIL[k];
+    for(const k of abilsOf(u)){if(!canAbil(u,k))continue;
+      const A=ABIL[k];
       // Never spend the last 2 AP on a machine while an enemy stands next to the Leader.
       const leaderPressed=A.special==='build'&&G.ap-abilCost(u,k)<2&&G.units.some(L=>L.owner===pid&&L.leader&&foes.some(f=>distUU(f,L)===1));
       if(!leaderPressed)for(const [q,r] of botAims(u,k,ctx)){
@@ -2146,13 +2275,13 @@ function botStep(){
         consider(s,()=>useAbility(byId(uid),k,q,r));
       }
     }
-    if(!u.moved||u.step!=null||u.freeMove>0)for(const o of moveOpts(u).values())consider(moveEval(u,o,ctx),()=>doMove(byId(uid),o));
+    if(!u.moved||u.freeMove>0)for(const o of moveOpts(u).values())consider(moveEval(u,o,ctx),()=>doMove(byId(uid),o));
   }
   if(canUlt(pid)){const fac=G.players[pid].fac;let s;
     if(fac==='chrono')s=G.ap<=RULES.ULT_COST+1?30:0;
     // Clockwork Rush: best once the AP is spent and the machines have fired (a second volley) or are damaged; worth more with more tin on the board.
-    else if(fac==='gnomes'){const mach=G.units.filter(v=>v.owner===pid&&v.machine);const spent=mach.filter(v=>(v.acted&&v.at!=='none')||v.hp<v.maxhp).length;const near=G.units.filter(v=>v.owner===pid&&v.kind!=='wall'&&foes.some(f=>distUU(v,f)<=4)).length;
-      s=(G.ap<=3&&near>=3)||spent>=2?20+mach.length*2+spent*2:0}
+    else if(fac==='gnomes'){const mach=G.units.filter(v=>v.owner===pid&&v.machine);const loaded=mach.filter(v=>machineTargets(v).length).length;const near=G.units.filter(v=>v.owner===pid&&v.kind!=='wall'&&foes.some(f=>distUU(v,f)<=4)).length;
+      s=loaded>=2||(G.ap<=3&&near>=3&&loaded>=1)?20+mach.length*2+loaded*3:0}
     else if(fac==='warband'){const n=G.units.filter(v=>v.owner===pid&&v.kind!=='wall'&&foes.some(f=>distUU(v,f)<=effRng(v)+(v.acted?0:1))).length;s=n>=3?n*4:0}
     else s=simScore(team,()=>useUlt(false))-base-RULES.ULT_COST*APV-4;
     consider(s,()=>useUlt(false));
@@ -2167,7 +2296,7 @@ function botStep(){
   return true;
 }
 
-const BALANCE={"version":"v18e","generated":"2026-09-28","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":15.3,"firstOutPct":38.7},"giants":{"winPct":32.3,"firstOutPct":16.7},"rift":{"winPct":13.9,"firstOutPct":22.8},"ice":{"winPct":36.7,"firstOutPct":15.3},"warband":{"winPct":15.3,"firstOutPct":32.8},"arcane":{"winPct":38.1,"firstOutPct":14.3},"curse":{"winPct":37.6,"firstOutPct":16.9},"chrono":{"winPct":14.0,"firstOutPct":33.9},"fire":{"winPct":11.8,"firstOutPct":22.5}}},"team":{"games":400,"armies":{"warband":{"winPct":57.0},"fire":{"winPct":50.3},"rift":{"winPct":50.3},"gnomes":{"winPct":42.0},"giants":{"winPct":46.2},"ice":{"winPct":55.9},"arcane":{"winPct":47.1},"chrono":{"winPct":48.2},"curse":{"winPct":44.7}}},"duel":{"games":400,"armies":{"curse":{"winPct":39.6},"giants":{"winPct":44.4},"arcane":{"winPct":32.2},"chrono":{"winPct":55.9},"warband":{"winPct":68.3},"rift":{"winPct":47.2},"ice":{"winPct":53.9},"fire":{"winPct":58.0},"gnomes":{"winPct":51.7}},"firstPct":53.5}}};
+const BALANCE={"version":"v20c","generated":"2026-09-29","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":11.0,"firstOutPct":46.0},"giants":{"winPct":33.3,"firstOutPct":14.1},"rift":{"winPct":18.3,"firstOutPct":23.3},"ice":{"winPct":20.4,"firstOutPct":15.3},"warband":{"winPct":39.3,"firstOutPct":14.8},"arcane":{"winPct":24.4,"firstOutPct":15.5},"curse":{"winPct":36.0,"firstOutPct":16.9},"chrono":{"winPct":4.1,"firstOutPct":56.7},"fire":{"winPct":29.0,"firstOutPct":18.3}}},"team":{"games":400,"armies":{"warband":{"winPct":65.9},"fire":{"winPct":65.1},"rift":{"winPct":49.1},"gnomes":{"winPct":66.9},"giants":{"winPct":60.7},"ice":{"winPct":52.9},"arcane":{"winPct":18.2},"chrono":{"winPct":33.8},"curse":{"winPct":38.9}}},"duel":{"games":400,"armies":{"curse":{"winPct":24.8},"giants":{"winPct":67.8},"arcane":{"winPct":15.6},"chrono":{"winPct":38.2},"warband":{"winPct":75.6},"rift":{"winPct":48.3},"ice":{"winPct":44.7},"fire":{"winPct":67.9},"gnomes":{"winPct":71.9}},"firstPct":50.8}}};
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -2369,7 +2498,7 @@ function draw3D(now){
     ctx.beginPath();ctx.arc(sx,ey,er,0,7);ctx.fillStyle=col;ctx.fill();
     drawIcon(ctx,u.icon,sx,ey,er*1.45,INK,col);
     if(CAM.S>=12){const br=Math.max(4.5,er*0.46);badge(sx+er*0.85,ey+er*0.7,br,'#0b0e14',col,'');ctx.fillStyle=col;ctx.font=`${br*1.5}px 'Noto Sans Symbols 2','Segoe UI Symbol',serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(u.glyph+'︎',sx+er*0.85,ey+er*0.72)}
-    const sts=[];if(u.st.chill)sts.push('#5cc8ff');if(u.st.frozen)sts.push(u.st.stun?'#d9a45b':'#ffffff');if(u.st.emp)sts.push('#e8b84e');if(u.st.shield)sts.push('#d7c9ff');if(u.st.guardAll)sts.push('#eef0f4');if(u.freeAtk>0||u.freeMove>0)sts.push('#c81ca6');if(u.st.duel)sts.push('#ff6161');
+    const sts=[];if(u.st.chill)sts.push('#5cc8ff');if(u.st.frozen)sts.push(u.st.stun?'#d9a45b':'#ffffff');if(u.st.emp)sts.push('#e8b84e');if(u.st.shield)sts.push('#d7c9ff');if(u.st.rally)sts.push('#eef0f4');if(u.freeAtk>0||u.freeMove>0)sts.push('#c81ca6');if(u.st.duel)sts.push('#ff6161');
     if(u.poss){ctx.save();ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(sx,ey,er+5,0,7);ctx.strokeStyle='#e8e23a';ctx.lineWidth=2;ctx.stroke();ctx.restore()}
     if(u.summon)badge(sx+er*0.85,ey-er*0.7,Math.max(4.5,er*0.46),'#0b0e14',FAC.gnomes.color,u.ttl);
     sts.forEach((cc,i)=>{ctx.beginPath();ctx.arc(sx+er+3+i*Math.max(5,er*0.5),ey-er*0.6,Math.max(2.5,er*0.22),0,7);ctx.fillStyle=cc;ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1;ctx.stroke()});
@@ -2448,14 +2577,14 @@ const LOOK={
   'Mortar':{body:'mortar'}, // a stubby brass barrel tilted up on a riveted base plate, smoke curling from the muzzle
   'Flame Turret':{body:'flameturret'}, // a squat tank on a base with a nozzle and a flickering pilot flame
   'Tesla Coil':{body:'coilpillar'}, // copper pillar wound with wire, crackling pink globe on top
-  // Arcane Conclave: robes, wizard hats, floating orbs and runes
-  'Archmagus':{body:'gown',head:'wizard',hand:'staff',orbs:3},
-  'Battlemage':{body:'armor',head:'hood',off:'runeshield'},
-  'Stormcaller':{body:'robe',head:'wizard',hand:'stormstaff'},
-  'Arc Lancer':{body:'slim',head:'helm',hand:'lance'},
-  'Lightweaver':{body:'gown',head:'halo',hand:'orb',orbs:2},
+  // Circle of Priests: long gowns, mitres and halos, staffs of light, a green druid's branch
+  'High Priest':{body:'gown',head:'mitre',crown:1,hand:'staff',orbs:2,cape:1}, // tall mitred priest with a crown, two orbs of light circling him
+  'Cleric':{body:'robe',head:'hood',hand:'book',off:'orb'}, // hooded healer, prayer book in one hand and a soft orb of light in the other
+  'Warden':{body:'armor',head:'helm',hand:'staff',off:'runeshield'}, // armoured warden behind a glowing rune shield
+  'Druid':{body:'robe',head:'hood',hand:'branch'}, // robed druid holding a living branch with green leaves and a glowing tip
+  'Lightwarden':{body:'armor',head:'halo',hand:'lance',off:'towershield'}, // haloed knight of light with a glowing lance and a tower shield
+  'Zealot':{body:'brute',head:'hood',hand:'maul',sash:1}, // broad hooded zealot with a maul and a red sash
   'Ember Egg':{body:'egg'},
-  'Apprentice':{body:'imp',head:'wizard',hand:'book'},
   // Iron Warband: heavy plate, horned helms, big shields
   'Warlord':{body:'armor',head:'horned',crown:1,hand:'greatsword',cape:1},
   'Berserker':{body:'brute',head:'horned',hand:'axe',off:'axe'},
@@ -2640,6 +2769,7 @@ function drawMini(u,sx,sy,sc,col,spent,face){
     case 'spear':line([[x,y-0.3],[x,y+0.7]],0.03,'#6b4a2a');path([[x-0.04,y+0.68],[x+0.04,y+0.68],[x,y+0.84]],'#d9dde6');break;
     case 'lance':line([[x,y-0.2],[x+0.05,y+0.7]],0.05,'#d9c8ff');glow(x+0.05,y+0.72,0.04,'#bfa6ff');break;
     case 'staff':line([[x,y-0.45],[x,y+0.55]],0.03,'#6b4a2a');glow(x,y+0.6,0.05,acc);break;
+    case 'branch':line([[x,y-0.45],[x,y+0.5]],0.03,'#5a4a2a');for(const [dx,dy] of [[-0.07,0.36],[0.08,0.46],[-0.06,0.54]])circ(x+dx,y+dy,0.035,'#5fd68e',false);glow(x,y+0.6,0.04,'#9ff0c0');break;
     case 'firestaff':line([[x,y-0.45],[x,y+0.5]],0.03,'#4a2a1a');glow(x,y+0.58,0.07,'#ff7a2a');break;
     case 'icestaff':line([[x,y-0.45],[x,y+0.5]],0.03,'#bfe6ff');path([[x-0.05,y+0.5],[x+0.05,y+0.5],[x,y+0.72]],'#e6fbff');break;
     case 'stormstaff':line([[x,y-0.45],[x,y+0.5]],0.03,'#4a3a6a');line([[x,y+0.52],[x+0.06,y+0.62],[x-0.03,y+0.66],[x+0.05,y+0.78]],0.02,'#fff3a8');break;
@@ -3361,6 +3491,7 @@ function miniCells(kind,a,b){
     case 'knight':o.push(...KNIGHT);break;
     case 'march':{const seen=new Set(['0,0']);let fr=[[0,0]];for(let s=0;s<a;s++){const nx=[];for(const [q,r] of fr)for(const [dq,dr] of DIRS){const x=q+dq,y=r+dr;if(seen.has(key(x,y)))continue;if(hd(x,y,home[0],home[1])<hd(q,r,home[0],home[1]))continue;seen.add(key(x,y));nx.push([x,y]);o.push([x,y])}fr=nx}break}
     case 'a:melee':ring(1,1);break;
+    case 'a:reach':rays(DIRS,a);break;
     case 'a:fwd':rays(fwd,a);break;
     case 'a:bolt':rays(DIRS,a);break;
     case 'a:diag':rays(DIAG,a);break;
@@ -3405,7 +3536,7 @@ for(const k of FKEYS){
 }
 function teamsAllowed(){return cfg.n===4||cfg.n===6}
 function seatTeam(i){return i%(cfg.n/2)}
-const UNIT_LINES={"Ember Tyrant": "Sets the ground alight and rules the ashes.", "Pyromancer": "Lobs fire over the front line. Keep it behind someone.", "Flame Dancer": "Strikes, then slips away in a whirl of sparks.", "Phoenix": "Dies once, comes back angry.", "Magma Golem": "Hitting it burns.", "Cinder": "A walking bomb: when it dies the ground around it burns.", "Rime Queen": "Bursts a storm of ice over a crowd; the colder they already are, the more it hurts.", "Glacier Knight": "Slides in straight lines and shatters whatever is frozen in front of it.", "Hailcaller": "The damage dealer: an Ice Lance for 3, or 6 on anyone already shivering.", "Mountain King": "Stomps the ground: everything within two hexes is hurt and stunned.", "Boulder Hurler": "Throws rocks from five hexes away; the only giant who can hurt what he cannot reach.", "Rampart": "A walking castle wall that hooks enemies out of the back line and drags them to the giants.", "Cliff Breaker": "Sweeps three hexes, knocks them all back and breaks walls.", "Titan": "Two fists, one blow: 7 damage to whatever stands next to it.", "Gearmaster": "A foreman, not a fighter: sets up a Mortar and lets it do the shooting.", "Bombardier": "Bombs hit everyone. Everyone.", "Tinker": "Three of them, three turret lanes. Fragile, so keep the tin in front.", "Sparkwright": "Plants a coil that zaps everything near it, turn after turn.", "Turret": "Built, not born. Never moves, shoots until it falls apart.", "Tesla Coil": "Nobody wants to stand near it.", "Archmagus": "Calls down meteors from across the board.", "Battlemage": "Shields friends and blinks out of melee.", "Stormcaller": "One bolt, three targets.", "Arc Lancer": "A beam that goes straight through everyone.", "Portal Mage": "Pulls any friend across the map in a blink.", "Apprentice": "Fragile, but its last breath heals its friends.", "Warlord": "Stand next to him and you hit for 2 more. One shout and the whole line steps forward.", "Berserker": "Gets stronger the more it bleeds.", "Shieldbearer": "Steps in front of anyone about to be hit.", "Raider": "Finds the enemy standing alone and hits for 5.", "Outrider": "Jumps in and charges from four hexes away. Two of them ride as a pair.", "Spearman": "Plants the spear: whoever runs onto it bleeds.", "Rift Sovereign": "Trades places with anyone, friend or foe: the piece that sets up every throw.", "Tidecaller": "Drags one enemy three hexes toward it, over any hole in between.", "Repulsor": "One shove, three hexes. Put an enemy between it and the edge.", "Gravity Singer": "Opens a well that pulls enemies in, turn after turn.", "Phase Stalker": "Flies to the edge, then trades places with an enemy.", "Hierophant": "Makes every curse pay out at once.", "Plague Priest": "Breathes a cone of plague.", "Sorrow Priest": "Weakens armour from far away.", "Bloodletter": "Drains strength and heals itself.", "Mire Witch": "Sinks everyone around her into the bog.", "Censor": "Silences the one ability you were counting on.", "Penitent": "A walking tomb that guards the Hierophant.", "Soul Thief": "Steals an enemy for a turn and turns it on its friends.", "Acolyte": "Dies so the others may live.", "Chronarch": "Bends time for 3 more AP, then finishes what the blades opened.", "Second Hand": "A glass blade: every strike in a turn lands harder than the last, then it vanishes. Feed it.", "Tempo Mage": "Hands an ally a free extra strike.", "Rewinder": "Hands an ally a free extra walk, even after it has moved.", "Frostling": "Small, quick and cold: every bolt slows the target for two turns.", "Frost Warden": "Plants its feet and freezes the three hexes in front of it solid.", "Flamewright": "Builds a Flame Turret right where the enemy wants to walk.", "Mortar": "Never moves. Lobs a shell over the front line every turn.", "Flame Turret": "Never moves. Anyone who steps up to it gets sprayed, and so do their neighbours.", "Voidcaller": "Tears a hole in the board for three turns. Whatever is pushed in never comes back."};
+const UNIT_LINES={"Ember Tyrant": "Sets the ground alight and rules the ashes.", "Pyromancer": "Lobs fire over the front line. Keep it behind someone.", "Flame Dancer": "Strikes, then slips away in a whirl of sparks.", "Phoenix": "Dies once, comes back angry.", "Magma Golem": "Hitting it burns.", "Cinder": "A walking bomb: when it dies the ground around it burns.", "Rime Queen": "Bursts a storm of ice over a crowd; the colder they already are, the more it hurts.", "Glacier Knight": "Slides in straight lines and shatters whatever is frozen in front of it.", "Hailcaller": "The damage dealer: an Ice Lance for 3, or 6 on anyone already shivering.", "Mountain King": "Stomps the ground: everything within two hexes is hurt and stunned.", "Boulder Hurler": "Throws rocks from five hexes away; the only giant who can hurt what he cannot reach.", "Rampart": "A walking castle wall that hooks enemies out of the back line and drags them to the giants.", "Cliff Breaker": "Sweeps three hexes, knocks them all back and breaks walls.", "Titan": "Two fists, one blow: 7 damage to whatever stands next to it.", "Gearmaster": "A foreman, not a fighter: sets up a Mortar and lets it do the shooting.", "Bombardier": "Bombs hit everyone. Everyone.", "Tinker": "Three of them, three turret lanes. Fragile, so keep the tin in front.", "Sparkwright": "Plants a coil that zaps everything near it, turn after turn.", "Turret": "Built, not born. Never moves, shoots until it falls apart.", "Tesla Coil": "Nobody wants to stand near it.", "High Priest": "One prayer and the whole circle breathes again.", "Cleric": "Mends the one who needs it most.", "Warden": "A shield of light on whoever is next in line.", "Druid": "Grows holy ground; stand on it and heal.", "Lightwarden": "Raises a wall of light where the enemy wants to walk.", "Zealot": "Heal him first, then let him swing.", "Warlord": "Stand next to him and you hit for 2 more. March moves the whole block; Rally sharpens every blade around him.", "Berserker": "Gets stronger the more it bleeds.", "Shieldbearer": "The shield wall: it and everyone beside it take 1 less from arrows and spells.", "Raider": "Finds the enemy standing alone and hits for 5.", "Outrider": "Jumps in and charges from four hexes away. Two of them ride as a pair.", "Spearman": "Second rank: strikes 2 hexes away, over the shield in front. Plants the spear when it stands still.", "Rift Sovereign": "Trades places with anyone, friend or foe: the piece that sets up every throw.", "Tidecaller": "Drags one enemy three hexes toward it, over any hole in between.", "Repulsor": "One shove, three hexes. Put an enemy between it and the edge.", "Gravity Singer": "Opens a well that pulls enemies in, turn after turn.", "Phase Stalker": "Flies to the edge, then trades places with an enemy.", "Hierophant": "Makes every curse pay out at once.", "Plague Priest": "Breathes a cone of plague.", "Sorrow Priest": "Weakens armour from far away.", "Bloodletter": "Drains strength and heals itself.", "Mire Witch": "Sinks everyone around her into the bog.", "Censor": "Silences the one ability you were counting on.", "Penitent": "A walking tomb that guards the Hierophant.", "Soul Thief": "Steals an enemy for a turn and turns it on its friends.", "Acolyte": "Dies so the others may live.", "Chronarch": "Bends time for 3 more AP, then finishes what the blades opened.", "Second Hand": "A glass blade: every strike in a turn lands harder than the last, then it vanishes. Feed it.", "Tempo Mage": "Hands an ally a free extra strike.", "Rewinder": "Hands an ally a free extra walk, even after it has moved.", "Frostling": "Small, quick and cold: every bolt slows the target for two turns.", "Frost Warden": "Plants its feet and freezes the three hexes in front of it solid.", "Flamewright": "Builds a Flame Turret right where the enemy wants to walk.", "Mortar": "Never moves. Lobs a shell over the front line every turn.", "Flame Turret": "Never moves. Anyone who steps up to it gets sprayed, and so do their neighbours.", "Voidcaller": "Tears a hole in the board for three turns. Whatever is pushed in never comes back."};
 function unitRow(F,d){
   const A=d.ab?ABIL[d.ab]:null;const AT=ATTACKS[d.at];
   const atk=(d.at==='melee'?'melee':d.at==='lob'?`lob ${d.rmin||2}–${d.rng}`:`${AT.label.toLowerCase()} ${d.rng}`)+(d.aoe?` · <b style="color:#ffb35c">${AOE[d.aoe].name.toLowerCase()}</b>`:'');
@@ -3413,7 +3544,7 @@ function unitRow(F,d){
   return `<div><img src="${iconURL(d.icon,INK,F.color)}" alt=""><span><b>${d.name}</b> <span class="glyph hint">${glyphOf(d)}︎</span>
     ${UNIT_LINES[d.name]?`<span class="sub" style="font-style:italic;color:#c9cfdb">${UNIT_LINES[d.name]}</span>`:''}
     <span class="sub">${tag}${d.hp} HP · ${d.atk} ATK · ${d.def} DEF · move ${d.mt==='knight'?'jump':d.mov} · ${atk}</span>
-    ${A?`<span class="sub">${A.name} · ${A.cost} AP · ${A.cd?'rests '+A.cd:'once per turn'}${A.free?' · free action':''}</span>`:`<span class="sub none">No ability</span>`}${d.trait?`<span class="sub trait" title="${TRAITS[d.trait].text}">✦ ${TRAITS[d.trait].name}: ${TRAITS[d.trait].text}</span>`:''}</span><span class="c">×${d.n||1}</span></div>`;
+    ${A?`<span class="sub">${A.name} · ${A.cost} AP · ${A.cd?'rests '+A.cd:'once per turn'}${A.free?' · free action':''}</span>`:`<span class="sub none">No ability</span>`}${d.ab2?`<span class="sub">${ABIL[d.ab2].name} · ${ABIL[d.ab2].cost} AP · ${ABIL[d.ab2].cd?'rests '+ABIL[d.ab2].cd:'once per turn'}</span>`:''}${d.trait?`<span class="sub trait" title="${TRAITS[d.trait].text}">✦ ${TRAITS[d.trait].name}: ${TRAITS[d.trait].text}</span>`:''}</span><span class="c">×${d.n||1}</span></div>`;
 }
 function renderSetup(){
   const tOn=cfg.teams&&teamsAllowed();
@@ -3562,6 +3693,7 @@ function computePreview(){
   const at=G.aim||G.hover;
   if(!u||!G.amode||!at)return;
   if(!hl.aim.has(key(at[0],at[1])))return;
+  if(ABIL[G.amode].special==='march'){for(const [v,a,b] of marchMoves(u,aimDir(u,at[0],at[1]))){hl.area.add(key(a,b));hl.hitIds.add(v.id)}return}
   for(const [a,b] of shapeCells(u,G.amode,at[0],at[1]))hl.area.add(key(a,b));
   for(const t of abilityTargets(u,G.amode,at[0],at[1]))hl.hitIds.add(t.id);
 }
@@ -3599,7 +3731,7 @@ function refresh(){
   $('#curChip').innerHTML=`<span class="dot" style="background:${F.color}"></span>P${p.id+1} · ${F.name}${G.teams?` <span class="team">Team ${'ABC'[p.team]}</span>`:''}${p.ctrl==='bot'?' <span class="hint">(bot)</span>':''}${netOnline()?` <span class="hint">· ${NET.code} · ${p.ctrl==='bot'?'bots':isHumanTurn()?'your turn':'waiting for '+(p.uid===NET.me?'you':(NET.names[p.uid]||'Player '+(p.id+1)))}</span>`:''}`;
   const tb=$('#takeBots');if(tb)tb.hidden=!(netOnline()&&!netIsHost()&&p.ctrl==='bot'&&Date.now()-NET.lastChange>12000);
   let pips='';for(let i=0;i<G.apMax;i++)pips+=`<i class="${i<G.ap?'on':''}"></i>`;
-  const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+' Leader':'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.bank?'+'+pa.bank+' carried':'',pa.first?'−'+pa.first+' first turn':''].filter(Boolean).join(' ')})</span>`;
+  const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+' Leader':'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.bank?'+'+pa.bank+' carried':''].filter(Boolean).join(' ')})</span>`;
   {const ub=$('#ultBtn');if(ub){const U=ULTS[p.fac],ch=p.ult||0,need=ultNeed(p),team=canTeamUlt(G.cur);ub.hidden=!isHumanTurn()||!!G.phase;
     ub.disabled=!canUlt(G.cur);ub.classList.toggle('ready',canUlt(G.cur));ub.classList.toggle('team',team);
     ub.innerHTML=`⚡${team?'⚡':''} <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':G.ap>=RULES.ULT_COST?(team?'team ready':'ready'):'needs '+RULES.ULT_COST+' AP'):ch+'/'+need}</span>`;ub.title=U.text}}
@@ -3632,8 +3764,8 @@ function relicList(){if(!G.relicsOn)return '';const rs=G.relics||[];
   return `<div class="legend"><div class="label" style="margin:0">Relics</div>${rows||`<div class="hint">The first relic appears on the flank in round ${RULES.RELIC_FROM}.</div>`}${rs.length?`<div class="hint">Next relic: round ${next} (if fewer than ${G.players.length<=3?2:3} are out). The carrier gets −1 move.</div>`:''}</div>`}
 
 /* ---------- the dock: action bar for the selected unit, and a strip of your units ---------- */
-function abState(u){if(!u.ability)return null;const A=ABIL[u.ability];
-  if(u.cd>0)return {ready:false,text:`rests ${u.cd}`};if(hasCurse(u,'silence'))return {ready:false,text:'silenced'};return {ready:true,text:'ready'}}
+function abState(u,k){const ks=k?[k]:abilsOf(u);if(!ks.length)return null;const cd=Math.min(...ks.map(x=>cdOf(u,x)));
+  if(cd>0)return {ready:false,text:`rests ${cd}`,cd};if(hasCurse(u,'silence'))return {ready:false,text:'silenced',cd:0};return {ready:true,text:'ready',cd:0}}
 function uIcon(u,size){const F=facOf(u);return `<img src="${iconURL(u.icon,INK,F.color)}" alt="" width="${size}" height="${size}">`}
 function hpCol(p){return p>.5?'#5fd68e':p>.25?'#e8b84e':'#ff6161'}
 function selectUnit(u){if(!u)return;G.sel=u.id;G.inspect=null;G.amode=null;G.aim=null;G.tile=null;refresh();
@@ -3647,7 +3779,7 @@ function renderDock(){
   const own=G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&visibleUnit(u)).sort((a,b)=>(b.leader?1:0)-(a.leader?1:0)||(a.moved&&a.acted?1:0)-(b.moved&&b.acted?1:0));
   strip.innerHTML=human?own.map(u=>{const pct=Math.max(0,u.hp/u.maxhp),ab=abState(u),done=!G.phase&&u.moved&&u.acted;
     return `<button class="uchip ${G.sel===u.id?'sel':''} ${done?'done':''}" data-uid="${u.id}" title="${u.name}">${u.leader?'<span class="ldr">♚</span>':''}${uIcon(u,34)}<span class="hpn">${fmt(u.hp)}/${u.maxhp}</span><span class="hp"><i style="width:${pct*100}%;background:${hpCol(pct)}"></i></span>
-      <span class="st">${G.phase?'':`<span class="dot ${u.moved?'off':''}" title="move"></span><span class="dot ${u.acted?'off':''}" title="action" style="background:${u.acted?'':'#ff8a7a'}"></span>`}${ab?`<span class="ab ${ab.ready?'rdy':''}">${ab.ready?'⚡':u.cd}</span>`:''}</span></button>`}).join(''):'';
+      <span class="st">${G.phase?'':`<span class="dot ${u.moved?'off':''}" title="move"></span><span class="dot ${u.acted?'off':''}" title="action" style="background:${u.acted?'':'#ff8a7a'}"></span>`}${ab?`<span class="ab ${ab.ready?'rdy':''}">${ab.ready?'⚡':ab.cd}</span>`:''}</span></button>`}).join(''):'';
   strip.hidden=!human;
   strip.querySelectorAll('[data-uid]').forEach(b=>b.onclick=()=>selectUnit(byId(+b.dataset.uid)));
   const sel=G.sel!=null?byId(G.sel):null,insp=G.inspect!=null?byId(G.inspect):null;
@@ -3663,9 +3795,9 @@ function renderDock(){
     return}
   if(!u||u.kind==='wall'){
     bar.innerHTML=`<div class="ab-sub">${human?`<b>Your turn.</b> ${G.ap} AP left. Tap a unit, or press Next to cycle through units that can still act.`:(p.ctrl==='bot'?'A bot is playing.':'Waiting for Player '+(p.id+1)+'.')+' Tap any unit to see what it does.'}</div>${human?`<div class="ab-btns"><button class="abtn next" id="abNext">Next unit ▸<small>${readyUnits().length} can still act</small></button></div>`:''}`;const nb=$('#abNext');if(nb)nb.onclick=nextUnit;return}
-  const F=facOf(u),pct=Math.max(0,u.hp/u.maxhp),ab=abState(u),A=u.ability?ABIL[u.ability]:null;
+  const F=facOf(u),pct=Math.max(0,u.hp/u.maxhp),ab=abState(u),A=u.ability?ABIL[u.ability]:null,AM=G.amode?ABIL[G.amode]:null;
   const head=`<div class="ab-head">${uIcon(u,38)}<div style="min-width:0;flex:1"><div class="ab-name" style="color:${F.color}">${u.name}${u.leader?' ♚':''}</div>
-    <div class="ab-sub">${fmt(u.hp)}/${u.maxhp} HP · ATK ${effAtk(u)} · DEF ${effDef(u)} · move ${u.mt==='knight'?'jump':effMov(u)} · ${ATTACKS[u.at].label.toLowerCase()} ${effRng(u)}${A?` · <b style="color:${ab.ready?'#ffd766':'#ffb3b3'}">${A.name}: ${ab.text}</b>`:''}</div></div>
+    <div class="ab-sub">${fmt(u.hp)}/${u.maxhp} HP · ATK ${effAtk(u)} · DEF ${effDef(u)} · move ${u.mt==='knight'?'jump':effMov(u)} · ${ATTACKS[u.at].label.toLowerCase()} ${effRng(u)}${abilsOf(u).map(k=>{const st=abState(u,k);return ` · <b style="color:${st.ready?'#ffd766':'#ffb3b3'}">${ABIL[k].name}: ${st.text}</b>`}).join('')}</div></div>
     <div class="ab-hp"><i style="width:${pct*100}%;background:${hpCol(pct)}"></i></div><div class="ab-hbtns"><button class="hbtn" id="abInfo" title="Full card">ⓘ Card</button><button class="hbtn" id="abX" aria-label="Close">✕</button></div></div>`;
   const mine=human&&sel&&u===sel&&u.owner===G.cur;
   if(!mine){bar.innerHTML=head;wireDock();return}
@@ -3676,30 +3808,32 @@ function renderDock(){
      Each button carries a plain description shown in the line under the buttons when you hover or touch it. */
   DOCK_DESC.length=0;const desc=t=>{DOCK_DESC.push(t);return `data-d="${DOCK_DESC.length-1}"`};
   const abBtn=(cls,id,icon,name,sub,d,dis)=>`<button class="abtn ${cls}" ${id?`id="${id}"`:''} ${d?desc(d):''} ${dis?'disabled':''}><b><i class="ic">${icon}</i>${name}</b><small>${sub}</small></button>`;
-  const rg=effRng(u),atkDesc=`<b>${ATTACKS[u.at].label} attack</b>, reach ${rg}: hits for ${effAtk(u)} minus the target's DEF. ${u.at==='lob'?ATTACKS[u.at].text(rg,u.rmin):ATTACKS[u.at].text(rg)}${u.aoe?` <b>${AOE[u.aoe].name}:</b> ${AOE[u.aoe].text}`:''}`;
-  const abDesc=A?`<b>${A.name}</b> · ${abilCost(u,u.ability)} AP · ${A.cd?`rests ${A.cd} turn${A.cd>1?'s':''} after use`:'once per turn'}${A.dmg?` · ${A.dmg} damage`:''}: ${A.desc} <span class="hint">Target: ${aimText(A).toLowerCase()}${shapeText(A)?' · '+shapeText(A).toLowerCase():''}.</span>`:'';
+  const rg=effRng(u),atkDesc=u.machine?`<b>Fires on its own</b> at the start of each gnome turn, for no AP: ${u.at==='none'?'1 damage ignoring DEF to every enemy within 2':`${ATTACKS[u.at].label.toLowerCase()} reach ${rg}, ${effAtk(u)} minus the target's DEF${u.aoe?` (${AOE[u.aoe].text.toLowerCase()})`:''}`}. It finishes a kill if it can, otherwise it shoots the enemy Leader, otherwise the weakest enemy in reach.`:`<b>${ATTACKS[u.at].label} attack</b>, reach ${rg}: hits for ${effAtk(u)} minus the target's DEF. ${u.at==='lob'?ATTACKS[u.at].text(rg,u.rmin):ATTACKS[u.at].text(rg)}${u.aoe?` <b>${AOE[u.aoe].name}:</b> ${AOE[u.aoe].text}`:''}`;
+  const abDescOf=k=>{const A=ABIL[k];return `<b>${A.name}</b> · ${abilCost(u,k)} AP · ${A.cd?`rests ${A.cd} turn${A.cd>1?'s':''} after use`:'once per turn'}${A.dmg?` · ${A.dmg} damage`:''}: ${A.desc} <span class="hint">Target: ${aimText(A).toLowerCase()}${shapeText(A)?' · '+shapeText(A).toLowerCase():''}.</span>`};
+  const abDesc=A?abDescOf(u.ability):'';
   let def='';
   if(G.amode){
-    const targets=A.aim==='unit'?[...new Set(aimCells(u,G.amode).map(([q,r])=>unitAt(q,r)).filter(Boolean))]:[];
-    btns=abBtn('go ready','abCast','✦',`Cast ${A.name}`,G.aim?'fires at the marked hex':'tap a gold hex first',abDesc,!G.aim)+abBtn('','abCancel','✕','Cancel','keep the ability for later');
-    def=`<b>Aiming ${A.name}.</b> ${A.aim==='self'?'The orange area shows who it hits. Press Cast to fire.':'Gold hexes are the places it can target; tap one, then tap it again or press Cast. The orange area shows who it hits.'}`;
+    const A=AM;const targets=A.aim==='unit'?[...new Set(aimCells(u,G.amode).map(([q,r])=>unitAt(q,r)).filter(Boolean))]:[];
+    btns=abBtn('go ready','abCast','✦',`Cast ${A.name}`,G.aim?'fires at the marked hex':'tap a gold hex first',abDescOf(G.amode),!G.aim)+abBtn('','abCancel','✕','Cancel','keep the ability for later');
+    def=`<b>Aiming ${A.name}.</b> ${A.aim==='self'?'The orange area shows who it hits. Press Cast to fire.':A.special==='march'?'Tap a gold hex next to the Warlord to pick the direction: the orange hexes are where the block will stand. Tap again or press Cast to march.':'Gold hexes are the places it can target; tap one, then tap it again or press Cast. The orange area shows who it hits.'}`;
     if(targets.length)list=`<div class="tgts">${targets.map(t=>`<button class="tgt ${tm(t.owner)===tm(u.owner)?'ally':''}" data-aim="${t.id}">${uIcon(t,30)}<span>${t.name}<br><b>${fmt(t.hp)} HP</b></span></button>`).join('')}</div>`;
   }else{
     const mv=effMov(u)||u.mov,mvDesc=`<b>Move</b> · 1 AP: ${MOVES[u.mt].text(mv)}${engaged(u)&&mv>1?' Engaged with an enemy: only one step.':''}`;
-    let abCls='used',abSub='',abIc='✦';
-    if(A){const cost=abilCost(u,u.ability);
-      if(u.cd>0){abCls='cd';abIc='⏳';abSub=`resting, ${u.cd} more turn${u.cd>1?'s':''}`}
+    // one button per ability (the Warlord has two: March and Rally); state colour says whether it can be used now
+    const abilBtn=(k,id)=>{const A=ABIL[k],cost=abilCost(u,k),cd=cdOf(u,k);let abCls='used',abSub='',abIc='✦';
+      if(cd>0){abCls='cd';abIc='⏳';abSub=`resting, ${cd} more turn${cd>1?'s':''}`}
       else if(hasCurse(u,'silence')){abCls='cd';abIc='⏳';abSub='silenced by a curse'}
       else if(u.st.frozen){abCls='cd';abIc='⏳';abSub=u.st.stun?'stunned':'frozen solid'}
       else if(u.acted&&!A.free)abSub='already acted this turn';
       else if(A.afterAtk&&!u.atkd)abSub='only after a basic attack';
       else if(truce()&&hostileAbil(A))abSub='truce in round 1';
       else if(G.ap<cost){abCls='noap';abSub=`needs ${cost} AP, you have ${G.ap}`}
-      else if(canAbil(u)){abCls='go ready';abSub='ready: tap to aim'}
-      else abSub=A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?'workshop full':'no target in reach';}
+      else if(canAbil(u,k)){abCls='go ready';abSub='ready: tap to aim'}
+      else abSub=A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?'workshop full':A.special==='march'?'nobody can step':A.special==='rally'?'no comrade within 2':'no target in reach';
+      return abBtn(abCls,id,abIc,`${A.name} · ${cost} AP`,abSub,abDescOf(k),!canAbil(u,k))};
     btns=abBtn(u.moved&&!(u.freeMove>0)?'used':moves?'mv':'used',null,'➤',u.freeMove>0?'Move · free':'Move · 1 AP',u.moved&&!(u.freeMove>0)?'already moved':moves?moves+' spot'+(moves>1?'s':'')+': tap a dot':G.ap<1?'no AP left':'no room to move',mvDesc,true)+
-      abBtn('atk'+(tg.length?' ready':u.acted?' used':' used'),'abAtk','⚔',`Attack · ${atkCost(u)?atkCost(u)+' AP':'free'}`,u.acted&&!(u.freeAtk>0)?'already acted':tg.length?tg.length+' target'+(tg.length>1?'s':'')+' below':truce()?'truce in round 1':G.ap<atkCost(u)?`needs ${atkCost(u)} AP, you have ${G.ap}`:'nothing in reach',atkDesc,!tg.length)+
-      (A?abBtn(abCls,'abAbil',abIc,`${A.name} · ${abilCost(u,u.ability)} AP`,abSub,abDesc,!canAbil(u)):'')+
+      (u.machine?abBtn('atk used',null,'⚙','Fires on its own','at the start of your turn',atkDesc,true):abBtn('atk'+(tg.length?' ready':u.acted?' used':' used'),'abAtk','⚔',`Attack · ${atkCost(u)?atkCost(u)+' AP':'free'}`,u.acted&&!(u.freeAtk>0)?'already acted':tg.length?tg.length+' target'+(tg.length>1?'s':'')+' below':truce()?'truce in round 1':G.ap<atkCost(u)?`needs ${atkCost(u)} AP, you have ${G.ap}`:'nothing in reach',atkDesc,!tg.length))+
+      (u.ability?abilBtn(u.ability,'abAbil'):'')+(u.ability2?abilBtn(u.ability2,'abAbil2'):'')+
       abBtn('next','abNext','▸','Next unit',`${readyUnits().length} can still act`,'<b>Next unit</b>: jumps to the next of your units that can still move, attack or use its ability.');
     def=A?abDesc:atkDesc;
     if(tg.length)list=`<div class="tgts">${tg.map(t=>{const d=basicDmg(u,t),r=retaliation(u,t);return `<button class="tgt" data-atk="${t.id}">${uIcon(t,30)}<span>${t.name} · ${fmt(t.hp)} HP<br><b>hit for ${d}</b>${d>=t.hp?' <b>KILL</b>':''}${r?` · takes ${r} back`:''}</span></button>`}).join('')}</div>`;
@@ -3715,6 +3849,7 @@ function wireDock(){
   on('#abInfo',()=>{if(document.body.classList.contains('focus'))document.body.classList.add('drawer');else $('#unitCard').scrollIntoView({behavior:'smooth',block:'start'})});
   on('#abAtk',()=>{const tg=attackTargets(u);if(tg.length===1)attack(u,tg[0]);else{const t=$('.tgts');if(t)t.scrollIntoView({block:'nearest'})}});
   on('#abAbil',()=>{G.amode=u.ability;G.inspect=null;G.aim=ABIL[u.ability].aim==='self'?[u.q,u.r]:null;refresh()});
+  on('#abAbil2',()=>{G.amode=u.ability2;G.inspect=null;G.aim=ABIL[u.ability2].aim==='self'?[u.q,u.r]:null;refresh()});
   on('#abCast',()=>{if(G.aim)useAbility(u,G.amode,G.aim[0],G.aim[1])});
   on('#abCancel',()=>{G.amode=null;G.aim=null;refresh()});
   document.querySelectorAll('#actionBar [data-atk]').forEach(b=>b.onclick=()=>{const t=byId(+b.dataset.atk);if(t&&u)attack(u,t)});
@@ -3764,18 +3899,18 @@ setInterval(()=>{
 function nothingLeft(){const mine=G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall');if(G.ap<1)return !mine.some(u=>(u.freeAtk>0&&attackTargets(u).length)||(u.freeMove>0&&moveOpts(u).size));// a Quicken strike or Rewind move still costs nothing
   return !mine.some(u=>attackTargets(u).length||canAbil(u)||((!u.moved||u.freeMove>0)&&moveOpts(u).size))||(G.ap<2&&!mine.some(u=>(!u.moved||u.freeMove>0)&&moveOpts(u).size))}
 function statB(v,base){return `<b class="${v>base?'up':v<base?'down':''}">${fmt(v)}</b>`}
-function abilBlock(u){
-  const A=ABIL[u.ability];const mine=isHumanTurn()&&u.owner===G.cur;
-  const pill=u.cd>0?`<span class="bigpill cd">Rests ${u.cd} more turn${u.cd>1?'s':''}</span>`:`<span class="bigpill rdy">⚡ Ready</span>`;
+function abilBlock(u,k){
+  k=k||u.ability;const A=ABIL[k],second=k===u.ability2;const mine=isHumanTurn()&&u.owner===G.cur;const cd=cdOf(u,k);
+  const pill=cd>0?`<span class="bigpill cd">Rests ${cd} more turn${cd>1?'s':''}</span>`:`<span class="bigpill rdy">⚡ Ready</span>`;
   let why='';
-  const cost=abilCost(u,u.ability);
-  if(mine&&!G.amode&&!canAbil(u)){why=u.cd>0?'Resting.':u.st.frozen?(u.st.stun?'Stunned.':'Frozen.'):A.afterAtk&&!u.atkd&&!u.acted?'Only after a basic attack this turn.':hasCurse(u,'silence')?'Silenced.':u.acted?'Already acted this turn.':G.ap<cost?`Needs ${cost} AP.`:A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`The workshop is full: ${machineCap(u.owner)} machines already on the board.`:'No valid target in reach.'}
+  const cost=abilCost(u,k);
+  if(mine&&!G.amode&&!canAbil(u,k)){why=cd>0?'Resting.':u.st.frozen?(u.st.stun?'Stunned.':'Frozen.'):A.afterAtk&&!u.atkd&&!u.acted?'Only after a basic attack this turn.':hasCurse(u,'silence')?'Silenced.':u.acted?'Already acted this turn.':G.ap<cost?`Needs ${cost} AP.`:A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`The workshop is full: ${machineCap(u.owner)} machines already on the board.`:'No valid target in reach.'}
   const shape=[aimText(A),shapeText(A)].filter(Boolean).join(' · ');
   let ctrl='';
   if(mine){
-    if(G.amode)ctrl=`<div class="row" style="margin-top:8px"><button class="btn sm primary" id="castAb" ${G.aim?'':'disabled'}>Cast ${A.name}</button><button class="btn sm" id="cancelAb">Cancel</button></div>
-      <div class="hint" style="margin-top:4px">${A.aim==='self'?'The orange area shows who it hits.':'Tap a gold hex to aim. The orange area shows who it hits. Tap the same hex again, or Cast, to fire.'}</div>`;
-    else ctrl=`<div class="row" style="margin-top:8px"><button class="btn sm primary" id="useAb" ${canAbil(u)?'':'disabled'}>Aim ${A.name}</button>${why?`<span class="hint">${why}</span>`:''}</div>`;
+    if(G.amode===k)ctrl=`<div class="row" style="margin-top:8px"><button class="btn sm primary" id="castAb" ${G.aim?'':'disabled'}>Cast ${A.name}</button><button class="btn sm" id="cancelAb">Cancel</button></div>
+      <div class="hint" style="margin-top:4px">${A.aim==='self'?'The orange area shows who it hits.':A.special==='march'?'Tap a gold hex next to the Warlord to pick the direction; the orange hexes show where the block will stand.':'Tap a gold hex to aim. The orange area shows who it hits. Tap the same hex again, or Cast, to fire.'}</div>`;
+    else if(!G.amode)ctrl=`<div class="row" style="margin-top:8px"><button class="btn sm primary" id="${second?'useAb2':'useAb'}" ${canAbil(u,k)?'':'disabled'}>Aim ${A.name}</button>${why?`<span class="hint">${why}</span>`:''}</div>`;
   }
   return `<div class="abil"><div class="row between"><span class="n">${A.name}</span>${pill}</div>
     <div class="hint" style="margin-top:2px">${cost} AP${cost<A.cost?' (home ground discount)':''} · ${A.cd?`rests ${A.cd} turn${A.cd>1?'s':''} after use`:'once per turn'}${A.free?' · uses neither its move nor its action':''}${A.dmg?` · <b style="color:#ffb35c">${A.dmg} spell damage</b>${A.pierce?' (ignores DEF)':''}`:''}</div>
@@ -3824,7 +3959,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   {const rl=relicOf(u);if(rl)tags.unshift(`<span class="tag" style="background:${hexA(RELICS[rl.kind].col,.25)};color:${RELICS[rl.kind].col}">◆ ${RELICS[rl.kind].name}: ${RELICS[rl.kind].text} (−1 move)</span>`)}
   if(u.leader&&talentInfo(p))tags.unshift(`<span class="tag" style="background:#3a2f12;color:#ffd766">♚ Talent · ${talentInfo(p).name}: ${talentInfo(p).text}</span>`);
   if(u.trait)tags.unshift(`<span class="tag trait">✦ ${TRAITS[u.trait].name}: ${TRAITS[u.trait].text}</span>`);
-  if(u.summon)tags.push(`<span class="tag">Built: falls apart in ${u.ttl} turn${u.ttl>1?'s':''}${u.machine?' · never moves · attacks for 1 AP · no charge or star for killing it':''}</span>`);
+  if(u.summon)tags.push(`<span class="tag">Built: falls apart in ${u.ttl} turn${u.ttl>1?'s':''}${u.machine?' · never moves · fires on its own for free at the start of the gnome turn · no charge or star for killing it':''}</span>`);
   if(u.machine&&u.owner===G.cur)tags.push(`<span class="tag">Workshop: ${machineCount(u.owner)} of ${machineCap(u.owner)} machines out</span>`);
   if(u.kind!=='wall'&&!u.summon&&F.cover)tags.push(covered(u)?'<span class="tag good">Cover: next to a machine, basic attacks deal 1 less (never below 1)</span>':'Cover: no machine beside it');
   if(u.freeAtk>0)tags.push('<span class="tag good">Quickened: one free basic attack this turn (no AP)</span>');
@@ -3835,17 +3970,20 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.mov>0&&onRoad(u))tags.push('<span class="tag good">Flank road +1 move</span>');
   if(cells(u).some(([q,r])=>isOutpost(q,r)))tags.push('<span class="tag good">On an Outpost: +1 Ultimate charge per turn</span>');
   if(u.kind!=='wall'&&engaged(u)&&effMov(u)>1)tags.push('<span class="tag bad">Engaged: can only step 1 hex</span>');
-  if(u.at==='melee'&&!u.egg)tags.push(ripostes(u)?'Strikes back at full damage':'Strikes back for half damage when hit in melee');
+  if((u.at==='melee'||u.at==='reach')&&!u.egg)tags.push(ripostes(u)?'Strikes back at full damage':'Strikes back for half damage when hit in melee');
   if(hasTrait(u,'tempo')&&u.swings)tags.push(`<span class="tag good">Tempo: ${u.swings} strike${u.swings>1?'s':''} this turn, next one +${Math.min(2,u.swings)}</span>`);
   if(u.cut!=null&&G.players[u.cut])tags.push(`<span class="tag bad">Cut by a Second Hand: the ${FAC[G.players[u.cut].fac].name} Chronarch deals +1 to it this turn</span>`);
   if(onHome(u))tags.push('<span class="tag good">On home ground</span>');
   if(heartBuff(u))tags.push('<span class="tag good">Heart +1/+1</span>');
   if(onThrone(u))tags.push('<span class="tag good">On the Throne: +1 ATK, +1 range, fast cooldown, +1 AP</span>');
-  if(F.focus)tags.push(u.moved?'Moved: no Focus':'<span class="tag good">Focus +1 ATK</span>');
+  if(F.grace&&(onGrove(u)||cells(u).some(([q,r])=>isHeart(q,r))))tags.push('<span class="tag good">Grace: heals 1 extra at the end of its turn</span>');
+  if(u.kind!=='wall'&&onGrove(u))tags.push('<span class="tag good">On a Grove: heals 1 at the start of its turn</span>');
+  if(hasTrait(u,'fervour'))tags.push(u.fv>0?`<span class="tag good">Fervour: +${Math.min(3,u.fv)} damage (healed ${u.fv} this turn)</span>`:'Fervour: no healing received this turn, no bonus');
   if(u.rage&&u.hp*2<=u.maxhp)tags.push('<span class="tag good">Raging: +2 ATK</span>');
   if(u.kind!=='wall'&&facOf(u).line&&!u.leader){const lb=lineBonus(u);tags.push(lb?`<span class="tag good">Battle Line +${lb} ATK${lb===2?' (next to the Warlord)':''}</span>`:'Battle Line: no comrade at its shoulder, no bonus')}
-  if(u.step!=null)tags.push('<span class="tag good">Forward!: may take a free 1-hex step</span>');
-  if(u.st.guardAll)tags.push('<span class="tag good">Interposing: basic attacks on adjacent friends hit this unit instead</span>');
+  if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx){const n=comradesAdj(u);tags.push(n>=1?`<span class="tag good">Battle Line: ${n} comrade${n===1?'':'s'} adjacent, +1 ATK</span>`:`Battle Line: no comrade adjacent, no bonus`);
+    if(!hasTrait(u,'shieldwall'))tags.push(G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&hasTrait(w,'shieldwall')&&distUU(w,u)===1)?'<span class="tag good">Shield Wall: 1 less from ranged attacks and abilities</span>':'No Shieldbearer beside it')}
+  if(u.st.rally)tags.push('<span class="tag good">Rallied: +1 ATK until the start of its next turn</span>');
   if(u.st.shield)tags.push(`<span class="tag good">Shield ${u.st.shield}</span>`);
   if(u.st.emp)tags.push('<span class="tag good">Warhorn +2 ATK</span>');
   if(u.st.chill)tags.push(`<span class="tag bad">Chilled: 1 less move (${u.st.chill} more turn${u.st.chill>1?'s':''}); Ice Lance deals double</span>`);
@@ -3861,13 +3999,14 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     <div class="hpbar"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div>
     <div class="stat"><div><b>${fmt(u.hp)}</b><span>HP</span></div><div>${statB(effAtk(u),u.atk)}<span>ATK</span></div><div>${statB(effDef(u),u.def)}<span>DEF</span></div><div>${statB(effMov(u),u.mov)}<span>MOV</span></div><div>${statB(rg,u.rng)}<span>RNG</span></div></div>
     ${UNIT_LINES[u.name]?`<p class="tagline">${UNIT_LINES[u.name]}</p>`:''}
-    ${u.ability?abilBlock(u):`<div class="abil hint">No ability. ${u.pawn?'Pawns trade tricks for speed and numbers.':'Pure stats.'}</div>`}
+    ${u.ability?abilBlock(u,u.ability):`<div class="abil hint">No ability. ${u.pawn?'Pawns trade tricks for speed and numbers.':'Pure stats.'}</div>`}${u.ability2?abilBlock(u,u.ability2):''}
     <div class="tags">${tags.map(t=>t.startsWith('<')?t:`<span class="tag">${t}</span>`).join('')}</div>
     <details class="more" ${window.innerWidth>980?'open':''}><summary>How it moves and attacks</summary><div class="pats">
       <div class="pat">${patternSVG(u.mt,mv,0,F.color,F.color)}<div class="mvkind ${M.free?'free':'pat'}">${M.free?'Free move':'Pattern move'}</div><div class="mt">${M.text(mv)}${F.gate&&onHome(u)&&!G.gateUsed?' On teal: can also step to any empty teal hex.':''}</div></div>
       <div class="pat">${patternSVG('a:'+u.at,rg,u.rmin,'#ff6161',F.color)}<div class="mvkind atk">${AT.label} attack${u.aoe?` · ${AOE[u.aoe].name}`:''}</div><div class="mt">${atkTxt}${u.aoe?` <b style="color:#ffb35c">${AOE[u.aoe].name}:</b> ${AOE[u.aoe].text}`:''}</div></div>
     </div></details>`;
   const ub=$('#useAb');if(ub)ub.onclick=()=>{G.amode=u.ability;G.inspect=null;G.aim=ABIL[u.ability].aim==='self'?[u.q,u.r]:null;refresh()};
+  const ub2=$('#useAb2');if(ub2)ub2.onclick=()=>{G.amode=u.ability2;G.inspect=null;G.aim=ABIL[u.ability2].aim==='self'?[u.q,u.r]:null;refresh()};
   const cb=$('#cancelAb');if(cb)cb.onclick=()=>{G.amode=null;G.aim=null;refresh()};
   const fb=$('#castAb');if(fb)fb.onclick=()=>{if(G.aim)useAbility(u,G.amode,G.aim[0],G.aim[1])};
 }
@@ -3923,31 +4062,34 @@ function showRules(){
   <li>Your army's home bonus works on <b>all</b> your ground, so pushing forward carries your strength with you.</li>
   <li>The side holding the most ground gets +1 Ultimate charge each turn (★ in the side panel).</li></ul>
   <h3>Your turn</h3><ul>
-  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives, +${RULES.THRONE_AP} while you hold the Throne, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}. The very first turn of the game gets 2 fewer.</li>
-  <li>Move a unit: 1 AP. Basic attack: 2 AP (a gnome machine's attack: 1 AP). Ability: its listed cost. Ultimate: ${RULES.ULT_COST} AP (team: ${RULES.TEAM_ULT_COST}).</li>
+  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives, +${RULES.THRONE_AP} while you hold the Throne, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}.</li>
+  <li>Move a unit: 1 AP. Basic attack: 2 AP. Ability: its listed cost. Ultimate: ${RULES.ULT_COST} AP (team: ${RULES.TEAM_ULT_COST}). Gnome machines fire on their own for no AP.</li>
   <li>Each unit can move once and act once per turn, in either order. Acting means a basic attack <b>or</b> its ability.</li></ul>
   <h3>Moving</h3><p>The chess symbol in a piece's corner shows how it moves.</p><ul>
   <li><span class="glyph">${LEADER_GLYPH}︎</span> <b>Leader</b>: free movement.</li>${mv}
   <li>A dashed ring means the piece <b>flies</b> over units, rocks and voids. A flyer can also <b>perch on a rock</b>: walkers can’t hit it in melee there, but its attacks lose 1 range.</li>
   <li><b>Engaged.</b> A unit that starts its move next to an enemy can only step 1 hex. Flyers, jumpers, <b>Swift</b>, <b>Unstoppable</b> and <b>Ambush</b> units slip away.</li>
   <li><b>Giants and gates.</b> A two-hex giant is too wide to squeeze through a gap of one hex: it can never step onto a hex that lies between two wall pieces (ice, stone or light wall), or between a wall and a rock. In practice: two of the hex's six neighbours are walls or rock, and at least one of them is a wall. Every one-hex unit walks through such a gap freely. Giants break gates by attacking the walls; the Cliff Breaker's Smash deals double damage to walls.</li>
-  <li><b>Brace</b> (Spearman). A Spearman that has not moved this turn holds its spear out: any enemy that ends a move on one of the hexes in front of it takes 2 damage minus DEF.</li>
-  <li><b>Forward!</b> (Warlord). A free step is 1 hex for no AP; it does not use the unit's move and works even while engaged.</li></ul>
+  <li><b>Brace</b> (Spearman). A Spearman that has not moved this turn holds its spear out: any enemy that ends a move on one of the hexes in front of it (facing away from home) takes 2 damage minus DEF.</li>
+  <li><b>March</b> (Warlord, 1 AP). The Warlord and every Warband unit within 2 of him step 1 hex in one chosen direction, for free, front units first; a unit whose hex ahead is taken stays. The step uses nobody's move or action and works while engaged.</li></ul>
   <h3>Fighting</h3><ul>
   <li><b>Damage</b> is ATK minus DEF, but DEF never blocks more than half a hit, and every hit does at least 1. Pierce damage ignores DEF.</li>
-  <li><b>Melee</b> hits adjacent hexes. <b>Forward</b> (pawns) hits only the hexes in front of it (facing away from home), never behind or sideways. <b>Bolt</b> and <b>diagonal bolt</b> shoot along lines and are blocked by the first thing in the way. <b>Lob</b> arcs over everything but can't hit adjacent enemies.</li>
+  <li><b>Melee</b> hits adjacent hexes. <b>Spear</b> (Spearman) thrusts along a straight line up to 2 hexes and strikes <i>over</i> a friendly unit in between: the second rank fights. <b>Forward</b> (pawns) hits only the hexes in front of it (facing away from home), never behind or sideways. <b>Bolt</b> and <b>diagonal bolt</b> shoot along lines and are blocked by the first thing in the way. <b>Lob</b> arcs over everything but can't hit adjacent enemies.</li>
   <li><b>Area attacks:</b> Cleave also hits enemies next to both you and the target (half damage); Splash deals 1 to everything next to the target; Pierce carries through to the next unit behind (half damage).</li>
   <li><b>Strike back.</b> A melee unit hit by an adjacent enemy's basic attack hits back for half damage (Riposte: full). Not while frozen, stunned or surrounded.</li>
   <li><b>Surround.</b> +${RULES.SURROUND} damage when the target touches 2 or more of your units.</li>
   <li><b>Swarmed giant.</b> A two-hex giant takes +1 damage from every melee basic attack while 2 or more enemies (of any side) stand next to it. Giants are meant to be beaten by shooting from afar, but a pack of melee fighters that closes in still hurts them.</li>
   <li><b>Guarded Leaders (4 or more players, free-for-all only).</b> Attacks and abilities fired from 3 or more hexes away deal 1 less damage to a Leader, never below 1. In a crowded game a Leader gets shot from two sides at once; this keeps Leaders alive long enough to matter. Teams and 1-against-1 are unchanged.</li>
-  <li><b>Guards who take the hit.</b> Bodyguard (trait) and the Shieldbearer's Interpose redirect a <i>basic attack</i> aimed at a protected neighbour onto the guard. Abilities and Ultimates always land where they were aimed. The Hourglass Order has no guards or shields at all.</li>
+  <li><b>Guards who take the hit.</b> Bodyguard (trait) redirects a <i>basic attack</i> aimed at an adjacent friendly Leader onto the guard. Abilities and Ultimates always land where they were aimed. The Hourglass Order has no guards or shields at all.</li>
+  <li><b>Shield Wall</b> (Shieldbearer). Every friendly unit next to a Shieldbearer takes 1 less damage from ranged basic attacks and from abilities (never below 1); the Shieldbearer itself takes 1 less from every hit. Curse ticks and burning ground are not hits. No aiming: it is where the Shieldbearer stands that counts.</li>
   <li><b>Void Traps</b> (Riftwalkers). A Voidcaller tears open an empty hex for 3 of its side's turns (a black hex with a pulsing teal ring and the turns left). While open it is a void: nothing can step on it, and any unit shoved, pulled, dragged or thrown into it falls in and dies. Giants can't be moved, so they only take the slam.</li>
   <li><b>Free actions</b> (Hourglass Order). Quicken gives a unit one extra basic attack this turn that costs no AP, even after it has acted. Rewind gives a unit one extra move this turn that costs no AP, even after it has moved. Vanish lets a Second Hand that has made a basic attack this turn teleport up to 3 hexes without using its move or action.</li>
-  <li><b>Machines</b> (Gnome Tinkers). The gnomes build their army: Turrets, Mortars, Flame Turrets and Tesla Coils. Machines <b>never move</b>. The workshop holds at most <b>5 machines</b> on the board at once; a build button is greyed out until one falls apart or is destroyed. Every machine falls apart after 4 of the gnomes' turns. A machine's basic attack costs <b>1 AP</b> instead of 2. Machines are summons: destroying one gives <b>no Ultimate charge and no veteran star</b>, they claim no ground, carry no relics, can't be possessed, can't be Leaders, and a side with only machines left is out. <b>Cover:</b> a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1); abilities, bombs, curses and strike-back are not reduced. Clockwork Rush repairs every machine to full and gives each a fresh attack.</li>
+  <li><b>Machines</b> (Gnome Tinkers). The gnomes build their army: Turrets, Mortars, Flame Turrets and Tesla Coils. A gnome builds for 2 AP on an <b>empty hex next to itself</b> (gnomes are tiny: they must walk up to the spot). Machines <b>never move</b> and have no attack button: <b>at the start of each gnome turn every machine fires on its own, for free</b>, at what it can reach (Turret: one enemy on a straight line up to 3, for 3 minus DEF; Mortar: one enemy 2 to 4 away, 3 minus DEF; Flame Turret: the nearest adjacent enemy and the two hexes beside it, 2 minus DEF each; Tesla Coil: 1 damage ignoring DEF to every enemy within 2). A machine finishes a kill if it can, otherwise it shoots the enemy Leader, otherwise the weakest enemy in reach. The workshop holds at most <b>4 machines</b> on the board at once; a build button is greyed out until one falls apart or is destroyed. Every machine falls apart after 4 of the gnomes' turns. Machines are summons: destroying one gives <b>no Ultimate charge and no veteran star</b>, they claim no ground, carry no relics, can't be possessed, can't be Leaders, and a side with only machines left is out. <b>Cover:</b> a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1); abilities, bombs, curses and strike-back are not reduced. Clockwork Rush repairs every machine to full, gives +1 ATK and makes every machine fire again at once.</li>
   <li><b>Battle Line</b> (Iron Warband): a Warband unit standing next to another Warband unit has +1 ATK, or +2 if one of its neighbours is the Warlord. The Warlord himself gets no bonus.</li>
+  <li><b>Rally</b> (Warlord, 1 AP): every other Warband unit within 2 of him gets +1 ATK until the start of the Warband's next turn, strike-backs included.</li>
+  <li><b>Holy ground</b> (Circle of Priests). A Druid's Grove turns a hex and its 6 neighbours into holy ground for 3 turns (indigo, never the Heart): every unit standing on it, friend or foe, heals 1 at the start of its owner's turn. <b>Grace:</b> a priest that ends its turn on a Grove or on the Heart heals 1 extra. <b>Wall of Light</b> (Lightwarden): one empty hex within 3 becomes a 6 HP wall for 3 turns that blocks movement and every shot. <b>Fervour</b> (Zealot): its basic attack deals extra damage equal to the healing it received this turn, up to +3: mend it first, then strike. <b>Exodus</b> heals every priest to full and pushes every enemy within 2 of a priest 1 hex away.</li>
   <li><b>Veterans.</b> A killing blow earns a star: +1 ATK, up to 3. Giants need 2 kills per star. Machines and eggs give no star.</li></ul>
-  <h3>Abilities</h3><p>Most non-pawn units have one. An ability deals its own fixed spell damage (ATK bonuses don't change it) and rests 1 to 5 of your turns afterwards. Frost Hold, Stone Giants, Gnome Tinkers, Hourglass Order, Riftwalkers and Arcane Conclave field no pawns at all. Shapes: blasts, cones, lines, rings, arcs, auras and single targets. Tap Aim, tap a gold hex to preview, tap again to fire.</p>
+  <h3>Abilities</h3><p>Most non-pawn units have one. An ability deals its own fixed spell damage (ATK bonuses don't change it) and rests 1 to 5 of your turns afterwards. The Warlord carries two (March and Rally), each with its own rest. Frost Hold, Stone Giants, Gnome Tinkers, Hourglass Order, Riftwalkers, Iron Warband and the Circle of Priests field no pawns at all. Shapes: blasts, cones, lines, rings, arcs, auras and single targets. Tap Aim, tap a gold hex to preview, tap again to fire.</p>
   <h3>Pillar 1: the Centre</h3><ul>
   <li><b>The Heart</b> (gold hexes): a side holds it while it is the only side with units on it. Holding it gives every unit of that side +1 ATK and +1 DEF, heals your units standing on it 1 HP per turn, and scores 1 Warlord point per turn.</li>
   <li><b>Warlord points</b> come from three places: holding the Heart at the start of your turn (1 point), holding more Outposts than any other side at the start of your turn from round ${RULES.CENTRE_FROM} (1 point; a tie scores nothing), and killing an enemy Leader (2 points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
@@ -3977,19 +4119,21 @@ function showQuick(){
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
   ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +${RULES.THRONE_AP} Throne · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
-  ${row('Costs','Move 1 · Attack 2 (gnome machines 1) · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+')')}
-  ${row('Machines','Gnomes: at most 5 on the board · machines never move · each falls apart after 4 gnome turns · attack for 1 AP · killing one gives no charge and no star · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1)')}
+  ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free')}
+  ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 4 on the board · machines never move · each fires on its own for free at the start of the gnome turn · each falls apart after 4 gnome turns · killing one gives no charge and no star · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1)')}
   ${row('Per unit','Move once + one action (attack <b>or</b> ability)')}
   ${row('Damage','ATK − DEF, DEF blocks at most half, minimum 1. Pierce ignores DEF')}
   ${row('Strike back','Melee targets hit back ½ (Riposte full), not if surrounded/frozen')}
   ${row('Surround','Target touches 2+ of yours: +'+RULES.SURROUND+' damage')}
   ${row('Giants','2 hexes, can’t be moved · +1 damage from melee while 2+ enemies touch it · can’t enter a hex between two walls (or wall + rock)')}
   ${row('Battle Line','Warband: +1 ATK next to a comrade, +2 next to the Warlord (not the Warlord himself)')}
-  ${row('Guards','Bodyguard / Interpose: basic attacks on a protected neighbour hit the guard instead; abilities are not redirected')}
+  ${row('Phalanx','Warband: Battle Line +1 ATK next to a comrade · Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged attacks and abilities · Spear strikes 2 away over a friend · March moves the block 1 hex · Rally +1 ATK within 2')}
+  ${row('Guards','Bodyguard: basic attacks on an adjacent friendly Leader hit the guard instead; abilities are not redirected')}
   ${row('Free actions','Hourglass: Quicken = 1 extra basic attack for 0 AP · Rewind = 1 extra move for 0 AP · Vanish = teleport 3 after a basic attack')}
   ${row('Brace','Un-moved Spearman: end a move in front of it, take 2 − DEF')}
   ${row('Engaged','Start next to an enemy: move 1 (fly/jump/Swift/Ambush exempt)')}
-  ${row('Pawns','Strike only forward, never behind · Frost, Giants, Gnomes, Hourglass, Rift and Arcane have none')}
+  ${row('Pawns','Strike only forward, never behind · Frost, Giants, Gnomes, Hourglass, Rift, Warband and Priests have none')}
+  ${row('Priests','Grove = holy ground for 3 turns, everyone on it heals 1 at the start of its turn · Grace: end the turn on a Grove or the Heart, heal 1 more · Wall of Light blocks moves and shots · Zealot: +1 damage per point healed this turn (max 3)')}
   ${row('Perch','Flyers can sit on rocks: safe from melee walkers, −1 range')}
   ${row('Inspect','Long-press any piece for its full card')}
   ${row('Heart','Held: +1 ATK +1 DEF army-wide, heal 1 on it, 1 point/turn from round '+RULES.CENTRE_FROM)}
@@ -4017,7 +4161,7 @@ function showQuick(){
 }
 /* Armies rebuilt after the War Room run that BALANCE comes from: their old win numbers would mislead, so the setup cards and the
    balance table say "new roster, not yet measured" until a full run with a new version label replaces BALANCE (v19 candidate, 29 Sep 2026). */
-const ROSTER_CHANGED={since:'v18e',armies:['ice','giants','gnomes','chrono','rift']};
+const ROSTER_CHANGED={since:'v18e',armies:['ice','giants','gnomes','chrono','rift','warband']};
 const unmeasured=k=>!!(typeof BALANCE!=='undefined'&&BALANCE&&BALANCE.version===ROSTER_CHANGED.since&&ROSTER_CHANGED.armies.includes(k));
 /* War Room numbers in the setup screen. BALANCE (built by build.py from sim/results/agg.json) holds, per simulated set-up,
    how often Hard bots won with each army. Three set-ups are simulated: 4-player free for all, 2v2 teams and 1 against 1, all in Warlord. */
@@ -4205,7 +4349,7 @@ function draw(now){
       ctx.beginPath();ctx.arc(gx,gy,br,0,7);ctx.fillStyle='#0b0e14';ctx.fill();
       ctx.fillStyle=col;ctx.font=`${br*1.5}px 'Noto Sans Symbols 2','Segoe UI Symbol',serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(u.glyph+'︎',gx,gy+br*0.08)}
     ctx.globalAlpha=1;
-    const sts=[];if(u.st.chill)sts.push('#5cc8ff');if(u.st.frozen)sts.push(u.st.stun?'#d9a45b':'#ffffff');if(u.st.emp)sts.push('#e8b84e');if(u.st.shield)sts.push('#d7c9ff');if(u.st.guardAll)sts.push('#eef0f4');if(u.freeAtk>0||u.freeMove>0)sts.push('#c81ca6');if(u.st.duel)sts.push('#ff6161');
+    const sts=[];if(u.st.chill)sts.push('#5cc8ff');if(u.st.frozen)sts.push(u.st.stun?'#d9a45b':'#ffffff');if(u.st.emp)sts.push('#e8b84e');if(u.st.shield)sts.push('#d7c9ff');if(u.st.rally)sts.push('#eef0f4');if(u.freeAtk>0||u.freeMove>0)sts.push('#c81ca6');if(u.st.duel)sts.push('#ff6161');
     if(u.poss){ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle='#e8e23a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my,rad+7,0,7);ctx.stroke();ctx.restore()}
     if(u.summon&&SZ>=10)badge(mx+rad*0.75,my+rad*0.75,Math.max(5,rad*0.36),'#0b0e14',FAC.gnomes.color,u.ttl);
     sts.forEach((c,i)=>{ctx.beginPath();ctx.arc(mx+rad*0.75-i*SZ*0.3,my-rad*0.8,Math.max(2.5,SZ*0.14),0,7);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1;ctx.stroke()});
