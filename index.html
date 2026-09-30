@@ -307,6 +307,7 @@ body.focus .aplabel{white-space:nowrap}
 .scorestrip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted,#8d95a9);margin:0 0 6px;min-width:0}
 .scorestrip .rd{font-weight:700;color:var(--text,#e6e9f0)}
 .scorestrip .hs{white-space:nowrap}
+.scorestrip .wallnote{color:#d8c8a4;font-weight:700}
 .scorestrip .lbl{margin-left:auto;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
 .scorestrip .sc{display:inline-flex;align-items:center;gap:3px;background:#161b26;border:1px solid #283042;border-radius:999px;padding:2px 8px 2px 5px;white-space:nowrap}
 .scorestrip .sc i{width:9px;height:9px;border-radius:50%;display:inline-block}
@@ -502,7 +503,10 @@ body.wide .turnbar .btn.sm{padding:7px 10px}
           <span><svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 12 A6 5 0 0 1 14 12" fill="none" stroke="#e6d7aa" stroke-width="1.6"/></svg>Hill: +1 range, +1 dmg</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 12,8 8,15 4,8" fill="#bff7d8"/></svg>Shrine heals</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><path d="M1 13h14" stroke="#ecdebe" stroke-width="1.6" stroke-dasharray="3 2"/></svg>Flank road (+1 move)</span>
-          <span><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3" y="2" width="1.6" height="12" fill="#ece8dd"/><path d="M4.6 2.5h8l-2 3 2 3h-8z" fill="#ece8dd"/></svg>Outpost (+1 charge)</span>
+          <span><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3" y="2" width="1.6" height="12" fill="#ece8dd"/><path d="M4.6 2.5h8l-2 3 2 3h-8z" fill="#ece8dd"/></svg>Flag (stays yours, +1 charge)</span>
+          <span><svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" fill="#9a8a70" stroke="#241a10"/><path d="M1 8h14M5 3v5M11 3v5M8 8v5" stroke="#241a10" stroke-width="1"/></svg>Wall (until round 5)</span>
+          <span><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="#2fb8d8" stroke="#7fe8ff" stroke-width="1.6"/><circle cx="8" cy="8" r="2.5" fill="#bff6ff"/></svg>Wellspring (+1 AP)</span>
+          <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1.5 15,14 1,14" fill="#3a1760" stroke="#b06bff" stroke-width="1.4"/><circle cx="6.3" cy="9.5" r="1" fill="#fff36b"/><circle cx="9.7" cy="9.5" r="1" fill="#fff36b"/></svg>Rift Beast</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 13,8 8,15 3,8" fill="#ffd766"/></svg>Relic</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#e8e23a"/><text x="8" y="11.5" font-size="9" text-anchor="middle" fill="#1b2008" font-weight="700">2</text></svg>Curses</span>
         </div>
@@ -530,7 +534,9 @@ const COLLAPSE_START={regicide:20,warlord:16,annihilation:22,conquest:null};// w
 // More players means longer rounds, so the Collapse comes sooner: 3 rounds earlier with 3 players, 6 with 4 or more.
 function collapseStart(mode,n){const b=COLLAPSE_START[mode];return b==null?null:b-(n>=4?6:n===3?3:0)}
 function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;return G.teams?12:G.players.length>=4?10:RULES.WARLORD_TARGET}// teams 8 -> 12 on 28 Sep 2026: with Outpost and takedown points, team games ended in 11 rounds
-const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:3,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2};
+const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:9,BEAST_HP:20,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2};
+// Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
+// and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns beside the Heart at BEAST_AT.
 const APV=0.35;
 let G=null,SIM=false,CUR_SRC=null,CUR_TAG=null,CUR_NAME=null;
 // Random source. The live game never calls setRNG, so it stays Math.random; headless sims install a seeded generator for reproducible runs.
@@ -553,8 +559,11 @@ function planDmg(fac,src,t,eff,tick){switch(fac){
   case 'curse':tPlan(fac,CUR_NAME==='Curse ticks'||CUR_NAME===ABIL.requiem.name?eff:0,eff);break;
   case 'mage':tPlan(fac,!tick&&CUR_TAG==='Abil'&&src&&src.book&&!src.moved?eff:0,eff);break;// share of damage from spells cast by a mage that had not moved (Arcane Focus)
 }}
-// Warlord points by source, per player: heart (holding the Heart), outpost (holding an Outpost), takedown (killing an enemy Leader).
-function tPts(pid,kind,n){if(!trk()||SIM||!(n>0))return;const T=trk();T.points=T.points||{};const e=T.points[pid]=T.points[pid]||{heart:0,outpost:0,takedown:0};e[kind]=(e[kind]||0)+n}
+// Warlord points by source, per player: heart (holding the Heart), outpost (owning the most flags), takedown (killing an enemy Leader), beast (the Rift Beast's killing blow).
+function tPts(pid,kind,n){if(!trk()||SIM||!(n>0))return;const T=trk();T.points=T.points||{};const e=T.points[pid]=T.points[pid]||{heart:0,outpost:0,takedown:0,beast:0};e[kind]=(e[kind]||0)+n}
+// Act 1 objectives (v23): T.obj = {flags:{pid:{cap,steal,recap}}, well:{pid:{caps,ap,turns}}, beast:{spawn,dmg:{pid},hits:{pid},kill,killRound,strikes,strikeDmg,gone}}.
+// cap = a neutral flag taken, steal = taken from an enemy, recap = a stolen flag that this side had owned before (counted in steal too).
+function tObj(){if(!trk()||SIM)return null;const T=trk();return T.obj=T.obj||{flags:{},well:{},beast:null}}
 // Bonus damage that rides on a hit (Tempo, Final Second, Shatter): credited as its own effect row so the War Room shows what the mechanic adds.
 function tBonus(u,name,n,hpBefore){if(!trk()||SIM||!(n>0))return;const s=tStat(u);if(!s)return;const e=tFx(s.fac,s.name,name);if(e){e.dmg+=Math.min(n,Math.max(0,hpBefore));e.hits++}}
 function srcFx(){const s=CUR_SRC&&tStat(CUR_SRC);if(!s)return null;const ult=CUR_TAG==='Ult';return tFx(s.fac,ult?'':s.name,CUR_NAME)}
@@ -985,7 +994,7 @@ function machineFire(p,name,tag){
 const MODES={
   regicide:{name:'Regicide',desc:'Lose your Leader and your whole army is out. Last side standing wins.'},
   annihilation:{name:'Annihilation',desc:'You are out only when every unit you own has fallen. Last side standing wins.'},
-  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. Points: holding the Heart at the start of your turn scores 1; holding MORE Outposts than any other side at the start of your turn (from round ${RULES.CENTRE_FROM}) scores 1 more, and a tie scores nothing; killing an enemy Leader scores 2 at once. A team scores its Heart and Outpost points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
+  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out beside the Heart in round ${RULES.BEAST_AT}, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing); holding the Heart at the start of your turn scores 1 (from round ${RULES.CENTRE_FROM}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Heart and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
   conquest:{name:'Conquest',desc:`Hold the Heart at the start of your turn to score 1 point. First side to ${RULES.TARGET} wins, or be the last side standing.`},
 };
 // Board radius per player count. 4 players need an even radius so the cross layout is exactly symmetric.
@@ -1022,7 +1031,12 @@ const featAt=(q,r)=>G.feat&&G.feat[key(q,r)]||null;
 // A shrine that healed someone is spent: G.shrineOff[key] = the round it returns (v22b).
 const shrineBack=(q,r)=>{const b=G.shrineOff&&G.shrineOff[key(q,r)];return b&&b>G.round?b:0};
 const shrineOn=(q,r)=>featAt(q,r)==='shrine'&&!shrineBack(q,r);
-const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock';
+// The walled centre (Act 1, v23): until round CENTRE_FROM the grey no man's land around the Heart is a stone wall. Nothing may enter or cross it,
+// flyers and jumpers included, and nothing can be pushed, pulled, dragged, teleported or swapped into it; the Heart inside is sealed with it.
+// Straight shots stop at it like at a rock (lobs fly over). G.noWall (lab positions only) switches it off.
+const centreWalled=()=>!!G&&G.round<RULES.CENTRE_FROM&&!G.noWall;
+const isCentreWall=(q,r)=>centreWalled()&&hd(q,r,0,0)<=heartR()+2;
+const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock'&&!isCentreWall(q,r);
 /* The Collapse: from a set round, the outer ring crumbles into void, each ring a little later than the last,
    down to the grey no man's land around the Heart. The ring is marked a full round before it falls. */
 // The first ring falls at the start round; after that the gaps grow: 2 rounds, then 3, then 4, and so on.
@@ -1033,11 +1047,12 @@ const isDoomed=(q,r)=>{const d=doomRing();return d!=null&&hd(q,r,0,0)===d};
 function runCollapse(){
   const n=collapseRound();if(n==null||G.round!==n)return;
   const ring=G.col.ring;
-  for(const [q,r] of ringCells())if(hd(q,r,0,0)===ring){const k=key(q,r);G.voids[k]=1;delete G.terr[k];delete G.paint[k];if(G.feat)delete G.feat[k]}
+  for(const [q,r] of ringCells())if(hd(q,r,0,0)===ring){const k=key(q,r);G.voids[k]=1;delete G.terr[k];delete G.paint[k];if(G.feat)delete G.feat[k];if(G.flagOwner&&G.flagOwner[k]!=null){delete G.flagOwner[k];addLog(null,'A flag falls with the edge.')}}
+  if(G.spring&&hd(G.spring.q,G.spring.r,0,0)===ring){G.spring=null;addLog(null,'The Wellspring falls into the void.')}
   vfx({k:'collapse',ring});
   addLog(null,`The edge crumbles: ring ${ring} falls into the void.`);
   for(const u of [...G.units]){if(!alive(u))continue;if(cells(u).some(([q,r])=>hd(q,r,0,0)===ring)){
-    if(u.kind==='wall'){G.units.splice(G.units.indexOf(u),1);continue}
+    if(u.kind==='wall'){G.units.splice(G.units.indexOf(u),1);if(u.beast){G.beast.dead=true;addLog(null,'The Rift Beast falls into the void.');const O=tObj();if(O&&O.beast)O.beast.gone=true}continue}
     addLog(u.owner,`${u.name} falls with the crumbling edge!`);vfx({k:'fall',at:[u.q,u.r],to:[u.q,u.r]});u.hp=0;G.col.justFell=true;CUR_SRC=null;kill(u);G.col.justFell=false}}
   for(const x of G.relics||[])if(x.carrier==null&&x.q!=null&&!solid(x.q,x.r))placeRelic(x);
   G.col.ring--;
@@ -1052,7 +1067,7 @@ const onThrone=u=>u.kind!=='wall'&&cells(u).some(([q,r])=>q===0&&r===0);
 let _rc=null,_rcR=-1;
 function ringCells(){if(_rcR!==G.R){_rc=[];for(let q=-G.R;q<=G.R;q++)for(let r=-G.R;r<=G.R;r++)if(inR(q,r))_rc.push([q,r]);_rcR=G.R}return _rc}
 function allCells(){return ringCells().filter(([q,r])=>!G.voids[key(q,r)])}
-function cells(u){return u.size===2?[[u.q,u.r],[u.q+DIRS[u.dir][0],u.r+DIRS[u.dir][1]]]:[[u.q,u.r]]}
+function cells(u){if(u.tri)return u.tri;return u.size===2?[[u.q,u.r],[u.q+DIRS[u.dir][0],u.r+DIRS[u.dir][1]]]:[[u.q,u.r]]}
 function occ(){const m=new Map();for(const u of G.units)for(const c of cells(u))m.set(key(c[0],c[1]),u);return m}
 // Wall gates: a hex that lies between two wall pieces, or between a wall and a rock (two of its six neighbours are hard, at least one a wall), is too narrow for a two-hex body.
 function gated(m,q,r){let walls=0,hard=0;for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;const o=m.get(key(a,b));if(o&&o.kind==='wall'){walls++;hard++}else if(inR(a,b)&&featAt(a,b)==='rock')hard++}return walls>=1&&hard>=2}
@@ -1130,7 +1145,7 @@ function effAtk(u){
   return Math.max(0,a);
 }
 function effDef(u){
-  if(u.kind==='wall')return 0;const F=facOf(u);
+  if(u.kind==='wall')return u.beast?RULES.BEAST_DEF:0;const F=facOf(u);
   return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
@@ -1418,7 +1433,7 @@ function bandsRoute(p){
   const dq=[...q0];let best=null;
   while(dq.length){const k=dq.shift();const [q,r]=k.split(',').map(Number);const d=dist.get(k);
     if(hd(q,r,0,0)<=heartR()){if(best==null||d<dist.get(best))best=k;continue}
-    for(const [a,b] of DIRS){const x=q+a,y=r+b,kk=key(x,y);if(!passable(x,y))continue;const t=G.terr[kk],c=t&&t!==f?1:0,nd=d+c;
+    for(const [a,b] of DIRS){const x=q+a,y=r+b,kk=key(x,y);if(!solid(x,y)||featAt(x,y)==='rock')continue;/* the route ignores the round-1 centre wall */const t=G.terr[kk],c=t&&t!==f?1:0,nd=d+c;
       if(dist.has(kk)&&dist.get(kk)<=nd)continue;dist.set(kk,nd);prev.set(kk,k);if(c)dq.push(kk);else dq.unshift(kk)}}
   if(best==null)return [];
   if(dist.get(best)===0)return null;
@@ -1434,7 +1449,7 @@ function terrainReport(){
 }
 function newGame(c){
   const n=c.n,teams=!!c.teams&&(n===4||n===6),T=teams?n/2:n;
-  G={v:18,botLevel:c.botLevel||'normal',timer:c.timer||0,claim:{},col:null,outposts:[],eggs:[],wells:[],relics:[],relicsOn:c.relics!==false,stats:{units:{},abil:{},ults:[],events:[],fx:{},points:{}},fxSeq:0,fxLog:[],feat:{},R:BOARD_R[n],heartR:n<=3?1:2,heartCount:{},mode:c.mode,teams,players:[],units:[],nid:1,cur:0,ap:0,apMax:RULES.BASE_AP,round:1,log:[],score:{},over:null,
+  G={v:18,botLevel:c.botLevel||'normal',timer:c.timer||0,claim:{},col:null,outposts:[],flagOwner:{},flagEver:{},spring:null,beast:null,eggs:[],wells:[],relics:[],relicsOn:c.relics!==false,stats:{units:{},abil:{},ults:[],events:[],fx:{},points:{}},fxSeq:0,fxLog:[],feat:{},R:BOARD_R[n],heartR:n<=3?1:2,heartCount:{},mode:c.mode,teams,players:[],units:[],nid:1,cur:0,ap:0,apMax:RULES.BASE_AP,round:1,log:[],score:{},over:null,
     sel:null,amode:null,aim:null,inspect:null,tok:0,holder:null,contested:false,terr:{},paint:{},voids:{},traps:{},gateUsed:false};
   for(let i=0;i<n;i++){
     // Teammates take neighbouring spots on the circle; turns still alternate between sides.
@@ -1478,7 +1493,9 @@ function beginTurn(){
     for(const w of G.units){if(w.owner!==p.id||w.kind==='wall'||w.at==='none'||w.egg||distUU(w,s)<=2)continue;const set=atkCells(w,m);if(cells(s).some(([q,r])=>set.has(key(q,r))))n++}
     if(n)tFxBy(s.id,G.players[s.owner].fac,'Stealth','avoided',n)}
   // Gnome machines fire on their own before the timers run, so a machine on its last turn still gets its last shot (tracked per machine as 'Auto-fire').
-  machineFire(p,'Auto-fire','Basic');
+  machineFire(p,'Auto-fire','Basic');resolveBeast();
+  // Act 1: units standing on a flag or the Wellspring at the start of their side's turn capture it (before charge, AP and points are counted).
+  captureObjectives(p.id);
   // Wall gates: count the hexes next to each giant that walls deny it this turn (tracking only; the rule itself lives in freeFor).
   if(FAC[p.fac].gateBlock&&trk()&&!SIM){const m=occ();for(const u of G.units){if(u.owner!==p.id||u.size!==2)continue;let n=0;for(const [q,r] of cells(u))for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;if(passable(a,b)&&!m.get(key(a,b))&&gated(m,a,b))n++}if(n){const e=tFx(p.fac,u.name,'Gated by walls');if(e){e.blocked+=n;e.uses++}}}}
   for(const u of G.units)if(u.cut===p.id)delete u.cut;// Final Second stamps from this side's previous turn
@@ -1515,12 +1532,12 @@ function beginTurn(){
     if(coldIn&&cells(u).some(([q,r])=>terrAt(q,r)==='ice')&&chillT(u,2,{fac:'ice',name:'Blue ground cold'}))fx(u,'chilled','#5cc8ff');
     if(hasTrait(u,'regen'))healUnit(u,1,'#5fd68e','Regenerate (trait)');
   }
-  // Ultimate charge: +2 per Outpost held, +1 for the Throne.
-  {let c=0;const held=[];for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u)){if(isOutpost(q,r)){c+=1;held.push(u.name)}if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM)c+=THRONE.charge}
+  // Ultimate charge: +1 per flag (Outpost) this side owns (v23: owned, no unit needed), +1 for the Throne.
+  {let c=0;const held=[];const nf=flagsOf(p.id);if(nf){c+=nf;held.push(nf)}for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u)){if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM)c+=THRONE.charge}
    if(territoryLeader()===p.id)c+=1;
    if(talent(p,'tithe'))c+=1;
    for(const x of G.relics||[])if(x.kind==='idol'&&x.carrier!=null){const cu=byId(x.carrier);if(cu&&cu.owner===p.id)c+=1}
-   if(c&&(p.ult||0)<ultNeed(p)){addCharge(p.id,c);if(held.length)addLog(p.id,`Outpost held: Ultimate charge ${p.ult}/${ultNeed(p)}.`)}}
+   if(c&&(p.ult||0)<ultNeed(p)){addCharge(p.id,c);if(held.length)addLog(p.id,`${held[0]} flag${held[0]>1?'s':''} owned: Ultimate charge ${p.ult}/${ultNeed(p)}.`)}}
   computeHolder();G.lead=leadingTeam();p.ultThisTurn=false;
   if(checkVictory())return;
   if(!p.alive){advance();return}
@@ -1528,8 +1545,11 @@ function beginTurn(){
   const leaderUp=G.units.some(u=>u.owner===p.id&&u.leader),throneUp=G.round>=RULES.CENTRE_FROM&&G.units.some(u=>u.kind!=='wall'&&tm(u.owner)===p.team&&onThrone(u));
   const relicAP=(G.relics||[]).filter(x=>x.kind==='hourglass'&&x.carrier!=null&&byId(x.carrier)&&byId(x.carrier).owner===p.id).length;
   // The first player's −3 AP on its round-2 turn (G.apParts.first) was removed on 29 Sep 2026: the owner said it "feels bad". The first-player win rate is measured after; if it drifts, the second player gets a gift (e.g. Ultimate charge) instead of a penalty.
-  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0};
-  G.apMax=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);G.ap=G.apMax;
+  const wellAP=springOwner()===p.id?1:0;// the Wellspring (v23): +1 AP to the side that owns it
+  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0,well:wellAP};
+  const apNo=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);
+  G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP);G.ap=G.apMax;
+  if(wellAP){const O=tObj();if(O){const e=O.well[p.id]=O.well[p.id]||{caps:0,ap:0,turns:0};e.turns++;e.ap+=G.apMax-apNo}}
   const target=heartTarget();
   G.scoredAt=G.scoredAt||{};
   if((G.mode==='conquest'||G.mode==='warlord')&&G.holder===p.team&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.scoredAt[p.team]!==G.round){G.scoredAt[p.team]=G.round;// a team scores once per round, not once per partner
@@ -1538,11 +1558,12 @@ function beginTurn(){
   // Warlord: the side holding MORE Outposts than any other side at the start of its turn scores 1 point (never more than 1 per turn, a team once per round).
   // Calibrated 28 Sep 2026: "at least one Outpost" let every side farm its home flag and 26 of 30 test games ended by points around round 13.
   G.outpostAt=G.outpostAt||{};
-  if(G.mode==='warlord'&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.outpostAt[p.team]!==G.round){
-    const held={};for(const u of G.units)if(u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u))if(isOutpost(q,r)){const t=tm(u.owner);held[t]=(held[t]||0)+1}
+  // v23: flags stay captured, so "holding" = owning; scoring still starts at round FLAG_FROM (3), before the wall falls.
+  if(G.mode==='warlord'&&!p.leaderless&&G.round>=RULES.FLAG_FROM&&G.outpostAt[p.team]!==G.round){
+    const held={};for(const t of new Set(G.players.filter(x=>x.alive).map(x=>x.team))){const n=flagsOfTeam(t);if(n)held[t]=n}
     const mine=held[p.team]||0;let best=0;for(const t in held)if(+t!==p.team&&held[t]>best)best=held[t];
     if(mine>=1&&mine>best){G.outpostAt[p.team]=G.round;
-    G.score[p.team]++;tPts(p.id,'outpost',1);addLog(p.id,`${teamName(p.team)} holds the most Outposts (${mine}): ${G.score[p.team]}/${target}.`);
+    G.score[p.team]++;tPts(p.id,'outpost',1);addLog(p.id,`${teamName(p.team)} owns the most flags (${mine}): ${G.score[p.team]}/${target}.`);
   }}
   if((G.mode==='conquest'||G.mode==='warlord')&&G.score[p.team]>=target){G.over={team:p.team,how:'heart'};HOOKS.over();return}
   HOOKS.turn();
@@ -1577,7 +1598,7 @@ function advance(){
   let i=G.cur;
   for(let k=0;k<G.players.length;k++){
     i=(i+1)%G.players.length;
-    if(i===0){G.round++;addLog(null,`Round ${G.round}.`);runCollapse();if(checkVictory())return;spawnRelics();
+    if(i===0){G.round++;addLog(null,`Round ${G.round}.`);runCollapse();if(checkVictory())return;spawnRelics();actEvents();
       if(doomRing()!=null&&collapseRound()===G.round+1)addLog(null,`Warning: ring ${G.col.ring} collapses at the start of round ${G.round+1}.`)}
     if(G.players[i].alive){G.cur=i;beginTurn();return}
   }
@@ -1595,6 +1616,7 @@ function checkVictory(){
 function eliminate(p,why){
   if(!p.alive)return;
   p.alive=false;for(const u of G.units)if(u.owner===p.id){const x=relicOf(u);if(x)dropRelic(x,u)}G.units=G.units.filter(u=>u.owner!==p.id);if(G.eggs)G.eggs=G.eggs.filter(e=>e.owner!==p.id);if(G.wells)G.wells=G.wells.filter(w=>w.owner!==p.id);if(G.traps)for(const k of Object.keys(G.traps))if(G.traps[k].owner===p.id)delete G.traps[k];
+  for(const k of Object.keys(G.flagOwner||{}))if(G.flagOwner[k]===p.id)delete G.flagOwner[k];if(G.spring&&G.spring.owner===p.id)G.spring.owner=null;// its flags and the Wellspring turn neutral
   addLog(p.id,`${FAC[p.fac].name} ${why} and is out.`);
 }
 // Salvage talent (gnomes): a machine that is destroyed or falls apart hands its builder 1 turn of cooldown back.
@@ -1602,12 +1624,13 @@ function salvage(t){if(!t.machine||t.builtBy==null||!talent(G.players[t.owner],'
 function kill(t){
   const i=G.units.indexOf(t);if(i<0)return;
   G.units.splice(i,1);
+  if(t.beast){beastSlain(t);return}
   if(t.kind==='wall'){addLog(null,`A ${t.wall} wall shatters.`);return}
   if(t.poss){t.owner=t.poss.owner;t.home=t.poss.home;delete t.poss}
   addLog(t.owner,`${t.name} ${t.summon?'breaks apart':'falls'}.`);
   vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:facOf(t).color,big:t.size===2,leader:t.leader});
   const k=CUR_SRC;
-  if(trk()&&!SIM){const d=tStat(t);d.died=G.round;d.diedBy=k?(tm(k.owner)===tm(t.owner)?'self':k.name):(G.col&&G.col.justFell?'collapse':'other');
+  if(trk()&&!SIM){const d=tStat(t);d.died=G.round;d.diedBy=k?(tm(k.owner)===tm(t.owner)?'self':k.name):(G.col&&G.col.justFell?'collapse':CUR_NAME===BEAST_SB?'beast':'other');
     const ks=k&&tm(k.owner)!==tm(t.owner)?tStat(k):null;if(ks){ks.kills++;if(t.leader)ks.leaderKills++;const e=srcFx();if(e){e.kills++;if(t.leader)e.lk++}if(ks.fac==='rift')tPlan('rift',0,1)}
     if(t.leader)trk().events.push({k:'leaderDown',round:G.round,fac:d.fac,by:ks?ks.fac:null,byUnit:ks?ks.name:null})}
   salvage(t);
@@ -1674,7 +1697,7 @@ function riseStatue(s){
   return u}
 function hurt(t,n,col,tick){
   if(!alive(t)||n<=0)return 0;
-  const hostile=!(CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)===tm(t.kind==='wall'?t.creator:t.owner));
+  const hostile=t.beast?true:!(CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)===tm(t.kind==='wall'?t.creator:t.owner));// the Rift Beast is everyone's enemy
   // Shield Wall (Warband): 1 less from a hostile hit, never below 1. Not on curse ticks or burning ground.
   if(hostile&&!tick&&n>1&&t.kind!=='wall'){const sb=shieldWallFor(t,CUR_SRC,CUR_TAG);if(sb){n-=1;fx(t,'shield wall','#eef0f4');tSupBy(sb.id,null,'Shield Wall (passive)','blocked',Math.min(1,Math.max(0,t.hp-n)))}}
   if(t.st&&t.st.shield>0){const a=Math.min(t.st.shield,n);t.st.shield-=a;n-=a;fx(t,'blocked','#d7c9ff');
@@ -1686,6 +1709,8 @@ function hurt(t,n,col,tick){
     else if(!sc&&CUR_NAME==='Burning ground'){const e=tFx('fire','','Burning ground');e.dmg+=eff;e.hits++;planDmg('fire',null,t,eff,true)}
     else if(!sc&&CUR_NAME==='Curse ticks')planDmg('curse',null,t,eff,true);
     if(hostile&&G.players[t.owner].fac==='arcane')tPlan('arcane',0,eff)}// priests' plan check: healing (healUnit) per damage taken
+  const hpB=t.hp;
+  if(t.beast)beastHurt(t,n,tick,hpB);
   t.hp=r2(t.hp-n);fx(t,'−'+n,col||'#ff6161');
   if(t.hp<=0)kill(t);
   return n;
@@ -1704,6 +1729,7 @@ function healUnit(t,n,col,name,by){
   HOOKS.fx(t,'+'+h,col||'#5fd68e');return h;
 }
 function afterAction(){
+  resolveBeast();captureObjectives(G.cur);
   pickupRelics();computeHolder();
   if(SIM)return;
   if(checkVictory())return;
@@ -1766,7 +1792,7 @@ function fwdVecs(u){return DIRS.filter(([dq,dr])=>fwdDot(u,dq,dr)>=0.45)}
 function rayCells(u,R,vecs,m,out){
   for(const [oq,or] of cells(u))for(const [dq,dr] of vecs)for(let s=1;s<=R;s++){
     const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const k=key(q,r);const o=m.get(k);if(o===u)continue;
-    const f=G.feat&&G.feat[k];if(f==='rock'){if(o&&o!==u)out.add(k);break}
+    const f=G.feat&&G.feat[k];if(f==='rock'){if(o&&o!==u)out.add(k);break}if(isCentreWall(q,r))break;
     if(!G.voids[k])out.add(k);if(o||f==='forest')break;
   }
 }
@@ -1777,7 +1803,7 @@ function atkCells(u,m){
     case 'fwd':rayCells(u,R,fwdVecs(u),m,out);break;
     // Spear reach: straight lines up to R; a friendly unit in between does not block (the spear strikes over the shield), an enemy, a wall, a rock or a forest does.
     case 'reach':for(const [oq,or] of cells(u))for(const [dq,dr] of DIRS)for(let s=1;s<=R;s++){const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const k=key(q,r);const o=m.get(k);if(o===u)continue;
-      const f=G.feat&&G.feat[k];if(f==='rock'){if(o)out.add(k);break}if(!G.voids[k])out.add(k);if(f==='forest')break;if(o&&o.kind!=='wall'&&tm(o.owner)===tm(u.owner))continue;if(o)break}break;
+      const f=G.feat&&G.feat[k];if(f==='rock'){if(o)out.add(k);break}if(isCentreWall(q,r))break;if(!G.voids[k])out.add(k);if(f==='forest')break;if(o&&o.kind!=='wall'&&tm(o.owner)===tm(u.owner))continue;if(o)break}break;
     case 'bolt':rayCells(u,R,DIRS,m,out);break;
     case 'diag':rayCells(u,R,DIAG,m,out);break;
     case 'lob':for(const [q,r] of allCells()){const d=distUC(u,q,r);if(d>=u.rmin&&d<=R)out.add(key(q,r))}break;
@@ -1900,7 +1926,7 @@ function attack(u,t){
 }
 
 /* ---------- abilities ---------- */
-function rayUnits(u,R,vecs,m){const res=new Set();for(const [oq,or] of cells(u))for(const [dq,dr] of vecs)for(let s=1;s<=R;s++){const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const f=featAt(q,r);const o=m.get(key(q,r));if(f==='rock'){if(o&&o!==u)res.add(o);break}if(o===u)continue;if(o){res.add(o);break}if(f==='forest')break}return res}
+function rayUnits(u,R,vecs,m){const res=new Set();for(const [oq,or] of cells(u))for(const [dq,dr] of vecs)for(let s=1;s<=R;s++){const q=oq+dq*s,r=or+dr*s;if(!inR(q,r))break;const f=featAt(q,r);const o=m.get(key(q,r));if(f==='rock'){if(o&&o!==u)res.add(o);break}if(isCentreWall(q,r))break;if(o===u)continue;if(o){res.add(o);break}if(f==='forest')break}return res}
 function dashSpot(u,t){
   const m=occ();let best=null,bd=99;
   for(const [tq,tr] of cells(t))for(const [dq,dr] of DIRS){const a=tq+dq,b=tr+dr;const d=fitDir(m,u,a,b);if(d<0)continue;
@@ -1920,7 +1946,7 @@ function aimCells(u,k){
   if(A.hits==='ally')pool.push(u);
   const out=[];
   for(const v of pool){
-    if(v.kind==='wall')continue;
+    if(v.kind==='wall'){if(v.beast&&beastHittable(A)&&!hidden(u,v))out.push(...cells(v));continue}// the Rift Beast: any damaging ability aimed at enemies can hit it
     const foe=tm(v.owner)!==tm(u.owner);
     if(A.hits==='foe'&&!foe)continue;if(A.hits==='ally'&&foe)continue;
     if(foe&&hidden(u,v))continue;
@@ -1959,7 +1985,7 @@ function shapeCells(u,k,q,r){
 }
 function areaUnits(u,A,area){
   const m=occ(),seen=new Set(),out=[];
-  for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v))continue;seen.add(v);if(v.kind==='wall')continue;
+  for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v))continue;seen.add(v);if(v.kind==='wall'){if(v.beast&&beastHittable(A))out.push(v);continue}
     const foe=tm(v.owner)!==tm(u.owner);
     if(A.hits==='none')continue;
     if(A.hits==='foe'&&!foe)continue;
@@ -2027,7 +2053,7 @@ function applyHit(u,t,A){
   // Ice Lance on a frozen target: the enemy one hex further on the line from the Hailcaller through the target is frozen too (tracked as its own row).
   if(frozen0){const [cq,cr]=nearCell(u,t),dd=dirTo(cq,cr,t.q,t.r);const b=unitAt(t.q+DIRS[dd][0],t.r+DIRS[dd][1]);
     if(b&&b!==t&&b.kind!=='wall'&&tm(b.owner)!==tm(u.owner)){const o=CUR_NAME,was=b.st.frozen>0;CUR_NAME=A.name+': chain freeze';if(freezeT(b,false)&&!was){const e=srcFx();if(e)e.uses++;if(!SIM)vfx({k:'bolt',from:[t.q,t.r],to:[b.q,b.r],col:'#bfefff'})}CUR_NAME=o}}
-  if(!alive(t))return;
+  if(!alive(t)||t.kind==='wall')return;// the Rift Beast only takes the damage: no debuffs, no curses, no cold
   if(A.sear&&d>0)sear(u,t);
   if(A.sunder)sunderT(u,t,A.sunder);
   if(A.chill)chillT(t,2);
@@ -2055,7 +2081,7 @@ function pushUnit(t,d,n,src,quiet){
     const q=t.q+DIRS[d][0],r=t.r+DIRS[d][1];
     if(!solid(q,r)){fallKill(t,q,r,src);return}
     const o=unitAt(q,r);
-    if((o&&o!==t)||featAt(q,r)==='rock'){hurt(t,slam,'#12d69a');break}
+    if((o&&o!==t)||featAt(q,r)==='rock'||isCentreWall(q,r)){hurt(t,slam,'#12d69a');break}
     setAnim(t);t.q=q;t.r=r;
   }
   if(!quiet&&(t.q!==oq||t.r!==or))tSup('moved',1);
@@ -2080,7 +2106,7 @@ function wellPull(w,start){// start: called at the start of the owner's turn (th
   const old=CUR_SRC,ot=CUR_TAG,on=CUR_NAME;CUR_SRC=src;CUR_TAG='Abil';CUR_NAME=ABIL.well.name;
   for(const v of vs){if(!alive(v))continue;const d=dirTo(v.q,v.r,w.q,w.r),q=v.q+DIRS[d][0],r=v.r+DIRS[d][1];
     if(!solid(q,r)){mv.push([v.q,v.r,q,r]);fallKill(v,q,r,src);continue}
-    if(featAt(q,r)==='rock'||occ().get(key(q,r)))continue;mv.push([v.q,v.r,q,r]);setAnim(v);if(v.anim)v.anim.dur=650;v.q=q;v.r=r;tSup('moved',1)}
+    if(featAt(q,r)==='rock'||isCentreWall(q,r)||occ().get(key(q,r)))continue;mv.push([v.q,v.r,q,r]);setAnim(v);if(v.anim)v.anim.dur=650;v.q=q;v.r=r;tSup('moved',1)}
   CUR_SRC=old;CUR_TAG=ot;CUR_NAME=on;
   // Visual only: a streak for every dragged unit, a log line and a short message on screen (vfx 'well' in vfx.js).
   if(mv.length&&!SIM){const left=start?w.ttl-1:w.ttl,n=mv.length;
@@ -2163,7 +2189,7 @@ function useAbility(u,k,q,r,dest){
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
       for(const t of ts)applyHit(u,t,A);
       // Smash breaks walls: every wall in the sweep takes the spell damage times wallDmg.
-      if(A.wallDmg){const m=occ(),seen=new Set();for(const [a,b] of area){const w=m.get(key(a,b));if(w&&w.kind==='wall'&&!seen.has(w)){seen.add(w);hurt(w,(A.dmg||0)*A.wallDmg,F.color)}}}
+      if(A.wallDmg){const m=occ(),seen=new Set();for(const [a,b] of area){const w=m.get(key(a,b));if(w&&w.kind==='wall'&&!w.beast&&!seen.has(w)){seen.add(w);hurt(w,(A.dmg||0)*A.wallDmg,F.color)}}}
       if(A.push){
         const d=A.aim==='dir'?aimDir(u,q,r):null;
         const live=ts.filter(alive).sort((a,b)=>distUU(u,b)-distUU(u,a));
@@ -2266,8 +2292,118 @@ function dropRelic(x,u){
   if(u&&solid(u.q,u.r)){x.q=u.q;x.r=u.r;addLog(null,`The ${RELICS[x.kind].name} falls to the ground.`)}
   else placeRelic(x);
 }
+/* ---------- Act 1 objectives (v23): flags that stay captured, the Wellspring, the Rift Beast ---------- */
+// Flags (Outposts): G.flagOwner[key] = the player id that owns it. A unit that ends its move on a flag, or stands on it at the start of its side's turn,
+// captures it for its side; the side keeps it with nobody there until an enemy unit stands on it. A partner's flag stays the partner's.
+// Walls, the Rift Beast, ember eggs and Gargoyle statues capture nothing; machines do. G.flagEver[key] lists the sides that ever owned it (recapture tracking).
+function flagOwner(q,r){const o=G.flagOwner&&G.flagOwner[key(q,r)];return o==null||!G.players[o]||!G.players[o].alive?null:o}
+function flagsOf(pid){let n=0;for(const [q,r] of G.outposts||[])if(solid(q,r)&&flagOwner(q,r)===pid)n++;return n}
+function flagsOfTeam(t){let n=0;for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const o=flagOwner(q,r);if(o!=null&&tm(o)===t)n++}return n}
+// The Wellspring: G.spring = {q,r,owner} (owner null until someone steps on it). +1 AP at the start of each of its owner's turns (G.apParts.well), within AP_CAP.
+const isSpring=(q,r)=>!!(G.spring&&G.spring.q===q&&G.spring.r===r&&solid(q,r));
+const springOwner=()=>{const s=G.spring;return s&&s.owner!=null&&G.players[s.owner]&&G.players[s.owner].alive?s.owner:null};
+const canCapture=u=>!!u&&u.kind!=='wall'&&!inert(u)&&!!G.players[u.owner]&&G.players[u.owner].alive;
+// Capture: pid = only this side's units take objectives (after its own actions and at the start of its turn); null = any side.
+function captureObjectives(pid){
+  if(!G||G.phase)return;G.flagOwner=G.flagOwner||{};
+  const m=occ();
+  const take=(q,r,cur)=>{const u=m.get(key(q,r));if(!canCapture(u)||(pid!=null&&u.owner!==pid))return null;
+    if(cur===u.owner)return null;if(cur!=null&&tm(cur)===tm(u.owner))return null;return u};
+  for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const k=key(q,r),cur=flagOwner(q,r);const u=take(q,r,cur);if(!u)continue;
+    G.flagOwner[k]=u.owner;
+    if(!SIM){const F=FAC[G.players[u.owner].fac];G.flagEver=G.flagEver||{};const ever=G.flagEver[k]=G.flagEver[k]||[];const recap=cur!=null&&ever.includes(u.owner);if(!ever.includes(u.owner))ever.push(u.owner);
+      addLog(u.owner,cur==null?`${u.name} raises the ${F.name} banner on a flag.`:`${u.name} ${recap?'takes back':'captures'} the ${FAC[G.players[cur].fac].name} flag!`);
+      vfx({k:'flag',at:[q,r],col:F.color});fx(u,'flag','#ece8dd');
+      const O=tObj();if(O){const e=O.flags[u.owner]=O.flags[u.owner]||{cap:0,steal:0,recap:0};if(cur==null)e.cap++;else{e.steal++;if(recap)e.recap++}}}}
+  const sp=G.spring;
+  if(sp&&solid(sp.q,sp.r)){const cur=springOwner();const u=take(sp.q,sp.r,cur);
+    if(u){sp.owner=u.owner;if(!SIM){const F=FAC[G.players[u.owner].fac];addLog(u.owner,`${u.name} claims the Wellspring: +1 AP each ${F.name} turn.`);vfx({k:'spring',at:[sp.q,sp.r],col:F.color,take:true});
+      const O=tObj();if(O){const e=O.well[u.owner]=O.well[u.owner]||{caps:0,ap:0,turns:0};e.caps++}}}}
+}
+// Where the Wellspring rises: a free hex on the outer ring (one in from the edge still standing), no feature, not on or next to a flag, at least 4 from every start point.
+// Far from the side leading on Warlord points; with no single leader, the flank between two armies (as far as possible from every start point). Ties: RNG.
+function springSpot(){
+  const R=outerRing()-1,m=occ();const homes=G.players.filter(p=>p.alive).map(p=>[p.home,p.team]);if(!homes.length)return null;
+  const cand=allCells().filter(([q,r])=>hd(q,r,0,0)===R&&passable(q,r)&&!featAt(q,r)&&!m.get(key(q,r))&&!(G.outposts||[]).some(o=>hd(o[0],o[1],q,r)<=1)
+    &&!(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)&&homes.every(([h])=>hd(q,r,h[0],h[1])>=4));
+  if(!cand.length)return null;
+  let lead=null;{let best=-1,tie=false;for(const t of new Set(homes.map(x=>x[1]))){const v=G.score[t]||0;if(v>best){best=v;lead=t;tie=false}else if(v===best)tie=true}if(tie||best<=0)lead=null}
+  const dAll=([q,r])=>Math.min(...homes.map(([h])=>hd(q,r,h[0],h[1])));
+  const dLead=([q,r])=>Math.min(...homes.filter(x=>x[1]===lead).map(([h])=>hd(q,r,h[0],h[1])));
+  const score=c=>lead!=null?dLead(c)*2+dAll(c):dAll(c);
+  const top=Math.max(...cand.map(score));const best=cand.filter(c=>score(c)===top);
+  return {spot:best[Math.floor(RNG()*best.length)],lead}}
+function spawnSpring(){
+  if(G.spring||G.springDone)return;const r=springSpot();if(!r)return;const [q,rr]=r.spot;
+  G.spring={q,r:rr,owner:null,round:G.round};G.springDone=true;
+  addLog(null,`A Wellspring rises on the ${r.lead!=null?'flank far from '+teamName(r.lead):'flank'}. Step on it to claim it: +1 AP every turn.`);
+  vfx({k:'spring',at:[q,rr],col:'#7fe8ff',msg:'A Wellspring has risen on the flank: claim it for +1 AP a turn'});
+  const O=tObj();if(O)O.springRound=G.round}
+// The Rift Beast: a neutral wall-kind piece (owner -1, like a stone wall) on 3 mutually adjacent hexes just outside the Heart. 20 HP, 1 DEF, never moves,
+// never acts, can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities hit it; Ultimates do not.
+const BEAST_SB='Rift Beast strike-back';
+let BEAST_Q=[];// strike-backs waiting for the end of the current action (resolved in afterAction and after the machines' volley)
+// Abilities that can hit the beast: they deal damage and are aimed at enemies. Moves, swaps, hooks and buffs never touch it.
+const BEAST_NOT=['swap','hook','duel','possess','quicken','rewind','blink','surge','dismantle','requiem','vanish','rally','march','build','trap','well','grove','wall','gainap','guard'];
+function beastHittable(A){return !!A&&(A.hits==='foe'||A.hits==='all'||A.hits==='any')&&!!(A.dmg||A.useAtk)&&!BEAST_NOT.includes(A.special)}
+// The 50% strike-back roll, fixed by the round, the attacker's id and the beast's HP before the hit: undo can't reroll it.
+function beastRoll(round,id,hp){let h=0x811c9dc5;for(const n of [round,id,Math.round(hp*2),0xbea57]){h^=n&0xffff;h=Math.imul(h,0x01000193);h^=n>>>16;h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
+function beastHurt(t,n,tick,hpB){
+  const a=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC:null;if(!a)return;
+  const eff=Math.min(n,Math.max(0,hpB));G.beast=G.beast||{};const T=G.beast.dmgT=G.beast.dmgT||{};const tt=tm(a.owner);T[tt]=(T[tt]||0)+eff;
+  const O=tObj();if(O&&O.beast){O.beast.dmg[a.owner]=(O.beast.dmg[a.owner]||0)+eff;O.beast.hits[a.owner]=(O.beast.hits[a.owner]||0)+1}
+  if(!tick&&(CUR_TAG==='Basic'||CUR_TAG==='Abil')&&hpB-n>0&&beastRoll(G.round,a.id,hpB)<0.5)BEAST_Q.push(a.id)}
+function resolveBeast(){
+  if(!BEAST_Q.length)return;const q=BEAST_Q;BEAST_Q=[];const b=G.units.find(u=>u.beast);
+  for(const id of q){const a=byId(id);if(!a||!alive(a))continue;
+    const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME=BEAST_SB;
+    if(!SIM){addLog(a.owner,`The Rift Beast lashes back at ${a.name} for 1.`);if(b)vfx({k:'slash',from:[b.q,b.r],to:[a.q,a.r],col:'#b06bff'});const O=tObj();if(O&&O.beast){O.beast.strikes++;O.beast.strikeDmg+=Math.min(1,Math.max(0,a.hp));O.beast.sb=O.beast.sb||{};O.beast.sb[a.owner]=(O.beast.sb[a.owner]||0)+1}}
+    hurt(a,1,'#b06bff');[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
+function beastSlain(t){
+  const k=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].alive?CUR_SRC:null;
+  G.beast=G.beast||{};G.beast.dead=true;BEAST_Q=[];
+  if(!k){if(!SIM){addLog(null,'The Rift Beast is gone.');vfx({k:'death',at:[t.q,t.r],icon:'skull',col:'#b06bff',big:true});const O=tObj();if(O&&O.beast)O.beast.gone=true}return}
+  const pid=k.owner,kt=tm(pid),F=FAC[G.players[pid].fac];G.beast.killer=pid;G.beast.killTeam=kt;
+  addCharge(pid,RULES.BEAST_CHARGE);
+  const pts=G.mode==='warlord'&&!G.players[pid].leaderless;
+  if(!SIM){addLog(pid,`${k.name} slays the Rift Beast! ${F.name}: +${RULES.BEAST_CHARGE} Ultimate charge${pts?` and ${RULES.BEAST_PTS} Warlord points`:''}.`);
+    vfx({k:'beastdown',at:[t.q,t.r],cells:cells(t),col:F.color,name:F.name,pts:pts?RULES.BEAST_PTS:0});
+    const O=tObj();if(O&&O.beast){O.beast.kill=pid;O.beast.killRound=G.round}
+    const e=srcFx();if(e)e.kills++}
+  if(pts){G.score[kt]=(G.score[kt]||0)+RULES.BEAST_PTS;tPts(pid,'beast',RULES.BEAST_PTS);
+    if(!SIM)addLog(pid,`${teamName(kt)}: ${G.score[kt]}/${heartTarget()} Warlord points.`);
+    if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}}
+// Spawn spot: 3 mutually adjacent free hexes (no unit, no feature, no relic) at distance heartR+1 or +2, preferring two of them on the ring touching the Heart,
+// then the triangle farthest from every unit. Ties: RNG.
+function beastSpot(){
+  const hr=heartR(),m=occ(),seen=new Set(),out=[];
+  const ok=(q,r)=>{const d=hd(q,r,0,0);return (d===hr+1||d===hr+2)&&passable(q,r)&&!featAt(q,r)&&!m.get(key(q,r))&&!(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)&&!isSpring(q,r)};
+  for(const [q,r] of allCells()){if(hd(q,r,0,0)!==hr+1||!ok(q,r))continue;
+    for(let d=0;d<6;d++){const b=[q+DIRS[d][0],r+DIRS[d][1]],c=[q+DIRS[(d+1)%6][0],r+DIRS[(d+1)%6][1]];if(!ok(b[0],b[1])||!ok(c[0],c[1]))continue;
+      const tri=[[q,r],b,c];const id=tri.map(x=>key(x[0],x[1])).sort().join('|');if(seen.has(id))continue;seen.add(id);out.push(tri)}}
+  if(!out.length)return null;
+  const sc=tri=>{let near=9;for(const u of G.units)for(const [q,r] of tri)near=Math.min(near,distUC(u,q,r));return tri.filter(([q,r])=>hd(q,r,0,0)===hr+1).length*10+Math.min(near,5)};
+  const top=Math.max(...out.map(sc));const best=out.filter(t=>sc(t)===top);return best[Math.floor(RNG()*best.length)]}
+function makeBeast(tri){return {id:G.nid++,kind:'wall',beast:true,wall:'beast',owner:-1,name:'Rift Beast',icon:'skull',q:tri[0][0],r:tri[0][1],tri,dir:0,size:3,hp:RULES.BEAST_HP,maxhp:RULES.BEAST_HP,def:RULES.BEAST_DEF,st:{},moved:true,acted:true,cd:0}}
+function spawnBeast(tri){
+  if(G.beast&&G.beast.spawned)return null;tri=tri||beastSpot();if(!tri)return null;
+  const u=makeBeast(tri);G.units.push(u);G.beast=Object.assign(G.beast||{},{spawned:G.round,id:u.id,dmgT:{}});
+  addLog(null,`The Rift Beast tears out of the rift beside the Heart! The side that lands the killing blow gains ${G.mode==='warlord'?RULES.BEAST_PTS+' Warlord points and ':''}${RULES.BEAST_CHARGE} Ultimate charge.`);
+  vfx({k:'beast',at:[u.q,u.r],cells:tri,msg:`The Rift Beast has spawned beside the Heart: kill it for ${G.mode==='warlord'?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} charge`});
+  const O=tObj();if(O)O.beast={spawn:G.round,dmg:{},hits:{},kill:null,killRound:null,strikes:0,strikeDmg:0,gone:false};
+  return u}
+// Round events of the three acts, called at the start of each new round (advance), after the Collapse and the relics.
+function actEvents(){
+  if(G.objOff)return;const R=G.round;
+  if(R===RULES.CENTRE_FROM-1){addLog(null,'The wall around the Heart falls next round.');vfx({k:'announce',msg:'The wall around the Heart falls next round'})}
+  if(R===RULES.CENTRE_FROM){addLog(null,'The wall around the Heart falls! The centre is open: Heart points and the Throne count from now on.');vfx({k:'wallfall',msg:'The wall has fallen: the Heart is open'})}
+  if(R===RULES.SPRING_AT-1){addLog(null,'A Wellspring will rise on the outer ring next round.');vfx({k:'announce',msg:'A Wellspring rises on the flank next round: +1 AP a turn to whoever holds it'})}
+  if(R>=RULES.SPRING_AT&&!G.springDone)spawnSpring();
+  if(R===RULES.BEAST_AT-1){addLog(null,'Something stirs beside the Heart: the Rift Beast breaks out next round.');vfx({k:'announce',msg:'The Rift Beast breaks out beside the Heart next round'})}
+  if(R>=RULES.BEAST_AT&&!(G.beast&&G.beast.spawned))spawnBeast();
+}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
-function labClear(){G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
+function labClear(){G.objOff=true;G.flagOwner={};G.flagEver={};G.spring=null;G.springDone=false;G.beast=null;BEAST_Q=[];G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
 function labUnit(pid,name,q,r,o){const p=G.players[pid];const d=FAC[p.fac].units.find(x=>x.name===name);if(!d)throw new Error('labUnit: no unit '+name+' in '+p.fac);const u=makeUnit(p,d);u.q=q;u.r=r;u.dir=(o&&o.dir)||0;if(o&&o.hp){u.hp=u.maxhp=o.hp}G.units.push(u);tStat(u);return u}
 /* ---------- bots ---------- */
 function worth(u){if(u.statue)return 4+(u.stone||0)*2+(u.hatch?u.hatch.maxhp*0.3:0);// a Gargoyle statue: worth more the closer it is to rising
@@ -2289,6 +2425,10 @@ function evaluate(team){
   }
   if(G.players[G.cur]&&tm(G.cur)===team)s+=throwSetups(team);
   if(G.holder===team)s+=12;else if(G.holder!=null)s-=6;
+  // Act 1 objectives: owned flags (charge, and the flag point), the Wellspring (+1 AP a turn), damage on the Rift Beast and its kill (+6 charge; the points show in the score).
+  {let f=0;for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const o=flagOwner(q,r);if(o==null)continue;f+=tm(o)===team?2.5:-1}s+=f;
+   const so=springOwner();if(so!=null)s+=tm(so)===team?5:-2;
+   if(G.beast){const b=G.beast;s+=((b.dmgT&&b.dmgT[team])||0)*0.9;if(b.dead&&b.killTeam===team)s+=10}}
   for(const p of G.players){if(!p.alive)s+=tm(p.id)===team?-150:150;else if(p.leaderless)s+=tm(p.id)===team?-90:90}
   // Warlord points: a lead over the best rival counts, and every point matters more as the target nears.
   if(G.mode==='warlord'){const my=G.score[team]||0;let rival=0;for(const t in G.score)if(+t!==team&&G.players.some(p=>p.team===+t&&p.alive))rival=Math.max(rival,G.score[t]||0);const tgt=heartTarget();s+=(my-rival)*3+(my>=tgt?200:0)-(rival>=tgt?200:0)}
@@ -2297,7 +2437,7 @@ function evaluate(team){
 // Riftwalker combos, for the lookahead: an enemy that one of our ready pushers (Repel) can still throw onto a lethal hex this turn is worth part of a kill.
 // A push goes straight away from the pusher's hex; the pusher must already stand on the spot behind the enemy or be able to walk there.
 function pushLethal(t,d,n,m){if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial')))return false;let q=t.q,r=t.r;m=m||occ();
-  for(let i=0;i<n;i++){q+=DIRS[d][0];r+=DIRS[d][1];if(!solid(q,r))return true;const o=m.get(key(q,r));if((o&&o!==t)||featAt(q,r)==='rock')return false}return false}
+  for(let i=0;i<n;i++){q+=DIRS[d][0];r+=DIRS[d][1];if(!solid(q,r))return true;const o=m.get(key(q,r));if((o&&o!==t)||featAt(q,r)==='rock'||isCentreWall(q,r))return false}return false}
 function throwSetups(team){
   const ps=G.units.filter(p=>p.kind!=='wall'&&p.owner===G.cur&&p.ability&&ABIL[p.ability].push&&ABIL[p.ability].range===1&&p.cd<=0&&!p.acted&&!p.st.frozen);if(!ps.length)return 0;
   let s=0;const m=occ();
@@ -2311,10 +2451,10 @@ function throwSetups(team){
   return s}
 function cloneU(u){const c=Object.assign({},u);c.st=Object.assign({},u.st);if(u.st&&u.st.curses)c.st.curses=Object.assign({},u.st.curses);delete c.anim;return c}
 function simScore(team,fn){
-  const save={units:G.units,voids:G.voids,traps:G.traps,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff};
-  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});
+  const save={units:G.units,voids:G.voids,traps:G.traps,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast};const bq=BEAST_Q;BEAST_Q=[];
+  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;
   SIM=true;let v;
-  try{fn();v=evaluate(team)}finally{SIM=false;Object.assign(G,save)}
+  try{fn();v=evaluate(team)}finally{SIM=false;Object.assign(G,save);BEAST_Q=bq}
   return v;
 }
 // Riftwalker setup value (v21 bots): an enemy left on a hex beside the edge, a void or a Void Trap, with a ready Repulsor that can reach it this turn
@@ -2513,8 +2653,15 @@ function moveEval(u,o,ctx){
   if(ft(v).includes('forest')&&!ft(u).includes('forest'))s+=(rangedU||u.maxhp<=7?3:1.5);if(ft(u).includes('forest')&&!ft(v).includes('forest'))s-=(rangedU||u.maxhp<=7?2:1);
   if(u.hp<u.maxhp-1&&ft(v).includes('shrine')&&!ft(u).includes('shrine')&&cells(v).some(([q,r])=>shrineOn(q,r)))s+=2.5;
   if(!u.leader&&G.relics){for(const x of G.relics)if(x.carrier==null&&x.q!=null){const d0=hd(u.q,u.r,x.q,x.r),d1=hd(o.q,o.r,x.q,x.r);if(d1===0)s+=9;else if(d0<=5)s+=(d0-d1)*1.2}}
-  // Outposts: Ultimate charge, and in Warlord a point per turn (only one Outpost counts, so the first one held is worth most).
-  if(!u.leader&&G.outposts&&G.outposts.length){const onO=x=>cells(x).some(([q,r])=>isOutpost(q,r));const others=G.units.some(w=>w!==u&&w.owner===u.owner&&w.kind!=='wall'&&onO(w));const pts=G.mode==='warlord'&&G.round>=RULES.CENTRE_FROM-1&&!others?4:0;if(onO(v)&&!onO(u))s+=5+pts;if(onO(u)&&!onO(v))s-=4+pts}
+  // Act 1 (v23): flags stay captured, so a unit steps onto a flag its side does not own (neutral or an enemy's) and walks on; it never parks on an owned one.
+  // The Wellspring is worth more (+1 AP every turn). Nearby objectives pull units within reach (flags 4 hexes, the Wellspring 6).
+  if(!u.leader&&!u.summon){const team=tm(u.owner),ownF=(q,r)=>{const o=flagOwner(q,r);return o!=null&&tm(o)===team};
+    const objs=[];for(const [q,r] of G.outposts||[])if(solid(q,r)&&!ownF(q,r))objs.push([q,r,6+(G.mode==='warlord'&&G.round>=RULES.FLAG_FROM-1?3:0),4,1.1]);
+    const sp=G.spring;if(sp&&solid(sp.q,sp.r)){const so=springOwner();if(so==null||tm(so)!==team)objs.push([sp.q,sp.r,9,6,1.4])}
+    let pull=0;for(const [q,r,val,reach,w] of objs){const d0=distUC(u,q,r),d1=distUC(v,q,r);if(d1===0)s+=val;else if(d0<=reach)pull=Math.max(pull,(d0-d1)*w)}s+=pull}
+  // The Rift Beast: fighters walk into reach of it (it gives points and charge to whoever lands the last blow); its low HP draws them harder.
+  if(!u.leader&&!u.summon&&u.at!=='none'&&G.beast&&G.beast.spawned&&!G.beast.dead){const b=G.units.find(x=>x.beast);if(b){const rg=meleeAt(u.at)?1:Math.min(effRng(u),3),d0=distUU(u,b),d1=distUU(v,b);
+    if(d0>rg&&d0<=8){const w=0.5+(1-b.hp/b.maxhp)*1.2;s+=(Math.min(d0,8)-Math.max(d1,rg))*w}}}
   // Frost Hold's cold: don't end a move on blue ground, and step off it when you can.
   if(ctx.coldIn){const cold=x=>cells(x).some(([q,r])=>terrAt(q,r)==='ice');if(cold(v)&&!cold(u))s-=2.5;if(cold(u)&&!cold(v))s+=2}
   {const fac=G.players[u.owner].fac;const val=x=>{let s2=0;for(const [q,r] of cells(x)){if(!claimable(q,r))continue;const t=G.terr[key(q,r)];if(!t)s2+=0.8;else if(t!==fac){const ow=G.players.find(y=>y.fac===t);if(!ow||ow.team!==G.players[u.owner].team)s2+=1}}return s2};s+=val(v)-val(u)}
@@ -2751,7 +2898,8 @@ function draw3D(now){
     if(isRoad(q,r)){ctx.save();ctx.setLineDash([Math.max(2,CAM.S*0.16),Math.max(2,CAM.S*0.12)]);ctx.strokeStyle='rgba(236,222,190,.6)';ctx.lineWidth=Math.max(1.2,CAM.S*0.07);
       for(let i=0;i<6;i++){const nq=q+ND[i][0],nr=r+ND[i][1];if(!solid(nq,nr)||isRoad(nq,nr))continue;ctx.beginPath();ctx.moveTo(top[i][0],top[i][1]);ctx.lineTo(top[(i+1)%6][0],top[(i+1)%6][1]);ctx.stroke()}ctx.restore()}
     {const cl=G.claim&&G.claim[k];if(cl){ctx.save();ctx.setLineDash([4,3]);polyPath(hexTop(x,z,0.8,0.01));ctx.strokeStyle=FAC[cl.fac].color;ctx.lineWidth=Math.max(2,CAM.S*0.1);ctx.stroke();ctx.restore()}}
-    if(isOutpost(q,r)){const o=outpostOwner(q,r);const oc=o?FAC[P(o.owner).fac].color:'#ece8dd';polyPath(hexTop(x,z,0.97,0));ctx.fillStyle=hexA(oc,o?0.35:0.14);ctx.fill();ctx.save();ctx.setLineDash([3,2]);polyPath(hexTop(x,z,0.84,0));ctx.strokeStyle=oc;ctx.lineWidth=Math.max(1.5,CAM.S*0.08);ctx.stroke();ctx.restore()}
+    if(isCentreWall(q,r)&&isHeart(q,r)){polyPath(top);ctx.fillStyle='rgba(8,10,16,.55)';ctx.fill()}// the sealed Heart while the wall stands
+    if(isOutpost(q,r)){const o=flagCol(q,r);const oc=o||'#9aa0aa';polyPath(hexTop(x,z,0.97,0));ctx.fillStyle=hexA(oc,o?0.32:0.14);ctx.fill();ctx.save();ctx.setLineDash([3,2]);polyPath(hexTop(x,z,0.84,0));ctx.strokeStyle=oc;ctx.lineWidth=Math.max(1.5,CAM.S*0.08);ctx.stroke();ctx.restore()}
     if(hl.aim.has(k)){const on=G.aim&&G.aim[0]===q&&G.aim[1]===r;polyPath(top);ctx.fillStyle=on?'rgba(255,243,196,.4)':`rgba(232,184,78,${0.2+0.1*flick})`;ctx.fill();
       polyPath(hexTop(x,z,on?0.88:0.78,0));ctx.strokeStyle=on?'#fff3c4':'rgba(232,184,78,.95)';ctx.lineWidth=Math.max(1.5,CAM.S*(on?0.12:0.08));ctx.stroke()}
     if(hl.moves.has(k)){const mv=hl.moves.get(k);
@@ -2767,6 +2915,7 @@ function draw3D(now){
   {const [x,z]=[0,0];polyPath(hexTop(x,z,0.45,0));ctx.strokeStyle=G.holder!==null?teamColor(G.holder):'rgba(232,184,78,.9)';ctx.lineWidth=Math.max(1,CAM.S*0.06);ctx.stroke()}
   // Gravity Wells: area, border, vortex and arrows on the ground, under the figures (ui.js drawWellsWith)
   drawWellsWith((q,r,ox,oy)=>{const [x,z]=world(q,r);const p=proj(x+ox,z+oy,0.012);return [p[0],p[1]]},CAM.S,now,false);
+  drawSpringWith((q,r,ox,oy)=>{const [x,z]=world(q,r);const p=proj(x+ox,z+oy,0.012);return [p[0],p[1]]},CAM.S,now);
   // units back to front
   const cur=G.cur;
   const zone3=myDeployZone();
@@ -2776,7 +2925,9 @@ function draw3D(now){
     const x=pts.reduce((a,p)=>a+p[0],0)/pts.length,z=pts.reduce((a,p)=>a+p[1],0)/pts.length;
     return {u,pts,x,z,d:x*s+z*c}});
   for(const [q,r] of ringCells()){const f=featAt(q,r);if(f==='rock'||f==='forest'||f==='shrine'){const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:f,q,r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}}
-  for(const [q,r] of G.outposts||[]){if(!solid(q,r)||unitAt(q,r))continue;const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:'outpost',q,r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
+  for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const occd=!!unitAt(q,r);const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:'outpost',q,r,occd},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
+  // the walled centre: a stone block on every hex of the grey ring, sorted with the figures so nothing behind it shows through
+  if(centreWalled())for(const [q,r] of ringCells()){if(!isCentreWall(q,r)||isHeart(q,r))continue;const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:'cwall',q,r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   for(const x2 of G.relics||[]){if(x2.carrier!=null||x2.q==null||unitAt(x2.q,x2.r))continue;const [x,z]=world(x2.q,x2.r);list.push({u:{kind:'prop',feat:'relic',relic:x2.kind,q:x2.q,r:x2.r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   for(const e of G.eggs||[]){if(unitAt(e.q,e.r))continue;const [x,z]=world(e.q,e.r);list.push({u:{kind:'prop',feat:'egg',q:e.q,r:e.r,ttl:e.ttl},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   list.sort((a,b)=>a.d-b.d);
@@ -2784,6 +2935,7 @@ function draw3D(now){
   for(const it of list){
     const {u,pts,x,z}=it;const [sx,sy]=proj(x,z,0);
     if(u.kind==='prop'){drawProp3D(u.feat,x,z,sx,sy,s,c,u,now);continue}
+    if(u.beast){drawBeast3D(u,pts,x,z,sx,sy,now);continue}
     if(u.kind==='wall'&&u.wall==='light'){const top=hexTop(x,z,0.66,0.55),bot=hexTop(x,z,0.66,0);ctx.save();ctx.globalAlpha=0.55;ctx.shadowColor='#fff3a8';ctx.shadowBlur=CAM.S*0.6;
       for(let i=0;i<6;i++){const j=(i+1)%6,na=Math.PI/180*(60*i),nz=Math.cos(na)*s+Math.sin(na)*c;if(nz<=0)continue;polyPath([top[i],top[j],bot[j],bot[i]]);ctx.fillStyle='rgba(255,243,168,.6)';ctx.fill()}
       polyPath(top);ctx.fillStyle='rgba(255,250,210,.8)';ctx.fill();ctx.restore();polyPath(top);ctx.strokeStyle='#fff3a8';ctx.lineWidth=1.5;ctx.stroke();
@@ -2840,8 +2992,18 @@ function draw3D(now){
 }
 function drawProp3D(f,x,z,sx,sy,s,c,p,now){
   const S=CAM.S,V=CAM.S*Math.sin(CAM.tilt);
-  if(f==='outpost'){ctx.fillStyle='#cfc6b0';ctx.fillRect(sx-S*0.03,sy-V*1.2,S*0.06,V*1.2);const w=(now||0)/300;ctx.beginPath();ctx.moveTo(sx+S*0.03,sy-V*1.18);
-    for(let i=0;i<=6;i++){const t=i/6;ctx.lineTo(sx+S*(0.03+t*0.5),sy-V*1.18+Math.sin(w+t*4)*S*0.04)}for(let i=6;i>=0;i--){const t=i/6;ctx.lineTo(sx+S*(0.03+t*0.5),sy-V*0.86+Math.sin(w+t*4)*S*0.04)}ctx.closePath();ctx.fillStyle='#ece8dd';ctx.fill();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;ctx.stroke();return}
+  if(f==='outpost'){// a banner pole; the cloth takes the owner's colour. With a unit on the flag it stands at the back corner, taller, so the figure does not hide it.
+    const oc=flagCol(p.q,p.r),k=p.occd?1.9:1.2;if(p.occd){const pp=proj(x-0.55*s+0.0*c,z-0.55*c,0);sx=pp[0];sy=pp[1]}
+    ctx.fillStyle='#0b0e14';ctx.fillRect(sx-S*0.05,sy-V*k,S*0.1,V*k);ctx.fillStyle='#e9dfc6';ctx.fillRect(sx-S*0.025,sy-V*k,S*0.05,V*k);const w=(now||0)/300;ctx.beginPath();ctx.moveTo(sx+S*0.03,sy-V*(k-0.02));
+    for(let i=0;i<=6;i++){const t=i/6;ctx.lineTo(sx+S*(0.03+t*0.6),sy-V*(k-0.02)+Math.sin(w+t*4)*S*0.05)}for(let i=6;i>=0;i--){const t=i/6;ctx.lineTo(sx+S*(0.03+t*0.6),sy-V*(k-0.42)+Math.sin(w+t*4)*S*0.05)}ctx.closePath();ctx.fillStyle=oc||'#555b66';ctx.fill();ctx.strokeStyle=oc?'#0b0e14':'#c9ccd3';ctx.lineWidth=1.5;ctx.stroke();return}
+  if(f==='cwall'){// the stone wall around the Heart (Act 1): a raised block with mortar lines; cracks glow in the round before it falls
+    const h=0.62,top=hexTop(x,z,0.99,h),bot=hexTop(x,z,0.99,0),last=G.round===RULES.CENTRE_FROM-1;
+    for(let i=0;i<6;i++){const j=(i+1)%6,na=Math.PI/180*(60*i),nz=Math.cos(na)*s+Math.sin(na)*c;if(nz<=0)continue;polyPath([top[i],top[j],bot[j],bot[i]]);ctx.fillStyle=mix('#9a8a70','#000000',0.5-0.35*nz);ctx.fill();ctx.strokeStyle='#241a10';ctx.lineWidth=1;ctx.stroke();
+      const m1=[(top[i][0]+bot[i][0])/2,(top[i][1]+bot[i][1])/2],m2=[(top[j][0]+bot[j][0])/2,(top[j][1]+bot[j][1])/2];ctx.beginPath();ctx.moveTo(m1[0],m1[1]);ctx.lineTo(m2[0],m2[1]);ctx.strokeStyle='rgba(36,26,16,.7)';ctx.stroke()}
+    polyPath(top);ctx.fillStyle='#b3a283';ctx.fill();ctx.strokeStyle='#241a10';ctx.lineWidth=1.2;ctx.stroke();
+    {const a=proj(x-0.45,z,h),b=proj(x+0.45,z,h),c1=proj(x,z-0.45,h),d=proj(x,z+0.45,h);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.moveTo(c1[0],c1[1]);ctx.lineTo(d[0],d[1]);ctx.strokeStyle='rgba(60,45,30,.55)';ctx.lineWidth=1;ctx.stroke()}
+    if(last){const fl=0.5+0.5*Math.sin((now||0)/240);const pp=[[-0.5,-0.2],[-0.1,0.1],[0.15,-0.15],[0.5,0.25]].map(([a,b])=>proj(x+a,z+b,h+0.01));ctx.beginPath();pp.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.strokeStyle=`rgba(255,150,70,${0.55+0.4*fl})`;ctx.lineWidth=Math.max(1.5,S*0.08);ctx.stroke()}
+    return}
   if(f==='relic'){const bob=Math.sin((now||0)/350)*V*0.08;ctx.beginPath();ctx.ellipse(sx,sy,S*0.4,S*0.4*Math.cos(CAM.tilt),0,0,7);ctx.fillStyle=hexA(RELICS[p.relic].col,0.25);ctx.fill();drawRelicGlyph(p.relic,sx,sy-V*0.75+bob,S*0.8,now||0);return}
   if(f==='egg'){const r=S*0.28,cy=sy-V*0.32;ctx.save();ctx.shadowColor='#ffb03d';ctx.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/200));const g=ctx.createRadialGradient(sx-r*0.3,cy-r*0.4,r*0.1,sx,cy,r*1.3);g.addColorStop(0,'#ffe0a8');g.addColorStop(0.6,'#ff8a3d');g.addColorStop(1,'#8a2a10');
     ctx.beginPath();ctx.ellipse(sx,cy,r,r*1.3,0,0,7);ctx.fillStyle=g;ctx.fill();ctx.restore();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;ctx.stroke();badge(sx+r*1.2,cy-r*1.1,Math.max(5,S*0.22),'#0b0e14','#ffb03d',p&&p.ttl);return}
@@ -2855,6 +3017,27 @@ function drawProp3D(f,x,z,sx,sy,s,c,p,now){
   if(f==='shrine'){const h=0.8,w=0.16;ctx.beginPath();ctx.moveTo(sx-S*w,sy);ctx.lineTo(sx-S*w*0.6,sy-V*h);ctx.lineTo(sx,sy-V*(h+0.2));ctx.lineTo(sx+S*w*0.6,sy-V*h);ctx.lineTo(sx+S*w,sy);ctx.closePath();
     const g=ctx.createLinearGradient(sx-S*w,0,sx+S*w,0);const off=p&&shrineBack(p.q,p.r);g.addColorStop(0,off?'#7d8a83':'#e7fff1');g.addColorStop(1,off?'#3c4a42':'#6fbf92');ctx.fillStyle=g;ctx.shadowColor='#9ff0c0';ctx.shadowBlur=off?0:S*0.4;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#2e6b4a';ctx.lineWidth=1;ctx.stroke()}
 }
+// The Rift Beast (3D): a hunched rift creature over its 3 hexes: dark base, a swollen body with horns, glowing eyes, the HP bar floating above.
+function drawBeast3D(u,pts,x,z,sx,sy,now){const S=CAM.S,V=S*Math.sin(CAM.tilt),br=0.5+0.5*Math.sin((now||0)/380),hit=hl.hitIds.has(u.id);
+  const base=pts.map(([a,b])=>proj(a,b,0));
+  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.beginPath();base.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();ctx.strokeStyle=hit?'#ffaa3c':G.inspect===u.id?'#ffffff':'rgba(0,0,0,.55)';ctx.lineWidth=S*1.5*Math.cos(CAM.tilt)+4;ctx.stroke();
+  ctx.strokeStyle='#241040';ctx.lineWidth=S*1.35*Math.cos(CAM.tilt);ctx.stroke();ctx.fillStyle='#241040';ctx.fill();
+  const bodyH=1.25,cy=sy-V*bodyH*0.55,rx=S*1.15,ry=V*bodyH*0.62+S*0.25;
+  ctx.shadowColor='#b06bff';ctx.shadowBlur=S*(0.6+0.5*br);
+  const g=ctx.createRadialGradient(sx-rx*0.3,cy-ry*0.4,S*0.1,sx,cy,rx*1.2);g.addColorStop(0,'#8a4fd8');g.addColorStop(0.6,'#4a1e7a');g.addColorStop(1,'#1c0b33');
+  ctx.beginPath();ctx.ellipse(sx,cy,rx,ry,0,0,7);ctx.fillStyle=g;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#0b0e14';ctx.lineWidth=2;ctx.stroke();
+  for(const s2 of [-1,1]){ctx.beginPath();ctx.moveTo(sx+s2*rx*0.45,cy-ry*0.7);ctx.quadraticCurveTo(sx+s2*rx*0.95,cy-ry*1.3,sx+s2*rx*0.8,cy-ry*1.75);ctx.lineTo(sx+s2*rx*0.3,cy-ry*0.85);ctx.closePath();ctx.fillStyle='#d9c7ff';ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke()}
+  for(let k=-2;k<=2;k++){const a=sx+k*rx*0.28,b=cy-ry*0.95+Math.abs(k)*ry*0.12;ctx.beginPath();ctx.moveTo(a-S*0.1,b+S*0.08);ctx.lineTo(a,b-S*0.28);ctx.lineTo(a+S*0.1,b+S*0.08);ctx.fillStyle='#b06bff';ctx.fill()}
+  const core=ctx.createRadialGradient(sx,cy+ry*0.1,1,sx,cy+ry*0.1,rx*0.6);core.addColorStop(0,'rgba(242,230,255,.85)');core.addColorStop(1,'rgba(176,107,255,0)');ctx.fillStyle=core;ctx.beginPath();ctx.arc(sx,cy+ry*0.1,rx*0.6,0,7);ctx.fill();
+  for(const s2 of [-1,1]){ctx.beginPath();ctx.ellipse(sx+s2*rx*0.3,cy-ry*0.3,S*0.14,S*0.08,s2*0.35,0,7);ctx.fillStyle='#fff36b';ctx.shadowColor='#fff36b';ctx.shadowBlur=S*0.5;ctx.fill();ctx.shadowBlur=0}
+  ctx.beginPath();ctx.moveTo(sx-rx*0.35,cy+ry*0.15);for(let i=0;i<=6;i++)ctx.lineTo(sx-rx*0.35+i*rx*0.117,cy+ry*(i%2?0.38:0.15));ctx.strokeStyle='#f2e6ff';ctx.lineWidth=Math.max(1.2,S*0.06);ctx.stroke();
+  if(hl.atk.has(u.id))for(const [a,b] of pts)groundRing(a,b,0.84,'#ff6161',Math.max(2,S*0.1));
+  const bw=S*2.2,bh=Math.max(4,S*0.2),bx0=sx-bw/2,by0=cy-ry*1.95,pct=Math.max(0,u.hp/u.maxhp);
+  ctx.fillStyle='#0b0e14';ctx.fillRect(bx0-1.5,by0-1.5,bw+3,bh+3);ctx.fillStyle=pct>.5?'#b06bff':pct>.25?'#e8b84e':'#ff6161';ctx.fillRect(bx0,by0,bw*pct,bh);
+  ctx.font=`900 ${Math.max(10,S*0.5)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.strokeStyle='#0b0e14';const tx=`Rift Beast ${Math.ceil(u.hp)}/${u.maxhp}`;ctx.strokeText(tx,sx,by0-S*0.35);ctx.fillStyle='#f2e6ff';ctx.fillText(tx,sx,by0-S*0.35);
+  ctx.restore();
+  drawnUnits.push({u,rect:[sx-rx,by0-S*0.6,sx+rx,sy+S*0.4],cell:[u.q,u.r]})}
 function hexAt3D(mx,my){
   for(let i=drawnUnits.length-1;i>=0;i--){const d=drawnUnits[i],[a,b,c2,d2]=d.rect;if(mx>=a&&mx<=c2&&my>=b&&my<=d2&&alive(d.u))return d.cell}
   const xr=(mx-CAM.cx)/CAM.S,zr=(my-CAM.cy)/(CAM.S*Math.cos(CAM.tilt));const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
@@ -3240,7 +3423,11 @@ function pumpVFX(now){
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
     if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')playSound('hit');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
-    if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color}
+    if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color;
+    // Act 1 announcements (v23): a message on screen and a sound; the pictures are drawn below
+    if(ev.msg&&(ev.k==='announce'||ev.k==='wallfall'||ev.k==='beast'||ev.k==='spring'))toast(ev.msg,4600);
+    if(ev.k==='announce'||ev.k==='spring')playSound('relic');if(ev.k==='wallfall'||ev.k==='beast')playSound('ult');if(ev.k==='flag')playSound('cast');
+    if(ev.k==='beastdown'){playSound('ult');toast(`${ev.name} slays the Rift Beast: ${ev.pts?'+'+ev.pts+' points and ':''}+${RULES.BEAST_CHARGE} charge`,4600)}}
 }
 /* A relic has landed: a chime and a message saying where ("north" is the top of the flat map), then the landing animation below. */
 function relicArrived(ev){playSound('relic');if(!ev.at)return;const [q,r]=ev.at;
@@ -3341,6 +3528,25 @@ function drawVFX(now){
           const ang=Math.atan2(y1-y0,x1-x0),s2=Math.max(6,U*0.34);ctx.save();ctx.globalAlpha=a;ctx.translate(hx,hy);ctx.rotate(ang);ctx.beginPath();ctx.moveTo(s2*0.7,0);ctx.lineTo(-s2*0.4,-s2*0.55);ctx.lineTo(-s2*0.15,0);ctx.lineTo(-s2*0.4,s2*0.55);ctx.closePath();
           ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle=wc;ctx.lineWidth=2;ctx.stroke();ctx.restore()}
         break}
+      // Act 1 (v23): the wall falls (dust over the grey ring), the Wellspring rises or is claimed, a flag changes hands, the Rift Beast appears and dies.
+      case 'wallfall':{dur=1600;const t=el/dur;if(el<30)shakeUntil=now+600;
+        for(const [q,r] of ringCells()){const d=hd(q,r,0,0);if(d>heartR()+2||d<=heartR())continue;const [x,y]=vPos(q,r,0.3+t*0.8);hexFlash(q,r,'#c9b894',0.5*(1-t));
+          ctx.save();ctx.globalAlpha=Math.max(0,0.85-t);ctx.fillStyle='#a8977c';for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(x+(j-1)*U*0.35,y-j*U*0.12,Math.max(1.5,U*0.16*(1-t)),0,7);ctx.fill()}ctx.restore()}
+        const [cx,cy]=vPos(0,0,0.2);burst(cx,cy,U*(1+5*t),'#ffd766',Math.max(0,0.8-t));break}
+      case 'spring':{dur=1400;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.2);if(!ev.take&&el<30)shakeUntil=now+200;
+        for(let k=0;k<3;k++){const tk=Math.max(0,t-k*0.15);burst(x,y,U*(0.3+2.2*tk),ev.col||'#7fe8ff',Math.max(0,0.9-tk))}sparks(x,y,14,U*1.2,'#e8fdff',t,0.4);
+        if(!ev.take){ctx.save();ctx.globalAlpha=Math.max(0,1-t);ctx.fillStyle='#bff6ff';for(let j=0;j<6;j++){const a=j/6*Math.PI*2;ctx.beginPath();ctx.arc(x+Math.cos(a)*U*0.3*t,y-U*(0.4+1.6*t)+Math.sin(a)*U*0.2,Math.max(1.5,U*0.1),0,7);ctx.fill()}ctx.restore()}
+        break}
+      case 'flag':{dur=800;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.8);hexFlash(ev.at[0],ev.at[1],col,0.55*(1-t));burst(x,y,U*(0.3+1.2*t),col,Math.max(0,1-t));sparks(x,y,10,U*0.9,col,t,1.1);break}
+      case 'beast':{dur=1800;const t=el/dur;if(el<30)shakeUntil=now+700;
+        for(const [q,r] of ev.cells||[]){hexFlash(q,r,'#b06bff',0.7*(1-t));const [x,y]=vPos(q,r,0.3);burst(x,y,U*(0.2+1.6*t),'#000000',Math.max(0,0.6-t),true);sparks(x,y,10,U*1.2,'#d9c7ff',t,q+r)}
+        const [x,y]=vPos(ev.at[0],ev.at[1],0.5);for(let k=0;k<3;k++){const tk=((t*1.3+k/3)%1);burst(x,y,U*3.2*(1-tk)+U*0.3,'#b06bff',Math.max(0,0.9*(1-t))*tk)}break}
+      case 'beastdown':{dur=2200;const t=el/dur;if(el<30)shakeUntil=now+700;const k=t<0.12?t/0.12:Math.max(0,1-(t-0.12)/0.88);
+        for(const [q,r] of ev.cells||[]){const [x,y]=vPos(q,r,0.4+t);burst(x,y,U*(0.3+2*t),'#b06bff',Math.max(0,1-t),true);sparks(x,y,14,U*1.5,col,t,q*2+r)}
+        ctx.save();ctx.globalAlpha=0.22*k;ctx.fillStyle='#b06bff';ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=k;ctx.font=`900 ${Math.max(20,Math.min(CW/12,54))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';const tx='Rift Beast slain!';ctx.strokeText(tx,CW/2,CH*0.4-t*20);ctx.fillStyle=col;ctx.fillText(tx,CW/2,CH*0.4-t*20);
+        if(ev.name){ctx.font=`800 ${Math.max(13,Math.min(CW/26,24))}px Oxanium, sans-serif`;const s2=`${ev.name}${ev.pts?' +'+ev.pts+' points':''} +${RULES.BEAST_CHARGE} charge`;ctx.strokeText(s2,CW/2,CH*0.4+Math.max(26,Math.min(CW/12,54))-t*20);ctx.fillStyle='#ffffff';ctx.fillText(s2,CW/2,CH*0.4+Math.max(26,Math.min(CW/12,54))-t*20)}
+        ctx.restore();break}
       case 'buff':{dur=600;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.5);sparks(x,y,8,U*0.6,ev.col||'#9ff0c0',t,1);break}
     }
     if(el>dur)ANIMS.splice(i,1);
@@ -4287,7 +4493,7 @@ function renderScoreStrip(){const el=$('#scoreStrip');if(!el)return;if(G.phase){
   const ts=[...new Set(G.players.map(p=>p.team))],TGT=heartTarget(),war=G.mode==='warlord',live=G.round>=RULES.CENTRE_FROM;
   const dots=t=>G.players.filter(p=>p.team===t).map(p=>`<i style="background:${FAC[p.fac].color}"></i>`).join('');
   const side=t=>{const dead=!G.players.some(p=>p.team===t&&p.alive),hold=G.holder===t,cur=P(G.cur).team===t;return `<span class="sc ${hold?'hold':''} ${dead?'dead':''} ${cur?'cur':''}" title="${teamName(t)}${hold?' holds the Heart':''}">${dots(t)}${war?`<b>${G.score[t]||0}</b><small>/${TGT}</small>`:''}${hold?'<em>⬢</em>':''}</span>`};
-  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`Heart opens round ${RULES.CENTRE_FROM}`:G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
+  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ Wall falls round ${RULES.CENTRE_FROM}</span>`:G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
 function refresh(){
   if(!G)return;
   renderDoom();renderScoreStrip();
@@ -4311,7 +4517,7 @@ function refresh(){
   $('#curChip').innerHTML=`<span class="dot" style="background:${F.color}"></span>P${p.id+1} · ${F.name}${G.teams?` <span class="team">Team ${'ABC'[p.team]}</span>`:''}${p.ctrl==='bot'?' <span class="hint">(bot)</span>':''}${netOnline()?` <span class="hint">· ${NET.code} · ${p.ctrl==='bot'?'bots':isHumanTurn()?'your turn':'waiting for '+(p.uid===NET.me?'you':(NET.names[p.uid]||'Player '+(p.id+1)))}</span>`:''}`;
   const tb=$('#takeBots');if(tb)tb.hidden=!(netOnline()&&!netIsHost()&&p.ctrl==='bot'&&Date.now()-NET.lastChange>12000);
   let pips='';for(let i=0;i<G.apMax;i++)pips+=`<i class="${i<G.ap?'on':''}"></i>`;
-  const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+' Leader':'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.bank?'+'+pa.bank+' carried':''].filter(Boolean).join(' ')})</span>`;
+  const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+' Leader':'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.well?'+'+pa.well+' Wellspring':'',pa.bank?'+'+pa.bank+' carried':''].filter(Boolean).join(' ')})</span>`;
   {const ub=$('#ultBtn');if(ub){const U=ULTS[p.fac],ch=p.ult||0,need=ultNeed(p),team=canTeamUlt(G.cur);ub.hidden=!isHumanTurn()||!!G.phase;
     ub.disabled=!canUlt(G.cur);ub.classList.toggle('ready',canUlt(G.cur));ub.classList.toggle('team',team);
     ub.innerHTML=`⚡${team?'⚡':''} <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':G.ap>=RULES.ULT_COST?(team?'team ready':'ready'):'needs '+RULES.ULT_COST+' AP'):ch+'/'+need}</span>`;ub.title=U.text}}
@@ -4330,7 +4536,13 @@ function refresh(){
   const legend=[...new Set(G.players.map(p=>p.fac))].map(f=>`<div class="homeline"><span class="sw" style="background:${hexA(FAC[f].color,.55)}"></span><span><b style="color:${FAC[f].color}">${FAC[f].name}</b>. ${FAC[f].home}</span></div>`).join('');
   $('#heartCard').innerHTML=`<div class="label">${MODES[G.mode].name} · Round ${G.round}</div>
     <div class="heart"><svg width="22" height="22" viewBox="-11 -11 22 22" aria-hidden="true" style="flex:none"><polygon points="${hexPts(0,0,10)}" fill="#e8b84e"/></svg><div>The Heart is ${hs}.${Object.keys(G.heartCount||{}).length?`<div class="hint">On the Heart now: ${Object.entries(G.heartCount).map(([t,c])=>`<b style="color:${teamColor(+t)}">${c}</b>`).join(' vs ')}</div>`:''}<div class="hint">A side holds it when it is the only one with units on its ${G.heartR===2?19:7} gold hexes: +1 ATK and +1 DEF on every unit, and your units on it heal 1 HP per turn${G.mode==='conquest'||G.mode==='warlord'?', and 1 point per turn':''}.</div></div></div>
-    <div class="heart" style="margin-top:8px"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 17L4.5 7.5 9 12 12 5 15 12 19.5 7.5 21 17Z" fill="#ffd766"/><rect x="3" y="18.5" width="18" height="2.6" fill="#ffd766"/></svg><div>The Throne (centre hex): ${(()=>{const t=G.units.find(u=>onThrone(u));return t?`<b style="color:${FAC[P(t.owner).fac].color}">${t.name}</b>`:'empty'})()}.<div class="hint">The unit on it gets +2 ATK, +1 range if ranged and double-speed cooldowns; from round 3 its side also gets +1 AP and +1 Ultimate charge per turn.</div></div></div>
+    <div class="heart" style="margin-top:8px"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 17L4.5 7.5 9 12 12 5 15 12 19.5 7.5 21 17Z" fill="#ffd766"/><rect x="3" y="18.5" width="18" height="2.6" fill="#ffd766"/></svg><div>The Throne (centre hex): ${(()=>{const t=G.units.find(u=>onThrone(u));return t?`<b style="color:${FAC[P(t.owner).fac].color}">${t.name}</b>`:'empty'})()}.<div class="hint">The unit on it gets +2 ATK, +1 range if ranged and double-speed cooldowns; from round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge per turn.</div></div></div>
+    ${(()=>{// Act 1 objectives at a glance: the wall, flags owned per side, the Wellspring, the Rift Beast
+      const lines=[];if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The centre is walled</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (it falls next round)':''}: nothing can enter the grey ring or the Heart.`);
+      const fl=G.players.filter(p=>p.alive).map(p=>[p,flagsOf(p.id)]).filter(x=>x[1]>0);lines.push(`<b>Flags owned:</b> ${fl.length?fl.map(([p,n])=>`<b style="color:${FAC[p.fac].color}">${FAC[p.fac].name} ${n}</b>`).join(' · '):'none yet'} (of ${(G.outposts||[]).filter(o=>solid(o[0],o[1])).length}).`);
+      if(G.spring&&solid(G.spring.q,G.spring.r)){const so=springOwner();lines.push(`<b style="color:#7fe8ff">Wellspring:</b> ${so!=null?`<b style="color:${FAC[P(so).fac].color}">${FAC[P(so).fac].name}</b> (+1 AP a turn)`:'unclaimed'}.`)}else if(G.round<RULES.SPRING_AT)lines.push(`<b style="color:#7fe8ff">Wellspring:</b> rises in round ${RULES.SPRING_AT}.`);
+      const bst=G.units.find(u=>u.beast);if(bst)lines.push(`<b style="color:#c99bff">Rift Beast:</b> ${fmt(bst.hp)}/${bst.maxhp} HP beside the Heart. Killing blow: ${G.mode==='warlord'?'+'+RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} charge.`);else if(!(G.beast&&G.beast.spawned))lines.push(`<b style="color:#c99bff">Rift Beast:</b> breaks out in round ${RULES.BEAST_AT}.`);else if(G.beast.killer!=null&&G.players[G.beast.killer])lines.push(`<b style="color:#c99bff">Rift Beast:</b> slain by ${FAC[G.players[G.beast.killer].fac].name}.`);
+      return `<div class="hint" style="margin-top:8px">${lines.join('<br>')}</div>`})()}
     ${(()=>{const n=collapseRound();return G.col?`<div class="hint" style="margin-top:8px">${n==null?'The Collapse is over: only the middle is left.':G.round>=n-1?`<b style="color:#ff8a7a">Ring ${G.col.ring} collapses at the start of round ${n}.</b>`:`The Collapse: ring ${G.col.ring} falls at the start of round ${n}.`}</div>`:''})()}
     ${scores}${ults}<div class="row" style="margin-top:10px;gap:10px">${sides}</div><div class="hint" style="margin-top:4px">⬢ = hexes of ground held. ★ most ground: +1 Ultimate charge per turn. Units claim the hex they end your turn on and neutral hexes next to them; enemy ground flips after 2 turns.</div>
     <div class="legend"><div class="label" style="margin:0">Home ground</div>${legend}</div>`;
@@ -4531,13 +4743,16 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     const wn=wellNote(q,r),wellP=wn?`<p class="hint" style="margin:8px 0 0;padding:6px 8px;border-left:3px solid ${wellCol(wellAt(q,r))};background:${hexA(wellCol(wellAt(q,r)),0.12)};color:#e6fff6">${wn}</p>`:'';
     const rl=(G.relics||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);
     if(rl){const Rl=RELICS[rl.kind];el.innerHTML=`<div class="label">Relic</div><h3 style="color:${Rl.col}">${Rl.name}</h3><p style="margin:6px 0 0">${Rl.text}</p><p class="hint" style="margin:6px 0 0">Step a unit onto this hex to pick it up. The carrier gets −1 move and drops it when it dies.</p>${wellP}`;return}
-    if(isOutpost(q,r)){el.innerHTML=`<div class="label">Hex</div><h3>Outpost</h3><p class="hint" style="margin:6px 0 0">A flank watchtower. A unit standing here at the start of your turn charges your army’s Ultimate by 1, and in Warlord the side holding more Outposts than anyone else scores 1 point a turn. The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${isRoad(q,r)?'<p class="hint" style="margin:6px 0 0">On the flank road: a unit starting its move here gets +1 move.</p>':''}${wellP}`;return}
+    if(isSpring(q,r)){const so=springOwner();const sc=so!=null?FAC[P(so).fac].color:'#7fe8ff';el.innerHTML=`<div class="label">Objective</div><h3 style="color:${sc}">The Wellspring</h3><p style="margin:6px 0 0">${so!=null?`Owned by <b style="color:${sc}">${FAC[P(so).fac].name}</b>: +1 AP at the start of each of its turns.`:'Nobody owns it yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, claims it. It stays claimed with nobody on it until an enemy steps on it. Its owner gets +1 AP every turn (within the maximum of ${RULES.AP_CAP}). The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${wellP}`;return}
+    if(isOutpost(q,r)){const fo=flagOwner(q,r);const fc=fo!=null?FAC[P(fo).fac].color:'#ece8dd';el.innerHTML=`<div class="label">Hex</div><h3 style="color:${fc}">Flag${fo!=null?' · '+FAC[P(fo).fac].name:''}</h3><p style="margin:6px 0 0">${fo!=null?`Owned by <b style="color:${fc}">${FAC[P(fo).fac].name}</b>. It stays theirs until an enemy unit stands on it.`:'Nobody owns this flag yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, captures it; no guard is needed afterwards. Each flag owned gives +1 Ultimate charge a turn, and in Warlord the side owning more flags than anyone else scores 1 point a turn from round ${RULES.FLAG_FROM}. The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${isRoad(q,r)?'<p class="hint" style="margin:6px 0 0">On the flank road: a unit starting its move here gets +1 move.</p>':''}${wellP}`;return}
     const road=isRoad(q,r)?`<p class="hint" style="margin:6px 0 0"><b>Flank road.</b> A unit that starts its move on the two outer rings gets +1 move.</p>`:'';
+    if(isCentreWall(q,r)){el.innerHTML=`<div class="label">Hex</div><h3>${isHeart(q,r)?(q===0&&r===0?'The Throne (sealed)':'The Heart (sealed)'):'The wall around the Heart'}</h3><p class="hint" style="margin:6px 0 0">Until round ${RULES.CENTRE_FROM} a stone wall rings the Heart. No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, teleported or swapped into it. Straight shots stop at it; lobbed shots fly over. It falls at the start of round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (next round)':''}; then the Heart and the Throne start to count.</p>`;return}
     el.innerHTML=`<div class="label">Hex</div><h3>${G.traps&&G.traps[key(q,r)]?'Void Trap':f?FEATURES[f].name:q===0&&r===0?'The Throne':isHeart(q,r)?'The Heart':isNoMans(q,r)?'No man\u2019s land':t?FAC[t].name+' ground':'Open ground'}</h3>
-      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round 3 its side also gets +1 AP and +1 Ultimate charge each turn.':isHeart(q,r)?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${FAC[t].home}</p>`:''}${road}${wellP}`;return}
+      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge each turn.':isHeart(q,r)?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${FAC[t].home}</p>`:''}${road}${wellP}`;return}
   if(!u){
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
+  if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${RULES.BEAST_DEF} DEF · fills 3 hexes</b></p><p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. It never moves and never attacks on its own, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p class="hint" style="margin:6px 0 0"><b>Lashes back:</b> each basic attack or ability that hits it has a 50% chance to take 1 damage back (the roll is fixed by the round, the attacker and the beast's HP: undo can't change it).</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
   if(u.kind==='wall'){el.innerHTML=`<div class="label">Obstacle</div><h3>${u.name}</h3><p class="hint">${u.hp}/${u.maxhp} HP. Gone in ${u.ttl} turn${u.ttl>1?'s':''} of its maker.</p>`;return}
   const p=P(u.owner),F=FAC[p.fac],pct=Math.max(0,u.hp/u.maxhp),M=MOVES[u.mt],AT=ATTACKS[u.at];
   const tags=[];
@@ -4561,7 +4776,8 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.poss)tags.push(`<span class="tag curse">Possessed: returns to P${u.poss.owner+1} at the end of this turn</span>`);
   if(u.st.duel){const c=byId(u.st.duel.by);tags.push(`<span class="tag bad">Challenged${c?' by the '+c.name:''}: basic attacks only at the Champion (${u.st.duel.ttl} turn${u.st.duel.ttl>1?'s':''})</span>`)}
   if(u.mov>0&&onRoad(u))tags.push('<span class="tag good">Flank road +1 move</span>');
-  if(cells(u).some(([q,r])=>isOutpost(q,r)))tags.push('<span class="tag good">On an Outpost: +1 Ultimate charge per turn</span>');
+  if(cells(u).some(([q,r])=>isOutpost(q,r)))tags.push('<span class="tag good">On a flag: it is captured for this side and stays captured after the unit leaves</span>');
+  if(cells(u).some(([q,r])=>isSpring(q,r)))tags.push('<span class="tag good">On the Wellspring: its owner gets +1 AP every turn</span>');
   if(u.kind!=='wall'&&engaged(u)&&effMov(u)>1)tags.push('<span class="tag bad">Engaged: can only step 1 hex</span>');
   if((u.at==='melee'||u.at==='reach')&&!u.egg)tags.push(ripostes(u)?'Strikes back at full damage':'Strikes back for half damage when hit in melee');
   if(hasTrait(u,'tempo')&&u.swings)tags.push(`<span class="tag good">Tempo: ${u.swings} strike${u.swings>1?'s':''} this turn, next one +${Math.min(2,u.swings)}</span>`);
@@ -4626,7 +4842,7 @@ function showScoreCard(){
   const nm=k=>{const [f,unit,eff]=k.split('|');return `<span style="color:${FAC[f].color}">${unit?unit+' · ':''}${eff}</span>`};
   const cell=(v,best)=>`<td class="${best?'best':''}">${fmt(v)}</td>`;
   const mx=k=>Math.max(...rows.map(r=>r[k]));
-  o.innerHTML=`<div class="modal scorecard"><div class="label">${MODES[G.mode].name} · round ${G.round}${war?` · first to ${TGT} Warlord points (Heart, Outposts, Leader takedowns)`:''}</div><h2>Score card</h2>
+  o.innerHTML=`<div class="modal scorecard"><div class="label">${MODES[G.mode].name} · round ${G.round}${war?` · first to ${TGT} Warlord points (Heart, flags, Leader takedowns, Rift Beast)`:''}</div><h2>Score card</h2>
     <div class="sc-wrap"><table class="sctbl"><thead><tr><th>Player</th>${war?'<th title="Warlord points of the side">⬢ Pts</th>':''}<th title="Units alive / started">Units</th><th>Kills</th><th title="Damage dealt">Dmg</th><th title="Damage taken">Taken</th><th>Healed</th><th title="Ultimates cast">Ults</th><th title="Hexes of ground held">Ground</th></tr></thead><tbody>
     ${rows.map(r=>`<tr class="${r.p.alive?'':'out'}"><td class="pl"><span class="dot" style="background:${FAC[r.p.fac].color}"></span>P${r.p.id+1} ${FAC[r.p.fac].name}${G.teams?` <small>${teamName(r.p.team)}</small>`:''}${!r.p.alive?' <small>out</small>':!r.leader?' <small>no leader</small>':''}</td>
       ${war?cell(r.heart,r.heart===mx('heart')&&r.heart>0):''}<td>${r.alive}/${r.start}</td>${cell(r.kills,r.kills===mx('kills')&&r.kills>0)}${cell(Math.round(r.dmg),r.dmg===mx('dmg')&&r.dmg>0)}<td>${fmt(Math.round(r.taken))}</td><td>${fmt(Math.round(r.heal))}</td><td>${r.ults}</td>${cell(r.ground,r.ground===mx('ground')&&r.ground>0)}</tr>`).join('')}</tbody></table></div>
@@ -4651,7 +4867,11 @@ function showRules(){
   const mv=Object.entries(MOVES).filter(([k])=>k!=='fly').map(([k,m])=>`<li><span class="glyph">${m.glyph}︎</span> <b>${m.free?'Free':'Pattern'}</b>: ${m.text(k==='march'?2:3)}</li>`).join('');
   const cs=COLLAPSE_START;
   o.innerHTML=`<div class="modal"><h2>How to play</h2>
-  <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (Outposts and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
+  <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
+  <h3>A game in three acts</h3><ul>
+  <li><b>Act 1, expand.</b> The centre is walled: a stone wall stands on the grey ring around the Heart until round ${RULES.CENTRE_FROM}. Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores. In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
+  <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls (announced a round before): the Heart and the Throne are open and start to count. In round ${RULES.BEAST_AT} the <b>Rift Beast</b> breaks out beside the Heart (announced a round before).</li>
+  <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre until someone wins.</li></ul>
   <h3>Setup and deployment</h3><ul>
   <li>Each army has up to 10 slots (a giant takes 2) and one Leader. Boards: radius 8 for 2–3 players, 9 for 4–6.</li>
   <li><b>Secret deployment.</b> Before round 1, each side arranges its army in its own glowing zone, hidden from the others. Formations (${Object.values(FORMATIONS).map(f=>f.name).join(', ')}) place everything in one tap; then move units or swap two of them. Armies are revealed together.</li>
@@ -4663,7 +4883,7 @@ function showRules(){
   <li>Your army's home bonus works on <b>all</b> your ground, so pushing forward carries your strength with you.</li>
   <li>The side holding the most ground gets +1 Ultimate charge each turn (★ in the side panel).</li></ul>
   <h3>Your turn</h3><ul>
-  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives, +${RULES.THRONE_AP} while you hold the Throne, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}.</li>
+  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives, +${RULES.THRONE_AP} while you hold the Throne, +1 while you own the Wellspring, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}.</li>
   <li>Move a unit: 1 AP. Basic attack: 2 AP. Ability: its listed cost. Ultimate: ${RULES.ULT_COST} AP (team: ${RULES.TEAM_ULT_COST}). Gnome machines fire on their own for no AP at the start of the gnome turn, and a machine with a weapon may also make one basic attack of its own for 1 AP.</li>
   <li>Each unit can move once and act once per turn, in either order. Acting means a basic attack <b>or</b> its ability.</li></ul>
   <h3>Moving</h3><p>The chess symbol in a piece's corner shows how it moves.</p><ul>
@@ -4695,16 +4915,17 @@ function showRules(){
   <h3>Abilities</h3><p>Most non-pawn units have one. An ability deals its own fixed spell damage (ATK bonuses don't change it) and rests 1 to 5 of your turns afterwards. The Warlord carries two (March and Rally), each with its own rest. The Conclave's mages carry spellbooks of 2 or 3 spells that share one rest. Frost Hold, Stone Giants, Gnome Tinkers, Hourglass Order, Riftwalkers, Iron Warband and the Circle of Priests field no pawns at all. Shapes: blasts, cones, lines, rings, arcs, auras and single targets. Tap Aim, tap a gold hex to preview, tap again to fire.</p>
   <h3>Pillar 1: the Centre</h3><ul>
   <li><b>The Heart</b> (gold hexes): a side holds it while it is the only side with units on it. Holding it gives every unit of that side +1 ATK and +1 DEF, heals your units standing on it 1 HP per turn, and scores 1 Warlord point per turn.</li>
-  <li><b>Warlord points</b> come from three places: holding the Heart at the start of your turn (1 point), holding more Outposts than any other side at the start of your turn from round ${RULES.CENTRE_FROM} (1 point; a tie scores nothing), and killing an enemy Leader (2 points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
+  <li><b>Warlord points</b> come from four places: holding the Heart at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
   <li><b>The Throne</b> (centre hex): the unit on it gets +${THRONE.atk} ATK, +1 range if ranged and double-speed cooldowns. Its side gets +1 AP and +${THRONE.charge} Ultimate charge per turn.</li>
-  <li><b>Centre lock:</b> Heart points and the Throne's AP and charge only start in round ${RULES.CENTRE_FROM}, so going first doesn't grab the centre for free.</li>
-  <li>The grey ring around the Heart is no man's land.</li></ul>
+  <li><b>The walled centre:</b> until round ${RULES.CENTRE_FROM} the grey ring around the Heart (no man's land) is a stone wall. No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, dragged, teleported or swapped into it; a unit shoved into it takes the slam damage and stays. Straight shots stop at it (lobbed shots fly over). A warning comes at the start of round ${RULES.CENTRE_FROM-1}; at the start of round ${RULES.CENTRE_FROM} it falls and the Heart and the Throne start to count. After that the grey ring is ordinary ground that no army can colour.</li>
+  <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, announced a round before): a neutral monster on 3 hexes just outside the Heart, ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never moves and never attacks on its own, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). Each time a basic attack or ability hits it, there is a 50% chance it lashes back for 1 damage at the attacker; the roll is fixed by the round, the attacker and the beast's HP, so undo can't change it. The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. Left alone it stays where it is until the last ring of the Collapse (the outer grey ring) swallows it; there is only one per game.</li></ul>
   <h3>Pillar 2: the Flanks</h3><ul>
   <li><b>Flank roads</b> (dashed line, the two outermost rings): from round ${RULES.ROAD_FROM}, a unit that starts its move there gets +${RULES.ROAD} move.</li>
-  <li><b>Outposts</b> (flags between neighbouring armies): a unit on one at the start of your turn gives +1 Ultimate charge per Outpost, and in Warlord 1 point per turn to the side holding MORE Outposts than anyone else (from round ${RULES.CENTRE_FROM}; a tie scores nothing), so flags are worth taking from your neighbours.</li>
+  <li><b>Flags</b> (Outposts, between neighbouring armies): a unit that ends its move on a flag, or stands on it at the start of your turn, captures it and raises your banner. The flag <b>stays yours with nobody on it</b> until an enemy unit stands on it. Each flag you own gives +1 Ultimate charge at the start of your turn, and in Warlord the side owning MORE flags than anyone else scores 1 point per turn (from round ${RULES.FLAG_FROM}; a tie scores nothing). A partner's flag stays your partner's. The Collapse takes flags with the ring they stand on; an army that is knocked out leaves its flags neutral.</li>
+  <li><b>The Wellspring</b> (round ${RULES.SPRING_AT}, announced a round before): a glowing spring on the outer ring, on the flank far from the side leading on points (with no single leader, the flank between two armies). It is captured like a flag and stays yours until an enemy steps on it. Its owner gets +1 AP at the start of each turn (within the maximum of ${RULES.AP_CAP}). It lasts until the Collapse swallows it.</li>
   <li><b>Relics</b> (if switched on): from round ${RULES.RELIC_FROM}, a relic appears on an Outpost or flank road every ${RULES.RELIC_EVERY} rounds. Step onto it to pick it up. The carrier gets −1 move, and drops it where it dies.<ul>${Object.values(RELICS).map(r=>`<li><b style="color:${r.col}">${r.name}</b>: ${r.text}</li>`).join('')}</ul></li></ul>
   <h3>Pillar 3: the Ultimates</h3><p>Every army has an Ultimate that hits the whole board. It costs ${RULES.ULT_COST} AP and recharges: the first needs ${RULES.ULT} charge, and each cast raises the next by ${RULES.ULT_STEP} (${RULES.ULT}, ${RULES.ULT+RULES.ULT_STEP}, ${RULES.ULT+2*RULES.ULT_STEP}…). One per turn.</p><ul>
-  <li><b>Charge:</b> +1 per kill (machines and eggs give none), +1 more if the victim's side is clearly in the lead (bounty), +1 when one of <i>your</i> non-pawn units dies, +1 per Outpost held, +${THRONE.charge} for the Throne (from round ${RULES.CENTRE_FROM}), +1 per Storm Idol carried, +1 for holding the most ground.</li>
+  <li><b>Charge:</b> +1 per kill (machines and eggs give none), +1 more if the victim's side is clearly in the lead (bounty), +1 when one of <i>your</i> non-pawn units dies, +1 per flag owned, +${THRONE.charge} for the Throne (from round ${RULES.CENTRE_FROM}), +1 per Storm Idol carried, +1 for holding the most ground, +${RULES.BEAST_CHARGE} for the killing blow on the Rift Beast.</li>
   <li><b>Team Ultimate:</b> in team games, when both partners are charged, the one whose turn it is can fire both at once for ${RULES.TEAM_ULT_COST} AP; every unit on both sides also heals 2.</li>
   <li>A ⚠ on an enemy's charge bar means their Ultimate is 1–2 charge away. Play around it.</li></ul>
   <ul>${FKEYS.map(k=>`<li><b style="color:${FAC[k].color}">${ULTS[k].name}</b> (${FAC[k].name}): ${ULTS[k].text}</li>`).join('')}</ul>
@@ -4730,7 +4951,8 @@ function showQuick(){
   const o=$('#overlay');const row=(a,b)=>`<tr><th>${a}</th><td>${b}</td></tr>`;
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
-  ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +${RULES.THRONE_AP} Throne · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
+  ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls · round ${RULES.BEAST_AT}: the Rift Beast breaks out · then the Collapse closes the board`)}
+  ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +${RULES.THRONE_AP} Throne · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free, and may attack once for 1 AP')}
   ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 6 on the board · Dismantle: remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less · build cooldowns Turret 2, Flame Turret 2, Mortar 3, Coil 3 · machines never move · each fires on its own for free at the start of the gnome turn and may also attack once for 1 AP (not the Coil) · each falls apart after 6 gnome turns · can’t be chilled, frozen or stunned · killing one gives no charge and no star · builders and Gearmaster can’t attack (only Bombardiers do) · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1) · Clockwork Rush: 2 AP + 1 per 2 machines, max 5')}
   ${row('Per unit','Move once + one action (attack <b>or</b> ability)')}
@@ -4749,13 +4971,16 @@ function showQuick(){
   ${row('Perch','Flyers can sit on rocks: safe from melee walkers, −1 range')}
   ${row('Inspect','Long-press any piece for its full card')}
   ${row('Heart','Held: +1 ATK +1 DEF army-wide, heal 1 on it, 1 point/turn from round '+RULES.CENTRE_FROM)}
-  ${row('Warlord points','Heart held 1/turn · most Outposts held 1/turn (from round '+RULES.CENTRE_FROM+', ties score nothing) · enemy Leader killed +2 · first to 12 wins (10 with 4+ players in free-for-all, 12 in teams) · leaderless sides score nothing')}
+  ${row('Warlord points','Heart held 1/turn (from round '+RULES.CENTRE_FROM+') · most flags owned 1/turn (from round '+RULES.FLAG_FROM+', ties score nothing) · enemy Leader killed +2 · Rift Beast killing blow +'+RULES.BEAST_PTS+' · first to 12 wins (10 with 4+ players in free-for-all, 12 in teams) · leaderless sides score nothing')}
   ${row('Throne','+'+THRONE.atk+' ATK, +1 range, fast cooldowns · from round '+RULES.CENTRE_FROM+': +1 AP, +'+THRONE.charge+' charge')}
   ${row('Forest','Targetable only within 2 · +1 DEF · stops shots')}
   ${row('Hill','Ranged: +1 range +1 damage · melee uphill −1')}
   ${row('Shrine','Heals the unit on it 2 at the start of your turn · one drink: then spent (dark) for 2 rounds')}
   ${row('Flank road','+'+RULES.ROAD+' move from round '+RULES.ROAD_FROM)}
-  ${row('Outpost','+1 charge per turn held · Warlord: 1 point per turn if you hold more Outposts than anyone else (from round '+RULES.CENTRE_FROM+')')}
+  ${row('Walled centre','Until round '+RULES.CENTRE_FROM+' the grey ring is a wall: nothing enters or crosses it, flyers too; straight shots stop at it')}
+  ${row('Flag','Step on it: yours until an enemy steps on it · +1 charge per turn per flag owned · Warlord: 1 point per turn if you own more flags than anyone else (from round '+RULES.FLAG_FROM+')')}
+  ${row('Wellspring','Round '+RULES.SPRING_AT+', outer ring · captured like a flag · +1 AP every turn to its owner')}
+  ${row('Rift Beast','Round '+RULES.BEAST_AT+', beside the Heart, 3 hexes · '+RULES.BEAST_HP+' HP, '+RULES.BEAST_DEF+' DEF · never moves or attacks · 50% to hit back 1 when struck · killing blow: +'+RULES.BEAST_PTS+' points (Warlord) and +'+RULES.BEAST_CHARGE+' charge')}
   ${row('Guarded Leaders','4+ players free-for-all: shots and abilities from 3+ hexes deal 1 less to a Leader (min 1)')}
   ${row('Statuses','Chilled: −1 move for 2 turns · Frozen: loses its next turn, then chilled 1 turn · Stunned: loses its next turn · Ice Lance ×2 vs chilled/frozen, Shatter Strike ×2 vs frozen')}
   ${row('Debuffs','Curses, chill, frozen, stun, Sunder, Seared, delay, Hex ·Mend heals, then removes one (frozen/stun first, then a curse)')}
@@ -4767,7 +4992,7 @@ function showQuick(){
   ${row('Natural enemies','Priests › Covenant › Warband › Hourglass › Giants › Gnomes › Frost › Riftwalkers › Ember Court › Priests · Conclave › Giants · Covenant › Conclave (an edge, not a sure win)')}
   ${row('Conclave','Spellbook: 2–3 spells, one button each, casting one rests the whole book · Arcane Focus: +1 spell damage if the mage has not moved · Blink: tap the ally, then where it lands · Surge: a resting book is ready again (no extra action) · Hex: −2 ATK, +1 damage taken from abilities, 2 turns · Guard: blows on an adjacent mage hit the Gargoyle · Stone Sleep: a dead Gargoyle is a 5 HP statue; 4 AP of spells cast within 2 wakes it at half max HP (16, 8, 4)')}
   ${row('Relics','From round '+RULES.RELIC_FROM+', every '+RULES.RELIC_EVERY+' · carrier −1 move · '+Object.values(RELICS).map(r=>r.name).join(', '))}
-  ${row('Ultimate charge','Kill +1 (machines and eggs 0) · bounty +1 · own non-pawn loss +1 · Outpost +1 · Throne +'+THRONE.charge+' · Idol +1 · most ground +1')}
+  ${row('Ultimate charge','Kill +1 (machines and eggs 0) · bounty +1 · own non-pawn loss +1 · flag owned +1 · Throne +'+THRONE.charge+' · Idol +1 · most ground +1 · Rift Beast +'+RULES.BEAST_CHARGE+'')}
   ${row('Ultimate cost',RULES.ULT+', then +'+RULES.ULT_STEP+' per cast · one per turn')}
   ${row('Veterans','+1 ATK per kill, max 3 (giants: 2 kills per star; machines and eggs give none)')}
   ${row('Curses','1: 0.5 · 2: 2 · 3: 3.5 · +1.5 each (leaders take 1 less)')}
@@ -4906,6 +5131,70 @@ function wellBadge(x,y,U,w){const r=Math.max(10,U*(VIEW==='3d'?0.46:0.38)),col=w
   ctx.fillStyle='#ffffff';ctx.font=`900 ${Math.max(10,r*1.2)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(w.ttl,x,y+0.5);ctx.restore()}
 function drawWells2D(now){drawWellsWith((q,r,ox,oy)=>{const [x,y]=px(q,r);return [x+ox*SZ,y+oy*SZ]},SZ,now,true)}
 function drawWellBadges2D(){for(const w of G.wells||[]){const [x,y]=px(w.q,w.r);wellBadge(x+SZ*0.62,y-SZ*0.7,SZ,w)}}
+/* ---------- Act 1 objectives on the board (v23): the walled centre, flag banners, the Wellspring, the Rift Beast ----------
+   Shared by both views where the shape allows: T(q,r,ox,oy) maps a hex plus an offset in hex radii to canvas coordinates (see drawWellsWith). */
+const WALL_EDGE=(q,r,i)=>{const nq=q+ND[i][0],nr=r+ND[i][1];return !(isCentreWall(nq,nr)&&!isHeart(nq,nr))};
+// The stone wall: blocks of stone with mortar lines on every hex of the grey ring, a dark outline where it meets open ground, the Heart inside dimmed.
+// In the round before it falls, glowing cracks run through it.
+function drawCentreWall2D(now){if(!centreWalled())return;const last=G.round===RULES.CENTRE_FROM-1,fl=0.5+0.5*Math.sin(now/240);
+  for(const [q,r] of ringCells()){if(!isCentreWall(q,r))continue;const [x,y]=px(q,r);
+    if(isHeart(q,r)){hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(8,10,16,.55)';ctx.fill();continue}
+    ctx.save();hexPath(x,y,SZ*0.99);const g=ctx.createLinearGradient(x,y-SZ,x,y+SZ);g.addColorStop(0,'#a8977c');g.addColorStop(1,'#5e5142');ctx.fillStyle=g;ctx.fill();ctx.clip();
+    ctx.strokeStyle='rgba(36,27,18,.8)';ctx.lineWidth=Math.max(1,SZ*0.07);const h=SZ*0.46,sd=((q*7+r*13)%5+5)%5*0.13;
+    for(let i=-3;i<=2;i++){const yy=y+i*h+sd*SZ*0.2;ctx.beginPath();ctx.moveTo(x-SZ,yy);ctx.lineTo(x+SZ,yy);ctx.stroke();const off=(i&1)?SZ*0.48:sd*SZ;
+      for(let xx=x-SZ*1.4+off;xx<x+SZ;xx+=SZ*0.95){ctx.beginPath();ctx.moveTo(xx,yy);ctx.lineTo(xx,yy+h);ctx.stroke()}}
+    if(last){ctx.strokeStyle=`rgba(255,150,70,${0.55+0.4*fl})`;ctx.lineWidth=Math.max(1.5,SZ*0.09);ctx.beginPath();ctx.moveTo(x-SZ*0.6,y-SZ*0.3);ctx.lineTo(x-SZ*0.15,y+SZ*0.05);ctx.lineTo(x+SZ*0.1,y-SZ*0.2);ctx.lineTo(x+SZ*0.55,y+SZ*0.35);ctx.stroke()}
+    ctx.restore()}
+  ctx.save();ctx.lineCap='round';
+  for(const pass of [0,1]){ctx.strokeStyle=pass?'#c9b894':'#1f170f';ctx.lineWidth=pass?Math.max(1,SZ*0.05):Math.max(2.5,SZ*0.18);ctx.beginPath();
+    for(const [q,r] of ringCells()){if(!isCentreWall(q,r)||isHeart(q,r))continue;const [x,y]=px(q,r);
+      for(let i=0;i<6;i++){if(!WALL_EDGE(q,r,i))continue;const a1=Math.PI/180*(60*i-30),a2=Math.PI/180*(60*i+30);ctx.moveTo(x+SZ*0.97*Math.cos(a1),y+SZ*0.97*Math.sin(a1));ctx.lineTo(x+SZ*0.97*Math.cos(a2),y+SZ*0.97*Math.sin(a2))}}
+    ctx.stroke()}
+  ctx.restore()}
+// A banner on a pole: the owner's colour (a pale, unclaimed cloth when nobody owns the flag).
+function drawBanner(c,x,y,S,col,now,owned){const h=S*1.0,top=y-h*0.62,bot=y+h*0.38,w=S*0.62,wave=(now||0)/260;
+  c.save();c.lineCap='round';c.strokeStyle='#0b0e14';c.lineWidth=Math.max(3,S*0.13);c.beginPath();c.moveTo(x,bot);c.lineTo(x,top);c.stroke();
+  c.strokeStyle='#e9dfc6';c.lineWidth=Math.max(1.5,S*0.07);c.beginPath();c.moveTo(x,bot);c.lineTo(x,top);c.stroke();
+  c.beginPath();c.moveTo(x,top);for(let i=1;i<=8;i++){const t=i/8;c.lineTo(x+w*t,top+Math.sin(wave+t*4)*S*0.05*t)}for(let i=8;i>=0;i--){const t=i/8;c.lineTo(x+w*t,top+h*0.42+Math.sin(wave+t*4)*S*0.05*t)}c.closePath();
+  c.fillStyle=owned?col:'#555b66';c.fill();if(!owned){c.save();c.setLineDash([2,2]);c.strokeStyle='#c9ccd3';c.lineWidth=Math.max(1,S*0.05);c.stroke();c.restore()}c.strokeStyle='#0b0e14';c.lineWidth=Math.max(1.2,S*0.06);c.stroke();
+  if(owned){c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.arc(x+w*0.45,top+h*0.21,S*0.08,0,7);c.fill()}
+  c.restore()}
+function flagCol(q,r){const fo=flagOwner(q,r);return fo!=null?FAC[P(fo).fac].color:null}
+// Flags: tinted hex and dashed ring in the owner's colour; the banner stands in the middle, or at the corner (drawn above the units) when a unit is on it.
+function drawFlags2D(now){for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const [x,y]=px(q,r);const oc=flagCol(q,r),col=oc||'#9aa0aa';
+    ctx.save();hexPath(x,y,SZ*0.97);ctx.fillStyle=hexA(col,oc?0.32:0.14);ctx.fill();hexPath(x,y,SZ*0.86);ctx.setLineDash([3,2]);ctx.strokeStyle=col;ctx.lineWidth=Math.max(1.5,SZ*0.09);ctx.stroke();ctx.restore();
+    if(!unitAt(q,r))drawBanner(ctx,x-SZ*0.22,y+SZ*0.05,SZ*0.95,col,now,!!oc)}}
+function drawFlagTops2D(now){for(const [q,r] of G.outposts||[]){if(!solid(q,r)||!unitAt(q,r))continue;const [x,y]=px(q,r);const oc=flagCol(q,r);drawBanner(ctx,x+SZ*0.5,y-SZ*0.35,SZ*0.62,oc||'#ece8dd',now,!!oc)}}
+// The Wellspring: a glowing pool with ripples; its rim takes the owner's colour.
+function springCol(){const so=springOwner();return so!=null?FAC[P(so).fac].color:null}
+function drawSpringWith(T,U,now){const s=G.spring;if(!s||!solid(s.q,s.r))return;const oc=springCol(),t=(now||0)/1000,still=stillMotion();
+  const ell=(k,col,a,fill,lw)=>{ctx.beginPath();for(let i=0;i<=28;i++){const an=i/28*Math.PI*2;const [X,Y]=T(s.q,s.r,k*Math.cos(an),k*Math.sin(an));i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.closePath();ctx.globalAlpha=a;if(fill){ctx.fillStyle=col;ctx.fill()}else{ctx.strokeStyle=col;ctx.lineWidth=lw||2;ctx.stroke()}ctx.globalAlpha=1};
+  ctx.save();ctx.shadowColor='#7fe8ff';ctx.shadowBlur=U*0.9;ell(0.78,'#0d4a5c',0.95,true);ctx.shadowBlur=0;ell(0.62,'#2fb8d8',0.85,true);ell(0.34,'#bff6ff',0.9,true);
+  for(let k=0;k<3;k++){const p=still?(k+0.5)/3:((t*0.6+k/3)%1);ell(0.2+0.6*p,'#e8fdff',0.8*(1-p),false,Math.max(1,U*0.06))}
+  ell(0.86,oc||'#7fe8ff',1,false,Math.max(2.5,U*(oc?0.17:0.1)));if(!oc){ctx.setLineDash([3,3]);ell(0.95,'#e8fdff',0.6,false,1.2);ctx.setLineDash([])}
+  const [X,Y]=T(s.q,s.r,0,0);ctx.fillStyle='#ffffff';ctx.font=`900 ${Math.max(8,U*0.42)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.strokeStyle='#073040';ctx.strokeText('+1',X,Y+0.5);ctx.fillText('+1',X,Y+0.5);
+  ctx.restore()}
+function drawSpring2D(now){drawSpringWith((q,r,ox,oy)=>{const [x,y]=px(q,r);return [x+ox*SZ,y+oy*SZ]},SZ,now)}
+// The Rift Beast (2D): one dark, glowing body stretched over its 3 hexes, horns, eyes and a maw, an HP bar underneath.
+function drawBeastBody(c,pts,U,now,u,hit,sel){const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length,br=0.5+0.5*Math.sin((now||0)/380);
+  c.save();c.lineJoin='round';c.lineCap='round';
+  if(hit||sel){c.strokeStyle=hit?'#ffaa3c':'#ffffff';c.lineWidth=U*1.9;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.stroke()}
+  c.strokeStyle='#0b0e14';c.lineWidth=U*1.62;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.stroke();
+  c.shadowColor='#b06bff';c.shadowBlur=U*(0.6+0.5*br);c.strokeStyle='#3a1760';c.lineWidth=U*1.48;c.stroke();c.shadowBlur=0;
+  c.fillStyle='#3a1760';c.fill();
+  // horns toward each corner of the triangle
+  for(const [x,y] of pts){const dx=x-cx,dy=y-cy,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;const bx=x+ux*U*0.45,by=y+uy*U*0.45;
+    c.beginPath();c.moveTo(bx-uy*U*0.22,by+ux*U*0.22);c.lineTo(bx+ux*U*0.55,by+uy*U*0.55);c.lineTo(bx+uy*U*0.22,by-ux*U*0.22);c.closePath();c.fillStyle='#d9c7ff';c.fill();c.strokeStyle='#0b0e14';c.lineWidth=1.5;c.stroke()}
+  // swirling rift core
+  const g=c.createRadialGradient(cx,cy,U*0.05,cx,cy,U*0.9);g.addColorStop(0,'#f2e6ff');g.addColorStop(0.35,'#b06bff');g.addColorStop(1,'rgba(58,23,96,0)');c.fillStyle=g;c.beginPath();c.arc(cx,cy,U*0.9,0,7);c.fill();
+  // eyes and maw
+  const ey=cy-U*0.18;for(const s of [-1,1]){c.beginPath();c.ellipse(cx+s*U*0.3,ey,U*0.13,U*0.08,s*0.35,0,7);c.fillStyle='#fff36b';c.shadowColor='#fff36b';c.shadowBlur=U*0.4;c.fill();c.shadowBlur=0}
+  c.beginPath();c.moveTo(cx-U*0.32,cy+U*0.18);for(let i=0;i<=6;i++){c.lineTo(cx-U*0.32+i*U*0.107,cy+U*(i%2?0.34:0.18))}c.strokeStyle='#f2e6ff';c.lineWidth=Math.max(1.2,U*0.06);c.stroke();
+  // HP bar and number
+  const bw=U*2.2,bh=Math.max(4,U*0.2),bx0=cx-bw/2,by0=Math.max(...pts.map(p=>p[1]))+U*0.55,pct=Math.max(0,u.hp/u.maxhp);
+  c.fillStyle='#0b0e14';c.fillRect(bx0-1.5,by0-1.5,bw+3,bh+3);c.fillStyle=pct>.5?'#b06bff':pct>.25?'#e8b84e':'#ff6161';c.fillRect(bx0,by0,bw*pct,bh);
+  c.font=`900 ${Math.max(10,U*0.5)}px Oxanium, sans-serif`;c.textAlign='center';c.textBaseline='middle';c.lineWidth=3;c.strokeStyle='#0b0e14';const tx=`${Math.ceil(u.hp)}/${u.maxhp}`;c.strokeText(tx,cx,by0+bh+U*0.35);c.fillStyle='#f2e6ff';c.fillText(tx,cx,by0+bh+U*0.35);
+  c.restore();return [cx,cy]}
 function drawMarkers2D(now){
   {const z=myDeployZone();if(z){const P0=P(G.cur);for(const k of z){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);hexPath(x,y,SZ*0.9);ctx.fillStyle=hexA(FAC[P0.fac].color,0.16+0.08*Math.sin(now/300));ctx.fill();ctx.strokeStyle=hexA(FAC[P0.fac].color,0.8);ctx.lineWidth=1.5;ctx.stroke()}}}
   for(const [k,c] of Object.entries(G.claim||{})){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);ctx.save();ctx.setLineDash([4,3]);hexPath(x,y,SZ*0.8);ctx.strokeStyle=FAC[c.fac].color;ctx.lineWidth=Math.max(2,SZ*0.12);ctx.stroke();ctx.restore()}
@@ -4916,9 +5205,7 @@ function drawMarkers2D(now){
     for(let i=0;i<6;i++){const nq=q+ND[i][0],nr=r+ND[i][1];if(!solid(nq,nr)||isRoad(nq,nr))continue;
       const a1=Math.PI/180*(60*i-30),a2=Math.PI/180*(60*i+30);ctx.beginPath();ctx.moveTo(x+SZ*0.97*Math.cos(a1),y+SZ*0.97*Math.sin(a1));ctx.lineTo(x+SZ*0.97*Math.cos(a2),y+SZ*0.97*Math.sin(a2));ctx.stroke()}}
   ctx.restore();
-  for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const [x,y]=px(q,r);const o=outpostOwner(q,r);const col=o?FAC[P(o.owner).fac].color:'#ece8dd';
-    ctx.save();hexPath(x,y,SZ*0.97);ctx.fillStyle=hexA(col,o?0.35:0.14);ctx.fill();hexPath(x,y,SZ*0.86);ctx.setLineDash([3,2]);ctx.strokeStyle=col;ctx.lineWidth=Math.max(1.5,SZ*0.08);ctx.stroke();ctx.restore();
-    if(!o)drawIcon(ctx,'flag',x,y,SZ*0.95,'#ece8dd','#000')}
+  drawFlags2D(now);drawSpring2D(now);
   for(const e of G.eggs||[]){const [x,y]=px(e.q,e.r);if(unitAt(e.q,e.r))continue;ctx.save();ctx.shadowColor='#ffb03d';ctx.shadowBlur=SZ*0.6*(0.6+0.4*Math.sin(now/200));drawIcon(ctx,'egg',x,y,SZ*1.1,'#ff8a3d','#ffe0a8');ctx.restore();badge(x+SZ*0.5,y-SZ*0.5,Math.max(5,SZ*0.28),'#0b0e14','#ffb03d',e.ttl)}
 }
 function crosshair(x,y,r,col){ctx.strokeStyle=col||'#ff6161';ctx.lineWidth=Math.max(2,SZ*0.11);ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();
@@ -4974,12 +5261,14 @@ function draw(now){
      for(let i=0;i<6;i++){const nq=q+[1,0,-1,-1,0,1][i],nr=r+[0,1,1,0,-1,-1][i];if(isHeart(nq,nr))continue;
        const a1=Math.PI/180*(60*i-30),a2=Math.PI/180*(60*i+30);ctx.beginPath();ctx.moveTo(x+SZ*0.97*Math.cos(a1),y+SZ*0.97*Math.sin(a1));ctx.lineTo(x+SZ*0.97*Math.cos(a2),y+SZ*0.97*Math.sin(a2));ctx.stroke()}}
    const [x,y]=px(0,0);hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(255,236,160,.55)';ctx.fill();ctx.strokeStyle='#fff3c4';ctx.lineWidth=Math.max(2,SZ*0.1);hexPath(x,y,SZ*0.9);ctx.stroke();if(!unitAt(0,0))drawIcon(ctx,'crown',x,y,SZ*1.0,'#b8860b','#fff')}
+  drawCentreWall2D(now);
   drawWells2D(now);
   drawMarkers2D(now);
   const cur=G.cur;
   for(const u of G.units){
     if(!visibleUnit(u))continue;
     const pts=unitPos(u,now);
+    if(u.beast){const [bx,by]=drawBeastBody(ctx,pts,SZ,now,u,hl.hitIds.has(u.id),G.inspect===u.id);if(hl.atk.has(u.id))crosshair(bx,by,SZ*0.95);continue}
     if(u.kind==='wall'&&u.wall==='light'){const [x,y]=pts[0];ctx.save();ctx.shadowColor='#fff3a8';ctx.shadowBlur=SZ*0.6;hexPath(x,y,SZ*0.8);ctx.fillStyle='rgba(255,243,168,.45)';ctx.fill();ctx.restore();hexPath(x,y,SZ*0.8);ctx.strokeStyle='#fff3a8';ctx.lineWidth=2;ctx.stroke();
       ctx.fillStyle='#3a2f10';ctx.font=`700 ${SZ*0.55}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(u.hp,x,y+1);if(hl.atk.has(u.id))crosshair(x,y,SZ*0.72);continue}
     if(u.kind==='wall'){const [x,y]=pts[0];const ice=u.wall==='ice';hexPath(x,y,SZ*0.78);ctx.fillStyle=ice?'rgba(190,232,255,.85)':'#8c7458';ctx.fill();ctx.strokeStyle=ice?'#e8f8ff':'#d9a45b';ctx.lineWidth=1.5;ctx.stroke();
@@ -5030,6 +5319,7 @@ function draw(now){
     if(u.ability&&SZ>=9){const br=Math.max(5.5,rad*0.4),bx=mx-rad*0.72,by=my+rad*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     if(SZ>=9)hpPill(u,mx,my+rad*1.02,rad*0.5);
   }
+  drawFlagTops2D(now);
   drawWellBadges2D();
   drawVFX(now);
   fxs=fxs.filter(f=>now-f.t0<1000);
