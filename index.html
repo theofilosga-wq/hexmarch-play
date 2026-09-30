@@ -590,7 +590,7 @@ const COLLAPSE_START={regicide:20,warlord:16,annihilation:22,conquest:null};// w
 // More players means longer rounds, so the Collapse comes sooner: 3 rounds earlier with 3 players, 6 with 4 or more.
 function collapseStart(mode,n){const b=COLLAPSE_START[mode];return b==null?null:b-(n>=4?6:n===3?3:0)}
 function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;return G.teams?12:G.players.length>=4?10:RULES.WARLORD_TARGET}// teams 8 -> 12 on 28 Sep 2026: with Outpost and takedown points, team games ended in 11 rounds
-const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:2,TEMPO_CAP:3};
+const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:2,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -2516,7 +2516,7 @@ function spawnSpring(){
   addLog(null,`A Wellspring rises on the ${r.lead!=null?'flank far from '+teamName(r.lead):'flank'}. Step on it to claim it: +1 AP every turn.`);
   vfx({k:'spring',at:[q,rr],col:'#7fe8ff',msg:'A Wellspring has risen on the flank: claim it for +1 AP a turn'});announce({k:'spring',at:[q,rr]});
   const O=tObj();if(O)O.springRound=G.round}
-// The Rift Beast: a neutral wall-kind piece (owner -1, like a stone wall) on 3 mutually adjacent hexes of the grey no man's land around the Heart. 12 HP (v27), 1 DEF, never moves, never strikes back,
+// The Rift Beast: a neutral wall-kind piece (owner -1, like a stone wall) on 3 mutually adjacent hexes of the grey no man's land around the Heart. 12 HP (v27), 1 DEF, roams up to 4 hexes each round (v29, beastRoam), never strikes back,
 // never acts, can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities hit it; Ultimates do not.
 const BEAST_SB='Rift Beast strike-back';
 let BEAST_Q=[];// strike-backs waiting for the end of the current action (resolved in afterAction and after the machines' volley)
@@ -2606,6 +2606,25 @@ function spawnBeast(tri){
   vfx({k:'beast',at:[u.q,u.r],cells:tri,msg:`The Rift Beast has spawned in no man’s land: kill it for ${G.mode==='warlord'?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} charge`});
   const O=tObj();if(O)O.beast={spawn:G.round,dmg:{},hits:{},kill:null,killRound:null,strikes:0,strikeDmg:0,gone:false};
   return u}
+// v29 (owner, 1 Oct 2026: "the rift beast should move randomly around the map with movement speed 4"): at the start of every round after the one
+// it woke in, the Beast wanders up to RULES.BEAST_MOVE hexes, one step at a time in a random direction (RNG), moving as one rigid triangle. It avoids the
+// Heart, voids, traps, rocks, the ring about to fall, flags, the Wellspring, loose relics and every unit; it does not turn straight back if it has another
+// way. Hexes it leaves on a ring the Collapse has already taken crumble (beastLand), so it never leaves solid islands behind.
+function beastRoam(){
+  if(!G.beast||!G.beast.spawned||G.beast.dead||G.round<=G.beast.spawned)return 0;
+  const b=G.units.find(u=>u.beast&&alive(u));if(!b)return 0;
+  const relicAt=(q,r)=>(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r);
+  const free=(q,r,m)=>{const o=m.get(key(q,r));return passable(q,r)&&(!o||o===b)&&!isHeart(q,r)&&!isDoomed(q,r)&&!isSpring(q,r)&&!relicAt(q,r)&&!(G.outposts||[]).some(x=>x[0]===q&&x[1]===r)};
+  const from=[b.q,b.r],start=b.tri.map(c=>c.slice());let steps=0,last=-1;setAnim(b);
+  for(let s=0;s<RULES.BEAST_MOVE;s++){const m=occ();
+    const opts=[0,1,2,3,4,5].filter(d=>b.tri.every(([q,r])=>free(q+DIRS[d][0],r+DIRS[d][1],m)));if(!opts.length)break;
+    const fwd=last<0?opts:opts.filter(d=>d!==(last+3)%6);const pick=(fwd.length?fwd:opts)[Math.floor(RNG()*(fwd.length?fwd:opts).length)];
+    b.tri=b.tri.map(([q,r])=>[q+DIRS[pick][0],r+DIRS[pick][1]]);b.q=b.tri[0][0];b.r=b.tri[0][1];last=pick;steps++}
+  if(!steps){delete b.anim;return 0}
+  if(b.anim)b.anim.dur=260*steps;
+  const left=start.filter(([q,r])=>!b.tri.some(([a,c])=>a===q&&c===r));beastLand({tri:left,q:left.length?left[0][0]:0,r:left.length?left[0][1]:0});
+  if(!SIM){addLog(null,`The Rift Beast roams ${steps} hex${steps>1?'es':''}.`);const O=tObj();if(O&&O.beast)O.beast.roam=(O.beast.roam||0)+steps}
+  return steps}
 // Round events of the three acts, called at the start of each new round (advance), after the Collapse and the relics.
 function actEvents(){
   if(G.objOff)return;const R=G.round;
@@ -2616,6 +2635,7 @@ function actEvents(){
   if(R>=RULES.SPRING_AT&&!G.springDone)spawnSpring();
   if(!both&&R===RULES.BEAST_AT-1){addLog(null,'Something stirs in no man’s land: the Rift Beast breaks out next round.');vfx({k:'announce',msg:'The Rift Beast breaks out in no man’s land next round'})}
   if(R>=RULES.BEAST_AT&&!(G.beast&&G.beast.spawned))spawnBeast();
+  else beastRoam();
 }
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
 function labClear(){G.objOff=true;G.flagOwner={};G.flagEver={};G.spring=null;G.springDone=false;G.beast=null;BEAST_Q=[];BAR_Q=[];G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
@@ -5261,7 +5281,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u){
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
-  if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${RULES.BEAST_DEF} DEF · fills 3 hexes</b></p><p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. It never moves, never attacks and never strikes back, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
+  if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${RULES.BEAST_DEF} DEF · fills 3 hexes</b></p><p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall), and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
   if(u.kind==='wall'){el.innerHTML=`<div class="label">Obstacle</div><h3>${u.name}</h3><p class="hint">${u.hp}/${u.maxhp} HP. Gone in ${u.ttl} turn${u.ttl>1?'s':''} of its maker.</p>`;return}
   const p=P(u.owner),F=FAC[p.fac],pct=Math.max(0,u.hp/u.maxhp),M=MOVES[u.mt],AT=ATTACKS[u.at];
   const tags=[];
@@ -5432,7 +5452,7 @@ function showRules(){
   <li><b>Warlord points</b> come from four places: holding the Heart at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing; not in a 2-player duel), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
   <li><b>The Throne</b> (centre hex): the unit on it gets +${THRONE.atk} ATK, +1 range if ranged and double-speed cooldowns. Its side gets +1 AP and +${THRONE.charge} Ultimate charge per turn.</li>
   <li><b>The walled centre:</b> until round ${RULES.CENTRE_FROM} the single ring of hexes right around the Heart is a stone wall (the outer half of the grey no man's land stays open). No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, dragged, teleported or swapped into it; a unit shoved into it takes the slam damage and stays. Straight shots stop at it (lobbed shots fly over). A warning comes at the start of round ${RULES.CENTRE_FROM-1}; at the start of round ${RULES.CENTRE_FROM} it falls and the Heart and the Throne start to count. After that the wall ring is ordinary grey ground that no army can colour.</li>
-  <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, the moment the wall falls, announced together with it a round before): a neutral monster on 3 hexes touching the ring right around the Heart (where the wall stood; if that is packed, the nearest free spot), ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never moves, never attacks and never strikes back, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. Left alone it stays where it is: the Collapse never swallows the hexes it stands on (if its ring has already fallen, they crumble when it dies). If units stand where it breaks out, they are pushed to the nearest free hex; if there is no room at all, it breaks out at the start of the next round instead. There is only one per game.</li></ul>
+  <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, the moment the wall falls, announced together with it a round before): a neutral monster on 3 hexes touching the ring right around the Heart (where the wall stood; if that is packed, the nearest free spot), ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall), and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. Left alone it stays where it is: the Collapse never swallows the hexes it stands on (if its ring has already fallen, they crumble when it dies). If units stand where it breaks out, they are pushed to the nearest free hex; if there is no room at all, it breaks out at the start of the next round instead. There is only one per game.</li></ul>
   <h3>Pillar 2: the Flanks</h3><ul>
   <li><b>Flank roads</b> (dashed line, the two outermost rings): from round ${RULES.ROAD_FROM}, a unit that starts its move there gets +${RULES.ROAD} move.</li>
   <li><b>Flags</b> (Outposts, between neighbouring armies): a unit that ends its move on a flag, or stands on it at the start of your turn, captures it and raises your banner. The flag <b>stays yours with nobody on it</b> until an enemy unit stands on it. Each flag you own gives +1 Ultimate charge at the start of your turn, and in Warlord the side owning MORE flags than anyone else scores 1 point per turn (from round ${RULES.FLAG_FROM}; a tie scores nothing; in a 2-player duel flags give Ultimate charge but no points). A partner's flag stays your partner's. The Collapse takes flags with the ring they stand on; an army that is knocked out leaves its flags neutral.</li>
@@ -5495,7 +5515,7 @@ function showQuick(){
   ${row('Walled centre','Until round '+RULES.CENTRE_FROM+' the one ring right around the Heart is a wall: nothing enters or crosses it, flyers too; straight shots stop at it')}
   ${row('Flag','Step on it: yours until an enemy steps on it · +1 charge per turn per flag owned · Warlord: 1 point per turn if you own more flags than anyone else (from round '+RULES.FLAG_FROM+'; not in a 2-player duel)')}
   ${row('Wellspring','Round '+RULES.SPRING_AT+', outer ring · captured like a flag · +1 AP every turn to its owner')}
-  ${row('Rift Beast','Round '+RULES.BEAST_AT+' (when the wall falls), touching the ring right around the Heart, 3 hexes, never swallowed by the Collapse · '+RULES.BEAST_HP+' HP, '+RULES.BEAST_DEF+' DEF · never moves, attacks or strikes back · killing blow: +'+RULES.BEAST_PTS+' points (Warlord) and +'+RULES.BEAST_CHARGE+' charge')}
+  ${row('Rift Beast','Round '+RULES.BEAST_AT+' (when the wall falls), touching the ring right around the Heart, 3 hexes, never swallowed by the Collapse · '+RULES.BEAST_HP+' HP, '+RULES.BEAST_DEF+' DEF · roams up to '+RULES.BEAST_MOVE+' hexes at random each round · never attacks or strikes back · killing blow: +'+RULES.BEAST_PTS+' points (Warlord) and +'+RULES.BEAST_CHARGE+' charge')}
   ${row('Guarded Leaders','4+ players free-for-all: shots and abilities from 3+ hexes deal 1 less to a Leader (min 1)')}
   ${row('Statuses','Chilled: −1 move for 2 turns · Frozen: loses its next turn, then chilled 1 turn · Stunned: loses its next turn · Ice Lance ×2 vs chilled/frozen, Shatter Strike ×2 vs frozen')}
   ${row('Debuffs','Curses, chill, frozen, stun, Sunder, Seared, delay, Hex ·Mend heals, then removes one (frozen/stun first, then a curse)')}
