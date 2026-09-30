@@ -447,6 +447,17 @@ body.wide .turnbar .btn.sm{padding:7px 10px}
   .uprev-card{pointer-events:auto;width:400px;max-height:calc(100vh - 32px);align-self:start}
 }
 
+/* Announcements (v24): banner across the top of the board, one at a time, about 3 seconds */
+.ann{position:fixed;z-index:30;transform:translate(-50%,-14px);opacity:0;pointer-events:none;box-sizing:border-box;
+  background:linear-gradient(180deg,rgba(14,17,26,.96),rgba(20,24,36,.93));border:1px solid var(--annc,#e8b84e);border-top:4px solid var(--annc,#e8b84e);
+  border-radius:12px;padding:12px 18px 13px;text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.6),0 0 24px -6px var(--annc,#e8b84e);transition:opacity .28s ease,transform .28s ease}
+.ann.show{opacity:1;transform:translate(-50%,0)}
+.ann .ann-t{font-family:var(--display);font-weight:800;font-size:clamp(19px,2.1vw + 10px,30px);line-height:1.18;color:#f4f1e8;text-shadow:0 2px 0 rgba(0,0,0,.55);letter-spacing:.2px}
+.ann .ann-s{margin-top:6px;font-size:clamp(13.5px,.6vw + 11px,17px);line-height:1.35;color:#d7d9e0}
+.ann b{font-weight:800}
+.ann .nw{white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.ann{transition:opacity .2s}.ann,.ann.show{transform:translate(-50%,0)}}
+
 </style>
 
 <div class="wrap">
@@ -456,6 +467,7 @@ body.wide .turnbar .btn.sm{padding:7px 10px}
       <button class="btn sm" id="rulesBtn">How to play</button>
       <button class="btn sm" id="quickBtn">Quick reference</button>
       <button class="btn sm" id="sndBtn" aria-label="Sound on or off">Sound on</button>
+      <button class="btn sm" id="annBtn" aria-label="Announcements on or off" title="Big banners for points, fallen leaders, Ultimates and the acts">Announcements on</button>
       <button class="btn sm" id="balBtn">Balance report</button>
       <button class="btn sm" id="setupBtn" hidden>New game</button>
     </div>
@@ -521,6 +533,7 @@ body.wide .turnbar .btn.sm{padding:7px 10px}
 </div>
 <div id="overlay" class="overlay" hidden></div>
 <div id="toast" class="toast" hidden></div>
+<div id="annBanner" class="ann" role="status" aria-live="polite" hidden></div>
 
 <script>
 /* Hexmarch engine: rules, data and bots. No DOM access, so it also runs headless for the balance tournament. */
@@ -994,7 +1007,7 @@ function machineFire(p,name,tag){
 const MODES={
   regicide:{name:'Regicide',desc:'Lose your Leader and your whole army is out. Last side standing wins.'},
   annihilation:{name:'Annihilation',desc:'You are out only when every unit you own has fallen. Last side standing wins.'},
-  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out beside the Heart in round ${RULES.BEAST_AT}, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing); holding the Heart at the start of your turn scores 1 (from round ${RULES.CENTRE_FROM}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Heart and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
+  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out beside the Heart in round ${RULES.BEAST_AT}, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing; in a 2-player duel flags give Ultimate charge only); holding the Heart at the start of your turn scores 1 (from round ${RULES.CENTRE_FROM}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Heart and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
   conquest:{name:'Conquest',desc:`Hold the Heart at the start of your turn to score 1 point. First side to ${RULES.TARGET} wins, or be the last side standing.`},
 };
 // Board radius per player count. 4 players need an even radius so the cross layout is exactly symmetric.
@@ -1116,8 +1129,9 @@ function heartBuff(u){return u.kind!=='wall'&&G.holder!==null&&G.holder===tm(u.o
 function nearCell(u,t){let best=cells(u)[0],bd=99;for(const c of cells(u)){const d=distUC(t,c[0],c[1]);if(d<bd){bd=d;best=c}}return best}
 
 /* ---------- stats ---------- */
-// DEF blocks damage point for point, but never more than half a hit (rounded in the attacker's favour).
-const afterDef=(base,def)=>Math.max(Math.ceil(base/2),base-def);
+// v24 (full armour): DEF blocks damage point for point; every hit that lands still deals at least 1.
+// Was max(ceil(base/2), base-def) until v23, where DEF could never block more than half a hit.
+const afterDef=(base,def)=>base<=0?0:Math.max(1,base-def);
 function curseCount(u){return u.st&&u.st.curses?Object.keys(u.st.curses).length:0}
 function hasCurse(u,c){return !!(u.st&&u.st.curses&&u.st.curses[c]>0)}
 const curseDmg=n=>n?0.5+1.0*(n-1):0;// v20b: was 1.5 per extra curse (Covenant 58 percent in 4-player)
@@ -1476,6 +1490,12 @@ function fx(u,text,color){if(SIM)return;if(trk()&&typeof text==='string'){const 
 function setAnim(u){if(!SIM)u.anim={fq:u.q,fr:u.r,t0:nowMs()}}
 // Visual effect events. Kept in the game state (last 40) so other devices can replay them.
 function vfx(ev){if(SIM||!G)return;G.fxSeq=(G.fxSeq||0)+1;ev.id=G.fxSeq;(G.fxLog=G.fxLog||[]).push(ev);if(G.fxLog.length>40)G.fxLog.shift()}
+// Announcements (v24): big banners for the moments that matter. Kept in their own short list G.annLog (ids from the same counter as fxLog)
+// so a busy action can't push them out of fxLog before an online push; every device shows the ones it has not shown yet (vfx.js pumpVFX).
+function announce(o){if(SIM||!G)return;G.fxSeq=(G.fxSeq||0)+1;o.id=G.fxSeq;o.round=G.round;(G.annLog=G.annLog||[]).push(o);if(G.annLog.length>12)G.annLog.shift()}
+function scoreSnap(){const o={};for(const p of G.players)if(p.alive)o[p.team]=G.score[p.team]||0;return o}
+// The side strictly ahead on Warlord points (null on a tie or at 0).
+function pointsLeader(){let best=0,lead=null,tie=false;for(const [t,v] of Object.entries(scoreSnap())){if(v>best){best=v;lead=+t;tie=false}else if(v===best&&v>0)tie=true}return tie?null:lead}
 // A side holds the Heart when it is the only side with units on it. Any enemy unit there contests it.
 function computeHolder(){
   const n={};
@@ -1550,7 +1570,7 @@ function beginTurn(){
   const apNo=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);
   G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP);G.ap=G.apMax;
   if(wellAP){const O=tObj();if(O){const e=O.well[p.id]=O.well[p.id]||{caps:0,ap:0,turns:0};e.turns++;e.ap+=G.apMax-apNo}}
-  const target=heartTarget();
+  const target=heartTarget();const s0=G.score[p.team]||0;
   G.scoredAt=G.scoredAt||{};
   if((G.mode==='conquest'||G.mode==='warlord')&&G.holder===p.team&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.scoredAt[p.team]!==G.round){G.scoredAt[p.team]=G.round;// a team scores once per round, not once per partner
     G.score[p.team]++;tPts(p.id,'heart',1);addLog(p.id,`${teamName(p.team)} holds the Heart: ${G.score[p.team]}/${target}.`);
@@ -1559,13 +1579,15 @@ function beginTurn(){
   // Calibrated 28 Sep 2026: "at least one Outpost" let every side farm its home flag and 26 of 30 test games ended by points around round 13.
   G.outpostAt=G.outpostAt||{};
   // v23: flags stay captured, so "holding" = owning; scoring still starts at round FLAG_FROM (3), before the wall falls.
-  if(G.mode==='warlord'&&!p.leaderless&&G.round>=RULES.FLAG_FROM&&G.outpostAt[p.team]!==G.round){
+  // v24: in a duel (exactly 2 players, no teams) flags give Ultimate charge only, never Warlord points: duels ended on points by round 13 from 2 unguarded flags.
+  if(G.mode==='warlord'&&flagPointsOn()&&!p.leaderless&&G.round>=RULES.FLAG_FROM&&G.outpostAt[p.team]!==G.round){
     const held={};for(const t of new Set(G.players.filter(x=>x.alive).map(x=>x.team))){const n=flagsOfTeam(t);if(n)held[t]=n}
     const mine=held[p.team]||0;let best=0;for(const t in held)if(+t!==p.team&&held[t]>best)best=held[t];
     if(mine>=1&&mine>best){G.outpostAt[p.team]=G.round;
     G.score[p.team]++;tPts(p.id,'outpost',1);addLog(p.id,`${teamName(p.team)} owns the most flags (${mine}): ${G.score[p.team]}/${target}.`);
   }}
   if((G.mode==='conquest'||G.mode==='warlord')&&G.score[p.team]>=target){G.over={team:p.team,how:'heart'};HOOKS.over();return}
+  if((G.score[p.team]||0)>s0)announce({k:'score',team:p.team,gain:G.score[p.team]-s0,scores:scoreSnap(),target});
   HOOKS.turn();
 }
 function endTurn(){
@@ -1618,6 +1640,7 @@ function eliminate(p,why){
   p.alive=false;for(const u of G.units)if(u.owner===p.id){const x=relicOf(u);if(x)dropRelic(x,u)}G.units=G.units.filter(u=>u.owner!==p.id);if(G.eggs)G.eggs=G.eggs.filter(e=>e.owner!==p.id);if(G.wells)G.wells=G.wells.filter(w=>w.owner!==p.id);if(G.traps)for(const k of Object.keys(G.traps))if(G.traps[k].owner===p.id)delete G.traps[k];
   for(const k of Object.keys(G.flagOwner||{}))if(G.flagOwner[k]===p.id)delete G.flagOwner[k];if(G.spring&&G.spring.owner===p.id)G.spring.owner=null;// its flags and the Wellspring turn neutral
   addLog(p.id,`${FAC[p.fac].name} ${why} and is out.`);
+  announce({k:'out',fac:p.fac,pid:p.id,why,left:G.players.filter(x=>x.alive).length});
 }
 // Salvage talent (gnomes): a machine that is destroyed or falls apart hands its builder 1 turn of cooldown back.
 function salvage(t){if(!t.machine||t.builtBy==null||!talent(G.players[t.owner],'salvage'))return;const b=byId(t.builtBy);if(b&&b.owner===t.owner&&b.cd>0){b.cd--;fx(b,'salvage','#ff6ec7');if(trk()&&!SIM){const e=tFx(G.players[t.owner].fac,'','Salvage (talent)');if(e)e.uses++}}}
@@ -1652,6 +1675,11 @@ function kill(t){
   if(G.mode==='warlord'&&t.leader&&k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner].alive){const kt=tm(k.owner);G.score[kt]=(G.score[kt]||0)+2;tPts(k.owner,'takedown',2);
     addLog(k.owner,`Leader takedown! ${teamName(kt)} scores 2: ${G.score[kt]}/${heartTarget()}.`);
     if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}
+  if(t.leader&&!SIM){const kk=k&&k.kind!=='wall'&&G.players[k.owner]?k:null,foe=kk&&tm(kk.owner)!==tm(t.owner);
+    const cause=CUR_NAME==='Curse ticks'?'curse':foe?null:kk?'self':G.col&&G.col.justFell?'collapse':CUR_NAME===BEAST_SB?'beast':CUR_NAME==='Burning ground'?'fire':'other';
+    const pts=G.mode==='warlord'&&foe&&G.players[kk.owner].alive?2:0;
+    announce({k:'leader',name:t.name,fac:G.players[t.owner].fac,by:foe?{name:kk.name,fac:G.players[kk.owner].fac}:null,cause,left:G.units.filter(u=>u.leader&&u.kind!=='wall').length,
+      pts,team:pts?tm(kk.owner):null,scores:pts?scoreSnap():null,target:heartTarget()})}
   {const x=relicOf(t);if(x)dropRelic(x,t)}
   if(!t.summon&&!t.pawn)addCharge(t.owner,1);
   const near=G.units.filter(v=>v.kind!=='wall'&&distUC(v,t.q,t.r)===1);
@@ -2029,6 +2057,7 @@ function applyCurse(src,t,c){
 }
 // Guarded leaders (28 Sep 2026, v18b): with 4 or more players in free-for-all, attacks and abilities fired from 3 or more hexes away
 // deal 1 less damage to a Leader (never below 1). Leaders in crowded games were shot from two sides and died in 70 to 90 percent of games.
+const flagPointsOn=()=>!(G.players.length===2&&!G.teams);// v24: no flag points in a duel
 function farGuard(u,t){return !!(t&&t.leader&&t.kind!=='wall'&&G.players.length>=4&&!G.teams&&u&&distUU(u,t)>=3)}
 function hitDmg(u,t,A){
   let base=A.useAtk?effAtk(u)+(A.atkBonus||0):(A.dmg||0);
@@ -2248,12 +2277,13 @@ function useUlt(team){
   if(q){spendUlt(q);
     addLog(p.id,`Team Ultimate! ${ULTS[p.fac].name} and ${ULTS[q.fac].name} strike together.`);
     vfx({k:'ult',fac:p.fac,col:F.color,name:ULTS[p.fac].name+' + '+ULTS[q.fac].name,team:true,col2:FAC[q.fac].color});
+    announce({k:'ult',fac:p.fac,fac2:q.fac,name:ULTS[p.fac].name+' + '+ULTS[q.fac].name});
     ultEffect(p);ultEffect(q);
     // the bond: every unit of both partners heals 2
     for(const v of G.units)if(v.kind!=='wall'&&(v.owner===p.id||v.owner===q.id)&&v.hp<v.maxhp)healUnit(v,2,'#5fd68e','Team Ultimate bond')
   }else{
     addLog(p.id,`${F.name} unleashes ${ULTS[p.fac].name}!`);
-    vfx({k:'ult',fac:p.fac,col:F.color,name:ULTS[p.fac].name});
+    vfx({k:'ult',fac:p.fac,col:F.color,name:ULTS[p.fac].name});announce({k:'ult',fac:p.fac,name:ULTS[p.fac].name});
     ultEffect(p);
   }
   afterAction();
@@ -2309,8 +2339,10 @@ function captureObjectives(pid){
   const m=occ();
   const take=(q,r,cur)=>{const u=m.get(key(q,r));if(!canCapture(u)||(pid!=null&&u.owner!==pid))return null;
     if(cur===u.owner)return null;if(cur!=null&&tm(cur)===tm(u.owner))return null;return u};
+  const lead0=!SIM&&G.mode==='warlord'?pointsLeader():null;
   for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const k=key(q,r),cur=flagOwner(q,r);const u=take(q,r,cur);if(!u)continue;
     G.flagOwner[k]=u.owner;
+    if(lead0!=null&&cur!=null&&tm(cur)===lead0)announce({k:'steal',fac:G.players[u.owner].fac,from:G.players[cur].fac,team:lead0,score:G.score[lead0]||0});
     if(!SIM){const F=FAC[G.players[u.owner].fac];G.flagEver=G.flagEver||{};const ever=G.flagEver[k]=G.flagEver[k]||[];const recap=cur!=null&&ever.includes(u.owner);if(!ever.includes(u.owner))ever.push(u.owner);
       addLog(u.owner,cur==null?`${u.name} raises the ${F.name} banner on a flag.`:`${u.name} ${recap?'takes back':'captures'} the ${FAC[G.players[cur].fac].name} flag!`);
       vfx({k:'flag',at:[q,r],col:F.color});fx(u,'flag','#ece8dd');
@@ -2337,7 +2369,7 @@ function spawnSpring(){
   if(G.spring||G.springDone)return;const r=springSpot();if(!r)return;const [q,rr]=r.spot;
   G.spring={q,r:rr,owner:null,round:G.round};G.springDone=true;
   addLog(null,`A Wellspring rises on the ${r.lead!=null?'flank far from '+teamName(r.lead):'flank'}. Step on it to claim it: +1 AP every turn.`);
-  vfx({k:'spring',at:[q,rr],col:'#7fe8ff',msg:'A Wellspring has risen on the flank: claim it for +1 AP a turn'});
+  vfx({k:'spring',at:[q,rr],col:'#7fe8ff',msg:'A Wellspring has risen on the flank: claim it for +1 AP a turn'});announce({k:'spring',at:[q,rr]});
   const O=tObj();if(O)O.springRound=G.round}
 // The Rift Beast: a neutral wall-kind piece (owner -1, like a stone wall) on 3 mutually adjacent hexes just outside the Heart. 20 HP, 1 DEF, never moves,
 // never acts, can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities hit it; Ultimates do not.
@@ -2371,7 +2403,9 @@ function beastSlain(t){
     const O=tObj();if(O&&O.beast){O.beast.kill=pid;O.beast.killRound=G.round}
     const e=srcFx();if(e)e.kills++}
   if(pts){G.score[kt]=(G.score[kt]||0)+RULES.BEAST_PTS;tPts(pid,'beast',RULES.BEAST_PTS);
-    if(!SIM)addLog(pid,`${teamName(kt)}: ${G.score[kt]}/${heartTarget()} Warlord points.`);
+    if(!SIM)addLog(pid,`${teamName(kt)}: ${G.score[kt]}/${heartTarget()} Warlord points.`);}
+  announce({k:'beastdown',fac:G.players[pid].fac,unit:k.name,pts:pts?RULES.BEAST_PTS:0,team:kt,scores:pts?scoreSnap():null,target:heartTarget()});
+  if(pts){
     if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}}
 // Spawn spot: 3 mutually adjacent free hexes (no unit, no feature, no relic) at distance heartR+1 or +2, preferring two of them on the ring touching the Heart,
 // then the triangle farthest from every unit. Ties: RNG.
@@ -2389,6 +2423,7 @@ function spawnBeast(tri){
   if(G.beast&&G.beast.spawned)return null;tri=tri||beastSpot();if(!tri)return null;
   const u=makeBeast(tri);G.units.push(u);G.beast=Object.assign(G.beast||{},{spawned:G.round,id:u.id,dmgT:{}});
   addLog(null,`The Rift Beast tears out of the rift beside the Heart! The side that lands the killing blow gains ${G.mode==='warlord'?RULES.BEAST_PTS+' Warlord points and ':''}${RULES.BEAST_CHARGE} Ultimate charge.`);
+  announce({k:'beast'});
   vfx({k:'beast',at:[u.q,u.r],cells:tri,msg:`The Rift Beast has spawned beside the Heart: kill it for ${G.mode==='warlord'?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} charge`});
   const O=tObj();if(O)O.beast={spawn:G.round,dmg:{},hits:{},kill:null,killRound:null,strikes:0,strikeDmg:0,gone:false};
   return u}
@@ -2396,7 +2431,7 @@ function spawnBeast(tri){
 function actEvents(){
   if(G.objOff)return;const R=G.round;
   if(R===RULES.CENTRE_FROM-1){addLog(null,'The wall around the Heart falls next round.');vfx({k:'announce',msg:'The wall around the Heart falls next round'})}
-  if(R===RULES.CENTRE_FROM){addLog(null,'The wall around the Heart falls! The centre is open: Heart points and the Throne count from now on.');vfx({k:'wallfall',msg:'The wall has fallen: the Heart is open'})}
+  if(R===RULES.CENTRE_FROM){addLog(null,'The wall around the Heart falls! The centre is open: Heart points and the Throne count from now on.');vfx({k:'wallfall',msg:'The wall has fallen: the Heart is open'});announce({k:'wall'})}
   if(R===RULES.SPRING_AT-1){addLog(null,'A Wellspring will rise on the outer ring next round.');vfx({k:'announce',msg:'A Wellspring rises on the flank next round: +1 AP a turn to whoever holds it'})}
   if(R>=RULES.SPRING_AT&&!G.springDone)spawnSpring();
   if(R===RULES.BEAST_AT-1){addLog(null,'Something stirs beside the Heart: the Rift Beast breaks out next round.');vfx({k:'announce',msg:'The Rift Beast breaks out beside the Heart next round'})}
@@ -3387,7 +3422,7 @@ function tokenPath(fac,x,y,r){
 
 /* Hexmarch visual effects. The engine records events in G.fxLog; this plays any it hasn't shown yet,
    so effects also appear on other devices when an online game state arrives. */
-let fxSeen=0;const ANIMS=[];let shakeUntil=0;
+let fxSeen=0,annSeen=0;const ANIMS=[];let shakeUntil=0;
 /* Synthesized sound for the big moments (no audio files). Off switch in the header, remembered per device. */
 /* Quiet by default (SND.vol scales every sound). Browsers allow sound only after the first tap or key press, so the audio
    context is opened on that first interaction and nothing plays before it. The switch lives in the header and the ☰ menu. */
@@ -3410,24 +3445,30 @@ function playSound(k){if(!SND.on||!SND.ok)return;const n=performance.now();if(SN
   else if(k==='hit'){noise(0,0.14,0.32,1200);tone(190,0,0.16,'sawtooth',0.14,60)}// a basic attack lands
   else if(k==='cast'){[523.3,784,1046.5].forEach((f,i)=>tone(f,i*0.05,0.3,'sine',0.09));noise(0.02,0.22,0.06,3000)}// an ability goes off
   else if(k==='death'){noise(0,0.3,0.26,700);tone(110,0,0.35,'triangle',0.12,45)}
+  else if(k==='ann'){[392,523.3,659.3].forEach((f,i)=>tone(f,i*0.09,0.42,'triangle',0.11));tone(98,0,0.5,'sawtooth',0.06,82)}// announcement banner: a short rising fanfare
   else if(k==='turn'){tone(659.3,0,0.22,'sine',0.08);tone(987.8,0.12,0.36,'sine',0.07)}// your turn: a two-note chime
 }
-function resetVFX(skipExisting){ANIMS.length=0;fxSeen=skipExisting&&G&&G.fxLog&&G.fxLog.length?G.fxLog[G.fxLog.length-1].id:0}
+function resetVFX(skipExisting){ANIMS.length=0;fxSeen=skipExisting&&G&&G.fxLog&&G.fxLog.length?G.fxLog[G.fxLog.length-1].id:0;
+  annSeen=skipExisting&&G&&G.annLog&&G.annLog.length?G.annLog[G.annLog.length-1].id:0;if(typeof annClear==='function')annClear()}
 function vUnit(){return VIEW==='3d'?CAM.S:SZ}
 // Canvas position of a hex centre at height h (in hex radii).
 function vPos(q,r,h){h=h||0;if(VIEW==='3d'){const [x,z]=world(q,r);const p=proj(x,z,h);return [p[0],p[1]]}const [x,y]=px(q,r);return [x,y-h*SZ*0.55]}
 const FLAVOR={fire:'#ffb347',ice:'#dff6ff',giants:'#f3d7a8',gnomes:'#ffd9a8',arcane:'#d9c8ff',warband:'#ffffff',rift:'#9ff5de',curse:'#f4f28a',chrono:'#eaa8ff',mage:'#c8ffd4'};
 function pumpVFX(now){
-  if(!G||!G.fxLog)return;
+  if(!G)return;
+  // Announcements (v24): each new one goes to the banner queue (ui.js annQueue), on this device and on every other device in an online game
+  if(G.annLog)for(const e of G.annLog)if(e.id>annSeen){annSeen=e.id;if(typeof annQueue==='function')annQueue(e)}
+  if(!G.fxLog)return;
   for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ANIMS.filter(a=>now-a.t0<0).length?0:0)});
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
     if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')playSound('hit');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
     if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color;
     // Act 1 announcements (v23): a message on screen and a sound; the pictures are drawn below
-    if(ev.msg&&(ev.k==='announce'||ev.k==='wallfall'||ev.k==='beast'||ev.k==='spring'))toast(ev.msg,4600);
+    // with announcements on, the banner replaces the toast for the wall, the beast and the Wellspring; the round-before warnings stay toasts
+    if(ev.msg&&(ev.k==='announce'||(!ANN.on&&(ev.k==='wallfall'||ev.k==='beast'||ev.k==='spring'))))toast(ev.msg,4600);
     if(ev.k==='announce'||ev.k==='spring')playSound('relic');if(ev.k==='wallfall'||ev.k==='beast')playSound('ult');if(ev.k==='flag')playSound('cast');
-    if(ev.k==='beastdown'){playSound('ult');toast(`${ev.name} slays the Rift Beast: ${ev.pts?'+'+ev.pts+' points and ':''}+${RULES.BEAST_CHARGE} charge`,4600)}}
+    if(ev.k==='beastdown'){playSound('ult');if(!ANN.on)toast(`${ev.name} slays the Rift Beast: ${ev.pts?'+'+ev.pts+' points and ':''}+${RULES.BEAST_CHARGE} charge`,4600)}}
 }
 /* A relic has landed: a chime and a message saying where ("north" is the top of the flat map), then the landing animation below. */
 function relicArrived(ev){playSound('relic');if(!ev.at)return;const [q,r]=ev.at;
@@ -4467,6 +4508,66 @@ function showScreen(s){
 }
 let toastT=null;
 function toast(msg,ms){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms||1800)}
+/* ---------- Announcements (v24): a big banner across the top of the board for about 3 seconds, one at a time.
+   The engine writes them to G.annLog (synced with the state), vfx.js pumpVFX hands each new one to annQueue on every device.
+   Off switch in the header and the ☰ menu, remembered per device (hexmarch.ann). */
+const ANN={on:true,q:[],cur:null,t:null};try{ANN.on=localStorage.getItem('hexmarch.ann')!=='off'}catch(e){}
+const ANN_SHORT={fire:'Ember',ice:'Frost',giants:'Giants',gnomes:'Gnomes',arcane:'Priests',warband:'Warband',rift:'Rift',curse:'Covenant',chrono:'Hourglass'};
+const annEsc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function annCol(c){return `color:${c};color:color-mix(in srgb, ${c} 78%, #ffffff)`}
+function annFac(f,short){const F=FAC[f]||{name:f,color:'#ece8dd'};return `<b style="${annCol(F.color)}">${annEsc(short?(ANN_SHORT[f]||F.name):F.name)}</b>`}
+function annSideOf(t){const ps=G.players.filter(p=>p.team===+t);return ps.length?ps[0]:null}
+function annSide(t,short){if(G.teams){const p=annSideOf(t);return `<b style="${annCol(p?FAC[p.fac].color:'#ece8dd')}">Team ${'ABC'[t]}</b>`}const p=annSideOf(t);return p?annFac(p.fac,short):'?'}
+function annOrd(n){const s=n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');return n+s}
+function annUnit(name,f){return `<b style="${annCol((FAC[f]||{}).color||'#ece8dd')}">${annEsc(name)}</b>`}
+// "7 points, 1st place (Giants 6, Frost 4, Priests 2)"
+function annStanding(t,scores){if(!scores)return '';const my=scores[t]||0;const others=Object.keys(scores).filter(x=>+x!==+t).sort((a,b)=>scores[b]-scores[a]);
+  const above=others.filter(x=>scores[x]>my).length,tie=others.some(x=>scores[x]===my);
+  return `<span class="nw">${my} point${my===1?'':'s'}, ${tie?'tied ':''}${annOrd(above+1)} place</span>${others.length?` (${others.map(x=>`<span class="nw">${annSide(x,true)} ${scores[x]}</span>`).join(', ')})`:''}`}
+function annText(e){
+  const warlord=G.mode==='warlord';
+  switch(e.k){
+    case 'score':{const my=e.scores?e.scores[e.team]||0:0,gap=(e.target||99)-my;const P0=annSideOf(e.team);
+      return {col:P0?FAC[P0.fac].color:null,t:gap===1?`${annSide(e.team)} is one point from victory!`:gap===2?`${annSide(e.team)} is two points from victory!`:`${annSide(e.team)} scores!`,s:annStanding(e.team,e.scores)}}
+    case 'leader':{const who=`The ${annUnit(e.name,e.fac)}`;let t;
+      if(e.cause==='curse')t=e.by?`${who} has fallen to the ${annUnit(e.by.name,e.by.fac)}’s curse!`:`${who} has fallen to the curses!`;
+      else if(e.by)t=`${who} has fallen to the ${annUnit(e.by.name,e.by.fac)}!`;
+      else t=`${who} ${({collapse:'has fallen into the Collapse!',beast:'has fallen to the Rift Beast!',fire:'has burned on Ember ground!',self:'has fallen to friendly fire!'})[e.cause]||'has fallen!'}`;
+      const left=e.left===0?'No leaders remain.':`${e.left} leader${e.left===1?' remains':'s remain'}.`;
+      return {col:FAC[e.fac].color,t,s:left+(e.pts&&e.scores?`<br>${annSide(e.team)} +${e.pts}: ${annStanding(e.team,e.scores)}`:'')}}
+    case 'wall':return {col:'#e8b84e',t:'The wall falls: the Heart is open',s:'Heart points and the Throne count from now on.'};
+    case 'spring':{const [q,r]=e.at||[0,0];const a=Math.atan2(-1.5*r,S3*(q+r/2))*180/Math.PI;const dir=['east','north-east','north','north-west','west','south-west','south','south-east'][Math.round(((a+360)%360)/45)%8];
+      return {col:'#7fe8ff',t:`The Wellspring rises in the ${dir}`,s:'Step on it to claim it: +1 AP every turn.'}}
+    case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`Beside the Heart. The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
+    case 'beastdown':return {col:FAC[e.fac].color,t:`The Rift Beast is slain by the ${annFac(e.fac)}!${e.pts?` +${e.pts} points`:''}`,s:e.pts&&e.scores?annStanding(e.team,e.scores):`+${RULES.BEAST_CHARGE} Ultimate charge.`};
+    case 'ult':return e.fac2?{col:FAC[e.fac].color,t:`${annFac(e.fac)} and ${annFac(e.fac2)} unleash ${annEsc(e.name)}!`,s:'Team Ultimate.'}
+      :{col:FAC[e.fac].color,t:`${annFac(e.fac)} unleashes ${annEsc(e.name)}!`,s:annEsc(ULTS[e.fac]?ULTS[e.fac].text:'')};
+    case 'out':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} is knocked out!`,s:`It ${annEsc(e.why)}. ${e.left} arm${e.left===1?'y remains':'ies remain'}.`};
+    case 'steal':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} steals a flag from the leader, the ${annFac(e.from)}!`,s:`${annSide(e.team)} leads with ${e.score} point${e.score===1?'':'s'}.`};
+  }
+  return null}
+function annQueue(e){
+  if(!ANN.on||!G)return;
+  // a newer score banner carries the full standings: drop older score banners still waiting, and never let the queue grow past 5
+  if(e.k==='score')ANN.q=ANN.q.filter(x=>x.k!=='score');
+  ANN.q.push(e);while(ANN.q.length>5){const i=ANN.q.findIndex(x=>x.k==='score');ANN.q.splice(i>=0?i:0,1)}
+  if(!ANN.cur)annNext()}
+function annPlace(el){const bb=$('#boardbox');const r=bb&&bb.getBoundingClientRect();if(!r||!r.width){el.style.top='64px';el.style.left='50%';el.style.width='min(640px, calc(100vw - 16px))';return}
+  const top=Math.max(8,r.top+8),w=Math.min(r.width-16,640);el.style.top=top+'px';el.style.left=(r.left+r.width/2)+'px';el.style.width=Math.max(260,w)+'px'}
+function annNext(){
+  clearTimeout(ANN.t);const el=$('#annBanner');if(!el)return;
+  const e=ANN.q.shift();ANN.cur=e||null;
+  if(!e||!ANN.on||!G||screen!=='game'){el.hidden=true;el.classList.remove('show');ANN.cur=null;if(!ANN.on||screen!=='game')ANN.q.length=0;return}
+  let x=null;try{x=annText(e)}catch(err){x=null}
+  if(!x){ANN.cur=null;annNext();return}
+  el.innerHTML=`<div class="ann-t">${x.t}</div>${x.s?`<div class="ann-s">${x.s}</div>`:''}`;
+  el.style.setProperty('--annc',x.col||'#e8b84e');el.dataset.k=e.k;annPlace(el);
+  el.hidden=false;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
+  if(typeof playSound==='function')playSound('ann');
+  ANN.t=setTimeout(()=>{el.classList.remove('show');ANN.t=setTimeout(()=>{el.hidden=true;ANN.cur=null;annNext()},300)},3000)}
+function annClear(){ANN.q.length=0;clearTimeout(ANN.t);ANN.cur=null;const el=$('#annBanner');if(el){el.hidden=true;el.classList.remove('show')}}
+function annSet(on){ANN.on=on;try{localStorage.setItem('hexmarch.ann',on?'on':'off')}catch(e){}if(!on)annClear();syncAnnBtn()}
+function syncAnnBtn(){const b=$('#annBtn');if(b){b.textContent=ANN.on?'Announcements on':'Announcements off';b.setAttribute('aria-pressed',ANN.on?'true':'false')}}
 function isHumanTurn(){if(!G||G.over)return false;const p=P(G.cur);if(p.ctrl!=='human')return false;return !netOnline()||p.uid===NET.me}
 function teamColor(t){return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t).fac].color}
 
@@ -4664,10 +4765,10 @@ function wireDock(){
 let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e){}
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button>
-  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="score">Score card</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="score">Score card</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);
-    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='ann')annSet(!ANN.on);if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(window.innerWidth>=700||!u)return;layout();const [sx,sy]=screenOf(u.q,u.r);if(zoom<1.55)zoomAt(1.7,sx,sy);else revealUnit(u)}
@@ -4744,7 +4845,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     const rl=(G.relics||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);
     if(rl){const Rl=RELICS[rl.kind];el.innerHTML=`<div class="label">Relic</div><h3 style="color:${Rl.col}">${Rl.name}</h3><p style="margin:6px 0 0">${Rl.text}</p><p class="hint" style="margin:6px 0 0">Step a unit onto this hex to pick it up. The carrier gets −1 move and drops it when it dies.</p>${wellP}`;return}
     if(isSpring(q,r)){const so=springOwner();const sc=so!=null?FAC[P(so).fac].color:'#7fe8ff';el.innerHTML=`<div class="label">Objective</div><h3 style="color:${sc}">The Wellspring</h3><p style="margin:6px 0 0">${so!=null?`Owned by <b style="color:${sc}">${FAC[P(so).fac].name}</b>: +1 AP at the start of each of its turns.`:'Nobody owns it yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, claims it. It stays claimed with nobody on it until an enemy steps on it. Its owner gets +1 AP every turn (within the maximum of ${RULES.AP_CAP}). The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${wellP}`;return}
-    if(isOutpost(q,r)){const fo=flagOwner(q,r);const fc=fo!=null?FAC[P(fo).fac].color:'#ece8dd';el.innerHTML=`<div class="label">Hex</div><h3 style="color:${fc}">Flag${fo!=null?' · '+FAC[P(fo).fac].name:''}</h3><p style="margin:6px 0 0">${fo!=null?`Owned by <b style="color:${fc}">${FAC[P(fo).fac].name}</b>. It stays theirs until an enemy unit stands on it.`:'Nobody owns this flag yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, captures it; no guard is needed afterwards. Each flag owned gives +1 Ultimate charge a turn, and in Warlord the side owning more flags than anyone else scores 1 point a turn from round ${RULES.FLAG_FROM}. The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${isRoad(q,r)?'<p class="hint" style="margin:6px 0 0">On the flank road: a unit starting its move here gets +1 move.</p>':''}${wellP}`;return}
+    if(isOutpost(q,r)){const fo=flagOwner(q,r);const fc=fo!=null?FAC[P(fo).fac].color:'#ece8dd';el.innerHTML=`<div class="label">Hex</div><h3 style="color:${fc}">Flag${fo!=null?' · '+FAC[P(fo).fac].name:''}</h3><p style="margin:6px 0 0">${fo!=null?`Owned by <b style="color:${fc}">${FAC[P(fo).fac].name}</b>. It stays theirs until an enemy unit stands on it.`:'Nobody owns this flag yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, captures it; no guard is needed afterwards. Each flag owned gives +1 Ultimate charge a turn, and in Warlord the side owning more flags than anyone else scores 1 point a turn from round ${RULES.FLAG_FROM} (not in a 2-player duel, where flags give charge only). The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${isRoad(q,r)?'<p class="hint" style="margin:6px 0 0">On the flank road: a unit starting its move here gets +1 move.</p>':''}${wellP}`;return}
     const road=isRoad(q,r)?`<p class="hint" style="margin:6px 0 0"><b>Flank road.</b> A unit that starts its move on the two outer rings gets +1 move.</p>`:'';
     if(isCentreWall(q,r)){el.innerHTML=`<div class="label">Hex</div><h3>${isHeart(q,r)?(q===0&&r===0?'The Throne (sealed)':'The Heart (sealed)'):'The wall around the Heart'}</h3><p class="hint" style="margin:6px 0 0">Until round ${RULES.CENTRE_FROM} a stone wall rings the Heart. No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, teleported or swapped into it. Straight shots stop at it; lobbed shots fly over. It falls at the start of round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (next round)':''}; then the Heart and the Throne start to count.</p>`;return}
     el.innerHTML=`<div class="label">Hex</div><h3>${G.traps&&G.traps[key(q,r)]?'Void Trap':f?FEATURES[f].name:q===0&&r===0?'The Throne':isHeart(q,r)?'The Heart':isNoMans(q,r)?'No man\u2019s land':t?FAC[t].name+' ground':'Open ground'}</h3>
@@ -4869,7 +4970,7 @@ function showRules(){
   o.innerHTML=`<div class="modal"><h2>How to play</h2>
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
-  <li><b>Act 1, expand.</b> The centre is walled: a stone wall stands on the grey ring around the Heart until round ${RULES.CENTRE_FROM}. Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores. In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
+  <li><b>Act 1, expand.</b> The centre is walled: a stone wall stands on the grey ring around the Heart until round ${RULES.CENTRE_FROM}. Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
   <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls (announced a round before): the Heart and the Throne are open and start to count. In round ${RULES.BEAST_AT} the <b>Rift Beast</b> breaks out beside the Heart (announced a round before).</li>
   <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre until someone wins.</li></ul>
   <h3>Setup and deployment</h3><ul>
@@ -4894,7 +4995,7 @@ function showRules(){
   <li><b>Brace</b> (Spearman). A Spearman that has not moved this turn holds its spear out: any enemy that ends a move on one of the hexes in front of it (facing away from home) takes 2 damage minus DEF.</li>
   <li><b>March</b> (Warlord, 1 AP). The Warlord and every Warband unit within 2 of him step 1 hex in one chosen direction, for free, front units first; a unit whose hex ahead is taken stays. The step uses nobody's move or action and works while engaged.</li></ul>
   <h3>Fighting</h3><ul>
-  <li><b>Damage</b> is ATK minus DEF, but DEF never blocks more than half a hit, and every hit does at least 1. Pierce damage ignores DEF.</li>
+  <li><b>Damage</b> is ATK minus DEF: armour counts in full, point for point (a 4 ATK hit on a 3 DEF unit deals 1), but every hit does at least 1. Ability damage works the same way (its damage minus DEF), and so do strike-backs. Pierce damage ignores DEF.</li>
   <li><b>Melee</b> hits adjacent hexes. <b>Spear</b> (Spearman) thrusts along a straight line up to 2 hexes and strikes <i>over</i> a friendly unit in between: the second rank fights. <b>Forward</b> (pawns) hits only the hexes in front of it (facing away from home), never behind or sideways. <b>Bolt</b> and <b>diagonal bolt</b> shoot along lines and are blocked by the first thing in the way. <b>Lob</b> arcs over everything but can't hit adjacent enemies.</li>
   <li><b>Area attacks:</b> Cleave also hits enemies next to both you and the target (half damage); Splash deals 1 to everything next to the target; Pierce carries through to the next unit behind (half damage).</li>
   <li><b>Strike back.</b> A melee unit hit by an adjacent enemy's basic attack hits back for half damage (Riposte: full). Not while frozen, stunned or surrounded.</li>
@@ -4915,13 +5016,13 @@ function showRules(){
   <h3>Abilities</h3><p>Most non-pawn units have one. An ability deals its own fixed spell damage (ATK bonuses don't change it) and rests 1 to 5 of your turns afterwards. The Warlord carries two (March and Rally), each with its own rest. The Conclave's mages carry spellbooks of 2 or 3 spells that share one rest. Frost Hold, Stone Giants, Gnome Tinkers, Hourglass Order, Riftwalkers, Iron Warband and the Circle of Priests field no pawns at all. Shapes: blasts, cones, lines, rings, arcs, auras and single targets. Tap Aim, tap a gold hex to preview, tap again to fire.</p>
   <h3>Pillar 1: the Centre</h3><ul>
   <li><b>The Heart</b> (gold hexes): a side holds it while it is the only side with units on it. Holding it gives every unit of that side +1 ATK and +1 DEF, heals your units standing on it 1 HP per turn, and scores 1 Warlord point per turn.</li>
-  <li><b>Warlord points</b> come from four places: holding the Heart at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
+  <li><b>Warlord points</b> come from four places: holding the Heart at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing; not in a 2-player duel), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
   <li><b>The Throne</b> (centre hex): the unit on it gets +${THRONE.atk} ATK, +1 range if ranged and double-speed cooldowns. Its side gets +1 AP and +${THRONE.charge} Ultimate charge per turn.</li>
   <li><b>The walled centre:</b> until round ${RULES.CENTRE_FROM} the grey ring around the Heart (no man's land) is a stone wall. No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, dragged, teleported or swapped into it; a unit shoved into it takes the slam damage and stays. Straight shots stop at it (lobbed shots fly over). A warning comes at the start of round ${RULES.CENTRE_FROM-1}; at the start of round ${RULES.CENTRE_FROM} it falls and the Heart and the Throne start to count. After that the grey ring is ordinary ground that no army can colour.</li>
   <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, announced a round before): a neutral monster on 3 hexes just outside the Heart, ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never moves and never attacks on its own, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). Each time a basic attack or ability hits it, there is a 50% chance it lashes back for 1 damage at the attacker; the roll is fixed by the round, the attacker and the beast's HP, so undo can't change it. The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. Left alone it stays where it is until the last ring of the Collapse (the outer grey ring) swallows it; there is only one per game.</li></ul>
   <h3>Pillar 2: the Flanks</h3><ul>
   <li><b>Flank roads</b> (dashed line, the two outermost rings): from round ${RULES.ROAD_FROM}, a unit that starts its move there gets +${RULES.ROAD} move.</li>
-  <li><b>Flags</b> (Outposts, between neighbouring armies): a unit that ends its move on a flag, or stands on it at the start of your turn, captures it and raises your banner. The flag <b>stays yours with nobody on it</b> until an enemy unit stands on it. Each flag you own gives +1 Ultimate charge at the start of your turn, and in Warlord the side owning MORE flags than anyone else scores 1 point per turn (from round ${RULES.FLAG_FROM}; a tie scores nothing). A partner's flag stays your partner's. The Collapse takes flags with the ring they stand on; an army that is knocked out leaves its flags neutral.</li>
+  <li><b>Flags</b> (Outposts, between neighbouring armies): a unit that ends its move on a flag, or stands on it at the start of your turn, captures it and raises your banner. The flag <b>stays yours with nobody on it</b> until an enemy unit stands on it. Each flag you own gives +1 Ultimate charge at the start of your turn, and in Warlord the side owning MORE flags than anyone else scores 1 point per turn (from round ${RULES.FLAG_FROM}; a tie scores nothing; in a 2-player duel flags give Ultimate charge but no points). A partner's flag stays your partner's. The Collapse takes flags with the ring they stand on; an army that is knocked out leaves its flags neutral.</li>
   <li><b>The Wellspring</b> (round ${RULES.SPRING_AT}, announced a round before): a glowing spring on the outer ring, on the flank far from the side leading on points (with no single leader, the flank between two armies). It is captured like a flag and stays yours until an enemy steps on it. Its owner gets +1 AP at the start of each turn (within the maximum of ${RULES.AP_CAP}). It lasts until the Collapse swallows it.</li>
   <li><b>Relics</b> (if switched on): from round ${RULES.RELIC_FROM}, a relic appears on an Outpost or flank road every ${RULES.RELIC_EVERY} rounds. Step onto it to pick it up. The carrier gets −1 move, and drops it where it dies.<ul>${Object.values(RELICS).map(r=>`<li><b style="color:${r.col}">${r.name}</b>: ${r.text}</li>`).join('')}</ul></li></ul>
   <h3>Pillar 3: the Ultimates</h3><p>Every army has an Ultimate that hits the whole board. It costs ${RULES.ULT_COST} AP and recharges: the first needs ${RULES.ULT} charge, and each cast raises the next by ${RULES.ULT_STEP} (${RULES.ULT}, ${RULES.ULT+RULES.ULT_STEP}, ${RULES.ULT+2*RULES.ULT_STEP}…). One per turn.</p><ul>
@@ -4956,7 +5057,7 @@ function showQuick(){
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free, and may attack once for 1 AP')}
   ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 6 on the board · Dismantle: remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less · build cooldowns Turret 2, Flame Turret 2, Mortar 3, Coil 3 · machines never move · each fires on its own for free at the start of the gnome turn and may also attack once for 1 AP (not the Coil) · each falls apart after 6 gnome turns · can’t be chilled, frozen or stunned · killing one gives no charge and no star · builders and Gearmaster can’t attack (only Bombardiers do) · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1) · Clockwork Rush: 2 AP + 1 per 2 machines, max 5')}
   ${row('Per unit','Move once + one action (attack <b>or</b> ability)')}
-  ${row('Damage','ATK − DEF, DEF blocks at most half, minimum 1. Pierce ignores DEF')}
+  ${row('Damage','ATK − DEF, armour counts in full, minimum 1 (4 ATK on 3 DEF = 1). Pierce ignores DEF')}
   ${row('Strike back','Melee targets hit back ½ (Riposte full), not if surrounded/frozen')}
   ${row('Surround','Target touches 2+ of yours: +'+RULES.SURROUND+' damage')}
   ${row('Giants','2 hexes, can’t be moved · +1 damage from melee while 2+ enemies touch it · can’t enter a hex between two walls (or wall + rock)')}
@@ -4971,14 +5072,14 @@ function showQuick(){
   ${row('Perch','Flyers can sit on rocks: safe from melee walkers, −1 range')}
   ${row('Inspect','Long-press any piece for its full card')}
   ${row('Heart','Held: +1 ATK +1 DEF army-wide, heal 1 on it, 1 point/turn from round '+RULES.CENTRE_FROM)}
-  ${row('Warlord points','Heart held 1/turn (from round '+RULES.CENTRE_FROM+') · most flags owned 1/turn (from round '+RULES.FLAG_FROM+', ties score nothing) · enemy Leader killed +2 · Rift Beast killing blow +'+RULES.BEAST_PTS+' · first to 12 wins (10 with 4+ players in free-for-all, 12 in teams) · leaderless sides score nothing')}
+  ${row('Warlord points','Heart held 1/turn (from round '+RULES.CENTRE_FROM+') · most flags owned 1/turn (from round '+RULES.FLAG_FROM+', ties score nothing, none in a 2-player duel) · enemy Leader killed +2 · Rift Beast killing blow +'+RULES.BEAST_PTS+' · first to 12 wins (10 with 4+ players in free-for-all, 12 in teams) · leaderless sides score nothing')}
   ${row('Throne','+'+THRONE.atk+' ATK, +1 range, fast cooldowns · from round '+RULES.CENTRE_FROM+': +1 AP, +'+THRONE.charge+' charge')}
   ${row('Forest','Targetable only within 2 · +1 DEF · stops shots')}
   ${row('Hill','Ranged: +1 range +1 damage · melee uphill −1')}
   ${row('Shrine','Heals the unit on it 2 at the start of your turn · one drink: then spent (dark) for 2 rounds')}
   ${row('Flank road','+'+RULES.ROAD+' move from round '+RULES.ROAD_FROM)}
   ${row('Walled centre','Until round '+RULES.CENTRE_FROM+' the grey ring is a wall: nothing enters or crosses it, flyers too; straight shots stop at it')}
-  ${row('Flag','Step on it: yours until an enemy steps on it · +1 charge per turn per flag owned · Warlord: 1 point per turn if you own more flags than anyone else (from round '+RULES.FLAG_FROM+')')}
+  ${row('Flag','Step on it: yours until an enemy steps on it · +1 charge per turn per flag owned · Warlord: 1 point per turn if you own more flags than anyone else (from round '+RULES.FLAG_FROM+'; not in a 2-player duel)')}
   ${row('Wellspring','Round '+RULES.SPRING_AT+', outer ring · captured like a flag · +1 AP every turn to its owner')}
   ${row('Rift Beast','Round '+RULES.BEAST_AT+', beside the Heart, 3 hexes · '+RULES.BEAST_HP+' HP, '+RULES.BEAST_DEF+' DEF · never moves or attacks · 50% to hit back 1 when struck · killing blow: +'+RULES.BEAST_PTS+' points (Warlord) and +'+RULES.BEAST_CHARGE+' charge')}
   ${row('Guarded Leaders','4+ players free-for-all: shots and abilities from 3+ hexes deal 1 less to a Leader (min 1)')}
@@ -5461,6 +5562,7 @@ function centerBoard(){const b=$('#boardbox');b.scrollLeft=(b.scrollWidth-b.clie
 $('#rulesBtn').onclick=showRules;
 $('#quickBtn').onclick=showQuick;
 function syncSnd(){$('#sndBtn').textContent=SND.on?'Sound on':'Sound off'}
+$('#annBtn').onclick=()=>annSet(!ANN.on);syncAnnBtn();
 $('#sndBtn').onclick=()=>{SND.on=!SND.on;try{localStorage.setItem('hexmarch.sound',SND.on?'on':'off')}catch(e){}syncSnd();if(SND.on)playSound('relic')};syncSnd();
 function syncViewButtons(){$('#viewBtn').textContent=VIEW==='3d'?'Flat map':'Tabletop';$('#rotL').hidden=$('#rotR').hidden=VIEW!=='3d'}
 $('#viewBtn').onclick=()=>{VIEW=VIEW==='3d'?'2d':'3d';try{localStorage.setItem('hexmarch.view',VIEW)}catch(e){}syncViewButtons();layout();centerBoard()};
