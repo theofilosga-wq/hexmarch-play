@@ -647,6 +647,10 @@ const ABIL={
     desc:'Build a Flame Turret on an empty hex next to the Flamewright: 7 HP, 2 ATK, 1 DEF. At the start of each of your turns it sprays fire for free over the 3 hexes in front of it toward the nearest enemy: every enemy there takes 2 minus DEF. It never moves and falls apart after 6 of your turns. It can also make one basic attack of its own each turn for 1 AP. Not while 6 of your machines are on the board.'},
   coil:{name:'Tesla Coil',cost:2,cd:3,aim:'empty',range:1,special:'build',machine:'coil',bot:'coil',
     desc:'Plant a Tesla Coil on an empty hex next to the Sparkwright: 6 HP, 1 DEF. At the start of each of your turns every enemy within 2 hexes of it takes 1 damage ignoring DEF, for free. Falls apart after 6 of your turns. It has no weapon of its own. Not while 6 of your machines are on the board.'},
+  // v22c Dismantle: every builder's second button. Free (0 AP), uses neither the move nor the action, once per turn (cd 0 = cd2 1 until the next own turn).
+  // aux: a side button, left out of "can this unit still do something" checks (canAbil(u) with no key), the strip badge and Delay.
+  dismantle:{name:'Dismantle',cost:0,cd:0,aim:'unit',hits:'ally',range:4,special:'dismantle',free:1,aux:1,bot:'dismantle',
+    desc:'Remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less. No AP, no line of sight needed, and it uses neither the move nor the action; once per turn. The machine is gone at once and gives nobody Ultimate charge.'},
   bomb:{name:'Gizmo Bomb',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'all',dmg:2,pierce:1,
     desc:'Lob a bomb 2 to 4 hexes. Everything on or next to it takes 2 damage, ignoring DEF, your own units included.'},
 
@@ -861,10 +865,10 @@ const FAC={
     passive:'Cover: a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1). Workshop: a gnome builds on an empty hex next to itself; at most 6 machines on the board at once. Machines never move, fire on their own for free at the start of your turn, may also make one basic attack of their own for 1 AP (not the Tesla Coil), fall apart after 6 of your turns, can’t be chilled, frozen or stunned, and give no Ultimate charge or veteran stars when destroyed. The builders and the Gearmaster carry no weapons at all (no attack, no strike-back): only the Bombardiers fight by hand.',cover:1,machineCap:6,
     home:'Pink ground: +1 move for gnomes (machines get nothing).',homeMov:1,
     units:[
-      {name:'Gearmaster',icon:'crown',leader:1,hp:12,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'mortar',trait:'swift'},// v21: builders and Gearmaster deal no damage, the machines do (target about 80 percent of the army's damage)
-      {name:'Tinker',icon:'gear',n:3,hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'turret'},
-      {name:'Sparkwright',icon:'spark',hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'coil'},
-      {name:'Flamewright',icon:'flame',n:2,hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'flameturret'},
+      {name:'Gearmaster',icon:'crown',leader:1,hp:12,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'mortar',ab2:'dismantle',trait:'swift'},// v21: builders and Gearmaster deal no damage, the machines do (target about 80 percent of the army's damage)
+      {name:'Tinker',icon:'gear',n:3,hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'turret',ab2:'dismantle'},
+      {name:'Sparkwright',icon:'spark',hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'coil',ab2:'dismantle'},
+      {name:'Flamewright',icon:'flame',n:2,hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'flameturret',ab2:'dismantle'},
       {name:'Bombardier',icon:'bomb',n:2,hp:7,atk:1,def:0,mov:3,mt:'fly',at:'lob',rng:3,rmin:2,ab:'bomb',trait:'explosive'}]},
   arcane:{name:'Circle of Priests',color:'#8f5cff',
     theme:'Healers and druids who win by outlasting: little damage, lots of mending, shields, walls of light and holy ground. Heal through everything, hold the Heart, and let the one Zealot punish whoever comes close.',
@@ -1134,7 +1138,7 @@ function effDef(u){
  to the first / second ability (so a cleanse can take them back), st.dl = how much it hurt (an ability that was almost ready counts more; bots read it).
  Stealth (Second Hand): st.stealth, targeting from more than 2 hexes is impossible (hidden). All state is primitives on u.st, so cloneU copies it for the lookahead. */
 function applyDelay(u,t){if(!t||t.kind==='wall'||t.machine)return 0;let added=0,val=0;
-  for(const k of t.book?[t.book[0]]:abilsOf(t)){/* a spellbook has one shared cooldown: delayed once */const c=cdOf(t,k);setCd(t,k,c>0?c+1:2);added++;if(k===t.ability2)t.st.dlB=(t.st.dlB||0)+1;else t.st.dlA=(t.st.dlA||0)+1;val+=c<=1?(ABIL[k].cost>=2?2:1.2):0.5}
+  for(const k of t.book?[t.book[0]]:abilsOf(t).filter(x=>!ABIL[x].aux)){/* a spellbook has one shared cooldown: delayed once */const c=cdOf(t,k);setCd(t,k,c>0?c+1:2);added++;if(k===t.ability2)t.st.dlB=(t.st.dlB||0)+1;else t.st.dlA=(t.st.dlA||0)+1;val+=c<=1?(ABIL[k].cost>=2?2:1.2):0.5}
   if(!added)return 0;t.st.dl=(t.st.dl||0)+val;t.st.dlBy=u.id;fx(t,'delayed','#c81ca6');tFxBy(u.id,G.players[u.owner].fac,'Delay (cooldown turns added)','cdAdded',added,true);return added}
 function sear(u,t){if(!t||t.kind==='wall'||!alive(t))return;t.st.seared=1;t.st.searBy=u.id;fx(t,'seared','#ff9a3d');tFxBy(u.id,G.players[u.owner].fac,'Seared (heals blocked)','uses',1,true)}
 function sunderT(u,t,n){if(!t||t.kind==='wall'||!alive(t))return;t.st.sunder=Math.max(t.st.sunder||0,n);t.st.sunderBy=u.id;fx(t,'sundered','#d9a45b');tFxBy(u.id,G.players[u.owner].fac,'Sunder (-1 DEF)','uses',1,true)}
@@ -1924,6 +1928,7 @@ function aimCells(u,k){
     if(A.special==='hook'&&(v.size===2||distUU(u,v)<=1))continue;// Chain Hook drags one-hex enemies that are not already beside the Rampart
     if(A.special==='rewind'&&(v===u||!v.mov||v.summon||v.egg))continue;// only a unit that can walk
     if(A.special==='possess'&&!possessable(v))continue;
+    if(A.special==='dismantle'&&(!v.machine||v.owner!==u.owner))continue;// Dismantle: only this side's own machines
     if(A.special==='blink'&&(v.size===2||v.summon||!blinkDest(v).length))continue;// Blink: a one-hex ally (or the caster) with somewhere to land
     if(A.special==='surge'&&(v===u||!v.book||v.book.includes('surge')||v.owner!==u.owner||!(v.cd>0)))continue;// Surge: a resting mage that is not an Enchanter
     if(A.special==='dash'&&distUU(u,v)>1&&!dashSpot(u,v))continue;
@@ -1973,7 +1978,8 @@ const truce=()=>G.round<=RULES.TRUCE;
 const hostileAbil=A=>A.hits==='foe'||A.hits==='all'||A.hits==='any'||['trap','well','requiem','dash'].includes(A.special);
 function canAbil(u,k){
   if(u.kind==='wall')return false;
-  if(k==null){if(u.ability&&u.ability2)return canAbil(u,u.ability)||canAbil(u,u.ability2);k=u.ability||u.ability2}
+  if(k==null){const a=u.ability&&!ABIL[u.ability].aux?u.ability:null,b=u.ability2&&!ABIL[u.ability2].aux?u.ability2:null;// Dismantle (aux) never keeps a unit "ready"
+    if(a&&b)return canAbil(u,a)||canAbil(u,b);k=a||b}
   if(!k||cdOf(u,k)>0)return false;
   const A=ABIL[k];
   if(u.acted&&!A.free)return false;// Vanish uses neither the move nor the action
@@ -2129,6 +2135,12 @@ function useAbility(u,k,q,r,dest){
       const T={id:G.nid++,owner:u.owner,leader:false,pawn:false,summon:true,machine:A.machine,builtBy:u.id,ttl:M.ttl,name:M.name,icon:M.icon,glyph:M.glyph,hp:M.hp,maxhp:M.hp,atk:M.atk,def:M.def,mov:M.mov,mt:M.mt,at:M.at,aoe:M.aoe||null,rng:M.rng,rmin:M.rmin||1,size:1,dir:0,q,r,
       moved:true,acted:true,cd:0,mom:false,rage:false,stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:null,trait:M.trait,home:u.home};G.units.push(T);fx(T,'built','#ff6ec7');vfx({k:'buff',at:[q,r],col:F.color});
       if(trk()&&!SIM){const ts=tStat(T);if(ts)ts.born=G.round;const e=tFx(G.players[u.owner].fac,'','Machines built');if(e)e.uses++}break}
+    // Dismantle (v22c): the machine is taken off the board at once, like a timer running out: no kill, no Ultimate charge, no Salvage; diedBy 'dismantled'.
+    // The caster's build ability rests 1 turn less (never below 0); the turns removed are tracked as cdCut on the Dismantle row.
+    case 'dismantle':if(tgt&&tgt.machine&&tgt.owner===u.owner){const i=G.units.indexOf(tgt);if(i>=0)G.units.splice(i,1);
+      addLog(u.owner,`${u.name} dismantles the ${tgt.name}.`);if(!SIM){vfx({k:'death',at:[tgt.q,tgt.r],icon:tgt.icon,col:F.color});vfx({k:'buff',at:[tgt.q,tgt.r],col:'#ffd766'})}
+      if(trk()&&!SIM){const d=tStat(tgt);if(d){d.died=G.round;d.diedBy='dismantled'}}
+      if(u.cd>0){u.cd--;tSup('cdCut',1);fx(u,'build -1','#ff6ec7')}}break;
     case 'duel':if(tgt){tgt.st.duel={by:u.id,ttl:2};fx(tgt,'challenged','#eef0f4')}break;
     case 'well':{const w={q,r,owner:u.owner,src:u.id,ttl:3};(G.wells=G.wells||[]).push(w);wellPull(w);break}
     // Blink (Archmage): the chosen ally teleports to dest, an empty hex within 3 of it. It keeps its move and action.
@@ -2417,6 +2429,16 @@ function heuristic(u,k,q,r,ctx,dest){
     // Tesla Coil: where enemies stand or gather, and on or beside the Heart ring when it can be reached.
     case 'coil':{let s=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d<=2)s+=2+(f.leader?1:0);else if(d===3&&(f.at==='melee'||f.at==='fwd'))s+=0.5}
       const poi=buildSpot(q,r,ctx);return s>=2?s+poi:poi}
+    // Dismantle: only a machine that will fall apart at the next turn start or stands far from every enemy (none within 5), and only when the workshop is
+    // full or the lower build rest lets this builder build again this turn. Someone must be able to build right after, or it is just a small cooldown gain.
+    case 'dismantle':{const t=unitAt(q,r);if(!t||!t.machine||t.owner!==u.owner)return 0;
+      const far=!ctx.foes.some(f=>distUU(f,t)<=5),expiring=t.ttl<=1;if(!far&&!expiring)return 0;
+      const full=machineCount(u.owner)>=machineCap(u.owner);
+      const canBuild=b=>b.kind!=='wall'&&b.owner===u.owner&&b.ability&&ABIL[b.ability].special==='build'&&!b.acted&&!b.st.frozen&&!hasCurse(b,'silence')&&G.ap>=abilCost(b,b.ability)&&aimCells(b,b.ability).length>0;
+      const unlocks=u.cd===1&&canBuild(u);// the rest drops to 0 and this builder builds now
+      const freed=full&&G.units.some(b=>b.cd===0&&canBuild(b));// a slot for a builder that is ready now
+      if(!unlocks&&!freed)return full&&far&&u.cd>0?0.5:0;
+      return 3+(far?1:0)+(expiring?1:0)-(machineTargets(t).length?1.5:0)}
     case 'well':{let s=0;for(const f of ctx.foes)if(f.size!==2){const d=hd(f.q,f.r,q,r);if(d>=1&&d<=2){s+=2.5;if(DIRS.some(([a,b])=>!solid(f.q+a,f.r+b)))s+=2}}return s>=5?s:0}
     case 'possess':{const t=unitAt(q,r);if(!t||!possessable(t))return 0;const reach=effMov(t)+effRng(t);const n=G.units.filter(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)===tm(t.owner)&&distUU(v,t)<=reach).length;return n?7+Math.min(n,3)*1.5+(t.stars||0)*2:0}
     // Rewind: a free extra walk. Worth it for a striker that has moved and still has a strike (its action or a free Quicken attack) but nothing in reach,
@@ -4307,7 +4329,7 @@ function relicList(){if(!G.relicsOn)return '';const rs=G.relics||[];
   return `<div class="legend"><div class="label" style="margin:0">Relics</div>${rows||`<div class="hint">The first relic appears on the flank in round ${RULES.RELIC_FROM}.</div>`}${rs.length?`<div class="hint">Next relic: round ${next} (if fewer than ${G.players.length<=3?2:3} are out). The carrier gets −1 move.</div>`:''}</div>`}
 
 /* ---------- the dock: action bar for the selected unit, and a strip of your units ---------- */
-function abState(u,k){const ks=k?[k]:abilsOf(u);if(!ks.length)return null;const cd=Math.min(...ks.map(x=>cdOf(u,x)));
+function abState(u,k){const ks=k?[k]:abilsOf(u).filter(x=>!ABIL[x].aux);if(!ks.length)return null;/* Dismantle (aux) does not light the strip badge */const cd=Math.min(...ks.map(x=>cdOf(u,x)));
   if(cd>0)return {ready:false,text:`rests ${cd}`,cd};if(hasCurse(u,'silence'))return {ready:false,text:'silenced',cd:0};return {ready:true,text:'ready',cd:0}}
 function uIcon(u,size){const F=facOf(u);return `<img src="${iconURL(u.icon,INK,F.color)}" alt="" width="${size}" height="${size}">`}
 function hpCol(p){return p>.5?'#5fd68e':p>.25?'#e8b84e':'#ff6161'}
@@ -4364,7 +4386,8 @@ function renderDock(){
     const mv=effMov(u)||u.mov,mvDesc=`<b>Move</b> · 1 AP: ${MOVES[u.mt].text(mv)}${engaged(u)&&mv>1?' Engaged with an enemy: only one step.':''}`;
     // one button per ability (the Warlord has two: March and Rally); state colour says whether it can be used now
     const abilBtn=(k,id)=>{const A=ABIL[k],cost=abilCost(u,k),cd=cdOf(u,k);let abCls='used',abSub='',abIc='✦';
-      if(cd>0){abCls='cd';abIc='⏳';abSub=`${u.book?'book ':''}resting, ${cd} more turn${cd>1?'s':''}`}
+      if(cd>0&&!A.cd){abCls='used';abSub='used this turn'}
+      else if(cd>0){abCls='cd';abIc='⏳';abSub=`${u.book?'book ':''}resting, ${cd} more turn${cd>1?'s':''}`}
       else if(hasCurse(u,'silence')){abCls='cd';abIc='⏳';abSub='silenced by a curse'}
       else if(u.st.frozen){abCls='cd';abIc='⏳';abSub=u.st.stun?'stunned':'frozen solid'}
       else if(u.acted&&!A.free)abSub='already acted this turn';
@@ -4372,7 +4395,7 @@ function renderDock(){
       else if(truce()&&hostileAbil(A))abSub='truce in round 1';
       else if(G.ap<cost){abCls='noap';abSub=`needs ${cost} AP, you have ${G.ap}`}
       else if(canAbil(u,k)){abCls='go ready';abSub='ready: tap to aim'}
-      else abSub=A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`workshop full: at most ${machineCap(u.owner)}`:A.special==='march'?'nobody can step':A.special==='rally'?'no comrade within 2':A.special==='surge'?'no resting mage within 3':'no target in reach';
+      else abSub=A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`workshop full: at most ${machineCap(u.owner)}`:A.special==='march'?'nobody can step':A.special==='rally'?'no comrade within 2':A.special==='surge'?'no resting mage within 3':A.special==='dismantle'?'no machine of yours within 4':'no target in reach';
       return abBtn(abCls,id,abIc,`${A.name} · ${cost} AP`,abSub,abDescOf(k),!canAbil(u,k))};
     btns=abBtn(u.moved&&!(u.freeMove>0)?'used':moves?'mv':'used',null,'➤',u.freeMove>0?'Move · free':'Move · 1 AP',u.moved&&!(u.freeMove>0)?'already moved':moves?moves+' spot'+(moves>1?'s':'')+': tap a dot':G.ap<1?'no AP left':'no room to move',mvDesc,true)+
       (u.machine&&u.at==='none'?abBtn('atk used',null,'⚙','Fires on its own','at the start of your turn',atkDesc,true):abBtn('atk'+(tg.length?' ready':u.acted?' used':' used'),'abAtk','⚔',`Attack · ${atkCost(u)?atkCost(u)+' AP':'free'}`,u.acted&&!(u.freeAtk>0)?'already acted':tg.length?tg.length+' target'+(tg.length>1?'s':'')+' below':truce()?'truce in round 1':G.ap<atkCost(u)?`needs ${atkCost(u)} AP, you have ${G.ap}`:'nothing in reach',atkDesc,!tg.length))+
@@ -4452,10 +4475,10 @@ function nothingLeft(){const mine=G.units.filter(u=>u.owner===G.cur&&u.kind!=='w
 function statB(v,base){return `<b class="${v>base?'up':v<base?'down':''}">${fmt(v)}</b>`}
 function abilBlock(u,k){
   k=k||u.ability;const A=ABIL[k],idx=abilsOf(u).indexOf(k);const mine=isHumanTurn()&&u.owner===G.cur;const cd=cdOf(u,k);
-  const pill=cd>0?`<span class="bigpill cd">Rests ${cd} more turn${cd>1?'s':''}</span>`:`<span class="bigpill rdy">⚡ Ready</span>`;
+  const pill=cd>0&&!A.cd?`<span class="bigpill cd">Used this turn</span>`:cd>0?`<span class="bigpill cd">Rests ${cd} more turn${cd>1?'s':''}</span>`:`<span class="bigpill rdy">⚡ Ready</span>`;
   let why='';
   const cost=abilCost(u,k);
-  if(mine&&!G.amode&&!canAbil(u,k)){why=cd>0?'Resting.':u.st.frozen?(u.st.stun?'Stunned.':'Frozen.'):A.afterAtk&&!u.atkd&&!u.acted?'Only after a basic attack this turn.':hasCurse(u,'silence')?'Silenced.':u.acted?'Already acted this turn.':G.ap<cost?`Needs ${cost} AP.`:A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`Workshop full: at most ${machineCap(u.owner)} machines at once.`:'No valid target in reach.'}
+  if(mine&&!G.amode&&!canAbil(u,k)){why=cd>0&&!A.cd?'Already used this turn.':cd>0?'Resting.':A.special==='dismantle'&&!u.st.frozen&&!hasCurse(u,'silence')?'No machine of yours within 4.':u.st.frozen?(u.st.stun?'Stunned.':'Frozen.'):A.afterAtk&&!u.atkd&&!u.acted?'Only after a basic attack this turn.':hasCurse(u,'silence')?'Silenced.':u.acted?'Already acted this turn.':G.ap<cost?`Needs ${cost} AP.`:A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`Workshop full: at most ${machineCap(u.owner)} machines at once.`:'No valid target in reach.'}
   const shape=[aimText(A),shapeText(A)].filter(Boolean).join(' · ');
   let ctrl='';
   if(mine){
@@ -4644,7 +4667,7 @@ function showRules(){
   <li><b>Shield Wall</b> (Shieldbearer). Every friendly unit next to a Shieldbearer takes 1 less damage from ranged basic attacks and from abilities (never below 1); the Shieldbearer itself takes 1 less from every hit. Curse ticks and burning ground are not hits. No aiming: it is where the Shieldbearer stands that counts.</li>
   <li><b>Void Traps</b> (Riftwalkers). A Voidcaller tears open an empty hex for 3 of its side's turns (a black hex with a pulsing teal ring and the turns left). While open it is a void: nothing can step on it, and any unit shoved, pulled, dragged or thrown into it falls in and dies. Giants can't be moved, so they only take the slam.</li>
   <li><b>Free actions</b> (Hourglass Order). Quicken gives a unit one extra basic attack this turn that costs no AP, even after it has acted. Rewind gives a unit one extra move this turn that costs no AP, even after it has moved. Vanish lets a Second Hand that has made a basic attack this turn teleport up to 3 hexes without using its move or action.</li>
-  <li><b>Machines</b> (Gnome Tinkers). The gnomes build their army: Turrets, Mortars, Flame Turrets and Tesla Coils. A gnome builds for 2 AP on an <b>empty hex next to itself</b> (gnomes are tiny: they must walk up to the spot). Machines <b>never move</b>. <b>At the start of each gnome turn every machine fires on its own, for free</b>, at what it can reach (Turret: one enemy on a straight line up to 4, for 4 minus DEF; Mortar: one enemy 2 to 5 away, 4 minus DEF; Flame Turret: the nearest adjacent enemy and the two hexes beside it, 2 minus DEF each; Tesla Coil: 1 damage ignoring DEF to every enemy within 2). A machine finishes a kill if it can, otherwise it shoots the enemy Leader, otherwise the weakest enemy in reach. On top of that, a Turret, Mortar or Flame Turret may make <b>one basic attack of its own each turn for 1 AP</b>, at a target you pick (the Tesla Coil has no weapon). Build cooldowns: Turret and Flame Turret 2 turns, Mortar and Tesla Coil 3. The workshop holds at most <b>6 machines</b> on the board at once (Workshop full); a build button is greyed out until one falls apart or is destroyed. Every machine falls apart after 6 of the gnomes' turns. Machines can't be chilled, frozen or stunned. The gnomes themselves carry no weapons: the builders and the Gearmaster have no attack and no strike-back; only the Bombardiers fight by hand. Machines are summons: destroying one gives <b>no Ultimate charge and no veteran star</b>, they claim no ground, carry no relics, can't be possessed, can't be Leaders, and a side with only machines left is out. <b>Cover:</b> a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1); abilities, bombs, curses and strike-back are not reduced. Clockwork Rush gives 2 AP plus 1 for every 2 machines on the board (at most 5), repairs every machine to full, gives +1 ATK and makes every machine fire again at once.</li>
+  <li><b>Machines</b> (Gnome Tinkers). The gnomes build their army: Turrets, Mortars, Flame Turrets and Tesla Coils. A gnome builds for 2 AP on an <b>empty hex next to itself</b> (gnomes are tiny: they must walk up to the spot). Machines <b>never move</b>. <b>At the start of each gnome turn every machine fires on its own, for free</b>, at what it can reach (Turret: one enemy on a straight line up to 4, for 4 minus DEF; Mortar: one enemy 2 to 5 away, 4 minus DEF; Flame Turret: the nearest adjacent enemy and the two hexes beside it, 2 minus DEF each; Tesla Coil: 1 damage ignoring DEF to every enemy within 2). A machine finishes a kill if it can, otherwise it shoots the enemy Leader, otherwise the weakest enemy in reach. On top of that, a Turret, Mortar or Flame Turret may make <b>one basic attack of its own each turn for 1 AP</b>, at a target you pick (the Tesla Coil has no weapon). Build cooldowns: Turret and Flame Turret 2 turns, Mortar and Tesla Coil 3. The workshop holds at most <b>6 machines</b> on the board at once (Workshop full); a build button is greyed out until one falls apart, is destroyed or is dismantled. <b>Dismantle:</b> remove one of your machines within 4 hexes for free; this unit's build rests 1 turn less (every builder and the Gearmaster; no AP, no line of sight, uses neither the move nor the action, once per turn, gives nobody Ultimate charge). Every machine falls apart after 6 of the gnomes' turns. Machines can't be chilled, frozen or stunned. The gnomes themselves carry no weapons: the builders and the Gearmaster have no attack and no strike-back; only the Bombardiers fight by hand. Machines are summons: destroying one gives <b>no Ultimate charge and no veteran star</b>, they claim no ground, carry no relics, can't be possessed, can't be Leaders, and a side with only machines left is out. <b>Cover:</b> a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1); abilities, bombs, curses and strike-back are not reduced. Clockwork Rush gives 2 AP plus 1 for every 2 machines on the board (at most 5), repairs every machine to full, gives +1 ATK and makes every machine fire again at once.</li>
   <li><b>Battle Line</b> (Iron Warband): a Warband unit standing next to another Warband unit has +1 ATK, or +2 if one of its neighbours is the Warlord. The Warlord himself gets no bonus.</li>
   <li><b>Rally</b> (Warlord, 1 AP): every other Warband unit within 2 of him gets +1 ATK until the start of the Warband's next turn, strike-backs included.</li>
   <li><b>Holy ground</b> (Circle of Priests). A Druid's Grove turns a hex and its 6 neighbours into holy ground for 3 turns (indigo, never the Heart): every unit standing on it, friend or foe, heals 1 at the start of its owner's turn. <b>Grace:</b> a priest that ends its turn on a Grove or on the Heart heals 1 extra. <b>Wall of Light</b> (Lightwarden): one empty hex within 3 becomes a 6 HP wall for 3 turns that blocks movement and every shot. <b>Fervour</b> (Zealot): its basic attack deals extra damage equal to the healing it received this turn, up to +3: mend it first, then strike. <b>Exodus</b> heals every priest to full and pushes every enemy within 2 of a priest 1 hex away.</li>
@@ -4691,7 +4714,7 @@ function showQuick(){
   <table class="qr"><tbody>
   ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +${RULES.THRONE_AP} Throne · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free, and may attack once for 1 AP')}
-  ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 6 on the board · build cooldowns Turret 2, Flame Turret 2, Mortar 3, Coil 3 · machines never move · each fires on its own for free at the start of the gnome turn and may also attack once for 1 AP (not the Coil) · each falls apart after 6 gnome turns · can’t be chilled, frozen or stunned · killing one gives no charge and no star · builders and Gearmaster can’t attack (only Bombardiers do) · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1) · Clockwork Rush: 2 AP + 1 per 2 machines, max 5')}
+  ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 6 on the board · Dismantle: remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less · build cooldowns Turret 2, Flame Turret 2, Mortar 3, Coil 3 · machines never move · each fires on its own for free at the start of the gnome turn and may also attack once for 1 AP (not the Coil) · each falls apart after 6 gnome turns · can’t be chilled, frozen or stunned · killing one gives no charge and no star · builders and Gearmaster can’t attack (only Bombardiers do) · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1) · Clockwork Rush: 2 AP + 1 per 2 machines, max 5')}
   ${row('Per unit','Move once + one action (attack <b>or</b> ability)')}
   ${row('Damage','ATK − DEF, DEF blocks at most half, minimum 1. Pierce ignores DEF')}
   ${row('Strike back','Melee targets hit back ½ (Riposte full), not if surrounded/frozen')}
