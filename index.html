@@ -2013,7 +2013,11 @@ const AOE={
   pierce:{name:'Pierce',text:'The shot carries on through the target and hits the next unit behind it (up to 2 hexes) for half damage.'},
   arc:{name:'Flame arc',text:'Sprays the 3 hexes in front of it toward the target: every other enemy there takes the same hit (its ATK minus that enemy\u2019s DEF).'},
 };
-function lineVec(c,t){for(const v of [...DIRS,...DIAG])for(let k=1;k<=8;k++)if(c[0]+v[0]*k===t.q&&c[1]+v[1]*k===t.r)return v;return null}
+// The straight line from hex c into unit t: its direction and the hex of t it enters by (a giant can be entered by either hex).
+function lineVec(c,t){for(const [tq,tr] of cells(t).slice().sort((x,y)=>hd(c[0],c[1],x[0],x[1])-hd(c[0],c[1],y[0],y[1])))for(const v of [...DIRS,...DIAG])for(let k=1;k<=8;k++)if(c[0]+v[0]*k===tq&&c[1]+v[1]*k===tr)return {v,q:tq,r:tr};return null}
+// The first unit on that line after leaving t, within n hexes of t's last hex (t's own hexes are skipped).
+function unitBehind(c,t,n,m){const L=lineVec(c,t);if(!L)return null;m=m||occ();let q=L.q,r=L.r,left=n;
+  while(left>0){q+=L.v[0];r+=L.v[1];if(!inR(q,r))return null;const o=m.get(key(q,r));if(o===t)continue;if(o)return o;left--}return null}
 function splashTargets(u,t){
   if(!u.aoe||t.kind==='wall')return [];
   const foe=v=>v!==t&&v!==u&&v.kind!=='wall'&&tm(v.owner)!==tm(u.owner);
@@ -2021,8 +2025,7 @@ function splashTargets(u,t){
   if(u.aoe==='splash')return G.units.filter(v=>foe(v)&&distUU(v,t)<=1);
   // Flame arc (Flame Turret): the two hexes either side of the target's direction, forming the 3-hex arc in front of the turret.
   if(u.aoe==='arc'){const d=dirTo(u.q,u.r,t.q,t.r),arc=[-1,1].map(i=>{const dd=(d+i+6)%6;return key(u.q+DIRS[dd][0],u.r+DIRS[dd][1])});return G.units.filter(v=>foe(v)&&cells(v).some(([a,b])=>arc.includes(key(a,b))))}
-  if(u.aoe==='pierce'){const c=nearCell(u,t),vec=lineVec(c,t);if(!vec)return [];
-    const m=occ();for(let k=1;k<=2;k++){const q=t.q+vec[0]*k,r=t.r+vec[1]*k;if(!inR(q,r))break;const o=m.get(key(q,r));if(o&&o!==t){return foe(o)?[o]:[]}}}
+  if(u.aoe==='pierce'){const o=unitBehind(nearCell(u,t),t,2);return o&&foe(o)?[o]:[]}
   return [];
 }
 function splashDmg(u,dmg){return u.aoe==='splash'?1:Math.max(1,Math.floor(dmg/2))}
@@ -2203,7 +2206,9 @@ function applyHit(u,t,A){
   if(d>0&&focused(u,A))tBonus(u,'Arcane Focus (+1)',1,hp0);
   if(d>0&&hex0)tFxBy(t.st.hexBy,'mage','Hex','dmg',Math.min(1,Math.max(0,hp0)));
   // Ice Lance on a frozen target: the enemy one hex further on the line from the Hailcaller through the target is frozen too (tracked as its own row).
-  if(frozen0){const [cq,cr]=nearCell(u,t),dd=dirTo(cq,cr,t.q,t.r);const b=unitAt(t.q+DIRS[dd][0],t.r+DIRS[dd][1]);
+  if(frozen0){const c=nearCell(u,t),L=lineVec(c,t);let b;
+    if(L&&DIRS.some(d=>d[0]===L.v[0]&&d[1]===L.v[1]))b=unitBehind(c,t,1);// straight line: the unit just past the target (past both hexes of a giant)
+    else{const dd=dirTo(c[0],c[1],t.q,t.r);let q=t.q,r=t.r;do{q+=DIRS[dd][0];r+=DIRS[dd][1]}while(unitAt(q,r)===t);b=unitAt(q,r)}
     if(b&&b!==t&&b.kind!=='wall'&&tm(b.owner)!==tm(u.owner)){const o=CUR_NAME,was=b.st.frozen>0;CUR_NAME=A.name+': chain freeze';if(freezeT(b,false)&&!was){const e=srcFx();if(e)e.uses++;if(!SIM)vfx({k:'bolt',from:[t.q,t.r],to:[b.q,b.r],col:'#bfefff'})}CUR_NAME=o}}
   if(!alive(t)||t.kind==='wall')return;// the Rift Beast only takes the damage: no debuffs, no curses, no cold
   if(A.sear&&d>0)sear(u,t);
