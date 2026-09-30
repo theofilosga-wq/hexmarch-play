@@ -1961,7 +1961,7 @@ function retaliation(u,t){if(!alive(t)||!alive(u)||t.kind==='wall'||!(t.at==='me
    at any distance. Machines, eggs, statues, walls, the Rift Beast and other summons never get one; a frozen or stunned unit cannot answer (its Barrier
    stays up). Ultimates, curse ticks, burning ground and strike-backs do not break it. The answer is queued (BAR_Q) and resolved at the end of the action,
    like the Rift Beast's lash; if it kills the attacker, the attacker dies. Tracked as the effect row "Barrier" of the defender (dmg dealt back, uses = broken). */
-const barrierAble=u=>!!u&&u.kind!=='wall'&&!u.summon&&!u.machine&&!u.egg&&!u.statue&&!u.beast;
+const barrierAble=u=>RULES.BARRIER>0&&!!u&&u.kind!=='wall'&&!u.summon&&!u.machine&&!u.egg&&!u.statue&&!u.beast;
 const hasBarrier=u=>!!(u&&u.bar&&barrierAble(u));
 const barrierDmg=a=>Math.max(1,RULES.BARRIER-effDef(a));
 let BAR_Q=[];
@@ -3011,7 +3011,7 @@ function botStep(){
   return true;
 }
 
-const BALANCE={"version":"v24b","generated":"2026-09-30","modes":{"ffa":{"games":100,"armies":{"gnomes":{"winPct":25,"firstOutPct":31.2},"curse":{"winPct":26,"firstOutPct":18},"chrono":{"winPct":5.1,"firstOutPct":69.2},"mage":{"winPct":38.9,"firstOutPct":5.6},"arcane":{"winPct":22.2,"firstOutPct":19.4},"rift":{"winPct":17.1,"firstOutPct":29.3},"warband":{"winPct":35.7,"firstOutPct":7.1},"ice":{"winPct":14.9,"firstOutPct":14.9},"giants":{"winPct":42.9,"firstOutPct":2.4},"fire":{"winPct":17.1,"firstOutPct":2.9}}}}};
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
