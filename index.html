@@ -496,6 +496,7 @@ body.wide .turnbar .btn.sm{padding:7px 10px}
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="none" stroke="#e8b84e" stroke-width="2"/></svg>Ability aim</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="rgba(255,170,60,.5)" stroke="#ffbe5a"/></svg>Ability area</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="#000" stroke="rgba(63,224,184,.6)"/></svg>Void (deadly)</span>
+          <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="rgba(18,214,154,.35)" stroke="#12d69a" stroke-width="1.6"/><path d="M8 8 m-4 0 a4 4 0 1 1 4 4 a2.5 2.5 0 1 1 -2.5 -2.5" fill="none" stroke="#fff" stroke-width="1.1"/></svg>Gravity Well (drags inward)</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="2,12 5,4 10,2 14,6 14,12" fill="#8a9099" stroke="#1b1d22"/></svg>Rock (blocks)</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 13,11 3,11" fill="#2f7d45"/></svg>Forest: hidden beyond 2</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 12 A6 5 0 0 1 14 12" fill="none" stroke="#e6d7aa" stroke-width="1.6"/></svg>Hill: +1 range, +1 dmg</span>
@@ -1489,7 +1490,7 @@ function beginTurn(){
     const m=occ();const spot=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))).sort((a,b)=>hd(a[0],a[1],e.q,e.r)-hd(b[0],b[1],e.q,e.r))[0];
     if(!spot)continue;const u=e.u;u.q=spot[0];u.r=spot[1];u.hp=Math.ceil(u.maxhp/2);u.reborn=true;u.cd=0;u.moved=false;u.acted=false;u.st={chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}};
     G.units.push(u);addLog(p.id,`${u.name} rises from the ashes!`);fx(u,'reborn','#ffb03d');vfx({k:'buff',at:[u.q,u.r],col:'#ffb03d'})}
-  if(G.wells){for(const w of G.wells.filter(w=>w.owner===p.id)){wellPull(w);if(--w.ttl<=0)G.wells.splice(G.wells.indexOf(w),1)}}
+  if(G.wells){for(const w of G.wells.filter(w=>w.owner===p.id)){wellPull(w,true);if(--w.ttl<=0)G.wells.splice(G.wells.indexOf(w),1)}}
   if(G.traps)for(const k of Object.keys(G.traps)){const t=G.traps[k];if(t.owner===p.id&&--t.ttl<=0){delete G.traps[k];addLog(p.id,'A Void Trap closes.')}}
   for(const w of G.units.filter(w=>w.kind==='wall'&&w.creator===p.id)){w.ttl--;if(w.ttl<=0){G.units.splice(G.units.indexOf(w),1);addLog(p.id,w.wall==='light'?'A Wall of Light fades.':`A ${w.wall} wall ${w.wall==='ice'?'melts':'crumbles'}.`)}}
   for(const k of Object.keys(G.paint)){const pt=G.paint[k];if(pt.owner===p.id&&--pt.ttl<=0)delete G.paint[k]}
@@ -2071,16 +2072,20 @@ function pullUnit(t,src,n){
   if(alive(t)&&(t.q!==oq||t.r!==or))tSup('moved',1);
 }
 // Gravity Well: enemies within 2 step 1 hex toward it. Blocked units stay put; over a void or the edge, they fall.
-function wellPull(w){
-  const src=byId(w.src),team=tm(w.owner);
+function wellPull(w,start){// start: called at the start of the owner's turn (the well then has ttl-1 pulls left after this one)
+  const src=byId(w.src),team=tm(w.owner),mv=[];
   const vs=G.units.filter(v=>v.kind!=='wall'&&v.size!==2&&tm(v.owner)!==team&&hd(v.q,v.r,w.q,w.r)<=2&&hd(v.q,v.r,w.q,w.r)>0).sort((a,b)=>hd(a.q,a.r,w.q,w.r)-hd(b.q,b.r,w.q,w.r));
   if(vs.length)vfx({k:'buff',at:[w.q,w.r],col:'#12d69a'});
   // Everything the well does (kills, units dragged) is credited to the Gravity Well ability of the mage who opened it, also on later turns.
   const old=CUR_SRC,ot=CUR_TAG,on=CUR_NAME;CUR_SRC=src;CUR_TAG='Abil';CUR_NAME=ABIL.well.name;
   for(const v of vs){if(!alive(v))continue;const d=dirTo(v.q,v.r,w.q,w.r),q=v.q+DIRS[d][0],r=v.r+DIRS[d][1];
-    if(!solid(q,r)){fallKill(v,q,r,src);continue}
-    if(featAt(q,r)==='rock'||occ().get(key(q,r)))continue;setAnim(v);v.q=q;v.r=r;tSup('moved',1)}
+    if(!solid(q,r)){mv.push([v.q,v.r,q,r]);fallKill(v,q,r,src);continue}
+    if(featAt(q,r)==='rock'||occ().get(key(q,r)))continue;mv.push([v.q,v.r,q,r]);setAnim(v);if(v.anim)v.anim.dur=650;v.q=q;v.r=r;tSup('moved',1)}
   CUR_SRC=old;CUR_TAG=ot;CUR_NAME=on;
+  // Visual only: a streak for every dragged unit, a log line and a short message on screen (vfx 'well' in vfx.js).
+  if(mv.length&&!SIM){const left=start?w.ttl-1:w.ttl,n=mv.length;
+    const msg=`Gravity Well drags ${n} unit${n>1?'s':''} toward it (${left>0?left+' turn'+(left>1?'s':'')+' left':'last pull, it closes now'})`;
+    addLog(w.owner,msg+'.');vfx({k:'well',at:[w.q,w.r],moves:mv,msg,col:FAC[G.players[w.owner].fac].color})}
 }
 // March: which units of the block move, and where. d = direction index (or -1 to ask whether any direction moves anyone). Front units (furthest along d) go first,
 // so a column can step as one; a unit whose hex ahead is not free after the ones before it moved, or that is frozen, stays. Walls, summons and giants never march.
@@ -2747,8 +2752,6 @@ function draw3D(now){
       for(let i=0;i<6;i++){const nq=q+ND[i][0],nr=r+ND[i][1];if(!solid(nq,nr)||isRoad(nq,nr))continue;ctx.beginPath();ctx.moveTo(top[i][0],top[i][1]);ctx.lineTo(top[(i+1)%6][0],top[(i+1)%6][1]);ctx.stroke()}ctx.restore()}
     {const cl=G.claim&&G.claim[k];if(cl){ctx.save();ctx.setLineDash([4,3]);polyPath(hexTop(x,z,0.8,0.01));ctx.strokeStyle=FAC[cl.fac].color;ctx.lineWidth=Math.max(2,CAM.S*0.1);ctx.stroke();ctx.restore()}}
     if(isOutpost(q,r)){const o=outpostOwner(q,r);const oc=o?FAC[P(o.owner).fac].color:'#ece8dd';polyPath(hexTop(x,z,0.97,0));ctx.fillStyle=hexA(oc,o?0.35:0.14);ctx.fill();ctx.save();ctx.setLineDash([3,2]);polyPath(hexTop(x,z,0.84,0));ctx.strokeStyle=oc;ctx.lineWidth=Math.max(1.5,CAM.S*0.08);ctx.stroke();ctx.restore()}
-    if(G.wells&&G.wells.some(w=>w.q===q&&w.r===r)){const tt=now/600;ctx.save();ctx.strokeStyle='rgba(18,214,154,.9)';ctx.lineWidth=Math.max(1.5,CAM.S*0.08);for(let i=0;i<3;i++){const rr=0.35+i*0.3,pts=[];for(let j=0;j<=16;j++){const a=tt+i*2+j/16*3.6;pts.push(proj(x+rr*Math.cos(a),z+rr*Math.sin(a),0.01))}ctx.beginPath();pts.forEach(([a,b],j)=>j?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.stroke()}ctx.restore();
-      groundRing(x,z,S3*2.05,'rgba(18,214,154,.35)',1.2,'rgba(18,214,154,.07)')}
     if(hl.aim.has(k)){const on=G.aim&&G.aim[0]===q&&G.aim[1]===r;polyPath(top);ctx.fillStyle=on?'rgba(255,243,196,.4)':`rgba(232,184,78,${0.2+0.1*flick})`;ctx.fill();
       polyPath(hexTop(x,z,on?0.88:0.78,0));ctx.strokeStyle=on?'#fff3c4':'rgba(232,184,78,.95)';ctx.lineWidth=Math.max(1.5,CAM.S*(on?0.12:0.08));ctx.stroke()}
     if(hl.moves.has(k)){const mv=hl.moves.get(k);
@@ -2762,12 +2765,14 @@ function draw3D(now){
   {polyPath(hexTop(0,0,0.97,0));ctx.fillStyle='rgba(255,236,160,.55)';ctx.fill();polyPath(hexTop(0,0,0.88,0));ctx.strokeStyle='#fff3c4';ctx.lineWidth=Math.max(2,CAM.S*0.1);ctx.stroke();
    if(!unitAt(0,0)){const [a,b]=proj(0,0,0);ctx.save();ctx.translate(a,b);ctx.scale(1,Math.cos(CAM.tilt));drawIcon(ctx,'crown',0,0,CAM.S*1.1,'#b8860b','#fff');ctx.restore()}}
   {const [x,z]=[0,0];polyPath(hexTop(x,z,0.45,0));ctx.strokeStyle=G.holder!==null?teamColor(G.holder):'rgba(232,184,78,.9)';ctx.lineWidth=Math.max(1,CAM.S*0.06);ctx.stroke()}
+  // Gravity Wells: area, border, vortex and arrows on the ground, under the figures (ui.js drawWellsWith)
+  drawWellsWith((q,r,ox,oy)=>{const [x,z]=world(q,r);const p=proj(x+ox,z+oy,0.012);return [p[0],p[1]]},CAM.S,now,false);
   // units back to front
   const cur=G.cur;
   const zone3=myDeployZone();
   if(zone3){const col=FAC[P(G.cur).fac].color;for(const k of zone3){const [q,r]=k.split(',').map(Number);const [x,z]=world(q,r);polyPath(hexTop(x,z,0.9,0.01));ctx.fillStyle=hexA(col,0.16+0.08*Math.sin(now/300));ctx.fill();ctx.strokeStyle=hexA(col,0.8);ctx.lineWidth=1.5;ctx.stroke()}}
   const list=G.units.filter(visibleUnit).map(u=>{let pts=cells(u).map(([q,r])=>world(q,r));
-    if(u.anim){const t=Math.min(1,(now-u.anim.t0)/260);if(t>=1)delete u.anim;else{const e=1-Math.pow(1-t,3);const [ax,az]=world(u.anim.fq,u.anim.fr),[bx,bz]=world(u.q,u.r);pts=pts.map(([x,z])=>[x+(ax-bx)*(1-e),z+(az-bz)*(1-e)])}}
+    if(u.anim){const t=Math.min(1,(now-u.anim.t0)/(u.anim.dur||260));if(t>=1)delete u.anim;else{const e=1-Math.pow(1-t,3);const [ax,az]=world(u.anim.fq,u.anim.fr),[bx,bz]=world(u.q,u.r);pts=pts.map(([x,z])=>[x+(ax-bx)*(1-e),z+(az-bz)*(1-e)])}}
     const x=pts.reduce((a,p)=>a+p[0],0)/pts.length,z=pts.reduce((a,p)=>a+p[1],0)/pts.length;
     return {u,pts,x,z,d:x*s+z*c}});
   for(const [q,r] of ringCells()){const f=featAt(q,r);if(f==='rock'||f==='forest'||f==='shrine'){const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:f,q,r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}}
@@ -2826,6 +2831,7 @@ function draw3D(now){
     ctx.restore();
     drawnUnits.push({u,rect:[sx-0.55*CAM.S*sc,ey-er,sx+0.55*CAM.S*sc,sy+0.3*CAM.S],cell:[u.q,u.r]});
   }
+  for(const w of G.wells||[]){const [x,z]=world(w.q,w.r);const p=proj(x+0.5*s+0.55*c,z+0.5*c-0.55*s,0);wellBadge(p[0],p[1],CAM.S,w)}// turns left, in front of the centre hex, above the figures
   drawVFX(now);
   fxs=fxs.filter(f=>now-f.t0<1000);
   for(const f of fxs){const t=(now-f.t0)/1000;const [wx,wz]=world(f.q,f.r);const [x,y]=proj(wx,wz,1.3+t*0.8);
@@ -3232,7 +3238,7 @@ function pumpVFX(now){
   if(!G||!G.fxLog)return;
   for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ANIMS.filter(a=>now-a.t0<0).length?0:0)});
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
-    if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
+    if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
     if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')playSound('hit');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
     if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color}
 }
@@ -3326,6 +3332,15 @@ function drawVFX(now){
           hexFlash(ev.at[0],ev.at[1],ev.col,0.6*(1-kk));burst(x,y,U*(0.4+2.4*kk),ev.col,Math.max(0,1-kk));burst(x,y,U*(0.2+1.4*kk),'#ffffff',Math.max(0,0.8-kk*1.5));sparks(x,y,14,U*1.4,ev.col,kk,0.7)}
         break}
       case 'reveal':{dur=1300;const t=el/dur;ctx.save();ctx.globalAlpha=Math.max(0,0.5*(1-t));ctx.fillStyle='#ffffff';ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=Math.max(0,1-t);ctx.font=`900 ${Math.max(22,Math.min(CW/9,60))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('To battle!',CW/2,CH*0.42);ctx.fillStyle='#ffd766';ctx.fillText('To battle!',CW/2,CH*0.42);ctx.restore();break}
+      case 'well':{// Gravity Well pull: a teal streak from where each unit stood to where it was dragged, an arrowhead, and rings closing in on the centre
+        dur=1100;const t=Math.min(1,el/dur),wc=ev.col||'#12d69a';const [cx,cy]=vPos(ev.at[0],ev.at[1],0.05);
+        for(let k=0;k<3;k++){const tk=((t*1.4+k/3)%1);burst(cx,cy,U*2.6*(1-tk)+U*0.2,wc,Math.max(0,0.8*(1-t))*(tk),false)}
+        for(const m of ev.moves||[]){const [x0,y0]=vPos(m[0],m[1],0.35),[x1,y1]=vPos(m[2],m[3],0.35);const e=Math.min(1,t/0.55),hx=x0+(x1-x0)*e,hy=y0+(y1-y0)*e;
+          const bx=x0-(x1-x0)*0.35,by=y0-(y1-y0)*0.35;const a=Math.max(0,1-Math.max(0,t-0.55)/0.45);
+          glowLine([[bx+(hx-bx)*0.2,by+(hy-by)*0.2],[hx,hy]],wc,Math.max(3,U*0.16),a);glowLine([[bx+(hx-bx)*0.55,by+(hy-by)*0.55],[hx,hy]],'#ffffff',Math.max(1.5,U*0.06),a);
+          const ang=Math.atan2(y1-y0,x1-x0),s2=Math.max(6,U*0.34);ctx.save();ctx.globalAlpha=a;ctx.translate(hx,hy);ctx.rotate(ang);ctx.beginPath();ctx.moveTo(s2*0.7,0);ctx.lineTo(-s2*0.4,-s2*0.55);ctx.lineTo(-s2*0.15,0);ctx.lineTo(-s2*0.4,s2*0.55);ctx.closePath();
+          ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle=wc;ctx.lineWidth=2;ctx.stroke();ctx.restore()}
+        break}
       case 'buff':{dur=600;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.5);sparks(x,y,8,U*0.6,ev.col||'#9ff0c0',t,1);break}
     }
     if(el>dur)ANIMS.splice(i,1);
@@ -4513,12 +4528,13 @@ function renderUnitCard(){
 
 function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u&&G.tile){const [q,r]=G.tile,f=featAt(q,r),t=terrAt(q,r);
+    const wn=wellNote(q,r),wellP=wn?`<p class="hint" style="margin:8px 0 0;padding:6px 8px;border-left:3px solid ${wellCol(wellAt(q,r))};background:${hexA(wellCol(wellAt(q,r)),0.12)};color:#e6fff6">${wn}</p>`:'';
     const rl=(G.relics||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);
-    if(rl){const Rl=RELICS[rl.kind];el.innerHTML=`<div class="label">Relic</div><h3 style="color:${Rl.col}">${Rl.name}</h3><p style="margin:6px 0 0">${Rl.text}</p><p class="hint" style="margin:6px 0 0">Step a unit onto this hex to pick it up. The carrier gets −1 move and drops it when it dies.</p>`;return}
-    if(isOutpost(q,r)){el.innerHTML=`<div class="label">Hex</div><h3>Outpost</h3><p class="hint" style="margin:6px 0 0">A flank watchtower. A unit standing here at the start of your turn charges your army’s Ultimate by 1, and in Warlord the side holding more Outposts than anyone else scores 1 point a turn. The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${isRoad(q,r)?'<p class="hint" style="margin:6px 0 0">On the flank road: a unit starting its move here gets +1 move.</p>':''}`;return}
+    if(rl){const Rl=RELICS[rl.kind];el.innerHTML=`<div class="label">Relic</div><h3 style="color:${Rl.col}">${Rl.name}</h3><p style="margin:6px 0 0">${Rl.text}</p><p class="hint" style="margin:6px 0 0">Step a unit onto this hex to pick it up. The carrier gets −1 move and drops it when it dies.</p>${wellP}`;return}
+    if(isOutpost(q,r)){el.innerHTML=`<div class="label">Hex</div><h3>Outpost</h3><p class="hint" style="margin:6px 0 0">A flank watchtower. A unit standing here at the start of your turn charges your army’s Ultimate by 1, and in Warlord the side holding more Outposts than anyone else scores 1 point a turn. The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${isRoad(q,r)?'<p class="hint" style="margin:6px 0 0">On the flank road: a unit starting its move here gets +1 move.</p>':''}${wellP}`;return}
     const road=isRoad(q,r)?`<p class="hint" style="margin:6px 0 0"><b>Flank road.</b> A unit that starts its move on the two outer rings gets +1 move.</p>`:'';
     el.innerHTML=`<div class="label">Hex</div><h3>${G.traps&&G.traps[key(q,r)]?'Void Trap':f?FEATURES[f].name:q===0&&r===0?'The Throne':isHeart(q,r)?'The Heart':isNoMans(q,r)?'No man\u2019s land':t?FAC[t].name+' ground':'Open ground'}</h3>
-      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round 3 its side also gets +1 AP and +1 Ultimate charge each turn.':isHeart(q,r)?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${FAC[t].home}</p>`:''}${road}`;return}
+      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round 3 its side also gets +1 AP and +1 Ultimate charge each turn.':isHeart(q,r)?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${FAC[t].home}</p>`:''}${road}${wellP}`;return}
   if(!u){
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
@@ -4528,6 +4544,8 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.leader)tags.push('Leader');if(u.pawn)tags.push('Pawn');
   if(u.stars)tags.push(`<span class="tag good" style="color:#ffd766">Veteran ${'★'.repeat(u.stars)} +${u.stars} ATK</span>`);
   for(const [q,r] of cells(u)){const f=featAt(q,r);if(f&&f!=='rock')tags.push(`<span class="tag good">${FEATURES[f].name}: ${f==='forest'?'+1 DEF':f==='hill'?'+1 range if ranged':shrineBack(q,r)?'spent until round '+shrineBack(q,r):'heals 2 once, then rests 2 rounds'}</span>`)}
+  {const w=u.kind!=='wall'&&cells(u).map(([q,r])=>wellAt(q,r)).find(x=>x);if(w){const own=tm(w.owner)===tm(u.owner);
+    tags.push(`<span class="tag ${own?'':'bad'}" style="border-color:${wellCol(w)};color:${wellCol(w)}">In a Gravity Well${own?' (its own side’s: not dragged)':u.size===2?' (too heavy to be dragged)':`: dragged 1 hex toward the centre at the start of the ${wellSide(w)} turn, ${w.ttl} turn${w.ttl>1?'s':''} left`}</span>`)}}
   if(u.size===2)tags.push('Fills 2 hexes');
   if(u.mt==='fly'&&u.kind!=='wall')tags.push(perched(u)?'<span class="tag bad">Perched on rock: −1 range, walkers can\u2019t hit it in melee</span>':'<span class="tag">Flies: passes over units and rocks, can perch on rocks</span>');
   {const rl=relicOf(u);if(rl)tags.unshift(`<span class="tag" style="background:${hexA(RELICS[rl.kind].col,.25)};color:${RELICS[rl.kind].col}">◆ ${RELICS[rl.kind].name}: ${RELICS[rl.kind].text} (−1 move)</span>`)}
@@ -4815,7 +4833,7 @@ function hexPath(x,y,s){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180
 const SHADE=['#1a1f29','#20252f','#262c37'];
 function unitPos(u,now){
   let pts=cells(u).map(([q,r])=>px(q,r));
-  if(u.anim){const t=Math.min(1,(now-u.anim.t0)/240);if(t>=1)delete u.anim;else{
+  if(u.anim){const t=Math.min(1,(now-u.anim.t0)/(u.anim.dur||240));if(t>=1)delete u.anim;else{
     const e=1-Math.pow(1-t,3);const [fx0,fy0]=px(u.anim.fq,u.anim.fr),[tx,ty]=px(u.q,u.r);
     const dx=(fx0-tx)*(1-e),dy=(fy0-ty)*(1-e);pts=pts.map(([x,y])=>[x+dx,y+dy])}}
   return pts;
@@ -4835,6 +4853,59 @@ function myDeployZone(){if(G.phase!=='deploy'||!isHumanTurn())return null;if(!ne
 function drawRelicGlyph(kind,x,y,S,now){const Rl=RELICS[kind];ctx.save();ctx.shadowColor=Rl.col;ctx.shadowBlur=S*0.8*(0.6+0.4*Math.sin(now/220));
   ctx.beginPath();ctx.moveTo(x,y-S*0.62);ctx.lineTo(x+S*0.5,y);ctx.lineTo(x,y+S*0.62);ctx.lineTo(x-S*0.5,y);ctx.closePath();ctx.fillStyle=Rl.col;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke();
   drawIcon(ctx,Rl.icon,x,y,S*0.62,'#0b0e14',Rl.col);ctx.restore()}
+/* ---------- Gravity Well (Riftwalkers): the whole area stays marked on the board for every turn the well lasts ----------
+   Tinted area within 2 hexes with a bold outer border, a slowly turning vortex on the centre, arrows on every edge a unit
+   would be dragged across, and the turns left in a badge (drawn above the units). Reduced motion: the same, but still. */
+function stillMotion(){try{return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)}catch(e){return false}}
+function wellCol(w){const p=G.players[w.owner];return p?FAC[p.fac].color:'#12d69a'}
+function wellCellsOf(w){const o=[];for(let dq=-2;dq<=2;dq++)for(let dr=-2;dr<=2;dr++){const q=w.q+dq,r=w.r+dr;if(hd(q,r,w.q,w.r)<=2&&inR(q,r)&&solid(q,r))o.push([q,r])}return o}
+function wellAt(q,r){return (G&&G.wells||[]).find(w=>hd(q,r,w.q,w.r)<=2)||null}
+function wellSide(w){const p=G.players[w.owner];const nm=p?FAC[p.fac].name:'Riftwalkers';return nm+(nm.endsWith('s')?'’':'’s')}
+function wellNote(q,r){const w=wellAt(q,r);if(!w)return '';const n=w.ttl;
+  return `<b>Inside a Gravity Well:</b> at the start of the ${wellSide(w)} turn, enemy units here are dragged 1 hex toward its centre${hd(q,r,w.q,w.r)===0?' (this is the centre)':''}. ${n} turn${n>1?'s':''} left. Giants are too heavy.`}
+function wellArrow(c,x,y,ux,uy,s,col){// chevron centred at (x,y) pointing along (ux,uy)
+  const vx=-uy,vy=ux;c.beginPath();c.moveTo(x+ux*s*0.55,y+uy*s*0.55);c.lineTo(x-ux*s*0.45+vx*s*0.6,y-uy*s*0.45+vy*s*0.6);c.lineTo(x-ux*s*0.15,y-uy*s*0.15);c.lineTo(x-ux*s*0.45-vx*s*0.6,y-uy*s*0.45-vy*s*0.6);c.closePath();
+  c.fillStyle='#ffffff';c.fill();c.lineWidth=Math.max(1.5,s*0.16);c.strokeStyle='rgba(4,10,8,.95)';c.stroke();c.fillStyle=col;c.globalAlpha*=0.35;c.fill();c.globalAlpha/=0.35}
+// Shared geometry: T(q,r,ox,oy) maps a hex plus an offset in hex radii (flat-map pixels divided by SZ) to canvas coordinates.
+function drawWellsWith(T,U,now,flat){
+  const ws=G.wells||[];if(!ws.length)return;const still=stillMotion(),pulse=still?0.5:0.5+0.5*Math.sin(now/420);
+  for(const w of ws){const col=wellCol(w),cs=wellCellsOf(w);
+    const corner=i=>{const a=Math.PI/180*(60*i-30);return [0.985*Math.cos(a),0.985*Math.sin(a)]};
+    const hexP=(q,r,k)=>{ctx.beginPath();for(let i=0;i<6;i++){const [a,b]=corner(i);const [X,Y]=T(q,r,a*k,b*k);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.closePath()};
+    // tint, stronger toward the centre, breathing slowly
+    // darkened first, so the area reads apart from the army's own coloured ground, then tinted
+    for(const [q,r] of cs){const d=hd(q,r,w.q,w.r);hexP(q,r,1);ctx.fillStyle=`rgba(2,10,14,${d===0?0.6:d===1?0.5:0.42})`;ctx.fill();ctx.fillStyle=hexA(col,(d===0?0.4:d===1?0.3:0.22)+0.1*pulse);ctx.fill()}
+    // field lines: two dashed circles that turn slowly around the centre
+    {const off=still?0:-now/60;ctx.save();ctx.setLineDash([Math.max(3,U*0.28),Math.max(3,U*0.2)]);
+      for(const [rad,a] of [[1.62,0.75],[3.05,0.6]]){ctx.beginPath();for(let i=0;i<=48;i++){const t=i/48*Math.PI*2;const [X,Y]=T(w.q,w.r,rad*Math.cos(t),rad*Math.sin(t));i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}
+        ctx.lineDashOffset=off*(rad>2?1:-1.4);ctx.strokeStyle=hexA('#ffffff',a*0.55);ctx.lineWidth=Math.max(1.2,U*0.06);ctx.stroke()}ctx.restore()}
+    // thin inner ring between distance 1 and 2, then the bold outer border (dark under-stroke so it reads on any ground)
+    ctx.save();ctx.lineCap='round';
+    const edges=(test)=>{ctx.beginPath();for(const [q,r] of cs){for(let i=0;i<6;i++){const nq=q+ND[i][0],nr=r+ND[i][1];if(!test(q,r,nq,nr))continue;const [a1,b1]=corner(i),[a2,b2]=corner((i+1)%6);const p1=T(q,r,a1,b1),p2=T(q,r,a2,b2);ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1])}}};
+    edges((q,r,nq,nr)=>hd(q,r,w.q,w.r)===1&&hd(nq,nr,w.q,w.r)===2);ctx.strokeStyle=hexA(col,0.55);ctx.lineWidth=Math.max(1,U*0.05);ctx.setLineDash([Math.max(2,U*0.12),Math.max(2,U*0.1)]);ctx.stroke();ctx.setLineDash([]);
+    edges((q,r,nq,nr)=>!(hd(nq,nr,w.q,w.r)<=2&&solid(nq,nr)));ctx.strokeStyle='rgba(3,8,10,.9)';ctx.lineWidth=Math.max(5,U*0.3);ctx.stroke();ctx.strokeStyle=col;ctx.lineWidth=Math.max(2.5,U*0.15);ctx.stroke();
+    ctx.restore();
+    // vortex on the centre: a dark core with four arms turning slowly
+    {const rot=still?0.6:-now/1100;ctx.save();
+      ctx.beginPath();for(let i=0;i<=24;i++){const a=i/24*Math.PI*2;const [X,Y]=T(w.q,w.r,0.9*Math.cos(a),0.9*Math.sin(a));i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.closePath();ctx.fillStyle='rgba(2,8,7,.82)';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=Math.max(1.5,U*0.07);ctx.stroke();
+      for(let arm=0;arm<4;arm++){for(const pass of [0,1]){ctx.beginPath();for(let j=0;j<=18;j++){const t=j/18,rr=0.1+0.85*t,a=rot+arm*Math.PI/2+t*3.4;const [X,Y]=T(w.q,w.r,rr*Math.cos(a),rr*Math.sin(a));j?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}
+        ctx.strokeStyle=pass?'#ffffff':col;ctx.globalAlpha=pass?0.7:1;ctx.lineWidth=pass?Math.max(0.8,U*0.035):Math.max(2,U*0.11);ctx.lineCap='round';ctx.stroke();ctx.globalAlpha=1}}
+      const [X,Y]=T(w.q,w.r,0,0);ctx.beginPath();ctx.arc(X,Y,Math.max(2,U*0.1),0,7);ctx.fillStyle='#000';ctx.fill();ctx.restore()}
+    // arrows: on each edge a unit would be dragged across, pointing to the centre (they drift inward unless motion is reduced)
+    {const drift=still?0:((now/1000)%1-0.5)*0.22;ctx.save();
+      for(const [q,r] of cs){const d=hd(q,r,w.q,w.r);if(!d)continue;const i=dirTo(q,r,w.q,w.r),[dq,dr]=DIRS[i];
+        let ux=S3*(dq+dr/2),uy=1.5*dr;const L=Math.hypot(ux,uy);ux/=L;uy/=L;const m=0.866+drift;
+        const [X,Y]=T(q,r,ux*m,uy*m),[X2,Y2]=T(q,r,ux*(m+0.1),uy*(m+0.1));let sx=X2-X,sy=Y2-Y;const l2=Math.hypot(sx,sy)||1;sx/=l2;sy/=l2;
+        wellArrow(ctx,X,Y,sx,sy,Math.max(9,U*0.46),col)}
+      ctx.restore()}
+  }
+}
+// The turns-left badge, drawn above the units so a piece standing on the centre never hides it.
+function wellBadge(x,y,U,w){const r=Math.max(10,U*(VIEW==='3d'?0.46:0.38)),col=wellCol(w);ctx.save();ctx.beginPath();ctx.arc(x,y,r+2.5,0,7);ctx.fillStyle='rgba(3,8,10,.95)';ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle='#062a20';ctx.fill();ctx.lineWidth=Math.max(2,r*0.2);ctx.strokeStyle=col;ctx.stroke();
+  ctx.fillStyle='#ffffff';ctx.font=`900 ${Math.max(10,r*1.2)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(w.ttl,x,y+0.5);ctx.restore()}
+function drawWells2D(now){drawWellsWith((q,r,ox,oy)=>{const [x,y]=px(q,r);return [x+ox*SZ,y+oy*SZ]},SZ,now,true)}
+function drawWellBadges2D(){for(const w of G.wells||[]){const [x,y]=px(w.q,w.r);wellBadge(x+SZ*0.62,y-SZ*0.7,SZ,w)}}
 function drawMarkers2D(now){
   {const z=myDeployZone();if(z){const P0=P(G.cur);for(const k of z){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);hexPath(x,y,SZ*0.9);ctx.fillStyle=hexA(FAC[P0.fac].color,0.16+0.08*Math.sin(now/300));ctx.fill();ctx.strokeStyle=hexA(FAC[P0.fac].color,0.8);ctx.lineWidth=1.5;ctx.stroke()}}}
   for(const [k,c] of Object.entries(G.claim||{})){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);ctx.save();ctx.setLineDash([4,3]);hexPath(x,y,SZ*0.8);ctx.strokeStyle=FAC[c.fac].color;ctx.lineWidth=Math.max(2,SZ*0.12);ctx.stroke();ctx.restore()}
@@ -4848,9 +4919,6 @@ function drawMarkers2D(now){
   for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const [x,y]=px(q,r);const o=outpostOwner(q,r);const col=o?FAC[P(o.owner).fac].color:'#ece8dd';
     ctx.save();hexPath(x,y,SZ*0.97);ctx.fillStyle=hexA(col,o?0.35:0.14);ctx.fill();hexPath(x,y,SZ*0.86);ctx.setLineDash([3,2]);ctx.strokeStyle=col;ctx.lineWidth=Math.max(1.5,SZ*0.08);ctx.stroke();ctx.restore();
     if(!o)drawIcon(ctx,'flag',x,y,SZ*0.95,'#ece8dd','#000')}
-  for(const w of G.wells||[]){const [x,y]=px(w.q,w.r);const t=now/600;ctx.save();ctx.strokeStyle='rgba(18,214,154,.85)';ctx.lineWidth=Math.max(1.5,SZ*0.08);
-    for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(x,y,SZ*(0.35+i*0.28),t+i*2,t+i*2+3.6);ctx.stroke()}
-    ctx.restore();ctx.save();ctx.globalAlpha=0.12;ctx.fillStyle='#12d69a';ctx.beginPath();ctx.arc(x,y,SZ*S3*2.1,0,7);ctx.fill();ctx.restore();badge(x+SZ*0.55,y-SZ*0.55,Math.max(5,SZ*0.28),'#0b0e14','#12d69a',w.ttl)}
   for(const e of G.eggs||[]){const [x,y]=px(e.q,e.r);if(unitAt(e.q,e.r))continue;ctx.save();ctx.shadowColor='#ffb03d';ctx.shadowBlur=SZ*0.6*(0.6+0.4*Math.sin(now/200));drawIcon(ctx,'egg',x,y,SZ*1.1,'#ff8a3d','#ffe0a8');ctx.restore();badge(x+SZ*0.5,y-SZ*0.5,Math.max(5,SZ*0.28),'#0b0e14','#ffb03d',e.ttl)}
 }
 function crosshair(x,y,r,col){ctx.strokeStyle=col||'#ff6161';ctx.lineWidth=Math.max(2,SZ*0.11);ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();
@@ -4906,6 +4974,7 @@ function draw(now){
      for(let i=0;i<6;i++){const nq=q+[1,0,-1,-1,0,1][i],nr=r+[0,1,1,0,-1,-1][i];if(isHeart(nq,nr))continue;
        const a1=Math.PI/180*(60*i-30),a2=Math.PI/180*(60*i+30);ctx.beginPath();ctx.moveTo(x+SZ*0.97*Math.cos(a1),y+SZ*0.97*Math.sin(a1));ctx.lineTo(x+SZ*0.97*Math.cos(a2),y+SZ*0.97*Math.sin(a2));ctx.stroke()}}
    const [x,y]=px(0,0);hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(255,236,160,.55)';ctx.fill();ctx.strokeStyle='#fff3c4';ctx.lineWidth=Math.max(2,SZ*0.1);hexPath(x,y,SZ*0.9);ctx.stroke();if(!unitAt(0,0))drawIcon(ctx,'crown',x,y,SZ*1.0,'#b8860b','#fff')}
+  drawWells2D(now);
   drawMarkers2D(now);
   const cur=G.cur;
   for(const u of G.units){
@@ -4961,6 +5030,7 @@ function draw(now){
     if(u.ability&&SZ>=9){const br=Math.max(5.5,rad*0.4),bx=mx-rad*0.72,by=my+rad*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     if(SZ>=9)hpPill(u,mx,my+rad*1.02,rad*0.5);
   }
+  drawWellBadges2D();
   drawVFX(now);
   fxs=fxs.filter(f=>now-f.t0<1000);
   for(const f of fxs){const t=(now-f.t0)/1000;const [x,y]=px(f.q,f.r);
@@ -5043,6 +5113,7 @@ function snapTap(e){
 cv.addEventListener('wheel',e=>{if(VIEW!=='3d'||!e.shiftKey)return;e.preventDefault();CAM.azT+=e.deltaY>0?0.3:-0.3},{passive:false});
 cv.addEventListener('mousemove',e=>{
   if(!G)return;
+  {const h=G.wells&&G.wells.length?hexAt(e):null;const t=h?wellNote(h[0],h[1]).replace(/<[^>]+>/g,''):'';if(cv.title!==t)cv.title=t}// laptop hover: what the Gravity Well does here
   // Preview who an area basic attack will also hit when hovering an attackable enemy.
   if(!G.amode){const selU=G.sel!=null?byId(G.sel):null;let ids=new Set();
     if(selU&&selU.aoe&&isHumanTurn()&&selU.owner===G.cur){const h=hexAt(e);const t=h&&unitAt(h[0],h[1]);if(t&&hl.atk.has(t.id))for(const v of splashTargets(selU,t))ids.add(v.id)}
