@@ -202,9 +202,11 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:12px 0}
 .ab-desc .hint{font-size:inherit}
 .abtn.x{flex:0 0 52px}
 .tgts{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
-.tgt{flex:none;display:flex;align-items:center;gap:8px;min-height:48px;padding:6px 10px;border-radius:10px;border:1px solid #ff6161;background:#2b1a1d;color:var(--text);cursor:pointer;font-size:13px;text-align:left}
-.tgt img{width:30px;height:30px}
-.tgt b{font-family:var(--display);color:#ffb3b3}
+.tgt{flex:none;display:flex;align-items:center;gap:8px;min-height:58px;min-width:132px;padding:6px 12px 6px 8px;border-radius:12px;border:2px solid #ff6161;background:#3a1a1e;color:var(--text);cursor:pointer;font-size:13.5px;line-height:1.3;text-align:left;box-shadow:0 0 12px rgba(255,97,97,.2)}
+.tgt img{width:40px;height:40px}
+.tgt b{font-family:var(--display);color:#ffc2c2;font-size:15px}
+.tgt:active{transform:scale(.97)}
+.tgt.on{outline:3px solid #fff3c4;outline-offset:1px}
 .tgt.ally{border-color:#5fd68e;background:#17281f}
 .unitstrip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin}
 .uchip{flex:none;width:58px;border-radius:10px;border:1px solid var(--line);background:var(--panel);padding:5px 4px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;position:relative;color:var(--text)}
@@ -279,7 +281,8 @@ body.focus .ultbtn{white-space:nowrap}
   body.focus .ab-sub{font-size:11.5px}
   body.focus .abtn{min-height:46px;padding:6px;font-size:13px;flex:1 1 22%}
   body.focus .abtn small{font-size:10.5px}
-  body.focus .tgts{max-height:56px}
+  body.focus .tgts{max-height:70px}
+  body.focus .tgt{min-height:56px;padding:5px 10px 5px 6px}
   body.focus .uchip{width:52px}
   body.focus .uchip img{width:30px;height:30px}
 }
@@ -360,7 +363,7 @@ body.focus .scorestrip{margin:0 0 4px;font-size:12px;gap:6px}
   .hint{font-size:14px}
   .keyrow{font-size:13px}
   .scorestrip{font-size:14px}
-  .game{grid-template-columns:minmax(0,1fr) 410px;gap:18px}
+  .game{grid-template-columns:minmax(0,1fr) 350px;gap:16px}
   body.wide aside.side{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto;scrollbar-width:thin;padding-right:2px;gap:10px}
   body.wide .dock{margin-top:0}
   body.wide .unitstrip{flex-wrap:wrap;overflow:visible}
@@ -402,7 +405,19 @@ body.focus .scorestrip{margin:0 0 4px;font-size:12px;gap:6px}
   .label{font-size:12px}
   .menupanel .btn{font-size:15px;min-height:44px}
 }
-@media (min-width:1600px){.wrap{max-width:1720px}.game{grid-template-columns:minmax(0,1fr) 450px}}
+@media (min-width:1600px){.wrap{max-width:1800px}.game{grid-template-columns:minmax(0,1fr) 390px}}
+/* v26: full-screen play on a laptop or desktop (body.fwide): the board fills the window left of a narrow dock column; the header and the score strip span both. */
+body.focus.fwide .game>div:first-child{display:grid!important;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:auto auto auto minmax(0,1fr);column-gap:12px}
+@media (min-width:1600px){body.focus.fwide .game>div:first-child{grid-template-columns:minmax(0,1fr) 380px}}
+body.focus.fwide .turnbar,body.focus.fwide .scorestrip,body.focus.fwide #doomBanner{grid-column:1/-1}
+body.focus.fwide .boardbox{grid-column:1;grid-row:4;min-height:0;height:auto}
+body.focus.fwide .dock{grid-column:2;grid-row:4;min-height:0;overflow:auto;margin:0 0 6px!important;padding-top:0!important;scrollbar-width:thin}
+body.focus.fwide .unitstrip{flex-wrap:wrap;overflow:visible}
+body.focus.fwide .abtn{flex:1 1 44%}
+body.focus.fwide .tgts{flex-wrap:wrap;overflow:visible}
+body.focus.fwide .dock>*{flex-shrink:0}
+body.focus.fwide .ab-hp{display:none}
+body.focus.fwide .ab-head{align-items:flex-start}
 body.wide .ab-hp{display:none}
 body.wide .ab-head{align-items:flex-start}
 body.wide .turnbar .btn.sm{padding:7px 10px}
@@ -502,7 +517,7 @@ body.wide .turnbar .btn.sm{padding:7px 10px}
         <div class="boardbox" id="boardbox"><canvas id="board"></canvas></div>
         <div class="dock" id="dock"><div class="actionbar" id="actionBar"></div><div class="unitstrip" id="unitStrip" aria-label="Your units"></div></div>
         <div class="keyrow" aria-label="Board key">
-          <span><b style="color:var(--text)">Pinch or + to zoom, drag to pan.</b></span>
+          <span><b style="color:var(--text)">Pinch, scroll or + to zoom, drag to pan, double-tap to centre.</b></span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#ece8dd" stroke="#0b0e14" stroke-width="1.5"/></svg>Can move here</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="rgba(255,97,97,.28)" stroke="rgba(255,97,97,.7)"/></svg>Attack reach</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="#ff6161" stroke-width="2"/><path d="M8 0v4M8 12v4M0 8h4M12 8h4" stroke="#ff6161" stroke-width="2"/></svg>Can attack now</span>
@@ -547,7 +562,7 @@ const COLLAPSE_START={regicide:20,warlord:16,annihilation:22,conquest:null};// w
 // More players means longer rounds, so the Collapse comes sooner: 3 rounds earlier with 3 players, 6 with 4 or more.
 function collapseStart(mode,n){const b=COLLAPSE_START[mode];return b==null?null:b-(n>=4?6:n===3?3:0)}
 function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;return G.teams?12:G.players.length>=4?10:RULES.WARLORD_TARGET}// teams 8 -> 12 on 28 Sep 2026: with Outpost and takedown points, team games ended in 11 rounds
-const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:9,BEAST_HP:20,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:2};
+const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:20,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:2};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -1013,7 +1028,7 @@ function machineFire(p,name,tag){
 const MODES={
   regicide:{name:'Regicide',desc:'Lose your Leader and your whole army is out. Last side standing wins.'},
   annihilation:{name:'Annihilation',desc:'You are out only when every unit you own has fallen. Last side standing wins.'},
-  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out beside the Heart in round ${RULES.BEAST_AT}, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing; in a 2-player duel flags give Ultimate charge only); holding the Heart at the start of your turn scores 1 (from round ${RULES.CENTRE_FROM}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Heart and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
+  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out beside the Heart in round ${RULES.BEAST_AT} as the wall falls, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing; in a 2-player duel flags give Ultimate charge only); holding the Heart at the start of your turn scores 1 (from round ${RULES.CENTRE_FROM}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Heart and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
   conquest:{name:'Conquest',desc:`Hold the Heart at the start of your turn to score 1 point. First side to ${RULES.TARGET} wins, or be the last side standing.`},
 };
 // Board radius per player count. 4 players need an even radius so the cross layout is exactly symmetric.
@@ -2452,19 +2467,48 @@ function beastSlain(t){
     if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}}
 // Spawn spot (v25): 3 mutually adjacent free hexes (no unit, no feature, no relic) all inside the grey no man's land (heartR+1 or +2, never the Heart),
 // preferring two of them on the ring touching the Heart, then the triangle farthest from every unit. Ties: RNG. The Collapse never takes its hexes (beastHex).
-function beastSpot(){
-  const hr=heartR(),m=occ(),seen=new Set(),out=[];
-  const ok=(q,r)=>{return isNoMans(q,r)&&!isHeart(q,r)&&passable(q,r)&&!featAt(q,r)&&!m.get(key(q,r))&&!(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)&&!isSpring(q,r)};
-  for(const [q,r] of allCells()){if(hd(q,r,0,0)!==hr+1||!ok(q,r))continue;
+// v26 (owner's playtest: "the Beast didn't spawn after the wall collapsed"): it now spawns in the same round the wall falls and never silently skips.
+// Tiers: (1) free, featureless triangle, as before; (2) any free triangle in the ring, features and loose relics allowed (the feature is cleared, the relic
+// re-placed); (3) the triangle with the fewest units on it, whose units are single-hex fighters or walls: walls crumble, fighters are pushed to the nearest
+// free hex outside it; (4) nothing possible: a message, and it tries again at the start of the next round.
+function beastTris(ok){const seen=new Set(),out=[];
+  for(const [q,r] of allCells()){if(!ok(q,r))continue;
     for(let d=0;d<6;d++){const b=[q+DIRS[d][0],r+DIRS[d][1]],c=[q+DIRS[(d+1)%6][0],r+DIRS[(d+1)%6][1]];if(!ok(b[0],b[1])||!ok(c[0],c[1]))continue;
       const tri=[[q,r],b,c];const id=tri.map(x=>key(x[0],x[1])).sort().join('|');if(seen.has(id))continue;seen.add(id);out.push(tri)}}
-  if(!out.length)return null;
-  const sc=tri=>{let near=9;for(const u of G.units)for(const [q,r] of tri)near=Math.min(near,distUC(u,q,r));return tri.filter(([q,r])=>hd(q,r,0,0)===hr+1).length*10+Math.min(near,5)};
+  return out}
+function beastPick(out){const hr=heartR();if(!out.length)return null;
+  const sc=tri=>{let near=9;for(const u of G.units)if(!tri.some(([q,r])=>cells(u).some(([a,b])=>a===q&&b===r)))for(const [q,r] of tri)near=Math.min(near,distUC(u,q,r));return tri.filter(([q,r])=>hd(q,r,0,0)===hr+1).length*10+Math.min(near,5)};
   const top=Math.max(...out.map(sc));const best=out.filter(t=>sc(t)===top);return best[Math.floor(RNG()*best.length)]}
+function beastSpot(tier){
+  const m=occ(),ring=(q,r)=>isNoMans(q,r)&&!isHeart(q,r)&&solid(q,r)&&featAt(q,r)!=='rock'&&!isSpring(q,r)&&!(G.outposts||[]).some(o=>o[0]===q&&o[1]===r);
+  const relicAt=(q,r)=>(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r);
+  const t1=beastTris((q,r)=>ring(q,r)&&passable(q,r)&&!featAt(q,r)&&!m.get(key(q,r))&&!relicAt(q,r));
+  if(t1.length){const tri=beastPick(t1.filter(t=>t.some(([q,r])=>hd(q,r,0,0)===heartR()+1)))||beastPick(t1);if(tri)return {tri,tier:1}}
+  if(tier===1)return null;
+  const t2=beastTris((q,r)=>ring(q,r)&&!m.get(key(q,r)));
+  if(t2.length)return {tri:beastPick(t2),tier:2};
+  // tier 3: shove. A triangle is usable when every unit on it fills one hex (giants, the Beast itself and eggs/statues stay put) or is a wall.
+  const movable=u=>u.kind==='wall'?!u.beast:(!u.tri&&u.size!==2&&!u.egg&&!u.statue);
+  const t3=beastTris((q,r)=>{if(!ring(q,r))return false;const u=m.get(key(q,r));return !u||movable(u)}).map(tri=>({tri,n:new Set(tri.map(([q,r])=>m.get(key(q,r))).filter(Boolean)).size}));
+  if(!t3.length)return null;const lo=Math.min(...t3.map(x=>x.n));return {tri:beastPick(t3.filter(x=>x.n===lo).map(x=>x.tri)),tier:3}}
+// Clear the chosen triangle: features go, loose relics are re-placed, walls crumble, units are pushed to the nearest free hex outside the triangle.
+function beastClear(tri){
+  const inTri=(q,r)=>tri.some(([a,b])=>a===q&&b===r);
+  for(const [q,r] of tri){if(G.feat)delete G.feat[key(q,r)];for(const x of G.relics||[])if(x.carrier==null&&x.q===q&&x.r===r){x.q=null;x.r=null}}
+  const hit=[...new Set(G.units.filter(u=>cells(u).some(([q,r])=>inTri(q,r))))];
+  for(const u of hit){
+    if(u.kind==='wall'){G.units.splice(G.units.indexOf(u),1);continue}
+    const m=occ();let best=null,bd=99;
+    for(const [q,r] of allCells()){if(inTri(q,r)||!passable(q,r)||m.get(key(q,r)))continue;const d=hd(q,r,u.q,u.r);if(d<bd){bd=d;best=[q,r]}}
+    if(best){const from=[u.q,u.r];u.q=best[0];u.r=best[1];if(!SIM){addLog(u.owner,`${u.name} is thrown aside as the Rift Beast breaks out.`);vfx({k:'fall',at:from,to:best})}}}
+  for(const x of G.relics||[])if(x.carrier==null&&x.q==null)placeRelic(x)}
 function makeBeast(tri){return {id:G.nid++,kind:'wall',beast:true,wall:'beast',owner:-1,name:'Rift Beast',icon:'skull',q:tri[0][0],r:tri[0][1],tri,dir:0,size:3,hp:RULES.BEAST_HP,maxhp:RULES.BEAST_HP,def:RULES.BEAST_DEF,st:{},moved:true,acted:true,cd:0}}
 function spawnBeast(tri){
-  if(G.beast&&G.beast.spawned)return null;tri=tri||beastSpot();if(!tri)return null;
-  const u=makeBeast(tri);G.units.push(u);G.beast=Object.assign(G.beast||{},{spawned:G.round,id:u.id,dmgT:{}});
+  if(G.beast&&G.beast.spawned)return null;
+  let tier=0;if(!tri){const s=beastSpot();if(!s||!s.tri){G.beast=Object.assign(G.beast||{},{tries:((G.beast&&G.beast.tries)||0)+1});
+      if(!SIM){addLog(null,'The Rift Beast cannot break out: no man’s land is packed. It tries again next round.');vfx({k:'announce',msg:'No man’s land is packed: the Rift Beast breaks out next round'})}return null}
+    tri=s.tri;tier=s.tier;if(tier>1)beastClear(tri)}
+  const u=makeBeast(tri);G.units.push(u);G.beast=Object.assign(G.beast||{},{spawned:G.round,id:u.id,dmgT:{},tier});
   addLog(null,`The Rift Beast tears out of the rift in no man’s land around the Heart! The side that lands the killing blow gains ${G.mode==='warlord'?RULES.BEAST_PTS+' Warlord points and ':''}${RULES.BEAST_CHARGE} Ultimate charge.`);
   announce({k:'beast'});
   vfx({k:'beast',at:[u.q,u.r],cells:tri,msg:`The Rift Beast has spawned in no man’s land: kill it for ${G.mode==='warlord'?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} charge`});
@@ -2473,11 +2517,12 @@ function spawnBeast(tri){
 // Round events of the three acts, called at the start of each new round (advance), after the Collapse and the relics.
 function actEvents(){
   if(G.objOff)return;const R=G.round;
-  if(R===RULES.CENTRE_FROM-1){addLog(null,'The wall around the Heart falls next round.');vfx({k:'announce',msg:'The wall around the Heart falls next round'})}
+  const both=RULES.BEAST_AT===RULES.CENTRE_FROM;// v26: the Beast awakens in the same moment the wall falls, announced together
+  if(R===RULES.CENTRE_FROM-1){addLog(null,both?'Next round the wall around the Heart falls and the Rift Beast awakens in no man’s land.':'The wall around the Heart falls next round.');vfx({k:'announce',msg:both?'Next round the wall falls and the Rift Beast awakens':'The wall around the Heart falls next round'})}
   if(R===RULES.CENTRE_FROM){addLog(null,'The wall around the Heart falls! The centre is open: Heart points and the Throne count from now on.');vfx({k:'wallfall',msg:'The wall has fallen: the Heart is open'});announce({k:'wall'})}
   if(R===RULES.SPRING_AT-1){addLog(null,'A Wellspring will rise on the outer ring next round.');vfx({k:'announce',msg:'A Wellspring rises on the flank next round: +1 AP a turn to whoever holds it'})}
   if(R>=RULES.SPRING_AT&&!G.springDone)spawnSpring();
-  if(R===RULES.BEAST_AT-1){addLog(null,'Something stirs in no man’s land: the Rift Beast breaks out next round.');vfx({k:'announce',msg:'The Rift Beast breaks out in no man’s land next round'})}
+  if(!both&&R===RULES.BEAST_AT-1){addLog(null,'Something stirs in no man’s land: the Rift Beast breaks out next round.');vfx({k:'announce',msg:'The Rift Beast breaks out in no man’s land next round'})}
   if(R>=RULES.BEAST_AT&&!(G.beast&&G.beast.spawned))spawnBeast();
 }
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
@@ -2857,14 +2902,15 @@ function world(q,r){return [S3*(q+r/2),1.5*r]}
 function proj(x,z,y){const c=Math.cos(CAM.az),s=Math.sin(CAM.az);const xr=x*c-z*s,zr=x*s+z*c;return [CAM.cx+xr*CAM.S,CAM.cy+zr*CAM.S*Math.cos(CAM.tilt)-(y||0)*CAM.S*Math.sin(CAM.tilt),zr]}
 function mix(hex,to,t){const a=parseInt(hex.slice(1),16),b=parseInt(to.slice(1),16);const f=(sh)=>Math.round(((a>>sh)&255)*(1-t)+((b>>sh)&255)*t);return `rgb(${f(16)},${f(8)},${f(0)})`}
 function layout3D(){
-  const box=$('#boardbox');const w=Math.max(260,box.parentElement.clientWidth-10);
+  const box=$('#boardbox');const w=boardW(box);
   const maxH=boardMaxH(w);
   const Rw=G.R*S3+1.3,ct=Math.cos(CAM.tilt),st=Math.sin(CAM.tilt);
   CAM.S=Math.min(w/(2*Rw),maxH/(2*Rw*ct+3*st))*zoom;
-  CW=Math.ceil(2*Rw*CAM.S)+8;CH=Math.ceil(2*Rw*CAM.S*ct+3*CAM.S*st)+8;
-  CAM.cx=CW/2;CAM.cy=2.8*CAM.S*st+Rw*CAM.S*ct+4;
+  const [padX,padY]=boardPad(box);
+  CW=Math.ceil(2*Rw*CAM.S)+8+2*padX;CH=Math.ceil(2*Rw*CAM.S*ct+3*CAM.S*st)+8+2*padY;
+  CAM.cx=CW/2;CAM.cy=2.8*CAM.S*st+Rw*CAM.S*ct+4+padY;
   SZ=CAM.S;
-  const dpr=window.devicePixelRatio||1;
+  const dpr=safeDpr();
   cv.width=CW*dpr;cv.height=CH*dpr;cv.style.width=CW+'px';cv.style.height=CH+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
@@ -3036,6 +3082,7 @@ function draw3D(now){
     const col=FAC[P(u.owner).fac].color,big=u.size===2,sc=big?1.35:1;
     const spent=u.owner===cur&&u.moved&&u.acted,home=onHome(u);
     // ground markers under the figure
+    if(hl.atk.has(u.id)){const fl=0.5+0.5*Math.sin(now/200);for(const [px2,pz2] of pts){polyPath(hexTop(px2,pz2,0.96,0.012));ctx.fillStyle=`rgba(255,70,70,${0.3+0.18*fl})`;ctx.fill();ctx.strokeStyle='#ff6161';ctx.lineWidth=Math.max(2.5,CAM.S*0.1);ctx.stroke()}}
     if(hl.hitIds.has(u.id))for(const [px2,pz2] of pts)groundRing(px2,pz2,0.82,null,0,'rgba(255,170,60,.55)');
     if(G.sel===u.id)for(const [px2,pz2] of pts)groundRing(px2,pz2,0.8,'#ffffff',2.5);
     // Defender Barrier (v25): a faint golden ring on the ground around the piece and around its emblem
@@ -3047,13 +3094,13 @@ function draw3D(now){
     drawBase(sx,sy,sc,col,home,u);
     const baseTop=sy-0.14*CAM.S*Math.sin(CAM.tilt)*sc;
     const [hx]=proj(0,0,0);const face=hx>=sx?1:-1;
-    const fk=WIDE()?1.42:1.3;// miniatures a little bigger on laptop and desktop screens
+    const fk=FIG_K();// miniatures fill more of their hex (v26: 1.3 phone / 1.42 laptop before)
     if(u.st&&u.st.stealth){ctx.save();ctx.globalAlpha*=0.4}// stealth: a faint, ghostly miniature
     const headY=drawMini(u,sx,baseTop+0.14*CAM.S*Math.sin(CAM.tilt)*sc*fk,sc*fk,col,spent,face);if(u.st&&u.st.stealth)ctx.restore();
     if(u.mt==='fly'){groundRing(x,z,0.72,hexA(col,.7),1.5)}
     if(hl.atk.has(u.id)){for(const [px2,pz2] of pts){groundRing(px2,pz2,0.84,'#ff6161',Math.max(2,CAM.S*0.1));const [a,b]=proj(px2,pz2,0);ctx.strokeStyle='#ff6161';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a,b-CAM.S*1.5);ctx.lineTo(a,b-CAM.S*1.22);ctx.stroke()}}
     // emblem token above the head: the unit's picture, plus how it moves
-    const er=Math.max(7,CAM.S*(WIDE()?0.4:0.36)*(big?1.15:1)),ey=headY-er-2;
+    const er=Math.max(8,CAM.S*(WIDE()?0.46:0.44)*(big?1.15:1)),ey=headY-er-2;
     ctx.save();if(spent)ctx.globalAlpha=0.6;if(u.st&&u.st.stealth)ctx.globalAlpha*=0.45;
     ctx.beginPath();ctx.arc(sx,ey,er+1.5,0,7);ctx.fillStyle='#0b0e14';ctx.fill();
     ctx.beginPath();ctx.arc(sx,ey,er,0,7);ctx.fillStyle=col;ctx.fill();
@@ -3070,7 +3117,8 @@ function draw3D(now){
     if(u.ability){const br=Math.max(5,er*0.48),bx=sx-er*0.9,by=ey+er*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     hpPill(u,sx,sy+0.16*CAM.S*sc,Math.max(9,er*0.55));
     ctx.restore();
-    drawnUnits.push({u,rect:[sx-0.55*CAM.S*sc,ey-er,sx+0.55*CAM.S*sc,sy+0.3*CAM.S],cell:[u.q,u.r]});
+    if(hl.atk.has(u.id))dmgTag(sx+er*1.1,ey-er*0.9,Math.max(11,er*0.8),u);
+    drawnUnits.push({u,rect:[sx-0.62*CAM.S*sc,ey-er,sx+0.62*CAM.S*sc,sy+0.45*CAM.S],cell:[u.q,u.r],ax:[sx,ey,sy]});
   }
   for(const w of G.wells||[]){const [x,z]=world(w.q,w.r);const p=proj(x+0.5*s+0.55*c,z+0.5*c-0.55*s,0);wellBadge(p[0],p[1],CAM.S,w)}// turns left, in front of the centre hex, above the figures
   drawVFX(now);
@@ -3127,8 +3175,11 @@ function drawBeast3D(u,pts,x,z,sx,sy,now){const S=CAM.S,V=S*Math.sin(CAM.tilt),b
   ctx.font=`900 ${Math.max(10,S*0.5)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.strokeStyle='#0b0e14';const tx=`Rift Beast ${Math.ceil(u.hp)}/${u.maxhp}`;ctx.strokeText(tx,sx,by0-S*0.35);ctx.fillStyle='#f2e6ff';ctx.fillText(tx,sx,by0-S*0.35);
   ctx.restore();
   drawnUnits.push({u,rect:[sx-rx,by0-S*0.6,sx+rx,sy+S*0.4],cell:[u.q,u.r]})}
+// Which figure a tap means: of all figures whose outline contains the point, the one whose upright axis (base to emblem) is closest,
+// so a tap between two overlapping miniatures picks the nearer one rather than the one drawn in front (v26).
+function axisDist(d,mx,my){if(!d.ax){const [a,b,c2,d2]=d.rect;return Math.hypot(mx-(a+c2)/2,my-(b+d2)/2)}const [x,y0,y1]=d.ax;const y=Math.max(y0,Math.min(y1,my));return Math.hypot(mx-x,my-y)}
 function hexAt3D(mx,my){
-  for(let i=drawnUnits.length-1;i>=0;i--){const d=drawnUnits[i],[a,b,c2,d2]=d.rect;if(mx>=a&&mx<=c2&&my>=b&&my<=d2&&alive(d.u))return d.cell}
+  {let best=null,bd=1e9;for(const d of drawnUnits){const [a,b,c2,d2]=d.rect;if(mx>=a&&mx<=c2&&my>=b&&my<=d2&&alive(d.u)){const k=axisDist(d,mx,my);if(k<bd){bd=k;best=d}}}if(best)return best.cell}
   const xr=(mx-CAM.cx)/CAM.S,zr=(my-CAM.cy)/(CAM.S*Math.cos(CAM.tilt));const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
   const x=xr*c+zr*s,z=-xr*s+zr*c;
   const rf=z/1.5,qf=x/S3-rf/2,sf=-qf-rf;let q=Math.round(qf),r=Math.round(rf),s2=Math.round(sf);
@@ -4582,7 +4633,7 @@ HOOKS.turn=()=>{
   if(G.cur===0||!G.players.slice(0,G.cur).some(p=>p.alive)){const n=collapseRound();if(n!=null&&G.round===n-1)toast(`Warning: the edge collapses next round`)}
   const p=P(G.cur);
   if(isHumanTurn()&&CAM.follow)faceHome(p.id);
-  if(isHumanTurn()&&document.body.classList.contains('focus'))setTimeout(()=>phoneZoomTo(G.units.find(u=>u.owner===G.cur&&u.leader)||G.units.find(u=>u.owner===G.cur)),120);
+  if(isHumanTurn()){const pid=G.cur;setTimeout(()=>{if(G&&G.cur===pid&&isHumanTurn())frameArmy(pid)},120)}
   netPush();
   if(p.ctrl==='bot'){if(netRunsBots()){const t=G.tok;setTimeout(()=>botLoop(t),netOnline()?600:350)}}
   else if(netOnline()){if(isHumanTurn())toast('Your turn')}
@@ -4596,6 +4647,7 @@ function newGameUI(){
   if(window.innerWidth<700&&!document.body.classList.contains('focus'))setFocus(true);
   const firstHuman=G.players.find(p=>p.ctrl==='human');faceHome(firstHuman?firstHuman.id:0);CAM.az=CAM.azT;
   layout();centerBoard();refresh();
+  if(firstHuman)setTimeout(()=>{if(G&&screen==='game')frameArmy(firstHuman.id)},140);
 }
 function botLoop(tok){
   if(!G||G.over||tok!==G.tok||screen!=='game')return;
@@ -4608,6 +4660,7 @@ function showScreen(s){
   screen=s;$('#setupView').hidden=s!=='setup';$('#gameView').hidden=s!=='game';$('#setupBtn').hidden=s!=='game';
   if(s!=='setup')closePreview();
   if(s==='setup'){renderSetup();$('#overlay').hidden=true}
+  if(s==='game')try{window.scrollTo(0,0)}catch(e){}// the Start button sits low on the setup page: the game opens at the top, header and board in view
 }
 let toastT=null;
 function toast(msg,ms){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms||1800)}
@@ -4765,9 +4818,9 @@ function abState(u,k){const ks=k?[k]:abilsOf(u).filter(x=>!ABIL[x].aux);if(!ks.l
 function uIcon(u,size){const F=facOf(u);return `<img src="${iconURL(u.icon,INK,F.color)}" alt="" width="${size}" height="${size}">`}
 function hpCol(p){return p>.5?'#5fd68e':p>.25?'#e8b84e':'#ff6161'}
 function selectUnit(u){if(!u)return;G.sel=u.id;G.inspect=null;G.amode=null;G.aim=null;G.tile=null;refresh();
-  if(window.innerWidth<700&&zoom<1.55){const [sx,sy]=screenOf(u.q,u.r);zoomAt(1.7,sx,sy)}else revealUnit(u)}
-function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);const rc=box.getBoundingClientRect();
-  if(sx<rc.left+30||sx>rc.right-30)box.scrollLeft+=sx-(rc.left+rc.width/2);if(sy<rc.top+30||sy>rc.bottom-30)box.scrollTop+=sy-(rc.top+rc.height/2)}
+  if(window.innerWidth<700&&zoom<1.55){const [sx,sy]=screenOf(u.q,u.r);zoomAt(1.9,sx,sy)}revealUnit(u)}
+function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);const rc=box.getBoundingClientRect(),m=Math.max(40,(VIEW==='3d'?CAM.S:SZ)*1.6);
+  if(sx<rc.left+m||sx>rc.right-m)box.scrollLeft+=sx-(rc.left+rc.width/2);if(sy<rc.top+m||sy>rc.bottom-m)box.scrollTop+=sy-(rc.top+rc.height/2)}
 function renderDock(){
   const bar=$('#actionBar'),strip=$('#unitStrip');if(!bar||!strip)return;
   const human=isHumanTurn();const p=P(G.cur);
@@ -4812,7 +4865,9 @@ function renderDock(){
     const A=AM,blink2=A.special==='blink'&&G.blinkT!=null;const targets=A.aim==='unit'&&!blink2?[...new Set(aimCells(u,G.amode).map(([q,r])=>unitAt(q,r)).filter(Boolean))]:[];
     btns=abBtn('go ready','abCast','✦',A.special==='blink'&&!blink2?'Pick this ally':`Cast ${A.name}`,G.aim?(A.special==='blink'&&!blink2?'then pick where it lands':'fires at the marked hex'):'tap a gold hex first',abDescOf(G.amode),!G.aim)+abBtn('','abCancel','✕','Cancel','keep the ability for later');
     def=`<b>Aiming ${A.name}.</b> ${A.aim==='self'?'The orange area shows who it hits. Press Cast to fire.':A.special==='march'?'Tap a gold hex next to the Warlord to pick the direction: the orange hexes are where the block will stand. Tap again or press Cast to march.':A.special==='blink'?(blink2?`Now tap the empty gold hex where the ${byId(G.blinkT)?byId(G.blinkT).name:'ally'} lands, then tap it again or press Cast.`:'Step 1 of 2: tap the ally to teleport (gold), then tap it again or press the button. Step 2: pick the empty hex within 3 of it where it lands.'):'Gold hexes are the places it can target; tap one, then tap it again or press Cast. The orange area shows who it hits.'}`;
-    if(targets.length)list=`<div class="tgts">${targets.map(t=>`<button class="tgt ${tm(t.owner)===tm(u.owner)?'ally':''}" data-aim="${t.id}">${uIcon(t,30)}<span>${t.name}<br><b>${fmt(t.hp)} HP</b></span></button>`).join('')}</div>`;
+    if(targets.length)list=`<div class="tgts">${targets.map(t=>{const ally=t.kind!=='wall'&&tm(t.owner)===tm(u.owner);let d=0;if(!ally&&(A.dmg||A.useAtk))try{d=hitDmg(u,t,A)}catch(e){d=0}
+      const on=G.aim&&cells(t).some(([q,r])=>q===G.aim[0]&&r===G.aim[1]);
+      return `<button class="tgt ${ally?'ally':''} ${on?'on':''}" data-aim="${t.id}">${uIcon(t,40)}<span>${t.name} · ${fmt(t.hp)} HP<br><b>${d?`hit for ${d}${d>=t.hp?' KILL':''}`:ally?'ally':'target'}</b></span></button>`}).join('')}</div>`;
   }else{
     const mv=effMov(u)||u.mov,mvDesc=`<b>Move</b> · 1 AP: ${MOVES[u.mt].text(mv)}${engaged(u)&&mv>1?' Engaged with an enemy: only one step.':''}`;
     // one button per ability (the Warlord has two: March and Rally); state colour says whether it can be used now
@@ -4833,9 +4888,10 @@ function renderDock(){
       abilsOf(u).map((k,i)=>abilBtn(k,i?'abAbil'+(i+1):'abAbil')).join('')+
       abBtn('next','abNext','▸','Next unit',`${readyUnits().length} can still act`,'<b>Next unit</b>: jumps to the next of your units that can still move, attack or use its ability.');
     def=A?abDesc:atkDesc;
-    if(tg.length)list=`<div class="tgts">${tg.map(t=>{const d=basicDmg(u,t),r=retaliation(u,t);return `<button class="tgt" data-atk="${t.id}">${uIcon(t,30)}<span>${t.name} · ${fmt(t.hp)} HP<br><b>hit for ${d}</b>${d>=t.hp?' <b>KILL</b>':''}${r?` · takes ${r} back`:''}</span></button>`}).join('')}</div>`;
+    if(tg.length)list=`<div class="tgts" aria-label="Attack targets">${tg.map(t=>{const d=basicDmg(u,t),r=retaliation(u,t);return `<button class="tgt" data-atk="${t.id}">${uIcon(t,40)}<span>${t.name} · ${fmt(t.hp)} HP<br><b>⚔ hit for ${d}</b>${d>=t.hp?' <b>KILL</b>':''}${r?` · takes ${r} back`:''}</span></button>`}).join('')}</div>`;
   }
-  bar.innerHTML=head+`<div class="ab-btns">${btns}</div><div class="ab-desc" id="abDesc" data-def="${DOCK_DESC.push(def)-1}">${def}</div>`+list;wireDock();
+  // v26: the target chips sit right under the unit's name, above the buttons, so they are always in view while attacking or aiming
+  bar.innerHTML=head+list+`<div class="ab-btns">${btns}</div><div class="ab-desc" id="abDesc" data-def="${DOCK_DESC.push(def)-1}">${def}</div>`;wireDock();
 }
 /* Aiming. Most abilities take one tap on a gold hex. Blink (Archmage) takes two: first the ally (G.blinkT), then the empty hex where it lands. */
 function aimAbil(u,k){G.amode=k;G.blinkT=null;G.inspect=null;G.aim=ABIL[k].aim==='self'?[u.q,u.r]:null;refresh()}
@@ -4867,17 +4923,17 @@ function wireDock(){
 /* full-screen play */
 let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e){}
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
-  ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button>
+  ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
   <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="score">Score card</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
-    if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);
+    if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
     if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='ann')annSet(!ANN.on);if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
-function phoneZoomTo(u){if(window.innerWidth>=700||!u)return;layout();const [sx,sy]=screenOf(u.q,u.r);if(zoom<1.55)zoomAt(1.7,sx,sy);else revealUnit(u)}
+function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
 function setFocus(on){document.body.classList.toggle('focus',on);document.body.classList.remove('drawer');$('#focusBtn').textContent=on?(window.innerWidth<700?'✕ Exit':'Exit full screen'):'⛶ Full screen';
   try{if(on&&document.documentElement.requestFullscreen&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
-  setTimeout(()=>{layout();centerBoard();if(on&&G&&isHumanTurn()){const l=G.units.find(u=>u.owner===G.cur&&u.leader);phoneZoomTo(l)}},80)}
+  setTimeout(()=>{layout();centerBoard();if(on&&G&&isHumanTurn())frameArmy(G.cur)},80)}
 function boardMaxH(w){
   const box=$('#boardbox');
   if(document.body.classList.contains('focus')){box.style.maxHeight='';return Math.max(200,box.clientHeight-6)}
@@ -4891,7 +4947,8 @@ function boardMaxH(w){
 function placeDock(){const d=$('#dock'),side=$('aside.side'),bb=$('#boardbox');if(!d||!side||!bb)return;
   const wide=WIDE()&&!document.body.classList.contains('focus');
   if(wide){if(d.parentElement!==side)side.insertBefore(d,$('#unitCard'))}else if(d.previousElementSibling!==bb)bb.insertAdjacentElement('afterend',d);
-  document.body.classList.toggle('wide',wide)}
+  document.body.classList.toggle('wide',wide);
+  document.body.classList.toggle('fwide',WIDE()&&document.body.classList.contains('focus'))}// full-screen play on a laptop: dock in a column right of the board
 /* Turn timer: counts down on the device of the player whose turn it is. */
 let turnClock={tok:null,end:0};
 setInterval(()=>{
@@ -5076,7 +5133,7 @@ function showRules(){
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
   <li><b>Act 1, expand.</b> The centre is walled: a stone wall stands on the grey ring around the Heart until round ${RULES.CENTRE_FROM}. Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
-  <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls (announced a round before): the Heart and the Throne are open and start to count. In round ${RULES.BEAST_AT} the <b>Rift Beast</b> breaks out in the grey no man’s land around the Heart (announced a round before).</li>
+  <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls and, in the same moment, the <b>Rift Beast</b> awakens in the grey ring that just opened (both announced a round before): the Heart and the Throne are open and start to count.</li>
   <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre until someone wins.</li></ul>
   <h3>Setup and deployment</h3><ul>
   <li>Each army has up to 10 slots (a giant takes 2) and one Leader. Boards: radius 8 for 2–3 players, 9 for 4–6.</li>
@@ -5125,7 +5182,7 @@ function showRules(){
   <li><b>Warlord points</b> come from four places: holding the Heart at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing; not in a 2-player duel), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
   <li><b>The Throne</b> (centre hex): the unit on it gets +${THRONE.atk} ATK, +1 range if ranged and double-speed cooldowns. Its side gets +1 AP and +${THRONE.charge} Ultimate charge per turn.</li>
   <li><b>The walled centre:</b> until round ${RULES.CENTRE_FROM} the grey ring around the Heart (no man's land) is a stone wall. No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, dragged, teleported or swapped into it; a unit shoved into it takes the slam damage and stays. Straight shots stop at it (lobbed shots fly over). A warning comes at the start of round ${RULES.CENTRE_FROM-1}; at the start of round ${RULES.CENTRE_FROM} it falls and the Heart and the Throne start to count. After that the grey ring is ordinary ground that no army can colour.</li>
-  <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, announced a round before): a neutral monster on 3 hexes of the grey no man’s land around the Heart, ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never moves and never attacks on its own, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). Each time a basic attack or ability hits it, there is a 50% chance it lashes back for 1 damage at the attacker; the roll is fixed by the round, the attacker and the beast's HP, so undo can't change it. The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. Left alone it stays where it is: the Collapse never swallows the hexes it stands on (if its ring has already fallen, they crumble when it dies). There is only one per game.</li></ul>
+  <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, the moment the wall falls, announced together with it a round before): a neutral monster on 3 hexes of the grey no man’s land around the Heart, ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never moves and never attacks on its own, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). Each time a basic attack or ability hits it, there is a 50% chance it lashes back for 1 damage at the attacker; the roll is fixed by the round, the attacker and the beast's HP, so undo can't change it. The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. Left alone it stays where it is: the Collapse never swallows the hexes it stands on (if its ring has already fallen, they crumble when it dies). If units stand where it breaks out, they are pushed to the nearest free hex; if no man’s land is completely packed, it breaks out at the start of the next round instead. There is only one per game.</li></ul>
   <h3>Pillar 2: the Flanks</h3><ul>
   <li><b>Flank roads</b> (dashed line, the two outermost rings): from round ${RULES.ROAD_FROM}, a unit that starts its move there gets +${RULES.ROAD} move.</li>
   <li><b>Flags</b> (Outposts, between neighbouring armies): a unit that ends its move on a flag, or stands on it at the start of your turn, captures it and raises your banner. The flag <b>stays yours with nobody on it</b> until an enemy unit stands on it. Each flag you own gives +1 Ultimate charge at the start of your turn, and in Warlord the side owning MORE flags than anyone else scores 1 point per turn (from round ${RULES.FLAG_FROM}; a tie scores nothing; in a 2-player duel flags give Ultimate charge but no points). A partner's flag stays your partner's. The Collapse takes flags with the ring they stand on; an army that is knocked out leaves its flags neutral.</li>
@@ -5158,7 +5215,7 @@ function showQuick(){
   const o=$('#overlay');const row=(a,b)=>`<tr><th>${a}</th><td>${b}</td></tr>`;
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
-  ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls · round ${RULES.BEAST_AT}: the Rift Beast breaks out · then the Collapse closes the board`)}
+  ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls and the Rift Beast breaks out in the grey ring · then the Collapse closes the board`)}
   ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +${RULES.THRONE_AP} Throne · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free for 1 damage, and may attack at full strength once for 2 AP')}
   ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 6 on the board · Dismantle: remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less · build cooldowns Turret 2, Flame Turret 2, Mortar 3, Coil 3 · machines never move · each fires on its own for free at the start of the gnome turn and may also attack at full strength once for 2 AP (not the Coil); the free shot deals 1 · each falls apart after 6 gnome turns · can’t be chilled, frozen or stunned · killing one gives no charge and no star · builders and Gearmaster can’t attack (only Bombardiers do) · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1) · Clockwork Rush: 2 AP + 1 per 2 machines, max 5')}
@@ -5188,7 +5245,7 @@ function showQuick(){
   ${row('Walled centre','Until round '+RULES.CENTRE_FROM+' the grey ring is a wall: nothing enters or crosses it, flyers too; straight shots stop at it')}
   ${row('Flag','Step on it: yours until an enemy steps on it · +1 charge per turn per flag owned · Warlord: 1 point per turn if you own more flags than anyone else (from round '+RULES.FLAG_FROM+'; not in a 2-player duel)')}
   ${row('Wellspring','Round '+RULES.SPRING_AT+', outer ring · captured like a flag · +1 AP every turn to its owner')}
-  ${row('Rift Beast','Round '+RULES.BEAST_AT+', in the grey no man’s land around the Heart, 3 hexes, never swallowed by the Collapse · '+RULES.BEAST_HP+' HP, '+RULES.BEAST_DEF+' DEF · never moves or attacks · 50% to hit back 1 when struck · killing blow: +'+RULES.BEAST_PTS+' points (Warlord) and +'+RULES.BEAST_CHARGE+' charge')}
+  ${row('Rift Beast','Round '+RULES.BEAST_AT+' (when the wall falls), in the grey no man’s land around the Heart, 3 hexes, never swallowed by the Collapse · '+RULES.BEAST_HP+' HP, '+RULES.BEAST_DEF+' DEF · never moves or attacks · 50% to hit back 1 when struck · killing blow: +'+RULES.BEAST_PTS+' points (Warlord) and +'+RULES.BEAST_CHARGE+' charge')}
   ${row('Guarded Leaders','4+ players free-for-all: shots and abilities from 3+ hexes deal 1 less to a Leader (min 1)')}
   ${row('Statuses','Chilled: −1 move for 2 turns · Frozen: loses its next turn, then chilled 1 turn · Stunned: loses its next turn · Ice Lance ×2 vs chilled/frozen, Shatter Strike ×2 vs frozen')}
   ${row('Debuffs','Curses, chill, frozen, stun, Sunder, Seared, delay, Hex ·Mend heals, then removes one (frozen/stun first, then a curse)')}
@@ -5248,16 +5305,36 @@ function showBalance(which){
 /* ---------- board rendering ---------- */
 const cv=$('#board');const ctx=cv.getContext('2d');
 let SZ=20,CW=0,CH=0;
+/* Board size (v26, owner: "I need the game to be bigger"). The board uses the box's own width in full-screen play on a laptop, where the dock
+   sits in a column beside it (body.fwide); elsewhere the column width. Pieces fill more of their hex: FIG_K (tabletop miniatures), TOKEN_K (flat tokens). */
+function boardW(box){return Math.max(260,document.body.classList.contains('fwide')?box.clientWidth-4:box.parentElement.clientWidth-10)}
+const FIG_K=()=>WIDE()?1.62:1.52,TOKEN_K=()=>0.8;
+// How far from a piece a tap still counts as that piece, in px.
+function tapTol(){const S=VIEW==='3d'?CAM.S:SZ;return Math.max(window.innerWidth<1000?46:34,S*1.3)}
+// The damage a basic attack would deal, as a red tag beside each piece you can attack now.
+function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTurn()||u.owner!==G.cur)return;let d;try{d=basicDmg(u,t)}catch(e){return}if(!(d>0))return;
+  const tx=(d>=t.hp?'KILL ':'')+'-'+fmt(d);ctx.font=`900 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(tx).width+fs*0.7,h=fs*1.3;
+  ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-h/2,w,h,h/2);else ctx.rect(x-w/2,y-h/2,w,h);ctx.fillStyle=d>=t.hp?'#ff3b3b':'#b3141f';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+  ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tx,x,y+0.5)}
+// Zoomed in, the canvas gets an empty margin of about a third of the box on every side, so pieces at the board's edge can still be scrolled
+// to the middle of the screen (the owner's army usually starts at the edge).
+function boardPad(box){if(zoom<=1.02)return [0,0];return [Math.round(box.clientWidth*0.3),Math.round(box.clientHeight*0.3)]}
+// Keep the canvas inside what phones can draw (about 4096 px a side and 16 million pixels): a big zoom lowers the pixel density instead of failing.
+function safeDpr(){const d=window.devicePixelRatio||1;return Math.max(1,Math.min(d,4000/Math.max(CW,CH),Math.sqrt(15e6/(CW*CH))))}
+// Board coordinates (hex units from the board's centre point on the canvas) under a screen point, and back.
+function boardPt(cx,cy){const rc=cv.getBoundingClientRect();return VIEW==='3d'?[(cx-rc.left-CAM.cx)/CAM.S,(cy-rc.top-CAM.cy)/CAM.S]:[(cx-rc.left-CW/2)/SZ,(cy-rc.top-CH/2)/SZ]}
+function ptScreen(b){const rc=cv.getBoundingClientRect();return VIEW==='3d'?[rc.left+CAM.cx+b[0]*CAM.S,rc.top+CAM.cy+b[1]*CAM.S]:[rc.left+CW/2+b[0]*SZ,rc.top+CH/2+b[1]*SZ]}
 function layout(){
   if(!G)return;
   placeDock();
   if(VIEW==='3d')return layout3D();
-  const box=$('#boardbox');const w=Math.max(260,box.parentElement.clientWidth-10);
+  const box=$('#boardbox');const w=boardW(box);
   const maxH=boardMaxH(w);
   const base=Math.min(w/(S3*(2*G.R+1)),maxH/(3*G.R+2));
   SZ=base*zoom;
-  CW=Math.ceil(S3*SZ*(2*G.R+1))+8;CH=Math.ceil(SZ*(3*G.R+2))+8;
-  const dpr=window.devicePixelRatio||1;
+  const [padX,padY]=boardPad(box);
+  CW=Math.ceil(S3*SZ*(2*G.R+1))+8+2*padX;CH=Math.ceil(SZ*(3*G.R+2))+8+2*padY;
+  const dpr=safeDpr();
   cv.width=CW*dpr;cv.height=CH*dpr;cv.style.width=CW+'px';cv.style.height=CH+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
@@ -5458,7 +5535,7 @@ function draw(now){
     if(hl.range.has(k)){hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(255,97,97,.18)';ctx.fill();hexPath(x,y,SZ*0.9);ctx.strokeStyle='rgba(255,97,97,.5)';ctx.lineWidth=1.2;ctx.stroke()}
     if(hl.area.has(k)){hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(255,170,60,.38)';ctx.fill();hexPath(x,y,SZ*0.92);ctx.strokeStyle='rgba(255,190,90,.85)';ctx.lineWidth=1.5;ctx.stroke()}
     const hc=homes.get(k);if(hc){hexPath(x,y,SZ*0.97);ctx.strokeStyle=hc;ctx.lineWidth=2;ctx.stroke()}
-    if(hl.moves.has(k)){ctx.beginPath();ctx.arc(x,y,SZ*(window.innerWidth<700?0.32:0.24),0,7);
+    if(hl.moves.has(k)){ctx.beginPath();ctx.arc(x,y,SZ*(window.innerWidth<700?0.36:0.3),0,7);
       if(hl.ghost){ctx.strokeStyle=focusCol;ctx.lineWidth=2;ctx.stroke()}
       else{ctx.fillStyle=hl.moves.get(k).gate?'#12d69a':'#ece8dd';ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke()}}
     if(hl.aim.has(k)){const on=G.aim&&G.aim[0]===q&&G.aim[1]===r;hexPath(x,y,SZ*0.97);ctx.fillStyle=on?'rgba(255,243,196,.38)':`rgba(232,184,78,${0.18+0.1*flick})`;ctx.fill();
@@ -5469,6 +5546,8 @@ function draw(now){
      for(let i=0;i<6;i++){const nq=q+[1,0,-1,-1,0,1][i],nr=r+[0,1,1,0,-1,-1][i];if(isHeart(nq,nr))continue;
        const a1=Math.PI/180*(60*i-30),a2=Math.PI/180*(60*i+30);ctx.beginPath();ctx.moveTo(x+SZ*0.97*Math.cos(a1),y+SZ*0.97*Math.sin(a1));ctx.lineTo(x+SZ*0.97*Math.cos(a2),y+SZ*0.97*Math.sin(a2));ctx.stroke()}}
    const [x,y]=px(0,0);hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(255,236,160,.55)';ctx.fill();ctx.strokeStyle='#fff3c4';ctx.lineWidth=Math.max(2,SZ*0.1);hexPath(x,y,SZ*0.9);ctx.stroke();if(!unitAt(0,0))drawIcon(ctx,'crown',x,y,SZ*1.0,'#b8860b','#fff')}
+  if(hl.atk.size){const fl=0.5+0.5*Math.sin(now/200);for(const id of hl.atk){const t=byId(id);if(!t||!visibleUnit(t))continue;for(const [q,r] of cells(t)){const [x,y]=px(q,r);
+    hexPath(x,y,SZ*0.97);ctx.fillStyle=`rgba(255,70,70,${0.3+0.2*fl})`;ctx.fill();hexPath(x,y,SZ*0.9);ctx.strokeStyle='#ff6161';ctx.lineWidth=Math.max(2.5,SZ*0.11);ctx.stroke()}}}
   drawCentreWall2D(now);
   drawWells2D(now);
   drawMarkers2D(now);
@@ -5482,7 +5561,7 @@ function draw(now){
     if(u.kind==='wall'){const [x,y]=pts[0];const ice=u.wall==='ice';hexPath(x,y,SZ*0.78);ctx.fillStyle=ice?'rgba(190,232,255,.85)':'#8c7458';ctx.fill();ctx.strokeStyle=ice?'#e8f8ff':'#d9a45b';ctx.lineWidth=1.5;ctx.stroke();
       ctx.fillStyle=ice?'#10202b':'#f1e6d6';ctx.font=`700 ${SZ*0.6}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(u.hp,x,y+1);
       if(hl.atk.has(u.id))crosshair(x,y,SZ*0.72);continue}
-    const col=FAC[P(u.owner).fac].color;const rad=SZ*(WIDE()?0.78:0.7);
+    const col=FAC[P(u.owner).fac].color;const rad=SZ*TOKEN_K();
     const spent=u.owner===cur&&u.moved&&u.acted;const home=onHome(u);
     ctx.globalAlpha=(spent?0.5:1)*(u.st&&u.st.stealth?0.4:1);// stealth: a faint, ghostly piece
     let mx,my,bx0,by0;
@@ -5530,6 +5609,7 @@ function draw(now){
     {const rl=relicOf(u);if(rl)drawRelicGlyph(rl.kind,mx+rad*0.95,my-rad*0.1,Math.max(8,rad*0.6),now)}
     if(u.ability&&SZ>=9){const br=Math.max(5.5,rad*0.4),bx=mx-rad*0.72,by=my+rad*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     if(SZ>=9)hpPill(u,mx,my+rad*1.02,rad*0.5);
+    if(hl.atk.has(u.id))dmgTag(mx+rad*0.95,my-rad*1.0,Math.max(11,rad*0.62),u);
   }
   drawFlagTops2D(now);
   drawWellBadges2D();
@@ -5555,9 +5635,9 @@ const ptrs=new Map();let drag=null,pinch=null;
 function canScrollY(b){return b.scrollHeight>b.clientHeight+2}
 function zoomAt(z,cx,cy){
   z=Math.max(1,Math.min(ZMAX,z));if(Math.abs(z-zoom)<0.001)return;
-  const box=$('#boardbox'),r1=cv.getBoundingClientRect();const fx=(cx-r1.left)/r1.width,fy=(cy-r1.top)/r1.height;
+  const box=$('#boardbox'),b=boardPt(cx,cy);
   zoom=z;layout();
-  const r2=cv.getBoundingClientRect();const dx=r2.left+fx*r2.width-cx,dy=r2.top+fy*r2.height-cy;
+  const [nx,ny]=ptScreen(b);const dx=nx-cx,dy=ny-cy;
   box.scrollLeft+=dx;if(canScrollY(box))box.scrollTop+=dy;else window.scrollBy(0,dy);
 }
 cv.addEventListener('pointerdown',e=>{
@@ -5590,11 +5670,33 @@ cv.addEventListener('pointerup',e=>{
   const wasPinch=!!pinch||ptrs.size>1;endPtr(e);
   if(!G||!drag||drag.id!==e.pointerId){drag=null;return}
   clearTimeout(lpTimer);const d=drag;drag=null;if(d.moved||wasPinch||d.lp)return;
+  // double tap on an empty hex (nothing to move to or aim at): centre the board there, zooming in if the whole board is shown
+  const now=performance.now(),raw=hexAt(e),empty=raw&&!unitAt(raw[0],raw[1])&&!hl.moves.has(key(raw[0],raw[1]))&&!hl.aim.has(key(raw[0],raw[1]));
+  if(empty&&lastTap&&now-lastTap.t<380&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<40&&lastTap.empty){lastTap=null;centreOn(e.clientX,e.clientY,zoom<1.5?1.9:zoom);return}
+  lastTap={t:now,x:e.clientX,y:e.clientY,empty:!!empty};
   const h=snapTap(e);if(h)clickCell(h[0],h[1]);
 });
+let lastTap=null;
+// Zoom to z (at least the current zoom) and scroll so the given screen point sits in the middle of the board box.
+function centreOn(cx,cy,z){const box=$('#boardbox');if(z&&Math.abs(z-zoom)>0.001)zoomAt(z,cx,cy);const rc=box.getBoundingClientRect();box.scrollLeft+=cx-(rc.left+rc.width/2);box.scrollTop+=cy-(rc.top+rc.height/2)}
+/* Frame an army: zoom so all its pieces fit the board box with a hex or two to spare, and centre on them (v26). The whole-board view is zoom 1.
+   Used at the start of each human turn, when entering full-screen play and from the menu ("Show my army"). */
+function frameArmy(pid){
+  if(!G||screen!=='game')return;const box=$('#boardbox');if(!box||!box.clientWidth)return;
+  const us=G.units.filter(u=>u.owner===pid&&u.kind!=='wall'&&visibleUnit(u));if(!us.length)return;
+  const az=CAM.az;CAM.az=CAM.azT;zoom=1;layout();
+  const S=VIEW==='3d'?CAM.S:SZ;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  const bbox=()=>{x0=1e9;y0=1e9;x1=-1e9;y1=-1e9;const s=VIEW==='3d'?CAM.S:SZ;for(const u of us)for(const [q,r] of cells(u)){const [sx,sy]=screenOf(q,r);x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy-(VIEW==='3d'?s*1.9:0));y1=Math.max(y1,sy)}};bbox();
+  // never bigger than a comfortable hex: about 30 px on a phone, 44 px (flat) or 52 px (tabletop) on a laptop
+  const pad=S*2.2,bw=x1-x0+2*pad,bh=y1-y0+2*pad,smax=window.innerWidth<700?(VIEW==='3d'?31:30):(VIEW==='3d'?52:44),zmax=Math.min(2.8,smax/S);
+  const z=Math.max(1,Math.min(zmax,box.clientWidth/bw,box.clientHeight/bh));
+  zoom=z;layout();bbox();CAM.az=az;
+  const br=box.getBoundingClientRect();
+  box.scrollLeft+=(x0+x1)/2-(br.left+br.width/2);box.scrollTop+=(y0+y1)/2-(br.top+br.height/2)}
+function fitBoard(){zoom=1;layout();centerBoard()}
 cv.addEventListener('pointercancel',e=>{endPtr(e);drag=null;clearTimeout(lpTimer)});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();zoomAt(zoom*(e.deltaY>0?0.9:1.1),e.clientX,e.clientY)},{passive:false});
+cv.addEventListener('wheel',e=>{if(e.shiftKey)return;const own=e.ctrlKey||document.body.classList.contains('focus')||document.body.classList.contains('wide');if(!own)return;e.preventDefault();zoomAt(zoom*(e.deltaY>0?0.88:1.14),e.clientX,e.clientY)},{passive:false});
 // Screen position of a hex centre, in client coordinates.
 function screenOf(q,r){const rc=cv.getBoundingClientRect();if(VIEW==='3d'){const [x,z]=world(q,r);const [a,b]=proj(x,z,0);return [rc.left+a,rc.top+b]}const [a,b]=px(q,r);return [rc.left+a,rc.top+b]}
 // Fat-finger help: if the tap lands on nothing useful, use the nearest thing you could act on.
@@ -5607,8 +5709,11 @@ function snapTap(e){
   else if(acting){for(const k of hl.moves.keys())cand.add(k);for(const id of hl.atk){const t=byId(id);if(t)for(const [q,r] of cells(t))cand.add(key(q,r))}}
   if(!G.amode)for(const u of G.units)if(u.kind!=='wall')for(const [q,r] of cells(u))cand.add(key(q,r));
   if(h&&(cand.has(key(h[0],h[1]))||unitAt(h[0],h[1])))return h;
-  const tol=Math.max(window.innerWidth<700?38:28,(VIEW==='3d'?CAM.S:SZ)*1.15);let best=null,bd=tol;
+  // v26: a generous radius; a piece counts by its hex centre (flat map) or by its upright figure (tabletop), whichever is nearer.
+  const tol=tapTol();let best=null,bd=tol;const rc=cv.getBoundingClientRect();
   for(const k of cand){const [q,r]=k.split(',').map(Number);const [sx,sy]=screenOf(q,r);const d=Math.hypot(sx-e.clientX,sy-e.clientY);if(d<bd){bd=d;best=[q,r]}}
+  if(VIEW==='3d'&&typeof drawnUnits!=='undefined')for(const d of drawnUnits){if(!d.ax||!alive(d.u)||d.u.kind==='wall')continue;const k=key(d.cell[0],d.cell[1]);if(!cand.has(k))continue;
+    const dd=axisDist(d,e.clientX-rc.left,e.clientY-rc.top);if(dd<bd){bd=dd;best=d.cell}}
   return best||h;
 }
 
