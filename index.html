@@ -2747,7 +2747,7 @@ function revealRoom(R,u){
   const who=u&&u.kind!=='wall'?FAC[G.players[u.owner].fac].name:'Someone';
   addLog(u&&u.owner>=0?u.owner:null,`${who} discovers the ${ROOM_NAMES[R.type]}: ${ENC_NAMES[R.enc]}${R.loot?' guards a treasure':''}.`);
   announce({k:'room',room:ROOM_NAMES[R.type],enc:ENC_NAMES[R.enc],fac:u&&u.owner>=0?G.players[u.owner].fac:null,loot:!!R.loot});
-  vfx({k:'buff',at:R.c,col:'#b9b3d6'});
+  vfx({k:'buff',at:R.c,col:'#b9b3d6',cam:1});
   if(trk()){const O=tObj();if(O){O.rooms=O.rooms||{};O.rooms[R.id]={enc:R.enc,loot:R.loot,seen:G.round}}}
 }
 // Loot appears in a room (monsters cleared, crate broken, room held).
@@ -2771,7 +2771,7 @@ function pickupLoot(){
       else{G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';applyCurse(u,u,'agony');applyCurse(u,u,'frailty');fx(u,'cursed!','#9a6bd0');
         addLog(u.owner,`${u.name} opens the Cursed Chest... a curse! It is struck by Agony and Frailty.`);announce({k:'chest',good:false,fac:G.players[u.owner].fac,unit:u.name})}
       continue}
-    addLog(u.owner,`${u.name} picks up the ${LOOT[x.kind].name}. Bring it back to camp!`);fx(u,LOOT[x.kind].name,LOOT[x.kind].col)}
+    addLog(u.owner,`${u.name} picks up the ${LOOT[x.kind].name}. Bring it back to camp!`);fx(u,LOOT[x.kind].name,LOOT[x.kind].col);vfx({k:'buff',at:[u.q,u.r],col:LOOT[x.kind].col,cam:1})}
 }
 function dropLootOf(u){const x=lootOf(u);if(!x)return;x.carrier=null;x.q=u.q;x.r=u.r;if(!solid(x.q,x.r)||isBlock(x.q,x.r)){const c=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)).sort((a,b)=>hd(a[0],a[1],u.q,u.r)-hd(b[0],b[1],u.q,u.r))[0];if(c){x.q=c[0];x.r=c[1]}}
   addLog(null,`The ${LOOT[x.kind].name} falls to the ground.`)}
@@ -2788,7 +2788,7 @@ function deliverLoot(){
     else if(k==='sand')p.lootAP=(p.lootAP||0)+1;
     else if(k==='banner')p.lootAtk=(p.lootAtk||0)+1;
     else if(k==='sellsword'){const c=p.zone.map(z=>z.split(',').map(Number)).find(([q,r])=>passable(q,r)&&!unitAt(q,r));if(c){const s=makeUnit(p,SELLSWORD);s.q=c[0];s.r=c[1];s.moved=true;s.acted=true;G.units.push(s);tStat(s)}}
-    addLog(pid,`${FAC[p.fac].name} brings home the ${LOOT[k].name}: ${LOOT[k].text}.`);fx(u,LOOT[k].name,LOOT[k].col);
+    addLog(pid,`${FAC[p.fac].name} brings home the ${LOOT[k].name}: ${LOOT[k].text}.`);fx(u,LOOT[k].name,LOOT[k].col);vfx({k:'buff',at:[u.q,u.r],col:LOOT[k].col,cam:1});
     announce({k:'loot',fac:p.fac,loot:LOOT[k].name,text:LOOT[k].text,team:p.team,scores:scoreSnap(),target:heartTarget()});
     if(trk()){const O=tObj();if(O){O.loot=O.loot||[];O.loot.push({kind:k,pid,round:G.round})}}}
 }
@@ -4372,6 +4372,7 @@ function netApply(doc){
   refresh();
   if(G.over){showOver();return}
   if(isHumanTurn()&&!wasMine){toast('Your turn');if(CAM.follow)faceHome(G.cur)}
+  if(typeof camStep==='function'){if(old&&old.cur!==G.cur)camTurnStart();else camStep()}
   netKick();
 }
 // The host's device runs the bots. If the host is away, anyone can take over from the game panel.
@@ -5066,6 +5067,7 @@ HOOKS.turn=()=>{
   const p=P(G.cur);
   if(isHumanTurn()&&CAM.follow)faceHome(p.id);
   if(isHumanTurn()){const pid=G.cur;setTimeout(()=>{if(G&&G.cur===pid&&isHumanTurn())frameArmy(pid)},120)}
+  setTimeout(()=>{if(G&&screen==='game')camTurnStart()},130);
   netPush();
   if(p.ctrl==='bot'){if(netRunsBots()){const t=G.tok;setTimeout(()=>botLoop(t),netOnline()?600:350)}}
   else if(netOnline()){if(isHumanTurn())toast('Your turn')}
@@ -5087,7 +5089,8 @@ function botLoop(tok){
   if(G.phase==='deploy'){botDeploy();return}
   if(!botStep()){endTurn();return}
   if(G.over||tok!==G.tok)return;
-  setTimeout(()=>botLoop(tok),netOnline()?300:230);
+  const wait=camStep();
+  setTimeout(()=>botLoop(tok),(netOnline()?300:230)+wait);
 }
 function showScreen(s){
   screen=s;$('#setupView').hidden=s!=='setup';$('#gameView').hidden=s!=='game';$('#setupBtn').hidden=s!=='game';
@@ -5418,10 +5421,10 @@ function wireDock(){
 let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e){}
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="score">Score card</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="score">Score card</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
-    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='ann')annSet(!ANN.on);if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
@@ -6160,7 +6163,7 @@ function zoomAt(z,cx,cy){
   const [nx,ny]=ptScreen(b);const dx=nx-cx,dy=ny-cy;
   box.scrollLeft+=dx;if(canScrollY(box))box.scrollTop+=dy;else window.scrollBy(0,dy);
 }
-cv.addEventListener('pointerdown',e=>{
+cv.addEventListener('pointerdown',e=>{camUserTook();
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:zoom};drag=null;return}
   drag={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,az:CAM.az,moved:false,id:e.pointerId};
@@ -6201,6 +6204,46 @@ let lastTap=null;
 function centreOn(cx,cy,z){const box=$('#boardbox');if(z&&Math.abs(z-zoom)>0.001)zoomAt(z,cx,cy);const rc=box.getBoundingClientRect();box.scrollLeft+=cx-(rc.left+rc.width/2);box.scrollTop+=cy-(rc.top+rc.height/2)}
 /* Frame an army: zoom so all its pieces fit the board box with a hex or two to spare, and centre on them (v26). The whole-board view is zoom 1.
    Used at the start of each human turn, when entering full-screen play and from the menu ("Show my army"). */
+/* Follow camera (v31, owner 1 Oct 2026): during turns that are not played on this device (bots, online opponents) the view pulls back to a
+   medium zoom and glides to the moments that matter: attacks, kills, abilities, Ultimates, rooms discovered, treasure taken or brought home, and
+   longer moves outside the mover's own start area. Tiny moves are skipped and nothing moves if the action is already well in view. Touching,
+   dragging or zooming the board during someone else's turn stops the camera until your next turn. Switch: ☰ menu, saved as hexmarch.camfollow. */
+const CAMF={on:true,paused:false,seq:0,pos:new Map(),raf:0};try{CAMF.on=localStorage.getItem('hexmarch.camfollow')!=='off'}catch(e){}
+const CAM_KINDS=new Set(['slash','bolt','lob','ab','death','relic','beast','beastdown','chain','fall','ult','crack','flag','spring','well']);
+function camWatching(){return CAMF.on&&!CAMF.paused&&G&&!G.over&&!G.phase&&screen==='game'&&!isHumanTurn()}
+function camSnap(){if(!G)return;CAMF.pos=new Map(G.units.map(u=>[u.id,[u.q,u.r]]));CAMF.seq=G.fxSeq||0}
+function camStop(){if(CAMF.raf){cancelAnimationFrame(CAMF.raf);CAMF.raf=0}}
+function camUserTook(){if(G&&!isHumanTurn()&&!G.phase){CAMF.paused=true;camStop()}}
+// Medium zoom: hexes about 20 px on a phone and 28 px on a laptop (never below the whole-board view).
+function camMediumZoom(){const S0=(zoom=1,layout(),VIEW==='3d'?CAM.S:SZ);const want=window.innerWidth<700?20:28;const z=Math.max(1,Math.min(2.8,want/S0));if(z>1.01){zoom=z;layout()}}
+// Glide so the given hexes sit in the middle of the board box; returns true when the view moved.
+function camPanTo(hexes,smooth){
+  const box=$('#boardbox');if(!box||!box.clientWidth||!hexes.length)return false;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const [q,r] of hexes){const [sx,sy]=screenOf(q,r);x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy);y1=Math.max(y1,sy)}
+  const br=box.getBoundingClientRect(),mx=br.width*0.18,my=br.height*0.18;
+  if(smooth&&x0>=br.left+mx&&x1<=br.right-mx&&y0>=br.top+my&&y1<=br.bottom-my)return false;// already well in view
+  const tl=box.scrollLeft+(x0+x1)/2-(br.left+br.width/2),tt=box.scrollTop+(y0+y1)/2-(br.top+br.height/2);
+  camStop();const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!smooth||reduce){box.scrollLeft=tl;box.scrollTop=tt;return true}
+  const sl=box.scrollLeft,st=box.scrollTop,t0=performance.now(),D=480;
+  const step=now=>{const t=Math.min(1,(now-t0)/D),e=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;box.scrollLeft=sl+(tl-sl)*e;box.scrollTop=st+(tt-st)*e;CAMF.raf=t<1?requestAnimationFrame(step):0};
+  CAMF.raf=requestAnimationFrame(step);return true}
+// Start of a turn not played here: pull back and show the army that is about to act.
+function camTurnStart(){
+  if(G&&isHumanTurn()){CAMF.paused=false;camStop();camSnap();return}
+  if(!camWatching()){camSnap();return}
+  camMediumZoom();const us=G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&visibleUnit(u)).flatMap(u=>cells(u));camPanTo(us,false);camSnap()}
+// After each step of someone else's turn: find what happened and follow it. Returns extra milliseconds the bots should wait.
+function camStep(){
+  if(!camWatching()){camSnap();return 0}
+  const pts=[];let big=false;
+  for(const ev of G.fxLog||[]){if(!(ev.id>CAMF.seq))continue;if(!CAM_KINDS.has(ev.k)&&!ev.cam)continue;
+    for(const c of [ev.from,ev.to,ev.at])if(c&&c.length===2)pts.push(c);if(ev.cells&&ev.cells.length<=12)pts.push(...ev.cells);if(ev.k==='death'||ev.k==='ult'||ev.cam)big=true}
+  const p=P(G.cur);
+  for(const u of G.units){if(u.owner!==G.cur||u.kind==='wall')continue;const o=CAMF.pos.get(u.id);if(!o||(o[0]===u.q&&o[1]===u.r))continue;
+    const far=hd(o[0],o[1],u.q,u.r)>=2,home=p&&p.zone&&p.zone.includes(key(o[0],o[1]))&&p.zone.includes(key(u.q,u.r));if(far&&!home){pts.push(o,[u.q,u.r])}}
+  camSnap();if(!pts.length)return 0;
+  const moved=camPanTo(pts,true);return moved?(big?900:600):(big?350:0)}
 function frameArmy(pid){
   if(!G||screen!=='game')return;const box=$('#boardbox');if(!box||!box.clientWidth)return;
   const us=G.units.filter(u=>u.owner===pid&&u.kind!=='wall'&&visibleUnit(u));if(!us.length)return;
@@ -6216,7 +6259,7 @@ function frameArmy(pid){
 function fitBoard(){zoom=1;layout();centerBoard()}
 cv.addEventListener('pointercancel',e=>{endPtr(e);drag=null;clearTimeout(lpTimer)});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('wheel',e=>{if(e.shiftKey)return;const own=e.ctrlKey||document.body.classList.contains('focus')||document.body.classList.contains('wide');if(!own)return;e.preventDefault();zoomAt(zoom*(e.deltaY>0?0.88:1.14),e.clientX,e.clientY)},{passive:false});
+cv.addEventListener('wheel',e=>{camUserTook();if(e.shiftKey)return;const own=e.ctrlKey||document.body.classList.contains('focus')||document.body.classList.contains('wide');if(!own)return;e.preventDefault();zoomAt(zoom*(e.deltaY>0?0.88:1.14),e.clientX,e.clientY)},{passive:false});
 // Screen position of a hex centre, in client coordinates.
 function screenOf(q,r){const rc=cv.getBoundingClientRect();if(VIEW==='3d'){const [x,z]=world(q,r);const [a,b]=proj(x,z,0);return [rc.left+a,rc.top+b]}const [a,b]=px(q,r);return [rc.left+a,rc.top+b]}
 // Fat-finger help: if the tap lands on nothing useful, use the nearest thing you could act on.
@@ -6290,7 +6333,7 @@ $('#ultBtn').onclick=()=>{if(!isHumanTurn()||!canUlt(G.cur))return;const p=P(G.c
     <div class="row" style="margin-top:14px">${q&&G.ap>=RULES.TEAM_ULT_COST?`<button class="btn primary" id="ultTeam">⚡⚡ Team: ${U.name} + ${ULTS[q.fac].name}</button>`:''}<button class="btn ${q?'':'primary'}" id="ultGo">Unleash ${U.name}</button><button class="btn" id="ultNo">Not yet</button></div></div>`;
   o.hidden=false;$('#ultGo').onclick=()=>{o.hidden=true;if(canUlt(G.cur))useUlt(false)};$('#ultNo').onclick=()=>{o.hidden=true};
   const t=$('#ultTeam');if(t)t.onclick=()=>{o.hidden=true;if(canTeamUlt(G.cur))useUlt(true)}};
-function zoomBtn(f){const u=G&&(G.sel!=null?byId(G.sel):G.inspect!=null?byId(G.inspect):null);
+function zoomBtn(f){camUserTook();const u=G&&(G.sel!=null?byId(G.sel):G.inspect!=null?byId(G.inspect):null);
   if(u){const [sx,sy]=screenOf(u.q,u.r);zoomAt(zoom*f,sx,sy)}else{const rc=$('#boardbox').getBoundingClientRect();zoomAt(zoom*f,rc.left+rc.width/2,rc.top+rc.height/2)}}
 $('#zoomIn').onclick=()=>zoomBtn(1.35);
 $('#zoomOut').onclick=()=>zoomBtn(1/1.35);
