@@ -1061,7 +1061,7 @@ function machineFire(p,name,tag){
 const MODES={
   regicide:{name:'Regicide',desc:'Lose your Leader and your whole army is out. Last side standing wins.'},
   annihilation:{name:'Annihilation',desc:'You are out only when every unit you own has fallen. Last side standing wins.'},
-  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out beside the Heart in round ${RULES.BEAST_AT} as the wall falls, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing; in a 2-player duel flags give Ultimate charge only); holding the Heart at the start of your turn scores 1 (from round ${RULES.CENTRE_FROM}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Heart and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
+  warlord:{name:'Warlord',desc:`Three ways to win at once: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games), be the only side with a living Leader, or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out on the fallen wall in round ${RULES.BEAST_AT} and the Throne opens: whoever sits on it is crowned King, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing; in a 2-player duel flags give Ultimate charge only); your King sitting on the Throne at the start of your turn scores 1 (none while an enemy stands on the Heart: the King is challenged and fights at +2 ATK, +2 DEF instead); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Throne and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points.`},
   conquest:{name:'Conquest',desc:`Hold the Heart at the start of your turn to score 1 point. First side to ${RULES.TARGET} wins, or be the last side standing.`},
 };
 // Board radius per player count. 4 players need an even radius so the cross layout is exactly symmetric.
@@ -1191,7 +1191,9 @@ function onHome(u){if(u.kind==='wall')return false;const f=G.players[u.owner].fa
 // Grove (Circle of Priests): painted holy ground, G.paint[k].kind==='grove'. Heals every unit on it 1 at the start of its owner's turn.
 const onGrove=u=>u.kind!=='wall'&&cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return !!(pt&&pt.kind==='grove')});
 const groveAt=(q,r)=>{const pt=G.paint[key(q,r)];return pt&&pt.kind==='grove'?pt:null};
-function heartBuff(u){return !G.map&&u.kind!=='wall'&&G.holder!==null&&G.holder===tm(u.owner)}
+// v33 (owner, 1 Oct 2026): the King replaces the old Heart and Throne rules on every board; the old rules live on only in the hidden Conquest mode.
+const oldCentre=()=>!!G&&G.mode==='conquest';
+function heartBuff(u){return oldCentre()&&u.kind!=='wall'&&G.holder!==null&&G.holder===tm(u.owner)}
 function nearCell(u,t){let best=cells(u)[0],bd=99;for(const c of cells(u)){const d=distUC(t,c[0],c[1]);if(d<bd){bd=d;best=c}}return best}
 
 /* ---------- stats ---------- */
@@ -1221,12 +1223,12 @@ function shieldWallFor(t,src,tag){if(!t||t.kind==='wall'||t.summon||!facOf(t).ph
 function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;return G.units.some(v=>v.machine&&v.owner===t.owner&&distUU(v,t)===1)}
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&!G.map?THRONE.atk:0)+(G.map&&u.king?WILDS.kingAtk:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0));
 }
 function effDef(u){
   if(u.kind==='wall')return u.beast?RULES.BEAST_DEF:u.monster?u.def:0;const F=facOf(u);
-  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+(G.map&&u.king?WILDS.kingDef:0));
+  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def'));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
  Seared (Ember Court: Flame Breath, Fireball): st.seared=1 until the end of the target's next turn; every heal on it is blocked (healUnit).
@@ -1259,7 +1261,7 @@ function cleanse(u,t){const d=debuffOf(t);if(!d)return null;const s=t.st;
 function cleanseValue(t){const d=debuffOf(t);if(!d)return 0;const w=Math.min(worth(t),40);
   if(d==='stun'||d==='frozen')return 3+w*0.12;if(d==='curse:silence')return t.ability?3:0.5;if(d.startsWith('curse:'))return 1+Math.min(4,pendingDot(t)*0.6);
   if(d==='seared')return t.hp<t.maxhp?1.2:0.3;if(d==='hex')return 1+Math.min(2,t.atk)*0.6;if(d==='sunder')return 1.5;if(d==='delay')return 0.8+(t.st.dl||0)*0.6;if(d==='chill')return 0.8;return 0}
-function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&!G.map?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill')?1:0))}
+function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&oldCentre()?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill')?1:0))}
 // A flyer can perch on a rock: out of reach of walkers, but its attacks lose 1 range.
 const perched=u=>u.mt==='fly'&&u.kind!=='wall'&&featAt(u.q,u.r)==='rock';
 function abilCost(u,k){const F=facOf(u);if((k==='march'&&utal(u,'warchief'))||(k==='quicken'&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0)-(spellEcho(u)?1:0))}
@@ -1575,7 +1577,7 @@ function computeHolder(){
 function teamName(t){if(G.teams)return 'Team '+'ABC'[t];return FAC[G.players.find(p=>p.team===t).fac].name}
 function beginTurn(){
   const p=P(G.cur);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
-  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&!G.map)u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&!G.map)u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0}}// Rally (+1 ATK) and Guard last until the start of your next turn
+  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
     for(const w of G.units){if(w.owner!==p.id||w.kind==='wall'||w.at==='none'||w.egg||distUU(w,s)<=2)continue;const set=atkCells(w,m);if(cells(s).some(([q,r])=>set.has(key(q,r))))n++}
@@ -1583,7 +1585,7 @@ function beginTurn(){
   // Gnome machines fire on their own before the timers run, so a machine on its last turn still gets its last shot (tracked per machine as 'Auto-fire').
   machineFire(p,'Auto-fire','Basic');resolveBeast();resolveBarrier();
   // Act 1: units standing on a flag or the Wellspring at the start of their side's turn capture it (before charge, AP and points are counted).
-  captureObjectives(p.id);wildsTick(true);
+  captureObjectives(p.id);wildsTick(true);kingCrown();kingScore(p);if(G.over)return;
   // Wall gates: count the hexes next to each giant that walls deny it this turn (tracking only; the rule itself lives in freeFor).
   if(FAC[p.fac].gateBlock&&trk()&&!SIM){const m=occ();for(const u of G.units){if(u.owner!==p.id||u.size!==2)continue;let n=0;for(const [q,r] of cells(u))for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;if(passable(a,b)&&!m.get(key(a,b))&&gated(m,a,b))n++}if(n){const e=tFx(p.fac,u.name,'Gated by walls');if(e){e.blocked+=n;e.uses++}}}}
   for(const u of G.units)if(u.cut===p.id)delete u.cut;// Final Second stamps from this side's previous turn
@@ -1606,7 +1608,7 @@ function beginTurn(){
     const n=curseCount(u);
     if(n){CUR_SRC=u.st.curseBy!=null?byId(u.st.curseBy):null;CUR_TAG=null;CUR_NAME='Curse ticks';hurt(u,curseHit(u,n),'#e8e23a',true);CUR_SRC=null;CUR_NAME=null;if(!alive(u))continue;for(const c of Object.keys(u.st.curses)){if(--u.st.curses[c]<=0)delete u.st.curses[c]}}
     if(fireIn&&p.fac!=='fire'&&cells(u).some(([q,r])=>terrAt(q,r)==='fire')){CUR_SRC=null;CUR_NAME='Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;if(!alive(u))continue}
-    if(!G.map&&G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r)))healUnit(u,1,'#ffd766','Heart healing');
+    if(oldCentre()&&G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r)))healUnit(u,1,'#ffd766','Heart healing');
     // Shrines are consumable (v22b): the first unit it heals uses it up; the shrine is gone for the next 2 rounds and returns at the start of the round after.
     {const sc=cells(u).find(([q,r])=>shrineOn(q,r));if(sc&&healUnit(u,2,'#9ff0c0','Shrine')){vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'});const back=G.round+RULES.SHRINE_REST+1;(G.shrineOff=G.shrineOff||{})[key(sc[0],sc[1])]=back;
       addLog(p.id,`${u.name} drinks from the shrine; it is spent until round ${back}.`);if(trk()&&!SIM){const e=tFx(p.fac,'','Shrine');if(e)e.uses++}}}
@@ -1623,7 +1625,7 @@ function beginTurn(){
     if(hasTrait(u,'regen'))healUnit(u,1,'#5fd68e','Regenerate (trait)');
   }
   // Ultimate charge: +1 per flag (Outpost) this side owns (v23: owned, no unit needed), +1 for the Throne.
-  {let c=0;const held=[];const nf=flagsOf(p.id);if(nf){c+=nf;held.push(nf)}for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u)){if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM&&!G.map)c+=THRONE.charge}
+  {let c=0;const held=[];const nf=flagsOf(p.id);if(nf){c+=nf;held.push(nf)}for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u)){if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM&&oldCentre())c+=THRONE.charge}
    if(territoryLeader()===p.id)c+=1;
    if(talent(p,'tithe'))c+=1;
    for(const x of G.relics||[])if(x.kind==='idol'&&x.carrier!=null){const cu=byId(x.carrier);if(cu&&cu.owner===p.id)c+=1}
@@ -1633,7 +1635,7 @@ function beginTurn(){
   if(checkVictory())return;
   if(!p.alive){advance();return}
   const bank=Math.min(p.bank||0,bankOf(p));p.bank=0;if(bank)addLog(p.id,`Banked Time: +${bank} AP carried over.`);
-  const leaderUp=G.units.some(u=>u.owner===p.id&&u.leader),throneUp=!G.map&&G.round>=RULES.CENTRE_FROM&&G.units.some(u=>u.kind!=='wall'&&tm(u.owner)===p.team&&onThrone(u));
+  const leaderUp=G.units.some(u=>u.owner===p.id&&u.leader),throneUp=oldCentre()&&G.round>=RULES.CENTRE_FROM&&G.units.some(u=>u.kind!=='wall'&&tm(u.owner)===p.team&&onThrone(u));
   const relicAP=(G.relics||[]).filter(x=>x.kind==='hourglass'&&x.carrier!=null&&byId(x.carrier)&&byId(x.carrier).owner===p.id).length;
   // The first player's −3 AP on its round-2 turn (G.apParts.first) was removed on 29 Sep 2026: the owner said it "feels bad". The first-player win rate is measured after; if it drifts, the second player gets a gift (e.g. Ultimate charge) instead of a penalty.
   const wellAP=springOwner()===p.id?1:0;// the Wellspring (v23): +1 AP to the side that owns it
@@ -1645,7 +1647,7 @@ function beginTurn(){
   if(wellAP){const O=tObj();if(O){const e=O.well[p.id]=O.well[p.id]||{caps:0,ap:0,turns:0};e.turns++;e.ap+=G.apMax-apNo}}
   const target=heartTarget();const s0=G.score[p.team]||0;
   G.scoredAt=G.scoredAt||{};
-  if(!G.map&&(G.mode==='conquest'||G.mode==='warlord')&&G.holder===p.team&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.scoredAt[p.team]!==G.round){G.scoredAt[p.team]=G.round;// a team scores once per round, not once per partner
+  if(oldCentre()&&G.holder===p.team&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.scoredAt[p.team]!==G.round){G.scoredAt[p.team]=G.round;// a team scores once per round, not once per partner
     G.score[p.team]++;tPts(p.id,'heart',1);addLog(p.id,`${teamName(p.team)} holds the Heart: ${G.score[p.team]}/${target}.`);
   }
   // Warlord: the side holding MORE Outposts than any other side at the start of its turn scores 1 point (never more than 1 per turn, a team once per round).
@@ -1855,7 +1857,7 @@ function healUnit(t,n,col,name,by){
 }
 function afterAction(){
   resolveBeast();resolveBarrier();captureObjectives(G.cur);
-  pickupRelics();wildsTick(false);computeHolder();
+  pickupRelics();wildsTick(false);kingCrown();computeHolder();
   if(SIM)return;
   if(checkVictory())return;
   if(!P(G.cur).alive){advance();return}
@@ -2582,7 +2584,7 @@ function beastSpot(tier){
   const t1=beastTris((q,r)=>ring(q,r)&&passable(q,r)&&!featAt(q,r)&&!m.get(key(q,r))&&!relicAt(q,r));
   // v27: the wall is one ring (heartR+1), so the Beast wakes on a triangle touching that ring; failing that, the free triangle nearest to it (outside the Heart,
   // at most 2 rings further out); failing that, tiers 2 and 3 in the grey ring (features cleared, units shoved aside), and a retry next round as before.
-  if(t1.length){const tri=beastPick(t1.filter(t=>t.some(([q,r])=>hd(q,r,0,0)===heartR()+1)));if(tri)return {tri,tier:1}}
+  if(t1.length){const on=t1.filter(t=>t.some(([q,r])=>hd(q,r,0,0)===heartR()+1));const tri=on.length?on[Math.floor(RNG()*on.length)]:null;if(tri)return {tri,tier:1}}// v33: a random stretch of the fallen wall
   if(tier===1)return null;
   {const tn=beastTris((q,r)=>!isHeart(q,r)&&solid(q,r)&&passable(q,r)&&!featAt(q,r)&&!m.get(key(q,r))&&!relicAt(q,r)&&!isSpring(q,r)&&!(G.outposts||[]).some(o=>o[0]===q&&o[1]===r));
     if(tn.length){const gap=t=>Math.min(...t.map(([q,r])=>hd(q,r,0,0)))-heartR()-1;const lo=Math.min(...tn.map(gap));if(lo<=2){const tri=beastPick(tn.filter(t=>gap(t)===lo));if(tri)return {tri,tier:1}}}}
@@ -2797,7 +2799,6 @@ function deliverLoot(){
 // After every action and at each turn start: reveal rooms, pick up and deliver loot, count held rooms.
 function wildsTick(turnStart){
   if(!G.map||SIM)return;
-  wildsCrown();if(turnStart)wildsKingScore(P(G.cur));
   for(const R of G.rooms||[])if(!R.seen){const u=G.units.find(v=>v.kind!=='wall'&&!v.statue&&cells(v).some(([q,r])=>R.cells.includes(key(q,r))||R.ways.includes(key(q,r))));if(u)revealRoom(R,u)}
   pickupLoot();deliverLoot();
   if(turnStart){const p=P(G.cur);
@@ -2852,18 +2853,29 @@ function wildsThroneBeast(){
   vfx({k:'wallfall',msg:'The Throne Hall falls: the Rift Beast wakes on the Throne'});announce({k:'wall'});
   const tri=[[0,0],[1,0],[0,1]];for(const [q,r] of tri){const o=unitAt(q,r);if(o&&o.kind!=='wall'){const c=allCells().filter(([a,b])=>passable(a,b)&&!unitAt(a,b)&&!tri.some(t=>t[0]===a&&t[1]===b)).sort((x,y)=>hd(x[0],x[1],q,r)-hd(y[0],y[1],q,r))[0];if(c){o.q=c[0];o.r=c[1]}}}
   const b=spawnBeast(tri);if(b){b.hp=b.maxhp=WILDS.beastHp;G.beast.room='throne'}}
-const kingOf=()=>G&&G.map?G.units.find(u=>u.king&&u.kind!=='wall')||null:null;
+const kingOf=()=>G&&!oldCentre()?G.units.find(u=>u.king&&u.kind!=='wall')||null:null;
+// The Throne can be taken: on the Crown Wilds once the Beast that sleeps on it is slain; on the random board from the round the wall falls.
+const throneOpen=()=>G.map?!!G.throneOpen:G.round>=RULES.CENTRE_FROM;
+const kingChallenged=u=>!!(u&&u.king&&onThrone(u)&&heartFoes(tm(u.owner)));
+// King bonuses. Crown Wilds: +2 ATK, +2 DEF for life. Random board (v33): +1 ATK, +1 DEF for life, and +2/+2 instead while it sits the Throne challenged.
+function kingStat(u,k){if(!u.king||u.kind==='wall'||oldCentre())return 0;if(G.map)return k==='atk'?WILDS.kingAtk:WILDS.kingDef;return kingChallenged(u)?2:1}
 const heartFoes=team=>G.units.some(v=>v.kind!=='wall'&&!v.statue&&tm(v.owner)!==team&&cells(v).some(([q,r])=>isHeart(q,r)));
-function wildsCrown(){
-  if(!G.map||!G.throneOpen||kingOf())return;
-  const u=unitAt(0,0);if(!u||u.kind==='wall'||u.summon||u.statue||u.egg)return;
+// Crowning. Crown Wilds: the first unit to sit the Throne, then the next after the King falls. Random board: whoever sits the Throne takes the crown
+// (from a living King too, if the King has left the Throne).
+function kingCrown(){
+  if(oldCentre()||!throneOpen()||SIM)return;
+  const u=unitAt(0,0);if(!u||u.kind==='wall'||u.summon||u.statue||u.egg||u.king)return;
+  const old=kingOf();if(old&&G.map)return;
+  if(old){old.king=false;addLog(old.owner,`${old.name} loses the crown.`)}
   u.king=true;const F=FAC[G.players[u.owner].fac];
-  addLog(u.owner,`${u.name} sits the Throne and is crowned King! +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives.`);fx(u,'crowned!','#ffd766');
+  addLog(u.owner,G.map?`${u.name} sits the Throne and is crowned King! +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives.`:`${u.name} sits the Throne and is crowned King! +1 ATK and +1 DEF while it lives (+2/+2 on the Throne when challenged).`);fx(u,'crowned!','#ffd766');
   vfx({k:'buff',at:[0,0],col:'#ffd766',cam:1});announce({k:'king',fac:G.players[u.owner].fac,unit:u.name});
   if(trk()){const O=tObj();if(O){O.kings=O.kings||[];O.kings.push({pid:u.owner,unit:u.name,round:G.round})}}}
-function wildsKingScore(p){
-  const k=kingOf();if(!k||k.owner!==p.id||!(k.q===0&&k.r===0||cells(k).some(([q,r])=>q===0&&r===0)))return;
-  if(heartFoes(p.team)){addLog(p.id,'The King sits the Throne, but enemies stand on the Heart: no point this turn.');return}
+function kingScore(p){
+  if(G.mode!=='warlord'||p.leaderless)return;
+  const k=kingOf();if(!k||k.owner!==p.id||!onThrone(k))return;
+  if(heartFoes(p.team)){addLog(p.id,`The King is challenged: enemies stand on the Heart, so no point this turn${G.map?'':' (it fights at +2 ATK, +2 DEF on the Throne)'}.`);return}
+  G.scoredAt=G.scoredAt||{};if(G.scoredAt[p.team]===G.round)return;G.scoredAt[p.team]=G.round;// a team scores once per round
   G.score[p.team]=(G.score[p.team]||0)+1;tPts(p.id,'throne',1);addLog(p.id,`The King holds the Throne: ${G.score[p.team]}/${heartTarget()}.`);
   if(G.score[p.team]>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
@@ -2894,13 +2906,15 @@ function evaluate(team){
     s+=mine?v:-v;
   }
   if(G.players[G.cur]&&tm(G.cur)===team)s+=throwSetups(team);
-  if(G.holder===team)s+=12;else if(G.holder!=null)s-=6;
+  if(oldCentre()){if(G.holder===team)s+=12;else if(G.holder!=null)s-=6}
+  else{if(G.round>=RULES.CENTRE_FROM){let n=0;for(const v of G.units)if(v.kind!=='wall'&&!v.statue&&tm(v.owner)===team&&cells(v).some(([q,r])=>isHeart(q,r)))n++;s+=Math.min(3,n)*3}// the Heart: where the Beast is fought and the King challenged
+    const K=kingOf();if(K){const mineK=tm(K.owner)===team;s+=mineK?18:-9;if(onThrone(K)&&mineK&&heartFoes(team))s-=5;if(onThrone(K)&&!mineK&&heartFoes(tm(K.owner))&&G.units.some(v=>v.kind!=='wall'&&tm(v.owner)===team&&cells(v).some(([q,r])=>isHeart(q,r))))s+=4}
+    else if(throneOpen()){const t=unitAt(0,0);if(t&&t.kind!=='wall')s+=tm(t.owner)===team?10:-5}}
   // Act 1 objectives: owned flags (charge, and the flag point), the Wellspring (+1 AP a turn), damage on the Rift Beast and its kill (+6 charge; the points show in the score).
   {let f=0;for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const o=flagOwner(q,r);if(o==null)continue;f+=tm(o)===team?2.5:-1}s+=f;
    const so=springOwner();if(so!=null)s+=tm(so)===team?5:-2;
-   if(G.beast){const b=G.beast;s+=((b.dmgT&&b.dmgT[team])||0)*0.9;if(b.dead&&b.killTeam===team)s+=10}}
-  if(G.map){const K=kingOf();if(K){const mineK=tm(K.owner)===team;s+=mineK?18:-9;if(K.q===0&&K.r===0&&mineK&&heartFoes(team))s-=5}else if(G.throneOpen){const t=unitAt(0,0);if(t&&t.kind!=='wall')s+=tm(t.owner)===team?10:-5}
-    for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
+   if(G.beast){const b=G.beast,gate=G.map&&b.room==='throne';s+=((b.dmgT&&b.dmgT[team])||0)*(gate?2.2:0.9);if(b.dead&&b.killTeam===team)s+=gate?20:10}}// on the Crown Wilds the Beast guards the Throne: worth much more
+  if(G.map){for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
     for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*0.5+(left<=0?6:0)}}
   for(const p of G.players){if(!p.alive)s+=tm(p.id)===team?-150:150;else if(p.leaderless)s+=tm(p.id)===team?-90:90}
   // Warlord points: a lead over the best rival counts, and every point matters more as the target nears.
@@ -5167,7 +5181,7 @@ function annText(e){
     case 'wall':return {col:'#e8b84e',t:G.map?'The Throne Hall falls: the Rift Beast wakes on the Throne':'The wall falls: the Heart is open',s:G.map?'Slay it to reveal the Throne, then sit on it to be crowned King.':'Heart points and the Throne count from now on.'};
     case 'spring':{const [q,r]=e.at||[0,0];const a=Math.atan2(-1.5*r,S3*(q+r/2))*180/Math.PI;const dir=['east','north-east','north','north-west','west','south-west','south','south-east'][Math.round(((a+360)%360)/45)%8];
       return {col:'#7fe8ff',t:`The Wellspring rises in the ${dir}`,s:'Step on it to claim it: +1 AP every turn.'}}
-    case 'king':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} crowns a King!`,s:`The ${annEsc(e.unit)} sits the Throne: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives. It scores 1 point a turn on the Throne while no enemy stands on the Heart.`};
+    case 'king':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} crowns a King!`,s:`The ${annEsc(e.unit)} sits the Throne: ${kingText()}`};
     case 'throne':return {col:'#ffd766',t:'The Rift Beast falls: the Throne is revealed',s:'The first unit to sit on it is crowned King.'};
     case 'room':return {col:'#b9b3d6',t:`${e.fac?annFac(e.fac):'Someone'} discovers the ${annEsc(e.room)}`,s:`Inside: ${annEsc(e.enc)}${e.loot?', guarding a treasure':''}.`};
     case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
@@ -5222,6 +5236,9 @@ function annClear(){ANN.q.length=0;clearTimeout(ANN.t);ANN.cur=null;const el=$('
 function annSet(on){ANN.on=on;try{localStorage.setItem('hexmarch.ann',on?'on':'off')}catch(e){}if(!on)annClear();syncAnnBtn()}
 function syncAnnBtn(){const b=$('#annBtn');if(b){b.textContent=ANN.on?'Announcements on':'Announcements off';b.setAttribute('aria-pressed',ANN.on?'true':'false')}}
 function wildsSeats(){if(!cfg.seats)return;const used=new Set(cfg.seats.slice(0,4).map(s=>s.fac));for(const s of cfg.seats.slice(0,4))if(s.fac==='rift'){const f=FKEYS.find(k=>k!=='rift'&&!used.has(k));if(f){used.add(f);s.fac=f}}}
+// v33: the King rules in one place, for texts. Crown Wilds: +2/+2 for life; random board: +1/+1 for life, +2/+2 on the Throne while challenged.
+function kingText(){return G&&G.map?`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. It scores 1 point at the start of its side's turn while it sits on the Throne and no enemy unit stands on the Heart.`
+  :'+1 ATK and +1 DEF for as long as it lives. At the start of its side’s turn, sitting on the Throne scores 1 point, unless an enemy unit stands on the Heart: then the King is challenged, scores nothing, but fights at +2 ATK and +2 DEF while it sits on the Throne. Whoever sits on the Throne takes the crown, even from a living King who has stepped off it.'}
 function isHumanTurn(){if(!G||G.over)return false;const p=P(G.cur);if(p.ctrl!=='human')return false;return !netOnline()||p.uid===NET.me}
 function teamColor(t){return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t).fac].color}
 
@@ -5248,7 +5265,7 @@ function renderScoreStrip(){const el=$('#scoreStrip');if(!el)return;if(G.phase){
   const ts=[...new Set(G.players.map(p=>p.team))],TGT=heartTarget(),war=G.mode==='warlord',live=G.round>=RULES.CENTRE_FROM;
   const dots=t=>G.players.filter(p=>p.team===t).map(p=>`<i style="background:${FAC[p.fac].color}"></i>`).join('');
   const side=t=>{const dead=!G.players.some(p=>p.team===t&&p.alive),hold=G.holder===t,cur=P(G.cur).team===t;return `<span class="sc ${hold?'hold':''} ${dead?'dead':''} ${cur?'cur':''}" title="${teamName(t)}${hold?' holds the Heart':''}">${dots(t)}${war?`<b>${G.score[t]||0}</b><small>/${TGT}</small>`:''}${hold?'<em>⬢</em>':''}</span>`};
-  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall falls':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
+  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall falls':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.mode!=='conquest'?(()=>{const K=kingOf();return K?`♛ <span style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name}</span> King${onThrone(K)?(kingChallenged(K)?' · challenged':' · on the Throne'):' · off the Throne'}`:throneOpen()?'Throne free':'Throne hidden'})():G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
 function refresh(){
   if(!G)return;
   renderDoom();renderScoreStrip();
@@ -5290,8 +5307,8 @@ function refresh(){
   const ults='<div class="ults"><div class="label" style="margin:0 0 4px">Ultimates <span class="hint" style="text-transform:none;letter-spacing:0">(recharge; each cast raises the next cost by '+RULES.ULT_STEP+')</span></div>'+G.players.filter(p=>p.alive).map(p=>{const U=ULTS[p.fac],ch=p.ult||0,need=ultNeed(p),foe=tm(p.id)!==tm(G.cur)||!isHumanTurn(),near=ch<need&&ch>=need-2,full=ch>=need;return `<div class="srow ${full?'full':near?'near':''}" title="${U.text}"><span style="color:${FAC[p.fac].color}">P${p.id+1} ${U.name}${p.ultN?' <span class="hint">×'+p.ultN+'</span>':''}</span><div class="bar"><i style="width:${Math.min(1,ch/need)*100}%;background:${FAC[p.fac].color}"></i></div><b>${full?'⚡':near?'⚠ '+ch+'/'+need:ch+'/'+need}</b></div>`}).join('')+'</div>'+relicList();
   const legend=[...new Set(G.players.map(p=>p.fac))].map(f=>`<div class="homeline"><span class="sw" style="background:${hexA(FAC[f].color,.55)}"></span><span><b style="color:${FAC[f].color}">${FAC[f].name}</b>. ${FAC[f].home}</span></div>`).join('');
   $('#heartCard').innerHTML=`<div class="label">${MODES[G.mode].name} · Round ${G.round}</div>
-    <div class="heart"><svg width="22" height="22" viewBox="-11 -11 22 22" aria-hidden="true" style="flex:none"><polygon points="${hexPts(0,0,10)}" fill="#e8b84e"/></svg><div>The Heart is ${hs}.${Object.keys(G.heartCount||{}).length?`<div class="hint">On the Heart now: ${Object.entries(G.heartCount).map(([t,c])=>`<b style="color:${teamColor(+t)}">${c}</b>`).join(' vs ')}</div>`:''}<div class="hint">A side holds it when it is the only one with units on its ${G.heartR===2?19:7} gold hexes: +1 ATK and +1 DEF on every unit, and your units on it heal 1 HP per turn${G.mode==='conquest'||G.mode==='warlord'?', and 1 point per turn':''}.</div></div></div>
-    <div class="heart" style="margin-top:8px"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 17L4.5 7.5 9 12 12 5 15 12 19.5 7.5 21 17Z" fill="#ffd766"/><rect x="3" y="18.5" width="18" height="2.6" fill="#ffd766"/></svg><div>The Throne (centre hex): ${(()=>{const t=G.units.find(u=>onThrone(u));return t?`<b style="color:${FAC[P(t.owner).fac].color}">${t.name}</b>`:'empty'})()}.<div class="hint">The unit on it gets +2 ATK, +1 range if ranged and double-speed cooldowns; from round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge per turn.</div></div></div>
+    <div class="heart"><svg width="22" height="22" viewBox="-11 -11 22 22" aria-hidden="true" style="flex:none"><polygon points="${hexPts(0,0,10)}" fill="#e8b84e"/></svg><div>The Heart is ${hs}.${Object.keys(G.heartCount||{}).length?`<div class="hint">On the Heart now: ${Object.entries(G.heartCount).map(([t,c])=>`<b style="color:${teamColor(+t)}">${c}</b>`).join(' vs ')}</div>`:''}<div class="hint">${G.mode==='conquest'?`A side holds it when it is the only one with units on its ${G.heartR===2?19:7} gold hexes: +1 ATK and +1 DEF on every unit, and your units on it heal 1 HP per turn, and 1 point per turn.`:`The ground around the Throne (${G.heartR===2?19:7} gold hexes). Any enemy unit standing on it challenges the King: no point for the King that turn.`}</div></div></div>
+    <div class="heart" style="margin-top:8px"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 17L4.5 7.5 9 12 12 5 15 12 19.5 7.5 21 17Z" fill="#ffd766"/><rect x="3" y="18.5" width="18" height="2.6" fill="#ffd766"/></svg><div>${G.mode==='conquest'?`The Throne (centre hex): ${(()=>{const t=G.units.find(u=>onThrone(u));return t?`<b style="color:${FAC[P(t.owner).fac].color}">${t.name}</b>`:'empty'})()}.<div class="hint">The unit on it gets +2 ATK, +1 range if ranged and double-speed cooldowns; from round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge per turn.</div>`:(()=>{const K=kingOf();const head=K?`♛ King: <b style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name} ${K.name}</b>${onThrone(K)?(kingChallenged(K)?' on the Throne, <b>challenged</b>':' on the Throne'):' (off the Throne)'}`:throneOpen()?'The Throne is free: sit on it to be crowned King.':G.map?'The Throne is hidden under the Rift Beast until it is slain.':`The Throne opens in round ${RULES.CENTRE_FROM}.`;return `${head}<div class="hint">The King: ${kingText()}</div>`})()}</div></div>
     ${(()=>{// Act 1 objectives at a glance: the wall, flags owned per side, the Wellspring, the Rift Beast
       const lines=[];
       if(G.map){if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The Throne Hall is sealed</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (its walls fall next round)':''}: then its walls fall and the Rift Beast wakes on the Throne.`);
@@ -5341,7 +5358,7 @@ function unitStatuses(u){if(!u||!u.st||u.kind==='wall')return [];const s=u.st,o=
   if(s.hex>0)add('hex','🔮','Hex',s.hex,'#b06bff',0,'2 less ATK and 1 more damage from abilities');
   if((s.dlA||0)+(s.dlB||0)>0)add('delay','⏳','Delayed','+'+((s.dlA||0)+(s.dlB||0))+' cooldown','#ff9be8',0,'its cooldowns were pushed back');
   if(s.duel)add('duel','⚔','Challenged',s.duel.ttl,'#ff6161',0,'basic attacks only at the Champion');
-  if(u.king)add('king','♛','King','for life','#ffd766',1,`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF; scores 1 point a turn on the Throne while no enemy stands on the Heart`);
+  if(u.king)add('king','♛',kingChallenged(u)?'King, challenged':'King',G.map?'for life':kingChallenged(u)?'+2/+2':'+1/+1','#ffd766',1,kingText());
   if(u.poss)add('poss','👁','Possessed','this turn','#e8e23a',0,'returns to its owner at the end of this turn');
   if(s.stealth)add('stealth','👤','Stealth','until it strikes','#c81ca6',1,'enemies can only target it from 2 hexes or closer');
   if(typeof hasBarrier==='function'&&hasBarrier(u))add('barrier','🛡','Barrier','until hit','#ffd766',1,'the first enemy attack or ability that hits it breaks it and takes 2 back');
@@ -5554,7 +5571,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     const road=isRoad(q,r)?`<p class="hint" style="margin:6px 0 0"><b>Flank road.</b> A unit that starts its move on the two outer rings gets +1 move.</p>`:'';
     if(isCentreWall(q,r)){el.innerHTML=`<div class="label">Hex</div><h3>${isHeart(q,r)?(q===0&&r===0?'The Throne (sealed)':'The Heart (sealed)'):'The wall around the Heart'}</h3><p class="hint" style="margin:6px 0 0">Until round ${RULES.CENTRE_FROM} a stone wall rings the Heart. No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, teleported or swapped into it. Straight shots stop at it; lobbed shots fly over. It falls at the start of round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (next round)':''}; then the Heart and the Throne start to count.</p>`;return}
     el.innerHTML=`<div class="label">Hex</div><h3>${G.traps&&G.traps[key(q,r)]?'Void Trap':f?FEATURES[f].name:q===0&&r===0?'The Throne':isHeart(q,r)?'The Heart':isNoMans(q,r)?'No man\u2019s land':t?FAC[t].name+' ground':'Open ground'}</h3>
-      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge each turn.':isHeart(q,r)?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${FAC[t].home}</p>`:''}${road}${wellP}`;return}
+      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?(G.mode==='conquest'?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round '+RULES.CENTRE_FROM+' its side also gets +1 AP and +1 Ultimate charge each turn.':'Sit here to be crowned King: '+kingText()):isHeart(q,r)?(G.mode==='conquest'?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':'The ground around the Throne. Any enemy unit standing here challenges the King: no point for the King that turn.'):t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${FAC[t].home}</p>`:''}${road}${wellP}`;return}
   if(!u){
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
@@ -5593,7 +5610,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.cut!=null&&G.players[u.cut])tags.push(`<span class="tag bad">Cut by a Second Hand: the ${FAC[G.players[u.cut].fac].name} Chronarch deals +1 to it this turn</span>`);
   if(onHome(u))tags.push('<span class="tag good">On home ground</span>');
   if(heartBuff(u))tags.push('<span class="tag good">Heart +1/+1</span>');
-  if(onThrone(u))tags.push('<span class="tag good">On the Throne: +1 ATK, +1 range, fast cooldown, +1 AP</span>');
+  if(onThrone(u)&&G.mode==='conquest')tags.push('<span class="tag good">On the Throne: +1 ATK, +1 range, fast cooldown, +1 AP</span>');
   if(u.kind!=='wall'&&onGrove(u))tags.push('<span class="tag good">On a Grove: heals 1 at the start of its turn</span>');
   if(hasTrait(u,'fervour'))tags.push(u.fv>0?`<span class="tag good">Fervour: +${Math.min(3,u.fv)} damage (healed ${u.fv} this turn)</span>`:'Fervour: no healing received this turn, no bonus');
   if(u.rage&&u.hp*2<=u.maxhp)tags.push('<span class="tag good">Raging: +2 ATK</span>');
@@ -5683,7 +5700,7 @@ function showRules(){
   <h3>A game in three acts</h3><ul>
   <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own walled camp with three gates and three roads: to the Throne Hall, to the North or South Hall, and past its Crypt to the East or West Grove. Rivers (blue) block walking; flyers cross them, and flyers may fly over walls. Twelve rooms are hidden (dark, with a ?) until a unit steps into one or its way in; what waits inside changes every game: a Stone Guardian, a pack of Ghouls, a Locked Crate to smash, a room to hold alone for ${WILDS.hold} of your turns, a Shrine, or a room to hold. Room monsters never leave; at the start of every round each one strikes the weakest unit next to it. A cleared room leaves a <b>treasure</b>: a unit picks it up by stepping on it and must <b>carry it home into its own camp</b> to claim it (Crown Shards = points, War Banner +1 ATK to the whole army, Hourglass Sand +1 AP every turn, Storm Jar +6 charge, Healing Draught, an Ancient Relic, a Sellsword who joins you). A carrier that dies drops it for anyone. The <b>Cursed Chest</b> is a coin flip when picked up: a real treasure, or Agony and Frailty on the carrier. In round ${WILDS.open} the walls of the Throne Hall fall and the Rift Beast (${WILDS.beastHp} HP) wakes on the Throne; its killing blow (+${RULES.BEAST_PTS} points) reveals the Throne. The first unit to sit on the Throne is crowned <b>King</b>: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives; it scores 1 point at the start of its side's turn while it sits on the Throne and no enemy unit stands on the Heart. When the King falls, the next unit to sit on the Throne is crowned. On this map the Heart gives no points or buffs by itself. First to ${WILDS.target} points wins. No Collapse, no flags, no Riftwalkers.</li>
   <li><b>Act 1, expand.</b> The centre is walled: a single ring of stone wall stands right around the Heart until round ${RULES.CENTRE_FROM} (the outer grey ring stays open ground). Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
-  <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls and, in the same moment, the <b>Rift Beast</b> awakens right beside the Heart, touching the ring that just opened (both announced a round before): the Heart and the Throne are open and start to count.</li>
+  <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls and, in the same moment, the <b>Rift Beast</b> awakens on a random stretch of the fallen wall (both announced a round before). The Throne is open: whoever sits on it is crowned <b>King</b>.</li>
   <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre: the first rings fall quickly, then it slows down (a ring every 4 rounds) to leave time for objectives, relics and points.</li></ul>
   <h3>Setup and deployment</h3><ul>
   <li>Each army has up to 10 slots (a giant takes 2) and one Leader. Boards: radius 8 for 2–3 players, 9 for 4–6.</li>
@@ -5696,7 +5713,7 @@ function showRules(){
   <li>Your army's home bonus works on <b>all</b> your ground, so pushing forward carries your strength with you.</li>
   <li>The side holding the most ground gets +1 Ultimate charge each turn (★ in the side panel).</li></ul>
   <h3>Your turn</h3><ul>
-  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives, +${RULES.THRONE_AP} while you hold the Throne, +1 while you own the Wellspring, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}.</li>
+  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives, +1 while you own the Wellspring, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}.</li>
   <li>Move a unit: 1 AP. Basic attack: 2 AP. Ability: its listed cost. Ultimate: ${RULES.ULT_COST} AP (team: ${RULES.TEAM_ULT_COST}). Gnome machines fire on their own for no AP at the start of the gnome turn for 1 damage, and a machine with a weapon may also make one full-strength basic attack of its own for 2 AP.</li>
   <li>Each unit can move once and act once per turn, in either order. Acting means a basic attack <b>or</b> its ability.</li></ul>
   <h3>Moving</h3><p>The chess symbol in a piece's corner shows how it moves.</p><ul>
@@ -5729,8 +5746,8 @@ function showRules(){
   <h3>Abilities</h3><p>Most non-pawn units have one. An ability deals its own fixed spell damage (ATK bonuses don't change it) and rests 1 to 5 of your turns afterwards. The Warlord carries two (March and Rally), each with its own rest. The Conclave's mages carry spellbooks of 2 or 3 spells that share one rest. Frost Hold, Stone Giants, Gnome Tinkers, Hourglass Order, Riftwalkers, Iron Warband and the Circle of Priests field no pawns at all. Shapes: blasts, cones, lines, rings, arcs, auras and single targets. Tap Aim, tap a gold hex to preview, tap again to fire.</p>
   <h3>Pillar 1: the Centre</h3><ul>
   <li><b>The Heart</b> (gold hexes): a side holds it while it is the only side with units on it. Holding it gives every unit of that side +1 ATK and +1 DEF, heals your units standing on it 1 HP per turn, and scores 1 Warlord point per turn.</li>
-  <li><b>Warlord points</b> come from four places: holding the Heart at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing; not in a 2-player duel), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
-  <li><b>The Throne</b> (centre hex): the unit on it gets +${THRONE.atk} ATK, +1 range if ranged and double-speed cooldowns. Its side gets +1 AP and +${THRONE.charge} Ultimate charge per turn.</li>
+  <li><b>Warlord points</b> come from four places: your King sitting on the Throne at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}; none while an enemy stands on the Heart), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing; not in a 2-player duel), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing.</li>
+  <li><b>The Throne and the King</b> (centre hex): whoever sits on the Throne is crowned King: ${kingText()} The Heart around it gives nothing by itself any more: it is where enemies challenge the King. (The hidden Conquest mode keeps the old Heart and Throne rules.)</li>
   <li><b>The walled centre:</b> until round ${RULES.CENTRE_FROM} the single ring of hexes right around the Heart is a stone wall (the outer half of the grey no man's land stays open). No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, dragged, teleported or swapped into it; a unit shoved into it takes the slam damage and stays. Straight shots stop at it (lobbed shots fly over). A warning comes at the start of round ${RULES.CENTRE_FROM-1}; at the start of round ${RULES.CENTRE_FROM} it falls and the Heart and the Throne start to count. After that the wall ring is ordinary grey ground that no army can colour.</li>
   <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, the moment the wall falls, announced together with it a round before): a neutral monster on 3 hexes touching the ring right around the Heart (where the wall stood; if that is packed, the nearest free spot), ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall), and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. Left alone it stays where it is: the Collapse never swallows the hexes it stands on (if its ring has already fallen, they crumble when it dies). If units stand where it breaks out, they are pushed to the nearest free hex; if there is no room at all, it breaks out at the start of the next round instead. There is only one per game.</li></ul>
   <h3>Pillar 2: the Flanks</h3><ul>
@@ -5766,7 +5783,7 @@ function showQuick(){
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
   ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls and the Rift Beast breaks out beside the Heart · then the Collapse closes the board, slower as it goes`)}
-  ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +${RULES.THRONE_AP} Throne · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
+  ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free for 1 damage, and may attack at full strength once for 2 AP')}
   ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 5 on the board · Dismantle: remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less · build cooldowns Turret 2, Flame Turret 2, Mortar 3, Coil 3 · machines never move · each fires on its own for free at the start of the gnome turn and may also attack at full strength once for 2 AP (not the Coil); the free shot deals 1 · each falls apart after 6 gnome turns · can’t be chilled, frozen or stunned · killing one gives no charge and no star · builders and Gearmaster can’t attack (only Bombardiers do) · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1) · Clockwork Rush: 2 AP + 1 per 2 machines, max 5')}
   ${row('Per unit','Move once + one action (attack <b>or</b> ability)')}
@@ -5787,7 +5804,7 @@ function showQuick(){
   ${row('Inspect','Long-press any piece for its full card')}
   ${row('Heart','Held: +1 ATK +1 DEF army-wide, heal 1 on it, 1 point/turn from round '+RULES.CENTRE_FROM)}
   ${row('Warlord points','Heart held 1/turn (from round '+RULES.CENTRE_FROM+') · most flags owned 1/turn (from round '+RULES.FLAG_FROM+', ties score nothing, none in a 2-player duel) · enemy Leader killed +2 · Rift Beast killing blow +'+RULES.BEAST_PTS+' · first to 12 wins (10 with 4+ players in free-for-all, 12 in teams) · leaderless sides score nothing')}
-  ${row('Throne','+'+THRONE.atk+' ATK, +1 range, fast cooldowns · from round '+RULES.CENTRE_FROM+': +1 AP, +'+THRONE.charge+' charge')}
+  ${row('Throne & King','Sit the Throne to be crowned King: +1 ATK, +1 DEF while it lives · on the Throne at your turn start: 1 point · an enemy on the Heart challenges it: no point, +2 ATK, +2 DEF on the Throne instead · whoever sits the Throne takes the crown · Crown Wilds: the Beast sleeps on the Throne, King +2/+2 for life')}
   ${row('Forest','Targetable only within 2 · +1 DEF · stops shots')}
   ${row('Hill','Ranged: +1 range +1 damage · melee uphill −1')}
   ${row('Shrine','Heals the unit on it 2 at the start of your turn · one drink: then spent (dark) for 2 rounds')}
@@ -5807,7 +5824,7 @@ function showQuick(){
   ${row('Natural enemies','Priests › Covenant › Warband › Hourglass › Giants › Gnomes › Frost › Riftwalkers › Ember Court › Priests · Conclave › Giants · Covenant › Conclave (an edge, not a sure win)')}
   ${row('Conclave','Spellbook: 2–3 spells, one button each, casting one rests the whole book · Arcane Focus: +1 spell damage if the mage has not moved · Blink: tap the ally, then where it lands · Surge: a resting book is ready again (no extra action) · Hex: −2 ATK, +1 damage taken from abilities, 2 turns · Guard: blows on an adjacent mage hit the Gargoyle · Stone Sleep: a dead Gargoyle is a 5 HP statue; 4 AP of spells cast within 2 wakes it at half max HP (16, 8, 4)')}
   ${row('Relics','From round '+RULES.RELIC_FROM+', every '+RULES.RELIC_EVERY+' · carrier −1 move · swallowed by the Collapse: lands again further in · '+Object.values(RELICS).map(r=>r.name).join(', '))}
-  ${row('Ultimate charge','Kill +1 (machines and eggs 0) · bounty +1 · own non-pawn loss +1 · flag owned +1 · Throne +'+THRONE.charge+' · Idol +1 · most ground +1 · Rift Beast +'+RULES.BEAST_CHARGE+'')}
+  ${row('Ultimate charge','Kill +1 (machines and eggs 0) · bounty +1 · own non-pawn loss +1 · flag owned +1 · Idol +1 · most ground +1 · Rift Beast +'+RULES.BEAST_CHARGE+'')}
   ${row('Ultimate cost',RULES.ULT+', then +'+RULES.ULT_STEP+' per cast · one per turn')}
   ${row('Veterans','+1 ATK per kill, max 3 (giants: 2 kills per star; machines and eggs give none)')}
   ${row('Curses','1: 0.5 · 2: 2 · 3: 3.5 · +1.5 each (leaders take 1 less)')}
