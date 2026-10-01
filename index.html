@@ -4420,6 +4420,37 @@ function glRender(){
   GL.frame=(GL.frame||0)+1;if(!WIDE()&&GL.frame%2&&!GL.dirty)return;GL.dirty=false;
   glCamera();GL.R.render(GL.scene,GL.cam)}
 
+/* ---------- the setup screen's unit preview: the same 3D miniature on a small turntable ---------- */
+const PV3={R:undefined,scene:null,cam:null,turn:null,fig:null,t0:0};
+function glAnimFig(fig,t){const ud=fig.userData,lift=ud.hover?0.25+0.08*Math.sin(t*2.2):0;
+  if(ud.hover)for(const ch of fig.children)if(!ch.userData.base){if(ch.userData.y0===undefined)ch.userData.y0=ch.position.y;ch.position.y=ch.userData.y0+lift}
+  for(const o of ud.bob){if(o.userData.by===undefined)o.userData.by=o.position.y;o.position.y=o.userData.by+0.06*Math.sin(t*2.6+o.position.x*3);o.rotation.y=t*0.6}
+  for(const w of ud.wings)w.rotation.y=w.userData.flap*(0.5+0.25*Math.sin(t*(ud.hover?7:2.5)));if(ud.spin)ud.spin.rotation.y=t*18}
+function pvGL(){if(PV3.R!==undefined)return PV3.R;
+  try{if(typeof THREE==='undefined'||GL.pref==='off')throw 0;const T=THREE,c=document.createElement('canvas');c.id='pvCv';c.setAttribute('role','img');
+    const R=new T.WebGLRenderer({canvas:c,antialias:true,alpha:true});R.setClearColor(0x000000,0);R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;
+    const scene=new T.Scene();scene.add(new T.HemisphereLight('#d6e2ff','#3a2c22',0.55));
+    const sun=new T.DirectionalLight('#fff0d6',0.9);sun.position.set(-4,8,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-0.0006;Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:0.5,far:30});scene.add(sun);
+    const rim=new T.DirectionalLight('#ffd09a',0.45);rim.position.set(5,4,-6);scene.add(rim);
+    const cam=new T.PerspectiveCamera(30,240/200,0.1,100);const turn=new T.Group();scene.add(turn);
+    Object.assign(PV3,{R,scene,cam,turn});}catch(e){PV3.R=null}
+  return PV3.R}
+// puts the turntable canvas in place of the old 2D preview canvas; false = keep the 2D drawing
+function glPreview(holder,d,fac,big){const R=pvGL();if(!R||!holder)return false;const T=THREE;
+  const old=holder.querySelector('canvas');if(old&&old!==R.domElement)old.replaceWith(R.domElement);else if(!old)holder.appendChild(R.domElement);
+  R.domElement.setAttribute('aria-label',d.name+' miniature');
+  const W=240,H=200;R.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R.setSize(W,H);
+  const turn=PV3.turn;while(turn.children.length){const o=turn.children[0];turn.remove(o);(o.userData.own||[]).forEach(g=>g.dispose())}
+  const fig=buildFigure({name:d.name,size:big?2:1},fac);turn.add(fig);PV3.fig=fig;
+  // a little island of hexes under the piece, tinted with the army colour (a giant's two hexes sit either side of the centre)
+  const geo=gGeo('pvtile',()=>{const g=new T.CylinderGeometry(0.972,0.99,0.4,6);g.translate(0,-0.2,0);return g});
+  const cells=[[0,0],[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];if(big)cells.push([2,0],[1,1],[2,-1]);const sh=big?-S3/2:0;
+  for(const [q,r] of cells){const [x,z]=world(q,r);const m=gMesh(geo,gMat(new T.Color(['#5b6150','#565c4c','#606656'][((q-r)%3+3)%3]).lerp(new T.Color(FAC[fac].color),0.25).getStyle(),{roughness:0.95}),x+sh,0,z);m.castShadow=false;turn.add(m)}
+  const top=fig.userData.top||1.5,dist=big?top*2.1+3.2:top*2.7+2.6;PV3.cam.position.set(0,top*0.5+dist*0.38,dist);PV3.cam.lookAt(0,top*0.5,0);PV3.t0=performance.now();
+  glPreviewFrame(true);return true}
+function glPreviewFrame(still){if(!PV3.R||!PV3.fig)return;const t=(performance.now()-PV3.t0)/1000;
+  PV3.turn.rotation.y=still?0.35:0.35+t*0.45;glAnimFig(PV3.fig,t);PV3.R.render(PV3.scene,PV3.cam)}
+
 /* Hexmarch visual effects. The engine records events in G.fxLog; this plays any it hasn't shown yet,
    so effects also appear on other devices when an online game state arrives. */
 let fxSeen=0,annSeen=0;const ANIMS=[];let shakeUntil=0;
@@ -5406,6 +5437,10 @@ function pvStep(dir){if(!PV.open)return;const n=pvItems(PV.fac).length;const it=
 function closePreview(){if(!PV.open)return;PV.open=false;document.querySelectorAll('.urow.on').forEach(r=>r.classList.remove('on'));cancelAnimationFrame(PV.raf);const r=document.getElementById('uprev');if(r)r.hidden=true;
   const b=PV.back;PV.back=null;if(b&&b.isConnected&&b.focus)try{b.focus({preventScroll:true})}catch(e){}}
 function pvStart(it,k){cancelAnimationFrame(PV.raf);
+  {const st=document.querySelector('.uprev-card .pv-stage');const dd=it.d;
+   // v35: the real 3D miniature on a turntable when WebGL is there (gl3d.js), else the drawn figure below
+   if(st&&typeof glPreview==='function'&&glPreview(st,dd,k,FAC[k].size===2&&!it.m&&!it.st)){const still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+     const f3=()=>{if(!PV.open||!st.isConnected)return;glPreviewFrame(still);if(!still)PV.raf=requestAnimationFrame(f3)};f3();return}}
   const cv2=$('#pvCv');if(!cv2)return;const c2=cv2.getContext('2d'),dpr=window.devicePixelRatio||1,W=240,H=200;
   cv2.width=W*dpr;cv2.height=H*dpr;cv2.style.width=W+'px';cv2.style.height=H+'px';
   const col=FAC[k].color,d=it.d;
