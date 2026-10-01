@@ -589,12 +589,14 @@ const hd=(a,b,c,d)=>(Math.abs(a-c)+Math.abs(b-d)+Math.abs(a+b-c-d))/2;
 const COLLAPSE_START={regicide:20,warlord:16,annihilation:22,conquest:null};// warlord 18 -> 16 on 28 Sep 2026 (owner: the Collapse felt too late); with 4+ players it now starts at round 10
 // More players means longer rounds, so the Collapse comes sooner: 3 rounds earlier with 3 players, 6 with 4 or more.
 function collapseStart(mode,n){const b=COLLAPSE_START[mode];return b==null?null:b-(n>=4?6:n===3?3:0)}
-function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;return G.teams?12:G.players.length>=4?10:RULES.WARLORD_TARGET}// teams 8 -> 12 on 28 Sep 2026: with Outpost and takedown points, team games ended in 11 rounds
+function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return WILDS.target;return G.teams?12:G.players.length>=4?10:RULES.WARLORD_TARGET}// teams 8 -> 12 on 28 Sep 2026: with Outpost and takedown points, team games ended in 11 rounds
 const RULES={BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:2,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
 let G=null,SIM=false,CUR_SRC=null,CUR_TAG=null,CUR_NAME=null;
+// The centre opens in round 5 on the random board and in round WILDS.open (10) on the Crown Wilds map (v30). A getter, so every rule and text follows the game in hand.
+{let base=RULES.CENTRE_FROM;delete RULES.CENTRE_FROM;Object.defineProperty(RULES,'CENTRE_FROM',{get(){return G&&G.map?WILDS.open:base},set(v){base=v},enumerable:true})}
 // Random source. The live game never calls setRNG, so it stays Math.random; headless sims install a seeded generator for reproducible runs.
 let RNG=Math.random;function setRNG(f){RNG=f||Math.random;}
 // Stats tracking: games keep their tallies in G.stats (shown on the score card); simulations may point TRACK elsewhere.
@@ -1103,7 +1105,7 @@ const centreWalled=()=>!!G&&G.round<RULES.CENTRE_FROM&&!G.noWall;
 // v27 (owner, 1 Oct 2026: "only ONE ring of wall"): the wall is the single ring directly around the Heart (heartR+1); the Heart inside stays sealed with it.
 // The outer grey ring (heartR+2) is open ground from the start.
 const isCentreWall=(q,r)=>centreWalled()&&hd(q,r,0,0)<=heartR()+1;
-const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock'&&!isCentreWall(q,r);
+const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock'&&featAt(q,r)!=='river'&&!isCentreWall(q,r);
 /* The Collapse: from a set round, the outer ring crumbles into void, each ring a little later than the last,
    down to the grey no man's land around the Heart. The ring is marked a full round before it falls. */
 // v27 (owner, 1 Oct 2026: "it closes too fast in later rounds"): the first ring falls at the start round, then the gaps are
@@ -1219,10 +1221,10 @@ function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;r
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
   const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)?THRONE.atk:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
-  return Math.max(0,a);
+  return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0));
 }
 function effDef(u){
-  if(u.kind==='wall')return u.beast?RULES.BEAST_DEF:0;const F=facOf(u);
+  if(u.kind==='wall')return u.beast?RULES.BEAST_DEF:u.monster?u.def:0;const F=facOf(u);
   return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
@@ -1274,7 +1276,7 @@ const inert=v=>!!(v&&(v.egg||v.statue));
 function effMov(u){const F=facOf(u);if(!u.mov)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
-const isRoad=(q,r)=>hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
+const isRoad=(q,r)=>G.map?!!(G.roads&&G.roads[key(q,r)]):hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
 function onRoad(u){return u.kind!=='wall'&&G.round>=RULES.ROAD_FROM&&cells(u).every(([q,r])=>isRoad(q,r))}
 // Engaged: a unit that starts its move next to an enemy can only step 1 hex. Flyers, jumpers, Swift and Unstoppable units slip away.
 function engagedBy(u){return G.units.filter(v=>v.kind!=='wall'&&!inert(v)&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)===1)}
@@ -1534,12 +1536,14 @@ function newGame(c){
     G.players.push({id:i,fac:s.fac,ctrl:s.ctrl,team,spot,alive:true,leaderless:false,bank:0});G.score[team]=0;
   }
   G.players.forEach(p=>{p.home=spawnPoints(G.players.length,G.R)[p.spot];p.formation=(c.formations&&c.formations[p.id])||DEFAULT_FORMATION[n];const ts=TALENTS[p.fac];p.talent=c.seats[p.id].talent&&ts.some(t=>t.k===c.seats[p.id].talent)?c.seats[p.id].talent:(c.randomTalents?ts[Math.floor(RNG()*3)].k:ts[0].k)});
-  if(c.collapse!==false&&COLLAPSE_START[c.mode])G.col={start:collapseStart(c.mode,n),ring:G.R,stop:G.heartR+(n>=4?2:3)};
+  if(c.map==='wilds'){G.map='wilds';G.R=WILDS.R;G.relicsOn=false;G.rooms=[];G.loot=[]}
+  if(!G.map&&c.collapse!==false&&COLLAPSE_START[c.mode])G.col={start:collapseStart(c.mode,n),ring:G.R,stop:G.heartR+(n>=4?2:3)};
+  if(G.map){G.outposts=[];genWilds()}else{
   G.outposts=outpostPoints(n,G.R);
   genFeatures();
   // Tile layout: 'classic' (default, today's clusters) or 'bands' (rotated bands, see genTerrainBands). Only set on G when not classic.
   if(c.tiles==='bands'){G.tiles='bands';genTerrainBands()}else genTerrain();
-  G.players.forEach(p=>{p.zone=zoneOf(p)});
+  G.players.forEach(p=>{p.zone=zoneOf(p)});}
   G.players.forEach(deploy);
   addLog(null,`${MODES[G.mode].name}${teams?', teams of 2':''}.`);
   if(c.deploy){G.phase='deploy';G.cur=0;G.round=1;addLog(null,'Deployment: each side arranges its army in secret.');HOOKS.turn();return G}
@@ -1578,7 +1582,7 @@ function beginTurn(){
   // Gnome machines fire on their own before the timers run, so a machine on its last turn still gets its last shot (tracked per machine as 'Auto-fire').
   machineFire(p,'Auto-fire','Basic');resolveBeast();resolveBarrier();
   // Act 1: units standing on a flag or the Wellspring at the start of their side's turn capture it (before charge, AP and points are counted).
-  captureObjectives(p.id);
+  captureObjectives(p.id);wildsTick(true);
   // Wall gates: count the hexes next to each giant that walls deny it this turn (tracking only; the rule itself lives in freeFor).
   if(FAC[p.fac].gateBlock&&trk()&&!SIM){const m=occ();for(const u of G.units){if(u.owner!==p.id||u.size!==2)continue;let n=0;for(const [q,r] of cells(u))for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;if(passable(a,b)&&!m.get(key(a,b))&&gated(m,a,b))n++}if(n){const e=tFx(p.fac,u.name,'Gated by walls');if(e){e.blocked+=n;e.uses++}}}}
   for(const u of G.units)if(u.cut===p.id)delete u.cut;// Final Second stamps from this side's previous turn
@@ -1632,11 +1636,11 @@ function beginTurn(){
   const relicAP=(G.relics||[]).filter(x=>x.kind==='hourglass'&&x.carrier!=null&&byId(x.carrier)&&byId(x.carrier).owner===p.id).length;
   // The first player's −3 AP on its round-2 turn (G.apParts.first) was removed on 29 Sep 2026: the owner said it "feels bad". The first-player win rate is measured after; if it drifts, the second player gets a gift (e.g. Ultimate charge) instead of a penalty.
   const wellAP=springOwner()===p.id?1:0;// the Wellspring (v23): +1 AP to the side that owns it
-  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0,well:wellAP};
+  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0,well:wellAP,loot:p.lootAP||0};
   const apNo=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);
   // Banked Time tracking: AP the bank actually added this turn (the cap can eat some), as 'Banked Time (passive)' apGranted, one use per turn with a bank.
   if(bank&&trk()&&!SIM){const got=apNo-Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP);const e=tFx(p.fac,'','Banked Time (passive)');if(e){e.uses++;e.apGranted+=Math.max(0,got)}}
-  G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP);G.ap=G.apMax;
+  G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP+(p.lootAP||0));G.ap=G.apMax;
   if(wellAP){const O=tObj();if(O){const e=O.well[p.id]=O.well[p.id]||{caps:0,ap:0,turns:0};e.turns++;e.ap+=G.apMax-apNo}}
   const target=heartTarget();const s0=G.score[p.team]||0;
   G.scoredAt=G.scoredAt||{};
@@ -1693,7 +1697,7 @@ function advance(){
   let i=G.cur;
   for(let k=0;k<G.players.length;k++){
     i=(i+1)%G.players.length;
-    if(i===0){G.round++;addLog(null,`Round ${G.round}.`);runCollapse();if(checkVictory())return;spawnRelics();actEvents();
+    if(i===0){G.round++;addLog(null,`Round ${G.round}.`);runCollapse();if(checkVictory())return;spawnRelics();actEvents();wildsRound();if(checkVictory())return;
       if(doomRing()!=null&&collapseRound()===G.round+1)addLog(null,`Warning: ring ${G.col.ring} collapses at the start of round ${G.round+1}.`)}
     if(G.players[i].alive){G.cur=i;beginTurn();return}
   }
@@ -1710,7 +1714,7 @@ function checkVictory(){
 }
 function eliminate(p,why){
   if(!p.alive)return;
-  p.alive=false;for(const u of G.units)if(u.owner===p.id){const x=relicOf(u);if(x)dropRelic(x,u)}G.units=G.units.filter(u=>u.owner!==p.id);if(G.eggs)G.eggs=G.eggs.filter(e=>e.owner!==p.id);if(G.wells)G.wells=G.wells.filter(w=>w.owner!==p.id);if(G.traps)for(const k of Object.keys(G.traps))if(G.traps[k].owner===p.id)delete G.traps[k];
+  p.alive=false;for(const u of G.units)if(u.owner===p.id){const x=relicOf(u);if(x)dropRelic(x,u);if(G.loot&&!SIM)dropLootOf(u)}G.units=G.units.filter(u=>u.owner!==p.id);if(G.eggs)G.eggs=G.eggs.filter(e=>e.owner!==p.id);if(G.wells)G.wells=G.wells.filter(w=>w.owner!==p.id);if(G.traps)for(const k of Object.keys(G.traps))if(G.traps[k].owner===p.id)delete G.traps[k];
   for(const k of Object.keys(G.flagOwner||{}))if(G.flagOwner[k]===p.id)delete G.flagOwner[k];if(G.spring&&G.spring.owner===p.id)G.spring.owner=null;// its flags and the Wellspring turn neutral
   addLog(p.id,`${FAC[p.fac].name} ${why} and is out.`);
   announce({k:'out',fac:p.fac,pid:p.id,why,left:G.players.filter(x=>x.alive).length});
@@ -1721,6 +1725,8 @@ function kill(t){
   const i=G.units.indexOf(t);if(i<0)return;
   G.units.splice(i,1);
   if(t.beast){beastSlain(t);return}
+  if(t.monster){if(!SIM)monsterSlain(t);return}
+  if(G.loot&&!SIM)dropLootOf(t);
   if(t.kind==='wall'){addLog(null,`A ${t.wall} wall shatters.`);return}
   if(t.poss){t.owner=t.poss.owner;t.home=t.poss.home;delete t.poss}
   addLog(t.owner,`${t.name} ${t.summon?'breaks apart':'falls'}.`);
@@ -1814,7 +1820,7 @@ function riseStatue(s){
   return u}
 function hurt(t,n,col,tick){
   if(!alive(t)||n<=0)return 0;
-  const hostile=t.beast?true:!(CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)===tm(t.kind==='wall'?t.creator:t.owner));// the Rift Beast is everyone's enemy
+  const hostile=(t.beast||t.monster)?true:!(CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)===tm(t.kind==='wall'?t.creator:t.owner));// the Rift Beast is everyone's enemy
   if(hostile)barrierCheck(t,tick);// Defender Barrier (v25): the first enemy attack or ability hit breaks it and queues the answer
   // Shield Wall (Warband): 1 less from a hostile hit, never below 1. Not on curse ticks or burning ground.
   if(hostile&&!tick&&n>1&&t.kind!=='wall'){const sb=shieldWallFor(t,CUR_SRC,CUR_TAG);if(sb){n-=1;fx(t,'shield wall','#eef0f4');tSupBy(sb.id,null,'Shield Wall (passive)','blocked',Math.min(1,Math.max(0,t.hp-n)))}}
@@ -1848,7 +1854,7 @@ function healUnit(t,n,col,name,by){
 }
 function afterAction(){
   resolveBeast();resolveBarrier();captureObjectives(G.cur);
-  pickupRelics();computeHolder();
+  pickupRelics();wildsTick(false);computeHolder();
   if(SIM)return;
   if(checkVictory())return;
   if(!P(G.cur).alive){advance();return}
@@ -2100,7 +2106,7 @@ function aimCells(u,k){
   if(A.hits==='ally')pool.push(u);
   const out=[];
   for(const v of pool){
-    if(v.kind==='wall'){if(v.beast&&beastHittable(A)&&!hidden(u,v))out.push(...cells(v));continue}// the Rift Beast: any damaging ability aimed at enemies can hit it
+    if(v.kind==='wall'){if((v.beast||v.monster)&&beastHittable(A)&&!hidden(u,v))out.push(...cells(v));continue}// the Rift Beast: any damaging ability aimed at enemies can hit it
     const foe=tm(v.owner)!==tm(u.owner);
     if(A.hits==='foe'&&!foe)continue;if(A.hits==='ally'&&foe)continue;
     if(foe&&hidden(u,v))continue;
@@ -2139,7 +2145,7 @@ function shapeCells(u,k,q,r){
 }
 function areaUnits(u,A,area){
   const m=occ(),seen=new Set(),out=[];
-  for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v))continue;seen.add(v);if(v.kind==='wall'){if(v.beast&&beastHittable(A))out.push(v);continue}
+  for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v))continue;seen.add(v);if(v.kind==='wall'){if((v.beast||v.monster)&&beastHittable(A))out.push(v);continue}
     const foe=tm(v.owner)!==tm(u.owner);
     if(A.hits==='none')continue;
     if(A.hits==='foe'&&!foe)continue;
@@ -2238,7 +2244,7 @@ function pushUnit(t,d,n,src,quiet){
     const q=t.q+DIRS[d][0],r=t.r+DIRS[d][1];
     if(!solid(q,r)){fallKill(t,q,r,src);return}
     const o=unitAt(q,r);
-    if((o&&o!==t)||featAt(q,r)==='rock'||isCentreWall(q,r)){hurt(t,slam,'#12d69a');break}
+    if((o&&o!==t)||isBlock(q,r)||isCentreWall(q,r)){hurt(t,slam,'#12d69a');break}
     setAnim(t);t.q=q;t.r=r;
   }
   if(!quiet&&(t.q!==oq||t.r!==or))tSup('moved',1);
@@ -2263,7 +2269,7 @@ function wellPull(w,start){// start: called at the start of the owner's turn (th
   const old=CUR_SRC,ot=CUR_TAG,on=CUR_NAME;CUR_SRC=src;CUR_TAG='Abil';CUR_NAME=ABIL.well.name;
   for(const v of vs){if(!alive(v))continue;const d=dirTo(v.q,v.r,w.q,w.r),q=v.q+DIRS[d][0],r=v.r+DIRS[d][1];
     if(!solid(q,r)){mv.push([v.q,v.r,q,r]);fallKill(v,q,r,src);continue}
-    if(featAt(q,r)==='rock'||isCentreWall(q,r)||occ().get(key(q,r)))continue;mv.push([v.q,v.r,q,r]);setAnim(v);if(v.anim)v.anim.dur=650;v.q=q;v.r=r;tSup('moved',1)}
+    if(isBlock(q,r)||isCentreWall(q,r)||occ().get(key(q,r)))continue;mv.push([v.q,v.r,q,r]);setAnim(v);if(v.anim)v.anim.dur=650;v.q=q;v.r=r;tSup('moved',1)}
   CUR_SRC=old;CUR_TAG=ot;CUR_NAME=on;
   // Visual only: a streak for every dragged unit, a log line and a short message on screen (vfx 'well' in vfx.js).
   if(mv.length&&!SIM){const left=start?w.ttl-1:w.ttl,n=mv.length;
@@ -2527,6 +2533,7 @@ function beastHittable(A){return !!A&&(A.hits==='foe'||A.hits==='all'||A.hits===
 function beastRoll(round,id,hp){let h=0x811c9dc5;for(const n of [round,id,Math.round(hp*2),0xbea57]){h^=n&0xffff;h=Math.imul(h,0x01000193);h^=n>>>16;h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
 function beastHurt(t,n,tick,hpB){
   const a=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC:null;if(!a)return;
+  if(G.map&&!tick){G.beast=G.beast||{};G.beast.lastBy=a.id;G.beast.hitN=(G.beast.hitN||0)+1}// Crown Wilds lair: it answers the hits at the next round start
   const eff=Math.min(n,Math.max(0,hpB));G.beast=G.beast||{};const T=G.beast.dmgT=G.beast.dmgT||{};const tt=tm(a.owner);T[tt]=(T[tt]||0)+eff;
   const O=tObj();if(O&&O.beast){O.beast.dmg[a.owner]=(O.beast.dmg[a.owner]||0)+eff;O.beast.hits[a.owner]=(O.beast.hits[a.owner]||0)+1}
   // v27 (owner, 1 Oct 2026: "less HP and no strike-back, to make it tempting"): the Beast never lashes back any more (12 HP, was 20 with a 50% lash of 1).
@@ -2611,6 +2618,7 @@ function spawnBeast(tri){
 // Heart, voids, traps, rocks, the ring about to fall, flags, the Wellspring, loose relics and every unit; it does not turn straight back if it has another
 // way. Hexes it leaves on a ring the Collapse has already taken crumble (beastLand), so it never leaves solid islands behind.
 function beastRoam(){
+  if(G.map)return 0;// in its Crown Wilds lair the Beast never moves
   if(!G.beast||!G.beast.spawned||G.beast.dead||G.round<=G.beast.spawned)return 0;
   const b=G.units.find(u=>u.beast&&alive(u));if(!b)return 0;
   const relicAt=(q,r)=>(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r);
@@ -2628,6 +2636,9 @@ function beastRoam(){
 // Round events of the three acts, called at the start of each new round (advance), after the Collapse and the relics.
 function actEvents(){
   if(G.objOff)return;const R=G.round;
+  if(G.map){if(R===RULES.CENTRE_FROM-1){addLog(null,'Next round the doors of the Throne Hall open.');vfx({k:'announce',msg:'Next round the Throne Hall opens'})}
+    if(R===RULES.CENTRE_FROM){addLog(null,'The doors of the Throne Hall open! Heart points and the Throne count from now on.');vfx({k:'wallfall',msg:'The Throne Hall is open'});announce({k:'wall'})}
+    for(const Rm of G.rooms||[])if(Rm.enc==='beast'&&Rm.state==='active'&&G.beast&&G.beast.dead)Rm.state='done';return}
   const both=RULES.BEAST_AT===RULES.CENTRE_FROM;// v26: the Beast awakens in the same moment the wall falls, announced together
   if(R===RULES.CENTRE_FROM-1){addLog(null,both?'Next round the wall around the Heart falls and the Rift Beast awakens in no man’s land.':'The wall around the Heart falls next round.');vfx({k:'announce',msg:both?'Next round the wall falls and the Rift Beast awakens':'The wall around the Heart falls next round'})}
   if(R===RULES.CENTRE_FROM){addLog(null,'The wall around the Heart falls! The centre is open: Heart points and the Throne count from now on.');vfx({k:'wallfall',msg:'The wall has fallen: the Heart is open'});announce({k:'wall'})}
@@ -2637,6 +2648,193 @@ function actEvents(){
   if(R>=RULES.BEAST_AT&&!(G.beast&&G.beast.spawned))spawnBeast();
   else beastRoam();
 }
+/* ---------- The Crown Wilds (map mode, v30, owner 1 Oct 2026) ----------
+   A hand-made 4-player map (G.map='wilds'): safe walled camps far apart, three roads from each camp (to the Throne, to the North/South Hall, past the
+   Crypt to the East/West Grove), a walled Throne Hall whose four doors open in round WILDS.open (10), a river moat with one bridge per camp, a river
+   along the east-west axis, and 12 hidden rooms whose contents are shuffled every game. A room is revealed when any unit steps into it or its way in.
+   Encounters: guardian (one strong monster), pack (three small ones), crate (smash it open), hold (stand in it alone for 3 of your turns), shrine
+   (a heal, no loot), beast (the Rift Beast's lair; it never moves and once per round strikes the last unit that hit it for 1 + the hits it took).
+   Loot must be CARRIED back into your own camp to take effect; a carrier that dies drops it and anyone may pick it up. The Cursed chest is a coin flip
+   when picked up (50% it turns into a real reward, 50% it curses the carrier and is gone); the flip is a hash of round, unit and room, so undo cannot reroll it.
+   No Collapse, no flags, no Wellspring, no random relics, no Riftwalkers in this mode. Heart points (from round 10), loot and leader takedowns win. */
+const WILDS={R:17,open:10,target:12,hold:3,camp:[4,11],north:[-7,14],east:[14,0],crypt:[9,3],fort:[2,7]};
+const MONSTERS={
+  guardian:{name:'Stone Guardian',icon:'golem',hp:14,atk:4,def:1},
+  ghoul:{name:'Ghoul',icon:'skull',hp:5,atk:2,def:0},
+  crate:{name:'Locked Crate',icon:'chest',hp:8,atk:0,def:1}};
+const LOOT={
+  points1:{name:'Crown Shard',text:'+1 Warlord point',col:'#f2c75c'},
+  points2:{name:'Crown Shards',text:'+2 Warlord points',col:'#f2c75c'},
+  points3:{name:'Crown Jewel',text:'+3 Warlord points',col:'#f2c75c'},
+  draught:{name:'Healing Draught',text:'every unit of yours heals 4',col:'#5fd68e'},
+  jar:{name:'Storm Jar',text:'+6 Ultimate charge',col:'#7fc8ff'},
+  relic:{name:'Ancient Relic',text:'the unit that brings it home carries a random relic',col:'#b98cff'},
+  sand:{name:'Hourglass Sand',text:'+1 AP every turn for the rest of the game',col:'#d94cf0'},
+  banner:{name:'War Banner',text:'every unit of yours +1 ATK for the rest of the game',col:'#ff7a5c'},
+  sellsword:{name:'Sellsword Contract',text:'a Sellsword (12 HP, 3 ATK, 1 DEF, walks 3) joins your army in your camp',col:'#e8b84e'},
+  cursed:{name:'Cursed Chest',text:'a coin flip when picked up: a real reward, or a curse on the carrier',col:'#9a6bd0'}};
+const SELLSWORD={name:'Sellsword',icon:'sword',hp:12,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1};
+const WILDS_DECKS={
+  fort:{enc:['crate','hold','pack','shrine'],loot:['points1','draught','jar','cursed']},
+  crypt:{enc:['guardian','pack','crate','hold'],loot:['points2','relic','sand','cursed']},
+  big:{enc:['beast','guardian','pack','hold'],loot:['points3','banner','sellsword','cursed']}};
+const ROOM_NAMES={hall:'Hall',grove:'Grove',crypt:'Crypt',fort:'Hill Fort'};
+const ENC_NAMES={guardian:'a Stone Guardian',pack:'a pack of Ghouls',crate:'a Locked Crate',hold:'an empty hall: hold it alone',shrine:'a Shrine',beast:'the Rift Beast'};
+const isBlock=(q,r)=>{const f=featAt(q,r);return f==='rock'||f==='river'};
+function wildsMirrors(q,r){const o=[[q,r],[-q-r,r],[q+r,-r],[-q,-r]];const s=new Set(),out=[];for(const c of o){const k=key(c[0],c[1]);if(!s.has(k)){s.add(k);out.push(c)}}return out}
+function hexLine(a,b){const n=hd(a[0],a[1],b[0],b[1]);const out=[];for(let i=0;i<=n;i++){const t=n?i/n:0;const x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t,y=-x-z;let rx=Math.round(x),rz=Math.round(z);const ry=Math.round(y);const dx=Math.abs(rx-x),dy=Math.abs(ry-y),dz=Math.abs(rz-z);if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy<=dz)rz=-rx-ry;out.push([rx,rz])}return out}
+// Builds the board: G.feat (rock walls, river, forest, hill, shrine), G.roads, G.rooms, camps (p.home, p.zone, home ground) and the shuffled room decks.
+function genWilds(){
+  const W=WILDS,cellsAll=allCells(),T={},roomOf={};
+  const ang=(q,r,aq,ar)=>{const [x,y]=pix(q,r),[ax,ay]=pix(aq,ar);return Math.atan2(y-ay,x-ax)};
+  const near=(a,b,tol)=>{let d=Math.abs(a-b)%(2*Math.PI);if(d>Math.PI)d=2*Math.PI-d;return d<tol};
+  const angTo=(a,b)=>ang(b[0],b[1],a[0],a[1]);
+  // set a hex and its three mirror images; rooms keep one id per copy
+  const set=(q,r,t,room)=>{wildsMirrors(q,r).forEach(([a,b])=>{if(!inR(a,b))return;T[key(a,b)]=t;if(room)roomOf[key(a,b)]=room})};
+  const ring=(c,d,doors,tol,t,room,gapT)=>{for(const [q,r] of cellsAll){if(hd(q,r,c[0],c[1])!==d)continue;const a=ang(q,r,c[0],c[1]);set(q,r,doors.some(g=>near(a,g,tol))?(gapT||'gap'):t,room&&doors.some(g=>near(a,g,tol))?room+':gate':null)}};
+  const fill=(c,d,t,room)=>{for(const [q,r] of cellsAll)if(hd(q,r,c[0],c[1])<d)set(q,r,t,room)};
+  const B=W.camp,N=W.north,E=W.east,C=W.crypt,F=W.fort;
+  for(let q=7;q<=11;q++)set(q,0,'river');
+  {const moat=cellsAll.filter(([q,r])=>hd(q,r,0,0)===6);for(const [q,r] of moat)set(q,r,'river');
+   const bq=moat.slice().sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1])||Math.abs(ang(a[0],a[1],0,0)-angTo([0,0],B))-Math.abs(ang(b[0],b[1],0,0)-angTo([0,0],B)))[0];set(bq[0],bq[1],'bridge')}
+  // Throne Hall: a stone ring right around the Heart (heartR+1) with a door on each axis; the doors are sealed by the centre wall until round WILDS.open
+  ring([0,0],G.heartR+1,[0,Math.PI/2,Math.PI,-Math.PI/2],0.25,'rock',null,'door');
+  ring(N,2,[0,Math.PI],0.35,'rock','hall');fill(N,2,'room','hall');
+  ring(E,2,[angTo(E,B),angTo(E,[B[0]+B[1],-B[1]]),Math.PI],0.33,'forest','grove');fill(E,2,'room','grove');
+  ring(C,2,[angTo(C,B)],0.3,'rock','crypt');fill(C,2,'room','crypt');
+  ring(F,2,[angTo(F,B),angTo(F,[0,0])],0.4,'hill','fort');fill(F,2,'room','fort');
+  ring(B,3,[angTo(B,[0,0]),angTo(B,N),angTo(B,C)],0.2,'rock',null,'gate');
+  fill(B,3,'camp');
+  const road=path=>{for(const [q,r] of path){const t=T[key(q,r)];if(!t||t==='forest'||t==='hill')set(q,r,'road')}};
+  const bridge=cellsAll.filter(([q,r])=>T[key(q,r)]==='bridge').sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1]))[0];
+  road(hexLine([B[0]-1,B[1]-2],bridge));road(hexLine([B[0]-2,B[1]-1],[N[0]+3,N[1]-1]));road(hexLine([B[0]+2,B[1]-2],[C[0]-1,C[1]+3]));road(hexLine([C[0]+2,C[1]-1],[E[0]-1,E[1]+3]));
+  // woods and hills scattered on open ground, one hex clear of every road and way in (deterministic, so every game has the same map)
+  const h=(q,r)=>{let x=Math.imul(q*73856093^r*19349663,2654435761)>>>0;x^=x>>>13;return (x%1000)/1000};
+  for(const [q,r] of cellsAll){const [x,y]=pix(q,r);if(x<0||y<0||T[key(q,r)])continue;
+    if(DIRS.some(([a,b])=>{const n=T[key(q+a,r+b)];return n==='road'||n==='gap'||n==='door'||n==='gate'||n==='bridge'}))continue;
+    const v=h(q,r);if(v<0.07)set(q,r,'forest');else if(v<0.095)set(q,r,'hill')}
+  // write the board
+  G.feat={};G.roads={};G.terr={};
+  for(const [k,t] of Object.entries(T)){if(t==='rock'||t==='river'||t==='forest'||t==='hill')G.feat[k]=t;if(t==='road'||t==='bridge')G.roads[k]=1}
+  // rooms: one record per copy, cells (inside) and ways (the gaps in its ring)
+  // each room hex belongs to the nearest copy of its room's centre (rooms on a mirror line have 2 copies, the others 4)
+  const centres={hall:N,grove:E,crypt:C,fort:F},rooms={};
+  for(const [k,id] of Object.entries(roomOf)){const gate=id.includes(':gate'),type=id.replace(':gate','');const [q,r]=k.split(',').map(Number);
+    const cs=wildsMirrors(...centres[type]);let bi=0,bd=99;cs.forEach((c,i)=>{const d=hd(q,r,c[0],c[1]);if(d<bd){bd=d;bi=i}});
+    const rid=type+'#'+bi;const R=rooms[rid]=rooms[rid]||{id:rid,type,c:cs[bi],cells:[],ways:[]};(gate?R.ways:R.cells).push(k)}
+  G.rooms=Object.values(rooms).map(R=>Object.assign(R,{seen:false,enc:null,loot:null,state:'hidden',holdTeam:null,holdN:0,monMax:0}));
+  G.rooms.sort((a,b)=>a.id<b.id?-1:1);
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(RNG()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+  for(const [grp,types] of [['fort',['fort']],['crypt',['crypt']],['big',['hall','grove']]]){const rs=G.rooms.filter(R=>types.includes(R.type));const D=WILDS_DECKS[grp];const enc=shuffle(D.enc.slice());const loot=shuffle(D.loot.slice());let li=0;
+    rs.forEach((R,i)=>{R.enc=enc[i%enc.length];R.loot=R.enc==='shrine'||R.enc==='beast'?null:loot[li++%loot.length];R.tier=grp})}
+  // camps: walled, the inside is the deployment zone and home ground; seats go round the board
+  const camps=wildsMirrors(...B);const order=[0,1,3,2].map(i=>camps[i]);
+  G.players.forEach((p,i)=>{const c=order[p.spot%4];p.home=c;p.camp=c;p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2).map(([q,r])=>key(q,r));for(const k of p.zone)G.terr[k]=p.fac});
+}
+const inCamp=(p,q,r)=>!!(p&&p.zone&&p.zone.includes(key(q,r)));
+function roomAt(q,r){if(!G.rooms||!G.rooms.length)return null;if(!roomAt.c||roomAt.c.r!==G.rooms){const m=new Map();for(const R of G.rooms){for(const k of R.cells)m.set(k,R);for(const k of R.ways)m.set(k,R)}roomAt.c={r:G.rooms,m}}return roomAt.c.m.get(key(q,r))||null}
+function makeMonster(kind,q,r,room){const M=MONSTERS[kind];return {id:G.nid++,kind:'wall',wall:'monster',monster:kind,owner:-1,name:M.name,icon:M.icon,q,r,dir:0,size:1,hp:M.hp,maxhp:M.hp,atk:M.atk,def:M.def,st:{},moved:true,acted:true,cd:0,room}}
+// A unit stepped into a hidden room (or its way in): everyone sees it now, and its encounter wakes.
+function revealRoom(R,u){
+  R.seen=true;R.state='active';const free=()=>R.cells.map(k=>k.split(',').map(Number)).filter(([q,r])=>passable(q,r)&&!unitAt(q,r));
+  const put=(kind,c)=>{const m=makeMonster(kind,c[0],c[1],R.id);G.units.push(m);R.monMax+=m.maxhp;return m};
+  if(R.enc==='guardian'){const c=unitAt(R.c[0],R.c[1])?free()[0]:R.c;if(c)put('guardian',c)}
+  else if(R.enc==='pack'){const sp=free().sort((a,b)=>hd(a[0],a[1],R.c[0],R.c[1])-hd(b[0],b[1],R.c[0],R.c[1]));for(const c of sp.slice(0,3))put('ghoul',c)}
+  else if(R.enc==='crate'){const c=unitAt(R.c[0],R.c[1])?free()[0]:R.c;if(c)put('crate',c)}
+  else if(R.enc==='shrine'){G.feat[key(R.c[0],R.c[1])]='shrine';R.state='done'}
+  else if(R.enc==='beast'){const tri=[[R.c[0],R.c[1]],[R.c[0]+1,R.c[1]],[R.c[0],R.c[1]+1]];if(tri.every(([q,r])=>passable(q,r)&&!unitAt(q,r))&&!(G.beast&&G.beast.spawned)){spawnBeast(tri);if(G.beast)G.beast.room=R.id}else R.state='done'}
+  const who=u&&u.kind!=='wall'?FAC[G.players[u.owner].fac].name:'Someone';
+  addLog(u&&u.owner>=0?u.owner:null,`${who} discovers the ${ROOM_NAMES[R.type]}: ${ENC_NAMES[R.enc]}${R.loot?' guards a treasure':''}.`);
+  announce({k:'room',room:ROOM_NAMES[R.type],enc:ENC_NAMES[R.enc],fac:u&&u.owner>=0?G.players[u.owner].fac:null,loot:!!R.loot});
+  vfx({k:'buff',at:R.c,col:'#b9b3d6'});
+  if(trk()){const O=tObj();if(O){O.rooms=O.rooms||{};O.rooms[R.id]={enc:R.enc,loot:R.loot,seen:G.round}}}
+}
+// Loot appears in a room (monsters cleared, crate broken, room held).
+function dropLoot(R,q,r){if(!R.loot)return;R.state='loot';G.loot=G.loot||[];G.loot.push({id:G.nid++,kind:R.loot,room:R.id,q,r,carrier:null});
+  addLog(null,`The ${ROOM_NAMES[R.type]}'s treasure lies open: ${LOOT[R.loot].name}. Carry it home to your camp!`);vfx({k:'relic',at:[q,r],col:LOOT[R.loot].col})}
+function monsterSlain(t){
+  const R=(G.rooms||[]).find(x=>x.id===t.room);addLog(null,`${t.name} falls.`);vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:'#b9b3d6'});
+  if(R&&!G.units.some(v=>v.monster&&v.room===R.id))dropLoot(R,t.q,t.r);
+}
+const lootOf=u=>u&&G.loot?G.loot.find(x=>x.carrier===u.id)||null:null;
+// Coin flip for the Cursed chest: a fixed hash of round, unit and room, so undo cannot reroll it.
+function lootFlip(u,x){let h=0x811c9dc5;for(const c of `${G.round}|${u.id}|${x.room}|${x.id}`){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
+function pickupLoot(){
+  if(!G.loot||!G.loot.length)return;
+  for(const x of G.loot.slice()){if(x.carrier!=null){if(!byId(x.carrier)){x.carrier=null}continue}
+    const u=unitAt(x.q,x.r);if(!u||u.kind==='wall'||u.summon||u.statue||lootOf(u))continue;
+    x.carrier=u.id;const F=FAC[G.players[u.owner].fac];
+    if(x.kind==='cursed'){const R=(G.rooms||[]).find(r=>r.id===x.room);const good=lootFlip(u,x)<0.5;
+      if(good){const pool=WILDS_DECKS[R?R.tier:'crypt'].loot.filter(k=>k!=='cursed');x.kind=pool[Math.floor(lootFlip(u,Object.assign({},x,{id:x.id+7}))*pool.length)];
+        addLog(u.owner,`${u.name} opens the Cursed Chest... and it holds a ${LOOT[x.kind].name}! Carry it home.`);announce({k:'chest',good:true,fac:F&&G.players[u.owner].fac,unit:u.name,loot:LOOT[x.kind].name})}
+      else{G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';applyCurse(u,u,'agony');applyCurse(u,u,'frailty');fx(u,'cursed!','#9a6bd0');
+        addLog(u.owner,`${u.name} opens the Cursed Chest... a curse! It is struck by Agony and Frailty.`);announce({k:'chest',good:false,fac:G.players[u.owner].fac,unit:u.name})}
+      continue}
+    addLog(u.owner,`${u.name} picks up the ${LOOT[x.kind].name}. Bring it back to camp!`);fx(u,LOOT[x.kind].name,LOOT[x.kind].col)}
+}
+function dropLootOf(u){const x=lootOf(u);if(!x)return;x.carrier=null;x.q=u.q;x.r=u.r;if(!solid(x.q,x.r)||isBlock(x.q,x.r)){const c=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)).sort((a,b)=>hd(a[0],a[1],u.q,u.r)-hd(b[0],b[1],u.q,u.r))[0];if(c){x.q=c[0];x.r=c[1]}}
+  addLog(null,`The ${LOOT[x.kind].name} falls to the ground.`)}
+// A carrier standing inside its own camp delivers the loot.
+function deliverLoot(){
+  if(!G.loot)return;
+  for(const x of G.loot.slice()){if(x.carrier==null)continue;const u=byId(x.carrier);if(!u){x.carrier=null;continue}const p=G.players[u.owner];if(!cells(u).some(([q,r])=>inCamp(p,q,r)))continue;
+    G.loot.splice(G.loot.indexOf(x),1);const R=(G.rooms||[]).find(r=>r.id===x.room);if(R)R.state='done';
+    const pid=p.id,k=x.kind;
+    if(k==='points1'||k==='points2'||k==='points3'){const n=+k.slice(-1);G.score[p.team]=(G.score[p.team]||0)+n;tPts(pid,'loot',n);if(G.score[p.team]>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}}
+    else if(k==='draught'){for(const v of G.units)if(v.owner===pid&&v.kind!=='wall')healUnit(v,4,'#5fd68e','Healing Draught (loot)')}
+    else if(k==='jar')addCharge(pid,6);
+    else if(k==='relic'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(lootFlip(u,x)*free.length)]:null;if(rk){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:u.id})}}
+    else if(k==='sand')p.lootAP=(p.lootAP||0)+1;
+    else if(k==='banner')p.lootAtk=(p.lootAtk||0)+1;
+    else if(k==='sellsword'){const c=p.zone.map(z=>z.split(',').map(Number)).find(([q,r])=>passable(q,r)&&!unitAt(q,r));if(c){const s=makeUnit(p,SELLSWORD);s.q=c[0];s.r=c[1];s.moved=true;s.acted=true;G.units.push(s);tStat(s)}}
+    addLog(pid,`${FAC[p.fac].name} brings home the ${LOOT[k].name}: ${LOOT[k].text}.`);fx(u,LOOT[k].name,LOOT[k].col);
+    announce({k:'loot',fac:p.fac,loot:LOOT[k].name,text:LOOT[k].text,team:p.team,scores:scoreSnap(),target:heartTarget()});
+    if(trk()){const O=tObj();if(O){O.loot=O.loot||[];O.loot.push({kind:k,pid,round:G.round})}}}
+}
+// After every action and at each turn start: reveal rooms, pick up and deliver loot, count held rooms.
+function wildsTick(turnStart){
+  if(!G.map||SIM)return;
+  for(const R of G.rooms||[])if(!R.seen){const u=G.units.find(v=>v.kind!=='wall'&&!v.statue&&cells(v).some(([q,r])=>R.cells.includes(key(q,r))||R.ways.includes(key(q,r))));if(u)revealRoom(R,u)}
+  pickupLoot();deliverLoot();
+  if(turnStart){const p=P(G.cur);
+    for(const R of G.rooms||[]){if(R.enc!=='hold'||R.state!=='active')continue;const teams=new Set(G.units.filter(v=>v.kind!=='wall'&&!v.statue&&!v.summon&&cells(v).some(([q,r])=>R.cells.includes(key(q,r)))).map(v=>tm(v.owner)));
+      if(teams.size!==1){if(teams.size>1||R.holdTeam===p.team){R.holdTeam=null;R.holdN=0}continue}
+      const t=[...teams][0];if(t!==p.team)continue;if(R.holdTeam!==t){R.holdTeam=t;R.holdN=0}R.holdN++;
+      addLog(p.id,`${FAC[p.fac].name} holds the ${ROOM_NAMES[R.type]}: ${R.holdN}/${WILDS.hold}.`);
+      if(R.holdN>=WILDS.hold){R.holdTeam=null;dropLoot(R,R.c[0],R.c[1]);pickupLoot()}}}
+}
+// Start of every round: room monsters strike the weakest unit next to them; the Rift Beast in its lair answers the hits it took.
+function wildsRound(){
+  if(!G.map)return;
+  const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Room monster';
+  for(const m of G.units.slice()){if(!m.monster||!alive(m)||!m.atk)continue;
+    const ts=G.units.filter(v=>v.kind!=='wall'&&!v.statue&&distUU(m,v)===1).sort((a,b)=>a.hp-b.hp);const t=ts[0];if(!t)continue;
+    const d=Math.max(1,m.atk-effDef(t));addLog(t.owner,`${m.name} strikes ${t.name} for ${d}.`);vfx({k:'slash',from:[m.q,m.r],to:[t.q,t.r],col:'#b9b3d6'});hurt(t,d,'#b9b3d6')}
+  const b=G.units.find(v=>v.beast&&alive(v));
+  if(b&&G.beast&&G.beast.hitN>0){const a=byId(G.beast.lastBy);const d=1+G.beast.hitN;
+    if(a&&alive(a)){CUR_NAME=BEAST_SB;addLog(a.owner,`The Rift Beast strikes back at ${a.name} for ${d}.`);vfx({k:'slash',from:[b.q,b.r],to:[a.q,a.r],col:'#b06bff'});hurt(a,d,'#b06bff')}}
+  if(G.beast){G.beast.hitN=0}
+  CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2];
+}
+
+// Walking distance on the Crown Wilds (around walls and rivers, through doors and over bridges; units ignored; the Throne Hall doors count as open).
+// One field per goal hex, cached per game. Flyers use straight hex distance.
+let WPATH=null;
+function wildsDist(g,q,r,u){
+  if(u&&u.mt==='fly')return hd(q,r,g[0],g[1]);
+  if(!WPATH||WPATH.G!==G)WPATH={G,m:new Map()};const k=key(g[0],g[1]);let f=WPATH.m.get(k);
+  if(!f){f=new Map();f.set(k,0);const qu=[g];const walk=(a,b)=>inR(a,b)&&solid(a,b)&&!isBlock(a,b);
+    for(let i=0;i<qu.length;i++){const [a,b]=qu[i];const d=f.get(key(a,b));for(const [dq,dr] of DIRS){const x=a+dq,y=b+dr,kk=key(x,y);if(f.has(kk)||!walk(x,y))continue;f.set(kk,d+1);qu.push([x,y])}}
+    WPATH.m.set(k,f)}
+  const d=f.get(key(q,r));return d==null?hd(q,r,g[0],g[1])*2+20:d}
+function wildsGoal(u){
+  const p=G.players[u.owner];if(!p)return null;const x=lootOf(u);if(x)return [p.camp[0],p.camp[1],7];
+  if(u.leader||u.summon||u.statue)return null;
+  const late=G.round>=RULES.CENTRE_FROM-2;const opts=[];
+  for(const l of G.loot||[]){if(l.carrier==null)opts.push([l.q,l.r,3]);else{const c=byId(l.carrier);if(c&&tm(c.owner)!==p.team)opts.push([c.q,c.r,2.2])}}
+  for(const R of G.rooms||[]){if(R.state==='active')opts.push([R.c[0],R.c[1],R.enc==='hold'?1.6:1.3]);else if(R.state==='hidden')opts.push([R.c[0],R.c[1],1.1])}
+  if(late&&u.id%3!==0)opts.push([0,0,1.6]);// a third of each army keeps exploring
+  let best=null,bs=1e9;for(const g of opts){const d=wildsDist(g,u.q,u.r,u);const sc=d/g[2]+(u.id%3)*0.7*(g[2]<1.5?1:0);if(sc<bs){bs=sc;best=g}}return best}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
 function labClear(){G.objOff=true;G.flagOwner={};G.flagEver={};G.spring=null;G.springDone=false;G.beast=null;BEAST_Q=[];BAR_Q=[];G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
 function labUnit(pid,name,q,r,o){const p=G.players[pid];const d=FAC[p.fac].units.find(x=>x.name===name);if(!d)throw new Error('labUnit: no unit '+name+' in '+p.fac);const u=makeUnit(p,d);u.q=q;u.r=r;u.dir=(o&&o.dir)||0;if(o&&o.hp){u.hp=u.maxhp=o.hp}G.units.push(u);tStat(u);return u}
@@ -2670,6 +2868,8 @@ function evaluate(team){
   {let f=0;for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const o=flagOwner(q,r);if(o==null)continue;f+=tm(o)===team?2.5:-1}s+=f;
    const so=springOwner();if(so!=null)s+=tm(so)===team?5:-2;
    if(G.beast){const b=G.beast;s+=((b.dmgT&&b.dmgT[team])||0)*0.9;if(b.dead&&b.killTeam===team)s+=10}}
+  if(G.map){for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
+    for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*0.5+(left<=0?6:0)}}
   for(const p of G.players){if(!p.alive)s+=tm(p.id)===team?-150:150;else if(p.leaderless)s+=tm(p.id)===team?-90:90}
   // Warlord points: a lead over the best rival counts, and every point matters more as the target nears.
   if(G.mode==='warlord'){const my=G.score[team]||0;let rival=0;for(const t in G.score)if(+t!==team&&G.players.some(p=>p.team===+t&&p.alive))rival=Math.max(rival,G.score[t]||0);const tgt=heartTarget();s+=(my-rival)*3+(my>=tgt?200:0)-(rival>=tgt?200:0)}
@@ -2678,7 +2878,7 @@ function evaluate(team){
 // Riftwalker combos, for the lookahead: an enemy that one of our ready pushers (Repel) can still throw onto a lethal hex this turn is worth part of a kill.
 // A push goes straight away from the pusher's hex; the pusher must already stand on the spot behind the enemy or be able to walk there.
 function pushLethal(t,d,n,m){if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial')))return false;let q=t.q,r=t.r;m=m||occ();
-  for(let i=0;i<n;i++){q+=DIRS[d][0];r+=DIRS[d][1];if(!solid(q,r))return true;const o=m.get(key(q,r));if((o&&o!==t)||featAt(q,r)==='rock'||isCentreWall(q,r))return false}return false}
+  for(let i=0;i<n;i++){q+=DIRS[d][0];r+=DIRS[d][1];if(!solid(q,r))return true;const o=m.get(key(q,r));if((o&&o!==t)||isBlock(q,r)||isCentreWall(q,r))return false}return false}
 function throwSetups(team){
   const ps=G.units.filter(p=>p.kind!=='wall'&&p.owner===G.cur&&p.ability&&ABIL[p.ability].push&&ABIL[p.ability].range===1&&p.cd<=0&&!p.acted&&!p.st.frozen);if(!ps.length)return 0;
   let s=0;const m=occ();
@@ -2908,6 +3108,8 @@ function moveEval(u,o,ctx){
   if(rangedU&&ft(v).includes('hill')&&!ft(u).includes('hill'))s+=4;if(rangedU&&ft(u).includes('hill')&&!ft(v).includes('hill'))s-=3;
   if(ft(v).includes('forest')&&!ft(u).includes('forest'))s+=(rangedU||u.maxhp<=7?3:1.5);if(ft(u).includes('forest')&&!ft(v).includes('forest'))s-=(rangedU||u.maxhp<=7?2:1);
   if(u.hp<u.maxhp-1&&ft(v).includes('shrine')&&!ft(u).includes('shrine')&&cells(v).some(([q,r])=>shrineOn(q,r)))s+=2.5;
+  // Crown Wilds (v30): a carrier heads home; others go for loose loot, enemy carriers, rooms with a fight or a hold, then unexplored rooms; late in the game, the Throne Hall.
+  if(G.map){const g=wildsGoal(u);if(g){const d0=wildsDist(g,u.q,u.r,u),d1=wildsDist(g,o.q,o.r,u);s+=(d0-d1)*g[2]}}
   if(!u.leader&&G.relics){for(const x of G.relics)if(x.carrier==null&&x.q!=null){const d0=hd(u.q,u.r,x.q,x.r),d1=hd(o.q,o.r,x.q,x.r);if(d1===0)s+=9;else if(d0<=5)s+=(d0-d1)*1.2}}
   // Act 1 (v23): flags stay captured, so a unit steps onto a flag its side does not own (neutral or an enemy's) and walks on; it never parks on an owned one.
   // The Wellspring is worth more (+1 AP every turn). Nearby objectives pull units within reach (flags 4 hexes, the Wellspring 6).
@@ -3162,10 +3364,12 @@ function draw3D(now){
     if(isDoomed(q,r)){polyPath(top);ctx.fillStyle=`rgba(255,60,40,${0.25+0.2*flick})`;ctx.fill();const pp=[[-0.5,-0.1],[-0.1,0.15],[0.2,-0.2],[0.5,0.2]].map(([a,b])=>proj(x+a,z+b,0.01));ctx.beginPath();pp.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.strokeStyle='rgba(255,120,90,.9)';ctx.lineWidth=1.5;ctx.stroke()}
     const ftt=featAt(q,r);
     if(ftt==='rock'){polyPath(top);ctx.fillStyle='#2a2d33';ctx.fill()}
+    if(ftt==='river'){polyPath(top);ctx.fillStyle='#2468a3';ctx.fill();const [a,b]=proj(x,z,0.01);ctx.strokeStyle='rgba(200,235,255,.45)';ctx.lineWidth=Math.max(1,CAM.S*0.06);ctx.beginPath();ctx.moveTo(a-CAM.S*0.45,b);ctx.quadraticCurveTo(a-CAM.S*0.15,b-CAM.S*0.12,a+CAM.S*0.1,b);ctx.quadraticCurveTo(a+CAM.S*0.3,b+CAM.S*0.12,a+CAM.S*0.45,b);ctx.stroke()}
+    if(G.map){if(isRoad(q,r)&&!ftt){polyPath(top);ctx.fillStyle='rgba(216,192,138,.36)';ctx.fill()}const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){polyPath(top);ctx.fillStyle='rgba(24,22,40,.82)';ctx.fill();if(Rm.c[0]===q&&Rm.c[1]===r){const [a,b]=proj(x,z,0.02);ctx.fillStyle='#b9b3d6';ctx.font=`700 ${Math.max(10,CAM.S*1.1)}px Georgia,serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',a,b)}}}
     if(ftt==='hill'){ctx.save();ctx.strokeStyle='rgba(230,215,170,.85)';ctx.lineWidth=Math.max(1.2,CAM.S*0.06);for(const k2 of [0.62,0.36]){polyPath(hexTop(x,z,k2,0.02));ctx.stroke()}ctx.restore()}
     if(ftt==='shrine'){const [a,b]=proj(x,z,0);ctx.save();ctx.fillStyle=shrineBack(q,r)?'rgba(90,100,95,.3)':'rgba(159,240,192,.35)';ctx.beginPath();ctx.ellipse(a,b,CAM.S*0.6,CAM.S*0.6*Math.cos(CAM.tilt),0,0,7);ctx.fill();ctx.restore()}
     if(painted&&CAM.S>9){ctx.fillStyle=hexA('#ffb347',0.5+0.35*flick);for(const [ox,oz] of [[-0.35,0.3],[0.3,0.35],[0,-0.35]]){const [a,b]=proj(x+ox,z+oz,0);ctx.beginPath();ctx.arc(a,b,Math.max(1.2,CAM.S*0.06),0,7);ctx.fill()}}
-    if(isRoad(q,r)){ctx.save();ctx.setLineDash([Math.max(2,CAM.S*0.16),Math.max(2,CAM.S*0.12)]);ctx.strokeStyle='rgba(236,222,190,.6)';ctx.lineWidth=Math.max(1.2,CAM.S*0.07);
+    if(!G.map&&isRoad(q,r)){ctx.save();ctx.setLineDash([Math.max(2,CAM.S*0.16),Math.max(2,CAM.S*0.12)]);ctx.strokeStyle='rgba(236,222,190,.6)';ctx.lineWidth=Math.max(1.2,CAM.S*0.07);
       for(let i=0;i<6;i++){const nq=q+ND[i][0],nr=r+ND[i][1];if(!solid(nq,nr)||isRoad(nq,nr))continue;ctx.beginPath();ctx.moveTo(top[i][0],top[i][1]);ctx.lineTo(top[(i+1)%6][0],top[(i+1)%6][1]);ctx.stroke()}ctx.restore()}
     {const cl=G.claim&&G.claim[k];if(cl){ctx.save();ctx.setLineDash([4,3]);polyPath(hexTop(x,z,0.8,0.01));ctx.strokeStyle=FAC[cl.fac].color;ctx.lineWidth=Math.max(2,CAM.S*0.1);ctx.stroke();ctx.restore()}}
     if(isCentreWall(q,r)&&isHeart(q,r)){polyPath(top);ctx.fillStyle='rgba(8,10,16,.55)';ctx.fill()}// the sealed Heart while the wall stands
@@ -3199,6 +3403,7 @@ function draw3D(now){
   // the walled centre: a stone block on every hex of the grey ring, sorted with the figures so nothing behind it shows through
   if(centreWalled())for(const [q,r] of ringCells()){if(!isCentreWall(q,r)||isHeart(q,r))continue;const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:'cwall',q,r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   for(const x2 of G.relics||[]){if(x2.carrier!=null||x2.q==null||unitAt(x2.q,x2.r))continue;const [x,z]=world(x2.q,x2.r);list.push({u:{kind:'prop',feat:'relic',relic:x2.kind,q:x2.q,r:x2.r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
+  for(const x2 of G.loot||[]){if(x2.carrier!=null||x2.q==null||unitAt(x2.q,x2.r))continue;const [x,z]=world(x2.q,x2.r);list.push({u:{kind:'prop',feat:'loot',loot:x2.kind,q:x2.q,r:x2.r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   for(const e of G.eggs||[]){if(unitAt(e.q,e.r))continue;const [x,z]=world(e.q,e.r);list.push({u:{kind:'prop',feat:'egg',q:e.q,r:e.r,ttl:e.ttl},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   list.sort((a,b)=>a.d-b.d);
   drawnUnits=[];
@@ -3206,6 +3411,11 @@ function draw3D(now){
     const {u,pts,x,z}=it;const [sx,sy]=proj(x,z,0);
     if(u.kind==='prop'){drawProp3D(u.feat,x,z,sx,sy,s,c,u,now);continue}
     if(u.beast){drawBeast3D(u,pts,x,z,sx,sy,now);continue}
+    if(u.monster){const crate=u.monster==='crate',top=hexTop(x,z,0.6,crate?0.45:0.3),bot=hexTop(x,z,0.6,0);
+      for(let i=0;i<6;i++){const j=(i+1)%6,na=Math.PI/180*(60*i),nz=Math.cos(na)*s+Math.sin(na)*c;if(nz<=0)continue;polyPath([top[i],top[j],bot[j],bot[i]]);ctx.fillStyle=mix(crate?'#6b4423':'#2a2140','#000000',0.4-0.3*nz);ctx.fill()}
+      polyPath(top);ctx.fillStyle=crate?'#8a5a2e':'#3a2d5c';ctx.fill();ctx.strokeStyle=crate?'#e8b84e':'#b9a2ff';ctx.lineWidth=1.5;ctx.stroke();
+      const [tx,ty]=proj(x,z,crate?0.45:0.3);drawMonster2D(ctx,u,tx,ty-CAM.S*0.55,CAM.S*0.85,now);
+      if(hl.atk.has(u.id))groundRing(x,z,0.8,'#ff6161',Math.max(2,CAM.S*0.1));drawnUnits.push({u,rect:[sx-0.6*CAM.S,sy-1.6*CAM.S,sx+0.6*CAM.S,sy+0.4*CAM.S],cell:[u.q,u.r]});continue}
     if(u.kind==='wall'&&u.wall==='light'){const top=hexTop(x,z,0.66,0.55),bot=hexTop(x,z,0.66,0);ctx.save();ctx.globalAlpha=0.55;ctx.shadowColor='#fff3a8';ctx.shadowBlur=CAM.S*0.6;
       for(let i=0;i<6;i++){const j=(i+1)%6,na=Math.PI/180*(60*i),nz=Math.cos(na)*s+Math.sin(na)*c;if(nz<=0)continue;polyPath([top[i],top[j],bot[j],bot[i]]);ctx.fillStyle='rgba(255,243,168,.6)';ctx.fill()}
       polyPath(top);ctx.fillStyle='rgba(255,250,210,.8)';ctx.fill();ctx.restore();polyPath(top);ctx.strokeStyle='#fff3a8';ctx.lineWidth=1.5;ctx.stroke();
@@ -3281,6 +3491,7 @@ function drawProp3D(f,x,z,sx,sy,s,c,p,now){
     {const a=proj(x-0.45,z,h),b=proj(x+0.45,z,h),c1=proj(x,z-0.45,h),d=proj(x,z+0.45,h);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.moveTo(c1[0],c1[1]);ctx.lineTo(d[0],d[1]);ctx.strokeStyle='rgba(60,45,30,.55)';ctx.lineWidth=1;ctx.stroke()}
     if(last){const fl=0.5+0.5*Math.sin((now||0)/240);const pp=[[-0.5,-0.2],[-0.1,0.1],[0.15,-0.15],[0.5,0.25]].map(([a,b])=>proj(x+a,z+b,h+0.01));ctx.beginPath();pp.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.strokeStyle=`rgba(255,150,70,${0.55+0.4*fl})`;ctx.lineWidth=Math.max(1.5,S*0.08);ctx.stroke()}
     return}
+  if(f==='loot'){const bob=Math.sin((now||0)/350)*V*0.06;drawChest(ctx,sx,sy-V*0.45+bob,S*0.95,LOOT[p.loot].col,now||0);return}
   if(f==='relic'){const bob=Math.sin((now||0)/350)*V*0.08;ctx.beginPath();ctx.ellipse(sx,sy,S*0.4,S*0.4*Math.cos(CAM.tilt),0,0,7);ctx.fillStyle=hexA(RELICS[p.relic].col,0.25);ctx.fill();drawRelicGlyph(p.relic,sx,sy-V*0.75+bob,S*0.8,now||0);return}
   if(f==='egg'){const r=S*0.28,cy=sy-V*0.32;ctx.save();ctx.shadowColor='#ffb03d';ctx.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/200));const g=ctx.createRadialGradient(sx-r*0.3,cy-r*0.4,r*0.1,sx,cy,r*1.3);g.addColorStop(0,'#ffe0a8');g.addColorStop(0.6,'#ff8a3d');g.addColorStop(1,'#8a2a10');
     ctx.beginPath();ctx.ellipse(sx,cy,r,r*1.3,0,0,7);ctx.fillStyle=g;ctx.fill();ctx.restore();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;ctx.stroke();badge(sx+r*1.2,cy-r*1.1,Math.max(5,S*0.22),'#0b0e14','#ffb03d',p&&p.ttl);return}
@@ -4016,7 +4227,7 @@ async function netCreate(){
   let code=null;
   for(let attempt=0;attempt<3&&!code;attempt++){// a room code can be in use by someone else's room (p2p): try another
     const c=newCode();
-    const game={code:c,status:'lobby',host:NET.me,created:Date.now(),cfg:{n:cfg.n,teams:cfg.teams,mode:cfg.mode,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal',seats}};
+    const game={code:c,status:'lobby',host:NET.me,created:Date.now(),cfg:{n:cfg.n,teams:cfg.teams,mode:cfg.mode,map:cfg.map==='wilds'?'wilds':null,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal',seats}};
     try{await NET.db.doc('games/'+c).set(game);code=c}
     catch(e){const m=String(e.message||e.code||e);if(!/in use/.test(m)||attempt===2){NET.err='Could not create the game: '+m;renderOnline();return}}
   }
@@ -4072,7 +4283,7 @@ async function netSetCtrl(i,ctrl){if(!netIsHost()||NET.game.status!=='lobby'||ne
 // The host's setup card (players, sides, mode, options) feeds the room while it waits in the lobby.
 function netSyncCfg(){
   if(!netIsHost()||NET.game.status!=='lobby')return;
-  const c=NET.game.cfg,want={n:cfg.n,teams:!!(cfg.teams&&(cfg.n===4||cfg.n===6)),mode:cfg.mode,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal'};
+  const c=NET.game.cfg,want={n:cfg.n,teams:!!(cfg.teams&&(cfg.n===4||cfg.n===6)),mode:cfg.mode,map:cfg.map==='wilds'?'wilds':null,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal'};
   if(Object.keys(want).every(k=>c[k]===want[k]))return;
   const nc=Object.assign({},c,want);NET.game.cfg=nc;
   NET.db.doc('games/'+NET.code).update({cfg:nc}).catch(e=>toast('Could not update the room: '+(e.message||e.code)));
@@ -4122,7 +4333,7 @@ async function netStart(){
   NET.game.cfg=c;NET.err='';
   cfg=Object.assign({},cfg,{n:c.n,teams:c.teams,mode:c.mode,seats:c.seats.concat(cfg.seats.slice(c.seats.length))});
   NET.applying=true;
-  showScreen('game');newGame({n:c.n,teams:c.teams,mode:c.mode,collapse:c.collapse!==false,deploy:c.deploy!==false,relics:c.relics!==false,timer:c.timer||0,botLevel:c.botLevel||'normal',seats:seats});resetVFX(false);
+  showScreen('game');newGame({n:c.n,teams:c.teams,mode:c.mode,map:c.map==='wilds'?'wilds':null,collapse:c.collapse!==false,deploy:c.deploy!==false,relics:c.relics!==false,timer:c.timer||0,botLevel:c.botLevel||'normal',seats:seats});resetVFX(false);
   NET.applying=false;
   netStampSeats();
   layout();centerBoard();refresh();
@@ -4765,10 +4976,12 @@ function renderSetup(){
       <div class="field"><div class="label">Players</div>${seg([[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6']],cfg.n,'n')}</div>
       <div class="field"><div class="label">Sides</div>${seg([['0','Free for all'],['1','Teams of 2',!teamsAllowed()]],tOn?'1':'0','teams')}
         <div class="hint">${teamsAllowed()?'Teammates start on neighbouring corners. Turns alternate between sides.':'Teams of 2 need 4 or 6 players.'}</div></div>
-      <div class="field"><div class="label">Game mode</div>${seg(Object.keys(MODES).filter(m=>m!=='conquest').map(m=>[m,MODES[m].name]),cfg.mode,'mode')}
-        <div class="hint">${MODES[cfg.mode].desc}</div></div>
-      <div class="field"><div class="label">The Collapse</div>${COLLAPSE_START[cfg.mode]?seg([['1','On'],['0','Off']],cfg.collapse===false?'0':'1','col'):''}
-        ${COLLAPSE_START[cfg.mode]?`<div class="hint">From round ${collapseStart(cfg.mode,cfg.n)}, the outer ring crumbles into the void; each later ring falls a little later (2, 3, 4 rounds) until only the middle is left. You get a warning a full round before each ring falls.</div>`:''}</div>
+      <div class="field"><div class="label">Board</div>${seg([['random','Random board'],['wilds','Crown Wilds (new)']],cfg.map==='wilds'?'wilds':'random','map')}
+        <div class="hint">${cfg.map==='wilds'?'A hand-made map for 4 players: safe camps far apart, three roads each, twelve hidden rooms with monsters and treasure you must carry home, rivers, and a Throne Hall that opens in round '+WILDS.open+'. Warlord rules, first to '+WILDS.target+' points. No Collapse, no Riftwalkers.':'A new round board every game, with flags, the Wellspring and the Rift Beast.'}</div></div>
+      ${cfg.map==='wilds'?'':`<div class="field"><div class="label">Game mode</div>${seg(Object.keys(MODES).filter(m=>m!=='conquest').map(m=>[m,MODES[m].name]),cfg.mode,'mode')}
+        <div class="hint">${MODES[cfg.mode].desc}</div></div>`}
+      ${cfg.map==='wilds'?'':`<div class="field"><div class="label">The Collapse</div>${COLLAPSE_START[cfg.mode]?seg([['1','On'],['0','Off']],cfg.collapse===false?'0':'1','col'):''}
+        ${COLLAPSE_START[cfg.mode]?`<div class="hint">From round ${collapseStart(cfg.mode,cfg.n)}, the outer ring crumbles into the void; each later ring falls a little later (2, 3, 4 rounds) until only the middle is left. You get a warning a full round before each ring falls.</div>`:''}</div>`}
       <div class="field"><div class="label">Opening</div>${seg([['1','Secret deployment'],['0','Quick start']],cfg.deploy===false?'0':'1','dep')}
         <div class="hint">${cfg.deploy===false?'Armies start in their default formation and round 1 begins at once.':'Before round 1, each side arranges its army in its own zone, hidden from the others. Presets make it one tap.'}</div></div>
       <div class="field"><div class="label">Bot strength</div>${seg([['easy','Easy'],['normal','Normal'],['hard','Hard']],cfg.botLevel||'normal','bot')}
@@ -4784,7 +4997,8 @@ function renderSetup(){
     </div>
     <div class="card" id="onlineBox" style="grid-column:1"></div>
     <div style="grid-row:1 / span 2;grid-column:2"><div class="label">Ten armies, no two alike</div><div class="facs">${facs}</div></div>`;
-  $('#setupView').querySelectorAll('button[data-n]').forEach(b=>b.onclick=()=>{cfg.n=+b.dataset.n;renderSetup()});
+  $('#setupView').querySelectorAll('button[data-n]').forEach(b=>b.onclick=()=>{cfg.n=+b.dataset.n;if(cfg.n!==4)cfg.map='random';renderSetup()});
+  $('#setupView').querySelectorAll('button[data-map]').forEach(b=>b.onclick=()=>{cfg.map=b.dataset.map;if(cfg.map==='wilds'){cfg.n=4;cfg.teams=false;cfg.mode='warlord';wildsSeats()}renderSetup()});
   $('#setupView').querySelectorAll('button[data-teams]').forEach(b=>b.onclick=()=>{cfg.teams=b.dataset.teams==='1';renderSetup()});
   $('#setupView').querySelectorAll('button[data-col]').forEach(b=>b.onclick=()=>{cfg.collapse=b.dataset.col==='1';renderSetup()});
   $('#setupView').querySelectorAll('button[data-dep]').forEach(b=>b.onclick=()=>{cfg.deploy=b.dataset.dep==='1';renderSetup()});
@@ -4860,7 +5074,8 @@ function startGame(){newGameUI()}
 function newGameUI(){
   const seats=cfg.seats.slice(0,cfg.n);
   showScreen('game');
-  curtain=null;newGame({n:cfg.n,teams:cfg.teams,mode:cfg.mode,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal',seats});resetVFX(false);
+  if(cfg.map==='wilds'){cfg.n=4;cfg.teams=false;cfg.mode='warlord';wildsSeats()}
+  curtain=null;newGame({n:cfg.n,teams:cfg.teams,mode:cfg.mode,map:cfg.map==='wilds'?'wilds':null,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal',seats});resetVFX(false);
   if(window.innerWidth<700&&!document.body.classList.contains('focus'))setFocus(true);
   const firstHuman=G.players.find(p=>p.ctrl==='human');faceHome(firstHuman?firstHuman.id:0);CAM.az=CAM.azT;
   layout();centerBoard();refresh();
@@ -4908,9 +5123,12 @@ function annText(e){
       else t=`${who} ${({collapse:'has fallen into the Collapse!',beast:'has fallen to the Rift Beast!',fire:'has burned on Ember ground!',self:'has fallen to friendly fire!'})[e.cause]||'has fallen!'}`;
       const left=e.left===0?'No leaders remain.':`${e.left} leader${e.left===1?' remains':'s remain'}.`;
       return {col:FAC[e.fac].color,t,s:left+(e.pts&&e.scores?`<br>${annSide(e.team)} +${e.pts}: ${annStanding(e.team,e.scores)}`:'')}}
-    case 'wall':return {col:'#e8b84e',t:'The wall falls: the Heart is open',s:'Heart points and the Throne count from now on.'};
+    case 'wall':return {col:'#e8b84e',t:G.map?'The Throne Hall opens':'The wall falls: the Heart is open',s:'Heart points and the Throne count from now on.'};
     case 'spring':{const [q,r]=e.at||[0,0];const a=Math.atan2(-1.5*r,S3*(q+r/2))*180/Math.PI;const dir=['east','north-east','north','north-west','west','south-west','south','south-east'][Math.round(((a+360)%360)/45)%8];
       return {col:'#7fe8ff',t:`The Wellspring rises in the ${dir}`,s:'Step on it to claim it: +1 AP every turn.'}}
+    case 'room':return {col:'#b9b3d6',t:`${e.fac?annFac(e.fac):'Someone'} discovers the ${annEsc(e.room)}`,s:`Inside: ${annEsc(e.enc)}${e.loot?', guarding a treasure':''}.`};
+    case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
+    case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Cursed Chest holds a ${annEsc(e.loot)}!`:`The Cursed Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Agony and Frailty. The chest is gone.'};
     case 'wraith':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} calls a Time Wraith!`,s:`Both Second Hands have fallen: the Wraith appears ${e.near?'beside the Chronarch':'at the army’s start'} (${WRAITH.hp} HP, ${WRAITH.atk} ATK, walks ${WRAITH.mov}).`};
     case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`In no man’s land around the Heart. The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
     case 'beastdown':return {col:FAC[e.fac].color,t:`The Rift Beast is slain by the ${annFac(e.fac)}!${e.pts?` +${e.pts} points`:''}`,s:e.pts&&e.scores?annStanding(e.team,e.scores):`+${RULES.BEAST_CHARGE} Ultimate charge.`};
@@ -4960,6 +5178,7 @@ function annNext(){
 function annClear(){ANN.q.length=0;clearTimeout(ANN.t);ANN.cur=null;const el=$('#annBanner');if(el){el.hidden=true;el.classList.remove('show')}ANN.feed.length=0;annFeedRender()}
 function annSet(on){ANN.on=on;try{localStorage.setItem('hexmarch.ann',on?'on':'off')}catch(e){}if(!on)annClear();syncAnnBtn()}
 function syncAnnBtn(){const b=$('#annBtn');if(b){b.textContent=ANN.on?'Announcements on':'Announcements off';b.setAttribute('aria-pressed',ANN.on?'true':'false')}}
+function wildsSeats(){if(!cfg.seats)return;const used=new Set(cfg.seats.slice(0,4).map(s=>s.fac));for(const s of cfg.seats.slice(0,4))if(s.fac==='rift'){const f=FKEYS.find(k=>k!=='rift'&&!used.has(k));if(f){used.add(f);s.fac=f}}}
 function isHumanTurn(){if(!G||G.over)return false;const p=P(G.cur);if(p.ctrl!=='human')return false;return !netOnline()||p.uid===NET.me}
 function teamColor(t){return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t).fac].color}
 
@@ -4986,7 +5205,7 @@ function renderScoreStrip(){const el=$('#scoreStrip');if(!el)return;if(G.phase){
   const ts=[...new Set(G.players.map(p=>p.team))],TGT=heartTarget(),war=G.mode==='warlord',live=G.round>=RULES.CENTRE_FROM;
   const dots=t=>G.players.filter(p=>p.team===t).map(p=>`<i style="background:${FAC[p.fac].color}"></i>`).join('');
   const side=t=>{const dead=!G.players.some(p=>p.team===t&&p.alive),hold=G.holder===t,cur=P(G.cur).team===t;return `<span class="sc ${hold?'hold':''} ${dead?'dead':''} ${cur?'cur':''}" title="${teamName(t)}${hold?' holds the Heart':''}">${dots(t)}${war?`<b>${G.score[t]||0}</b><small>/${TGT}</small>`:''}${hold?'<em>⬢</em>':''}</span>`};
-  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ Wall falls round ${RULES.CENTRE_FROM}</span>`:G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
+  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall opens':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
 function refresh(){
   if(!G)return;
   renderDoom();renderScoreStrip();
@@ -5031,7 +5250,13 @@ function refresh(){
     <div class="heart"><svg width="22" height="22" viewBox="-11 -11 22 22" aria-hidden="true" style="flex:none"><polygon points="${hexPts(0,0,10)}" fill="#e8b84e"/></svg><div>The Heart is ${hs}.${Object.keys(G.heartCount||{}).length?`<div class="hint">On the Heart now: ${Object.entries(G.heartCount).map(([t,c])=>`<b style="color:${teamColor(+t)}">${c}</b>`).join(' vs ')}</div>`:''}<div class="hint">A side holds it when it is the only one with units on its ${G.heartR===2?19:7} gold hexes: +1 ATK and +1 DEF on every unit, and your units on it heal 1 HP per turn${G.mode==='conquest'||G.mode==='warlord'?', and 1 point per turn':''}.</div></div></div>
     <div class="heart" style="margin-top:8px"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 17L4.5 7.5 9 12 12 5 15 12 19.5 7.5 21 17Z" fill="#ffd766"/><rect x="3" y="18.5" width="18" height="2.6" fill="#ffd766"/></svg><div>The Throne (centre hex): ${(()=>{const t=G.units.find(u=>onThrone(u));return t?`<b style="color:${FAC[P(t.owner).fac].color}">${t.name}</b>`:'empty'})()}.<div class="hint">The unit on it gets +2 ATK, +1 range if ranged and double-speed cooldowns; from round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge per turn.</div></div></div>
     ${(()=>{// Act 1 objectives at a glance: the wall, flags owned per side, the Wellspring, the Rift Beast
-      const lines=[];if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The centre is walled</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (it falls next round)':''}: nothing can enter the ring of wall around the Heart, or the Heart itself.`);
+      const lines=[];
+      if(G.map){if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The Throne Hall is closed</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (it opens next round)':''}.`);
+        const rs=G.rooms||[],seen=rs.filter(R=>R.seen).length,open=rs.filter(R=>R.state==='active'||R.state==='loot').length;lines.push(`<b style="color:#b9b3d6">Rooms:</b> ${seen} of ${rs.length} discovered, ${open} still hold a fight or a treasure.`);
+        for(const x of G.loot||[]){const c=x.carrier!=null?byId(x.carrier):null;lines.push(`<b style="color:${LOOT[x.kind].col}">${LOOT[x.kind].name}:</b> ${c?`carried by the <b style="color:${FAC[P(c.owner).fac].color}">${FAC[P(c.owner).fac].name} ${c.name}</b>`:'on the ground'}.`)}
+        const bst=G.units.find(u=>u.beast);if(bst)lines.push(`<b style="color:#c99bff">Rift Beast:</b> ${fmt(bst.hp)}/${bst.maxhp} HP in its lair. Killing blow: +${RULES.BEAST_PTS} points and +${RULES.BEAST_CHARGE} charge.`);
+        return `<div class="hint" style="margin-top:8px">${lines.join('<br>')}</div>`}
+      if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The centre is walled</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (it falls next round)':''}: nothing can enter the ring of wall around the Heart, or the Heart itself.`);
       const fl=G.players.filter(p=>p.alive).map(p=>[p,flagsOf(p.id)]).filter(x=>x[1]>0);lines.push(`<b>Flags owned:</b> ${fl.length?fl.map(([p,n])=>`<b style="color:${FAC[p.fac].color}">${FAC[p.fac].name} ${n}</b>`).join(' · '):'none yet'} (of ${(G.outposts||[]).filter(o=>solid(o[0],o[1])).length}).`);
       if(G.spring&&solid(G.spring.q,G.spring.r)){const so=springOwner();lines.push(`<b style="color:#7fe8ff">Wellspring:</b> ${so!=null?`<b style="color:${FAC[P(so).fac].color}">${FAC[P(so).fac].name}</b> (+1 AP a turn)`:'unclaimed'}.`)}else if(G.round<RULES.SPRING_AT)lines.push(`<b style="color:#7fe8ff">Wellspring:</b> rises in round ${RULES.SPRING_AT}.`);
       const bst=G.units.find(u=>u.beast);if(bst)lines.push(`<b style="color:#c99bff">Rift Beast:</b> ${fmt(bst.hp)}/${bst.maxhp} HP in no man’s land. Killing blow: ${G.mode==='warlord'?'+'+RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} charge.`);else if(!(G.beast&&G.beast.spawned))lines.push(`<b style="color:#c99bff">Rift Beast:</b> breaks out in round ${RULES.BEAST_AT}.`);else if(G.beast.killer!=null&&G.players[G.beast.killer])lines.push(`<b style="color:#c99bff">Rift Beast:</b> slain by ${FAC[G.players[G.beast.killer].fac].name}.`);
@@ -5271,6 +5496,9 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u&&G.tile){const [q,r]=G.tile,f=featAt(q,r),t=terrAt(q,r);
     const wn=wellNote(q,r),wellP=wn?`<p class="hint" style="margin:8px 0 0;padding:6px 8px;border-left:3px solid ${wellCol(wellAt(q,r))};background:${hexA(wellCol(wellAt(q,r)),0.12)};color:#e6fff6">${wn}</p>`:'';
     const rl=(G.relics||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);
+    {const lo=(G.loot||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);if(lo){const L=LOOT[lo.kind];el.innerHTML=`<div class="label">Treasure</div><h3 style="color:${L.col}">${L.name}</h3><p style="margin:6px 0 0">${L.text}.</p><p class="hint" style="margin:6px 0 0">Step a unit onto it to pick it up, then walk it back into your own camp to claim it. If the carrier dies it drops the treasure and anyone can take it.</p>`;return}}
+    if(G.map){const Rm=roomAt(q,r);if(Rm){el.innerHTML=Rm.seen?`<div class="label">Room</div><h3>${ROOM_NAMES[Rm.type]}</h3><p style="margin:6px 0 0">Here: ${ENC_NAMES[Rm.enc]}.${Rm.loot&&Rm.state!=='done'?' A treasure waits for whoever clears it'+(Rm.enc==='hold'?`: stand in it alone for ${WILDS.hold} of your turns (now ${Rm.holdN||0}).`:'.'):Rm.state==='done'?' It is spent.':''}</p>`:`<div class="label">Room</div><h3>Hidden ${ROOM_NAMES[Rm.type]}</h3><p class="hint" style="margin:6px 0 0">Nobody knows what waits inside. Step a unit into it or its way in to find out: a monster, a crate, a treasure to hold, a shrine... it changes every game.</p>`;return}
+      const cp=G.players.find(x=>inCamp(x,q,r));if(cp){el.innerHTML=`<div class="label">Camp</div><h3 style="color:${FAC[cp.fac].color}">${FAC[cp.fac].name} camp</h3><p class="hint" style="margin:6px 0 0">Where this army starts. Treasure carried in here is claimed.</p>`;return}}
     if(rl){const Rl=RELICS[rl.kind];el.innerHTML=`<div class="label">Relic</div><h3 style="color:${Rl.col}">${Rl.name}</h3><p style="margin:6px 0 0">${Rl.text}</p><p class="hint" style="margin:6px 0 0">Step a unit onto this hex to pick it up. The carrier gets −1 move and drops it when it dies.</p>${wellP}`;return}
     if(isSpring(q,r)){const so=springOwner();const sc=so!=null?FAC[P(so).fac].color:'#7fe8ff';el.innerHTML=`<div class="label">Objective</div><h3 style="color:${sc}">The Wellspring</h3><p style="margin:6px 0 0">${so!=null?`Owned by <b style="color:${sc}">${FAC[P(so).fac].name}</b>: +1 AP at the start of each of its turns.`:'Nobody owns it yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, claims it. It stays claimed with nobody on it until an enemy steps on it. Its owner gets +1 AP every turn (within the maximum of ${RULES.AP_CAP}). The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${wellP}`;return}
     if(isOutpost(q,r)){const fo=flagOwner(q,r);const fc=fo!=null?FAC[P(fo).fac].color:'#ece8dd';el.innerHTML=`<div class="label">Hex</div><h3 style="color:${fc}">Flag${fo!=null?' · '+FAC[P(fo).fac].name:''}</h3><p style="margin:6px 0 0">${fo!=null?`Owned by <b style="color:${fc}">${FAC[P(fo).fac].name}</b>. It stays theirs until an enemy unit stands on it.`:'Nobody owns this flag yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, captures it; no guard is needed afterwards. Each flag owned gives +1 Ultimate charge a turn, and in Warlord the side owning more flags than anyone else scores 1 point a turn from round ${RULES.FLAG_FROM} (not in a 2-player duel, where flags give charge only). The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${isRoad(q,r)?'<p class="hint" style="margin:6px 0 0">On the flank road: a unit starting its move here gets +1 move.</p>':''}${wellP}`;return}
@@ -5282,6 +5510,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
   if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${RULES.BEAST_DEF} DEF · fills 3 hexes</b></p><p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall), and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
+  if(u.monster){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Room monster</div><h3 style="color:#c9b6ff">${u.name}</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${u.def} DEF${u.atk?' · '+u.atk+' ATK':''}</b></p><p class="hint" style="margin:6px 0 0">${u.monster==='crate'?'A locked crate: smash it open to free the treasure inside.':'It never leaves its room. At the start of every round it strikes the weakest unit standing next to it. Clear the room to free its treasure.'}</p>`;return}
   if(u.kind==='wall'){el.innerHTML=`<div class="label">Obstacle</div><h3>${u.name}</h3><p class="hint">${u.hp}/${u.maxhp} HP. Gone in ${u.ttl} turn${u.ttl>1?'s':''} of its maker.</p>`;return}
   const p=P(u.owner),F=FAC[p.fac],pct=Math.max(0,u.hp/u.maxhp),M=MOVES[u.mt],AT=ATTACKS[u.at];
   const tags=[];
@@ -5402,6 +5631,7 @@ function showRules(){
   o.innerHTML=`<div class="modal"><h2>How to play</h2>
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
+  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own walled camp with three gates and three roads: to the Throne Hall, to the North or South Hall, and past its Crypt to the East or West Grove. Rivers (blue) block walking; flyers cross them, and flyers may fly over walls. Twelve rooms are hidden (dark, with a ?) until a unit steps into one or its way in; what waits inside changes every game: a Stone Guardian, a pack of Ghouls, a Locked Crate to smash, a room to hold alone for ${WILDS.hold} of your turns, a Shrine, or the Rift Beast's lair (it never moves, and at the start of each round it strikes the last unit that hit it for 1 plus the number of hits it took). Room monsters never leave; at the start of every round each one strikes the weakest unit next to it. A cleared room leaves a <b>treasure</b>: a unit picks it up by stepping on it and must <b>carry it home into its own camp</b> to claim it (Crown Shards = points, War Banner +1 ATK to the whole army, Hourglass Sand +1 AP every turn, Storm Jar +6 charge, Healing Draught, an Ancient Relic, a Sellsword who joins you). A carrier that dies drops it for anyone. The <b>Cursed Chest</b> is a coin flip when picked up: a real treasure, or Agony and Frailty on the carrier. The Throne Hall opens in round ${WILDS.open}; from then Heart points count. First to ${WILDS.target} points wins. No Collapse, no flags, no Riftwalkers.</li>
   <li><b>Act 1, expand.</b> The centre is walled: a single ring of stone wall stands right around the Heart until round ${RULES.CENTRE_FROM} (the outer grey ring stays open ground). Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
   <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls and, in the same moment, the <b>Rift Beast</b> awakens right beside the Heart, touching the ring that just opened (both announced a round before): the Heart and the Throne are open and start to count.</li>
   <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre: the first rings fall quickly, then it slows down (a ring every 4 rounds) to leave time for objectives, relics and points.</li></ul>
@@ -5618,10 +5848,22 @@ function unitPos(u,now){
     const dx=(fx0-tx)*(1-e),dy=(fy0-ty)*(1-e);pts=pts.map(([x,y])=>[x+dx,y+dy])}}
   return pts;
 }
+// Crown Wilds (v30): a treasure chest (loot) and a room monster token.
+function drawChest(c,x,y,S,col,now){c.save();c.shadowColor=col;c.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/240));const w=S*0.62,h=S*0.42;
+  c.fillStyle='#6b4423';c.fillRect(x-w/2,y-h*0.25,w,h*0.75);c.beginPath();c.ellipse(x,y-h*0.25,w/2,h*0.42,0,Math.PI,0);c.fillStyle='#8a5a2e';c.fill();c.shadowBlur=0;
+  c.strokeStyle=col;c.lineWidth=Math.max(1.5,S*0.08);c.strokeRect(x-w/2,y-h*0.25,w,h*0.75);c.fillStyle=col;c.fillRect(x-S*0.06,y-h*0.2,S*0.12,S*0.16);c.restore()}
+const MON_GLYPH={guardian:'♜',ghoul:'☠',crate:'▣'};
+function drawMonster2D(c,u,x,y,S,now){const r=S*0.78,crate=u.monster==='crate';c.save();c.shadowColor='#9a7bff';c.shadowBlur=crate?0:S*0.4*(0.6+0.4*Math.sin(now/300+u.id));
+  c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=crate?'#6b4423':'#2a2140';c.fill();c.shadowBlur=0;c.lineWidth=Math.max(2,S*0.1);c.strokeStyle=crate?'#e8b84e':'#b9a2ff';c.stroke();
+  c.fillStyle=crate?'#f6e2b0':'#e6dcff';c.font=`700 ${r*1.15}px 'Segoe UI Symbol','Noto Sans Symbols 2',serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(MON_GLYPH[u.monster]||'?',x,y+1);
+  const pct=Math.max(0,u.hp/u.maxhp),bw=r*1.6,bh=Math.max(3,S*0.12);c.fillStyle='#0b0e14';c.fillRect(x-bw/2-1,y+r+2,bw+2,bh+2);c.fillStyle=pct>.5?'#b06bff':pct>.25?'#e8b84e':'#ff6161';c.fillRect(x-bw/2,y+r+3,bw*pct,bh);
+  if(S>=10){c.font=`800 ${Math.max(9,S*0.42)}px Oxanium,sans-serif`;c.lineWidth=3;c.strokeStyle='#0b0e14';const t=`${Math.ceil(u.hp)}`;c.strokeText(t,x+r*0.85,y-r*0.85);c.fillStyle='#f2e6ff';c.fillText(t,x+r*0.85,y-r*0.85)}c.restore()}
 function drawFeature2D(f,x,y,S,q,r){
   ctx.save();
   if(f==='rock'){hexPath(x,y,S*0.97);ctx.fillStyle='#2a2d33';ctx.fill();ctx.beginPath();ctx.moveTo(x-S*0.6,y+S*0.35);ctx.lineTo(x-S*0.35,y-S*0.4);ctx.lineTo(x+S*0.1,y-S*0.6);ctx.lineTo(x+S*0.6,y-S*0.2);ctx.lineTo(x+S*0.55,y+S*0.4);ctx.closePath();
     const g=ctx.createLinearGradient(x-S*0.6,y-S*0.6,x+S*0.6,y+S*0.4);g.addColorStop(0,'#9aa0aa');g.addColorStop(1,'#4b5059');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#1b1d22';ctx.lineWidth=1.2;ctx.stroke()}
+  if(f==='river'){hexPath(x,y,S*0.99);const g=ctx.createLinearGradient(x-S,y-S,x+S,y+S);g.addColorStop(0,'#2f7fc0');g.addColorStop(1,'#1d5a8f');ctx.fillStyle=g;ctx.fill();
+    ctx.strokeStyle='rgba(200,235,255,.45)';ctx.lineWidth=Math.max(1,S*0.07);for(const dy of [-0.22,0.18]){ctx.beginPath();ctx.moveTo(x-S*0.5,y+dy*S);ctx.quadraticCurveTo(x-S*0.2,y+(dy-0.15)*S,x+S*0.05,y+dy*S);ctx.quadraticCurveTo(x+S*0.3,y+(dy+0.15)*S,x+S*0.5,y+dy*S);ctx.stroke()}}
   if(f==='forest'){for(const [ox,oy,s] of [[-0.35,0.2,0.34],[0.3,0.25,0.3],[0,-0.25,0.38]]){ctx.beginPath();ctx.moveTo(x+ox*S,y+(oy-s)*S);ctx.lineTo(x+(ox+s*0.7)*S,y+(oy+s*0.6)*S);ctx.lineTo(x+(ox-s*0.7)*S,y+(oy+s*0.6)*S);ctx.closePath();ctx.fillStyle='#2f7d45';ctx.fill();ctx.strokeStyle='#15361f';ctx.lineWidth=1;ctx.stroke()}}
   if(f==='hill'){ctx.strokeStyle='rgba(230,215,170,.8)';ctx.lineWidth=Math.max(1.2,S*0.06);for(const k of [0.55,0.32]){ctx.beginPath();ctx.ellipse(x,y+S*0.12,S*k,S*k*0.55,0,Math.PI,0);ctx.stroke()}}
   if(f==='shrine'){const off=shrineBack(q,r);ctx.beginPath();ctx.moveTo(x,y-S*0.45);ctx.lineTo(x+S*0.28,y);ctx.lineTo(x,y+S*0.45);ctx.lineTo(x-S*0.28,y);ctx.closePath();ctx.fillStyle=off?'#4a5a52':'#bff7d8';ctx.shadowColor='#9ff0c0';ctx.shadowBlur=off?0:S*0.5;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#2e6b4a';ctx.lineWidth=1;ctx.stroke()}
@@ -5754,9 +5996,10 @@ function drawMarkers2D(now){
   {const z=myDeployZone();if(z){const P0=P(G.cur);for(const k of z){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);hexPath(x,y,SZ*0.9);ctx.fillStyle=hexA(FAC[P0.fac].color,0.16+0.08*Math.sin(now/300));ctx.fill();ctx.strokeStyle=hexA(FAC[P0.fac].color,0.8);ctx.lineWidth=1.5;ctx.stroke()}}}
   for(const [k,c] of Object.entries(G.claim||{})){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);ctx.save();ctx.setLineDash([4,3]);hexPath(x,y,SZ*0.8);ctx.strokeStyle=FAC[c.fac].color;ctx.lineWidth=Math.max(2,SZ*0.12);ctx.stroke();ctx.restore()}
   for(const x of G.relics||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);drawRelicGlyph(x.kind,a,b-SZ*0.05,SZ*0.95,now)}
+  for(const x of G.loot||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);drawChest(ctx,a,b,SZ*0.9,LOOT[x.kind].col,now)}
   // flank road: dashed line along its inner edge
   ctx.save();ctx.setLineDash([Math.max(2,SZ*0.18),Math.max(2,SZ*0.14)]);ctx.strokeStyle='rgba(236,222,190,.55)';ctx.lineWidth=Math.max(1.2,SZ*0.07);
-  for(const [q,r] of ringCells()){if(!isRoad(q,r))continue;const [x,y]=px(q,r);
+  for(const [q,r] of ringCells()){if(G.map||!isRoad(q,r))continue;const [x,y]=px(q,r);
     for(let i=0;i<6;i++){const nq=q+ND[i][0],nr=r+ND[i][1];if(!solid(nq,nr)||isRoad(nq,nr))continue;
       const a1=Math.PI/180*(60*i-30),a2=Math.PI/180*(60*i+30);ctx.beginPath();ctx.moveTo(x+SZ*0.97*Math.cos(a1),y+SZ*0.97*Math.sin(a1));ctx.lineTo(x+SZ*0.97*Math.cos(a2),y+SZ*0.97*Math.sin(a2));ctx.stroke()}}
   ctx.restore();
@@ -5801,6 +6044,7 @@ function draw(now){
       if(painted&&SZ>10){ctx.fillStyle=hexA('#ffb347',0.55+0.3*flick);for(const [ox,oy] of [[-0.35,0.3],[0.3,0.35],[0,-0.35]]){ctx.beginPath();ctx.arc(x+ox*SZ,y+oy*SZ,SZ*0.07,0,7);ctx.fill()}}}
     if(isHeart(q,r)){hexPath(x,y,SZ*0.97);ctx.fillStyle=q===0&&r===0?'rgba(255,221,120,.7)':'rgba(255,221,120,.42)';ctx.fill()}
     const ft=featAt(q,r);if(ft)drawFeature2D(ft,x,y,SZ,q,r);
+    if(G.map){if(isRoad(q,r)&&!ft){hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(216,192,138,.38)';ctx.fill()}const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(24,22,40,.82)';ctx.fill()}}
     if(isDoomed(q,r)){hexPath(x,y,SZ*0.97);ctx.fillStyle=`rgba(255,60,40,${0.25+0.2*flick})`;ctx.fill();ctx.strokeStyle='rgba(255,120,90,.9)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-SZ*0.5,y-SZ*0.1);ctx.lineTo(x-SZ*0.1,y+SZ*0.15);ctx.lineTo(x+SZ*0.2,y-SZ*0.2);ctx.lineTo(x+SZ*0.5,y+SZ*0.2);ctx.stroke()}
     if(hl.range.has(k)){hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(255,97,97,.18)';ctx.fill();hexPath(x,y,SZ*0.9);ctx.strokeStyle='rgba(255,97,97,.5)';ctx.lineWidth=1.2;ctx.stroke()}
     if(hl.area.has(k)){hexPath(x,y,SZ*0.97);ctx.fillStyle='rgba(255,170,60,.38)';ctx.fill();hexPath(x,y,SZ*0.92);ctx.strokeStyle='rgba(255,190,90,.85)';ctx.lineWidth=1.5;ctx.stroke()}
@@ -5819,6 +6063,7 @@ function draw(now){
   if(hl.atk.size){const fl=0.5+0.5*Math.sin(now/200);for(const id of hl.atk){const t=byId(id);if(!t||!visibleUnit(t))continue;for(const [q,r] of cells(t)){const [x,y]=px(q,r);
     hexPath(x,y,SZ*0.97);ctx.fillStyle=`rgba(255,70,70,${0.3+0.2*fl})`;ctx.fill();hexPath(x,y,SZ*0.9);ctx.strokeStyle='#ff6161';ctx.lineWidth=Math.max(2.5,SZ*0.11);ctx.stroke()}}}
   drawCentreWall2D(now);
+  if(G.map)for(const Rm of G.rooms||[]){if(Rm.seen)continue;const [x,y]=px(Rm.c[0],Rm.c[1]);ctx.fillStyle='#b9b3d6';ctx.font=`700 ${SZ*1.3}px Georgia,serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',x,y+1)}
   drawWells2D(now);
   drawMarkers2D(now);
   const cur=G.cur;
@@ -5826,6 +6071,7 @@ function draw(now){
     if(!visibleUnit(u))continue;
     const pts=unitPos(u,now);
     if(u.beast){const [bx,by]=drawBeastBody(ctx,pts,SZ,now,u,hl.hitIds.has(u.id),G.inspect===u.id);if(hl.atk.has(u.id))crosshair(bx,by,SZ*0.95);continue}
+    if(u.monster){const [x,y]=pts[0];drawMonster2D(ctx,u,x,y,SZ,now);if(hl.atk.has(u.id))crosshair(x,y,SZ*0.8);continue}
     if(u.kind==='wall'&&u.wall==='light'){const [x,y]=pts[0];ctx.save();ctx.shadowColor='#fff3a8';ctx.shadowBlur=SZ*0.6;hexPath(x,y,SZ*0.8);ctx.fillStyle='rgba(255,243,168,.45)';ctx.fill();ctx.restore();hexPath(x,y,SZ*0.8);ctx.strokeStyle='#fff3a8';ctx.lineWidth=2;ctx.stroke();
       ctx.fillStyle='#3a2f10';ctx.font=`700 ${SZ*0.55}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(u.hp,x,y+1);if(hl.atk.has(u.id))crosshair(x,y,SZ*0.72);continue}
     if(u.kind==='wall'){const [x,y]=pts[0];const ice=u.wall==='ice';hexPath(x,y,SZ*0.78);ctx.fillStyle=ice?'rgba(190,232,255,.85)':'#8c7458';ctx.fill();ctx.strokeStyle=ice?'#e8f8ff':'#d9a45b';ctx.lineWidth=1.5;ctx.stroke();
@@ -5879,6 +6125,7 @@ function draw(now){
     sts.forEach((c,i)=>{ctx.beginPath();ctx.arc(mx+rad*0.75-i*SZ*0.3,my-rad*0.8,Math.max(2.5,SZ*0.14),0,7);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1;ctx.stroke()});
     const nc=curseCount(u);if(nc&&SZ>=10)badge(mx-rad*0.75,my-rad*0.75,Math.max(5,rad*0.36),'#e8e23a','#1b2008',nc);
     {const rl=relicOf(u);if(rl)drawRelicGlyph(rl.kind,mx+rad*0.95,my-rad*0.1,Math.max(8,rad*0.6),now)}
+    {const lt=lootOf(u);if(lt)drawChest(ctx,mx-rad*0.95,my-rad*0.2,Math.max(9,rad*0.7),LOOT[lt.kind].col,now)}
     if(u.ability&&SZ>=9){const br=Math.max(5.5,rad*0.4),bx=mx-rad*0.72,by=my+rad*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     if(SZ>=9)hpPill(u,mx,my+rad*1.02,rad*0.5);
     if(hl.atk.has(u.id))dmgTag(mx+rad*0.95,my-rad*1.0,Math.max(11,rad*0.62),u);
