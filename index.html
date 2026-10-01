@@ -1191,7 +1191,7 @@ function onHome(u){if(u.kind==='wall')return false;const f=G.players[u.owner].fa
 // Grove (Circle of Priests): painted holy ground, G.paint[k].kind==='grove'. Heals every unit on it 1 at the start of its owner's turn.
 const onGrove=u=>u.kind!=='wall'&&cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return !!(pt&&pt.kind==='grove')});
 const groveAt=(q,r)=>{const pt=G.paint[key(q,r)];return pt&&pt.kind==='grove'?pt:null};
-function heartBuff(u){return u.kind!=='wall'&&G.holder!==null&&G.holder===tm(u.owner)}
+function heartBuff(u){return !G.map&&u.kind!=='wall'&&G.holder!==null&&G.holder===tm(u.owner)}
 function nearCell(u,t){let best=cells(u)[0],bd=99;for(const c of cells(u)){const d=distUC(t,c[0],c[1]);if(d<bd){bd=d;best=c}}return best}
 
 /* ---------- stats ---------- */
@@ -1221,12 +1221,12 @@ function shieldWallFor(t,src,tag){if(!t||t.kind==='wall'||t.summon||!facOf(t).ph
 function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;return G.units.some(v=>v.machine&&v.owner===t.owner&&distUU(v,t)===1)}
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)?THRONE.atk:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&!G.map?THRONE.atk:0)+(G.map&&u.king?WILDS.kingAtk:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0));
 }
 function effDef(u){
   if(u.kind==='wall')return u.beast?RULES.BEAST_DEF:u.monster?u.def:0;const F=facOf(u);
-  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0));
+  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+(G.map&&u.king?WILDS.kingDef:0));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
  Seared (Ember Court: Flame Breath, Fireball): st.seared=1 until the end of the target's next turn; every heal on it is blocked (healUnit).
@@ -1259,7 +1259,7 @@ function cleanse(u,t){const d=debuffOf(t);if(!d)return null;const s=t.st;
 function cleanseValue(t){const d=debuffOf(t);if(!d)return 0;const w=Math.min(worth(t),40);
   if(d==='stun'||d==='frozen')return 3+w*0.12;if(d==='curse:silence')return t.ability?3:0.5;if(d.startsWith('curse:'))return 1+Math.min(4,pendingDot(t)*0.6);
   if(d==='seared')return t.hp<t.maxhp?1.2:0.3;if(d==='hex')return 1+Math.min(2,t.atk)*0.6;if(d==='sunder')return 1.5;if(d==='delay')return 0.8+(t.st.dl||0)*0.6;if(d==='chill')return 0.8;return 0}
-function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill')?1:0))}
+function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&!G.map?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill')?1:0))}
 // A flyer can perch on a rock: out of reach of walkers, but its attacks lose 1 range.
 const perched=u=>u.mt==='fly'&&u.kind!=='wall'&&featAt(u.q,u.r)==='rock';
 function abilCost(u,k){const F=facOf(u);if((k==='march'&&utal(u,'warchief'))||(k==='quicken'&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0)-(spellEcho(u)?1:0))}
@@ -1575,7 +1575,7 @@ function computeHolder(){
 function teamName(t){if(G.teams)return 'Team '+'ABC'[t];return FAC[G.players.find(p=>p.team===t).fac].name}
 function beginTurn(){
   const p=P(G.cur);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
-  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u))u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u))u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0}}// Rally (+1 ATK) and Guard last until the start of your next turn
+  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&!G.map)u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&!G.map)u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
     for(const w of G.units){if(w.owner!==p.id||w.kind==='wall'||w.at==='none'||w.egg||distUU(w,s)<=2)continue;const set=atkCells(w,m);if(cells(s).some(([q,r])=>set.has(key(q,r))))n++}
@@ -1606,7 +1606,7 @@ function beginTurn(){
     const n=curseCount(u);
     if(n){CUR_SRC=u.st.curseBy!=null?byId(u.st.curseBy):null;CUR_TAG=null;CUR_NAME='Curse ticks';hurt(u,curseHit(u,n),'#e8e23a',true);CUR_SRC=null;CUR_NAME=null;if(!alive(u))continue;for(const c of Object.keys(u.st.curses)){if(--u.st.curses[c]<=0)delete u.st.curses[c]}}
     if(fireIn&&p.fac!=='fire'&&cells(u).some(([q,r])=>terrAt(q,r)==='fire')){CUR_SRC=null;CUR_NAME='Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;if(!alive(u))continue}
-    if(G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r)))healUnit(u,1,'#ffd766','Heart healing');
+    if(!G.map&&G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r)))healUnit(u,1,'#ffd766','Heart healing');
     // Shrines are consumable (v22b): the first unit it heals uses it up; the shrine is gone for the next 2 rounds and returns at the start of the round after.
     {const sc=cells(u).find(([q,r])=>shrineOn(q,r));if(sc&&healUnit(u,2,'#9ff0c0','Shrine')){vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'});const back=G.round+RULES.SHRINE_REST+1;(G.shrineOff=G.shrineOff||{})[key(sc[0],sc[1])]=back;
       addLog(p.id,`${u.name} drinks from the shrine; it is spent until round ${back}.`);if(trk()&&!SIM){const e=tFx(p.fac,'','Shrine');if(e)e.uses++}}}
@@ -1623,7 +1623,7 @@ function beginTurn(){
     if(hasTrait(u,'regen'))healUnit(u,1,'#5fd68e','Regenerate (trait)');
   }
   // Ultimate charge: +1 per flag (Outpost) this side owns (v23: owned, no unit needed), +1 for the Throne.
-  {let c=0;const held=[];const nf=flagsOf(p.id);if(nf){c+=nf;held.push(nf)}for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u)){if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM)c+=THRONE.charge}
+  {let c=0;const held=[];const nf=flagsOf(p.id);if(nf){c+=nf;held.push(nf)}for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u)){if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM&&!G.map)c+=THRONE.charge}
    if(territoryLeader()===p.id)c+=1;
    if(talent(p,'tithe'))c+=1;
    for(const x of G.relics||[])if(x.kind==='idol'&&x.carrier!=null){const cu=byId(x.carrier);if(cu&&cu.owner===p.id)c+=1}
@@ -1633,7 +1633,7 @@ function beginTurn(){
   if(checkVictory())return;
   if(!p.alive){advance();return}
   const bank=Math.min(p.bank||0,bankOf(p));p.bank=0;if(bank)addLog(p.id,`Banked Time: +${bank} AP carried over.`);
-  const leaderUp=G.units.some(u=>u.owner===p.id&&u.leader),throneUp=G.round>=RULES.CENTRE_FROM&&G.units.some(u=>u.kind!=='wall'&&tm(u.owner)===p.team&&onThrone(u));
+  const leaderUp=G.units.some(u=>u.owner===p.id&&u.leader),throneUp=!G.map&&G.round>=RULES.CENTRE_FROM&&G.units.some(u=>u.kind!=='wall'&&tm(u.owner)===p.team&&onThrone(u));
   const relicAP=(G.relics||[]).filter(x=>x.kind==='hourglass'&&x.carrier!=null&&byId(x.carrier)&&byId(x.carrier).owner===p.id).length;
   // The first player's −3 AP on its round-2 turn (G.apParts.first) was removed on 29 Sep 2026: the owner said it "feels bad". The first-player win rate is measured after; if it drifts, the second player gets a gift (e.g. Ultimate charge) instead of a penalty.
   const wellAP=springOwner()===p.id?1:0;// the Wellspring (v23): +1 AP to the side that owns it
@@ -1645,7 +1645,7 @@ function beginTurn(){
   if(wellAP){const O=tObj();if(O){const e=O.well[p.id]=O.well[p.id]||{caps:0,ap:0,turns:0};e.turns++;e.ap+=G.apMax-apNo}}
   const target=heartTarget();const s0=G.score[p.team]||0;
   G.scoredAt=G.scoredAt||{};
-  if((G.mode==='conquest'||G.mode==='warlord')&&G.holder===p.team&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.scoredAt[p.team]!==G.round){G.scoredAt[p.team]=G.round;// a team scores once per round, not once per partner
+  if(!G.map&&(G.mode==='conquest'||G.mode==='warlord')&&G.holder===p.team&&!p.leaderless&&G.round>=RULES.CENTRE_FROM&&G.scoredAt[p.team]!==G.round){G.scoredAt[p.team]=G.round;// a team scores once per round, not once per partner
     G.score[p.team]++;tPts(p.id,'heart',1);addLog(p.id,`${teamName(p.team)} holds the Heart: ${G.score[p.team]}/${target}.`);
   }
   // Warlord: the side holding MORE Outposts than any other side at the start of its turn scores 1 point (never more than 1 per turn, a team once per round).
@@ -2548,6 +2548,7 @@ function resolveBeast(){
 function beastSlain(t){
   const k=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].alive?CUR_SRC:null;
   G.beast=G.beast||{};G.beast.dead=true;BEAST_Q=[];beastLand(t);
+  if(G.map&&!SIM&&G.beast.room==='throne'){G.throneOpen=true;addLog(null,'The Rift Beast falls: the Throne is revealed! The first unit to sit on it is crowned King.');announce({k:'throne'});vfx({k:'buff',at:[0,0],col:'#ffd766',cam:1})}
   if(!k){if(!SIM){addLog(null,'The Rift Beast is gone.');vfx({k:'death',at:[t.q,t.r],icon:'skull',col:'#b06bff',big:true});const O=tObj();if(O&&O.beast)O.beast.gone=true}return}
   const pid=k.owner,kt=tm(pid),F=FAC[G.players[pid].fac];G.beast.killer=pid;G.beast.killTeam=kt;
   addCharge(pid,RULES.BEAST_CHARGE);
@@ -2637,8 +2638,9 @@ function beastRoam(){
 // Round events of the three acts, called at the start of each new round (advance), after the Collapse and the relics.
 function actEvents(){
   if(G.objOff)return;const R=G.round;
-  if(G.map){if(R===RULES.CENTRE_FROM-1){addLog(null,'Next round the doors of the Throne Hall open.');vfx({k:'announce',msg:'Next round the Throne Hall opens'})}
-    if(R===RULES.CENTRE_FROM){addLog(null,'The doors of the Throne Hall open! Heart points and the Throne count from now on.');vfx({k:'wallfall',msg:'The Throne Hall is open'});announce({k:'wall'})}
+  if(G.map){if(R===RULES.CENTRE_FROM-1)vfx({k:'announce',msg:'Next round the Throne Hall falls and the Rift Beast wakes'});
+    if(R===RULES.CENTRE_FROM-1){addLog(null,'Next round the walls of the Throne Hall collapse and the Rift Beast wakes on the Throne.')}
+    if(R===RULES.CENTRE_FROM&&!G.throneBeast)wildsThroneBeast();
     for(const Rm of G.rooms||[])if(Rm.enc==='beast'&&Rm.state==='active'&&G.beast&&G.beast.dead)Rm.state='done';return}
   const both=RULES.BEAST_AT===RULES.CENTRE_FROM;// v26: the Beast awakens in the same moment the wall falls, announced together
   if(R===RULES.CENTRE_FROM-1){addLog(null,both?'Next round the wall around the Heart falls and the Rift Beast awakens in no man’s land.':'The wall around the Heart falls next round.');vfx({k:'announce',msg:both?'Next round the wall falls and the Rift Beast awakens':'The wall around the Heart falls next round'})}
@@ -2658,7 +2660,7 @@ function actEvents(){
    Loot must be CARRIED back into your own camp to take effect; a carrier that dies drops it and anyone may pick it up. The Cursed chest is a coin flip
    when picked up (50% it turns into a real reward, 50% it curses the carrier and is gone); the flip is a hash of round, unit and room, so undo cannot reroll it.
    No Collapse, no flags, no Wellspring, no random relics, no Riftwalkers in this mode. Heart points (from round 10), loot and leader takedowns win. */
-const WILDS={R:17,open:10,target:12,hold:3,camp:[4,11],north:[-7,14],east:[14,0],crypt:[9,3],fort:[2,7]};
+const WILDS={R:17,open:10,target:12,hold:3,beastHp:30,kingAtk:2,kingDef:2,camp:[4,11],north:[-7,14],east:[14,0],crypt:[9,3],fort:[2,7]};
 const MONSTERS={
   guardian:{name:'Stone Guardian',icon:'golem',hp:14,atk:4,def:1},
   ghoul:{name:'Ghoul',icon:'skull',hp:5,atk:2,def:0},
@@ -2678,7 +2680,7 @@ const SELLSWORD={name:'Sellsword',icon:'sword',hp:12,atk:3,def:1,mov:3,mt:'walk'
 const WILDS_DECKS={
   fort:{enc:['crate','hold','pack','shrine'],loot:['points1','draught','jar','cursed']},
   crypt:{enc:['guardian','pack','crate','hold'],loot:['points2','relic','sand','cursed']},
-  big:{enc:['beast','guardian','pack','hold'],loot:['points3','banner','sellsword','cursed']}};
+  big:{enc:['guardian','pack','hold','crate'],loot:['points3','banner','sellsword','cursed']}};
 const ROOM_NAMES={hall:'Hall',grove:'Grove',crypt:'Crypt',fort:'Hill Fort'};
 const ENC_NAMES={guardian:'a Stone Guardian',pack:'a pack of Ghouls',crate:'a Locked Crate',hold:'an empty hall: hold it alone',shrine:'a Shrine',beast:'the Rift Beast'};
 const isBlock=(q,r)=>{const f=featAt(q,r);return f==='rock'||f==='river'};
@@ -2795,6 +2797,7 @@ function deliverLoot(){
 // After every action and at each turn start: reveal rooms, pick up and deliver loot, count held rooms.
 function wildsTick(turnStart){
   if(!G.map||SIM)return;
+  wildsCrown();if(turnStart)wildsKingScore(P(G.cur));
   for(const R of G.rooms||[])if(!R.seen){const u=G.units.find(v=>v.kind!=='wall'&&!v.statue&&cells(v).some(([q,r])=>R.cells.includes(key(q,r))||R.ways.includes(key(q,r))));if(u)revealRoom(R,u)}
   pickupLoot();deliverLoot();
   if(turnStart){const p=P(G.cur);
@@ -2834,8 +2837,35 @@ function wildsGoal(u){
   const late=G.round>=RULES.CENTRE_FROM-2;const opts=[];
   for(const l of G.loot||[]){if(l.carrier==null)opts.push([l.q,l.r,3]);else{const c=byId(l.carrier);if(c&&tm(c.owner)!==p.team)opts.push([c.q,c.r,2.2])}}
   for(const R of G.rooms||[]){if(R.state==='active')opts.push([R.c[0],R.c[1],R.enc==='hold'?1.6:1.3]);else if(R.state==='hidden')opts.push([R.c[0],R.c[1],1.1])}
-  if(late&&u.id%3!==0)opts.push([0,0,1.6]);// a third of each army keeps exploring
+  if(G.throneBeast)opts.push([0,0,G.throneOpen&&!kingOf()?3.5:2.6]);// v32: once the Beast wakes on the Throne the centre is the main goal
+  else if(late&&u.id%3!==0)opts.push([0,0,1.6]);// a third of each army keeps exploring
   let best=null,bs=1e9;for(const g of opts){const d=wildsDist(g,u.q,u.r,u);const sc=d/g[2]+(u.id%3)*0.7*(g[2]<1.5?1:0);if(sc<bs){bs=sc;best=g}}return best}
+
+/* v32 (owner, 1 Oct 2026): the Crown Wilds centre. In round WILDS.open the stone ring around the Heart collapses and the Rift Beast (WILDS.beastHp HP)
+   wakes on the Throne. Its killing blow reveals the Throne. The first unit to sit on the Throne is crowned KING: +WILDS.kingAtk ATK and +WILDS.kingDef DEF
+   for as long as it lives, wherever it goes. At the start of its side's turn the King scores 1 Warlord point if it sits on the Throne and no enemy unit
+   stands on the Heart. When the King falls the crown is free again: the next unit to sit on the Throne becomes King. On this map the Heart itself gives
+   no points and no army buffs, and the Throne gives nothing but the crown. */
+function wildsThroneBeast(){
+  G.throneBeast=true;for(const [q,r] of allCells())if(hd(q,r,0,0)===G.heartR+1&&G.feat[key(q,r)]==='rock')delete G.feat[key(q,r)];
+  addLog(null,'The walls of the Throne Hall collapse! The Rift Beast wakes on the Throne: slay it to reveal the Throne.');
+  vfx({k:'wallfall',msg:'The Throne Hall falls: the Rift Beast wakes on the Throne'});announce({k:'wall'});
+  const tri=[[0,0],[1,0],[0,1]];for(const [q,r] of tri){const o=unitAt(q,r);if(o&&o.kind!=='wall'){const c=allCells().filter(([a,b])=>passable(a,b)&&!unitAt(a,b)&&!tri.some(t=>t[0]===a&&t[1]===b)).sort((x,y)=>hd(x[0],x[1],q,r)-hd(y[0],y[1],q,r))[0];if(c){o.q=c[0];o.r=c[1]}}}
+  const b=spawnBeast(tri);if(b){b.hp=b.maxhp=WILDS.beastHp;G.beast.room='throne'}}
+const kingOf=()=>G&&G.map?G.units.find(u=>u.king&&u.kind!=='wall')||null:null;
+const heartFoes=team=>G.units.some(v=>v.kind!=='wall'&&!v.statue&&tm(v.owner)!==team&&cells(v).some(([q,r])=>isHeart(q,r)));
+function wildsCrown(){
+  if(!G.map||!G.throneOpen||kingOf())return;
+  const u=unitAt(0,0);if(!u||u.kind==='wall'||u.summon||u.statue||u.egg)return;
+  u.king=true;const F=FAC[G.players[u.owner].fac];
+  addLog(u.owner,`${u.name} sits the Throne and is crowned King! +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives.`);fx(u,'crowned!','#ffd766');
+  vfx({k:'buff',at:[0,0],col:'#ffd766',cam:1});announce({k:'king',fac:G.players[u.owner].fac,unit:u.name});
+  if(trk()){const O=tObj();if(O){O.kings=O.kings||[];O.kings.push({pid:u.owner,unit:u.name,round:G.round})}}}
+function wildsKingScore(p){
+  const k=kingOf();if(!k||k.owner!==p.id||!(k.q===0&&k.r===0||cells(k).some(([q,r])=>q===0&&r===0)))return;
+  if(heartFoes(p.team)){addLog(p.id,'The King sits the Throne, but enemies stand on the Heart: no point this turn.');return}
+  G.score[p.team]=(G.score[p.team]||0)+1;tPts(p.id,'throne',1);addLog(p.id,`The King holds the Throne: ${G.score[p.team]}/${heartTarget()}.`);
+  if(G.score[p.team]>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
 function labClear(){G.objOff=true;G.flagOwner={};G.flagEver={};G.spring=null;G.springDone=false;G.beast=null;BEAST_Q=[];BAR_Q=[];G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
 function labUnit(pid,name,q,r,o){const p=G.players[pid];const d=FAC[p.fac].units.find(x=>x.name===name);if(!d)throw new Error('labUnit: no unit '+name+' in '+p.fac);const u=makeUnit(p,d);u.q=q;u.r=r;u.dir=(o&&o.dir)||0;if(o&&o.hp){u.hp=u.maxhp=o.hp}G.units.push(u);tStat(u);return u}
@@ -2869,7 +2899,8 @@ function evaluate(team){
   {let f=0;for(const [q,r] of G.outposts||[]){if(!solid(q,r))continue;const o=flagOwner(q,r);if(o==null)continue;f+=tm(o)===team?2.5:-1}s+=f;
    const so=springOwner();if(so!=null)s+=tm(so)===team?5:-2;
    if(G.beast){const b=G.beast;s+=((b.dmgT&&b.dmgT[team])||0)*0.9;if(b.dead&&b.killTeam===team)s+=10}}
-  if(G.map){for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
+  if(G.map){const K=kingOf();if(K){const mineK=tm(K.owner)===team;s+=mineK?18:-9;if(K.q===0&&K.r===0&&mineK&&heartFoes(team))s-=5}else if(G.throneOpen){const t=unitAt(0,0);if(t&&t.kind!=='wall')s+=tm(t.owner)===team?10:-5}
+    for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
     for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*0.5+(left<=0?6:0)}}
   for(const p of G.players){if(!p.alive)s+=tm(p.id)===team?-150:150;else if(p.leaderless)s+=tm(p.id)===team?-90:90}
   // Warlord points: a lead over the best rival counts, and every point matters more as the target nears.
@@ -3462,6 +3493,7 @@ function draw3D(now){
     if(u.poss){ctx.save();ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(sx,ey,er+5,0,7);ctx.strokeStyle='#e8e23a';ctx.lineWidth=2;ctx.stroke();ctx.restore()}
     if(u.summon)badge(sx+er*0.85,ey-er*0.7,Math.max(4.5,er*0.46),'#0b0e14',u.statue?'#cfd3dc':FAC.gnomes.color,summonBadge(u));
     sts.forEach((cc,i)=>{ctx.beginPath();ctx.arc(sx+er+3+i*Math.max(5,er*0.5),ey-er*0.6,Math.max(2.5,er*0.22),0,7);ctx.fillStyle=cc;ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1;ctx.stroke()});
+    if(u.king){ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=8;drawIcon(ctx,'crown',sx,ey-er-Math.max(14,er*1.2),Math.max(14,er*1.1),'#ffd766','#3a2a05');ctx.restore()}
     if(u.stars){ctx.fillStyle='#ffd766';ctx.strokeStyle='#0b0e14';ctx.lineWidth=2.5;ctx.font=`900 ${Math.max(9,er*0.75)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';const st='★'.repeat(u.stars);ctx.strokeText(st,sx,ey-er-Math.max(6,er*0.45));ctx.fillText(st,sx,ey-er-Math.max(6,er*0.45))}
     {const rl=relicOf(u);if(rl)drawRelicGlyph(rl.kind,sx-er*1.25,ey,Math.max(9,er*0.9),now)}
     const nc=curseCount(u);if(nc)badge(sx-er*0.85,ey-er*0.7,Math.max(4.5,er*0.46),'#e8e23a','#1b2008',nc);
@@ -4239,7 +4271,9 @@ async function netJoin(code){
   code=(code||'').toUpperCase().trim();if(!code||!NET.db)return;
   netClear();NET.code=code;NET.seq=0;NET.game=null;NET.seats={};
   const gref=NET.db.doc('games/'+code);
-  NET.unsubs.push(gref.onSnapshot(s=>{if(!s.exists){NET.err=(NET.mode==='p2p'&&window.P2P&&P2P.lastError)||`No game with code ${code}.`;NET.code=null;netSetupRefresh();return}NET.game=s.data();netSetupRefresh()},e=>{NET.err=e.message||e.code;renderOnline()}));
+  NET.unsubs.push(gref.onSnapshot(s=>{if(!s.exists){NET.err=(NET.mode==='p2p'&&window.P2P&&P2P.lastError)||`No game with code ${code}.`;NET.code=null;netSetupRefresh();return}const was=NET.game&&NET.game.status;NET.game=s.data();
+    if(was==='playing'&&NET.game.status==='lobby'&&typeof screen!=='undefined'&&screen==='game'){$('#overlay').hidden=true;showScreen('setup');if(!netIsHost())toast('The host is setting up a new game in this room: keep your seat or pick another, and choose your army.',5000)}
+    netSetupRefresh()},e=>{NET.err=e.message||e.code;renderOnline()}));
   NET.unsubs.push(NET.db.collection(`games/${code}/seats`).onSnapshot(s=>{NET.seats={};for(const d of s.docs){const i=+d.id.slice(1);NET.seats[i]=d.data()}
     netNames(Object.values(NET.seats).map(x=>x&&x.uid).filter(Boolean)).then(()=>{renderOnline();if(G)refresh()});renderOnline();if(G&&screen==='game')refresh()}));
   NET.unsubs.push(NET.db.doc(`games/${code}/state/current`).onSnapshot(s=>{if(s.exists)netApply(s.data())}));
@@ -4376,6 +4410,9 @@ function netApply(doc){
   netKick();
 }
 // The host's device runs the bots. If the host is away, anyone can take over from the game panel.
+// Host: take the whole room back to its setup (seats and armies stay, everything can change) for a new game, from the end screen or mid-game (v32, owner 1 Oct 2026).
+async function netNewSetup(){if(!netIsHost())return;try{await NET.db.doc('games/'+NET.code).update({status:'lobby',reset:Date.now()})}catch(e){toast('Could not reset the room: '+(e.message||e.code));return}
+  NET.game.status='lobby';$('#overlay').hidden=true;showScreen('setup');toast('New game setup: change anything you like, then press Start the game.',4500)}
 function netRunsBots(){return !netOnline()||NET.game.host===NET.me}
 function netKick(){if(G&&!G.over&&P(G.cur).ctrl==='bot'&&netRunsBots()){const t=++G.tok;setTimeout(()=>botLoop(t),700)}}
 async function netTakeHost(){if(!netOnline())return;try{await NET.db.doc('games/'+NET.code).update({host:NET.me});NET.game.host=NET.me;netKick();toast('This device now runs the bots.')}catch(e){toast('Could not take over: '+(e.message||e.code))}}
@@ -4979,7 +5016,7 @@ function renderSetup(){
       <div class="field"><div class="label">Sides</div>${seg([['0','Free for all'],['1','Teams of 2',!teamsAllowed()]],tOn?'1':'0','teams')}
         <div class="hint">${teamsAllowed()?'Teammates start on neighbouring corners. Turns alternate between sides.':'Teams of 2 need 4 or 6 players.'}</div></div>
       <div class="field"><div class="label">Board</div>${seg([['random','Random board'],['wilds','Crown Wilds (new)']],cfg.map==='wilds'?'wilds':'random','map')}
-        <div class="hint">${cfg.map==='wilds'?'A hand-made map for 4 players: safe camps far apart, three roads each, twelve hidden rooms with monsters and treasure you must carry home, rivers, and a Throne Hall that opens in round '+WILDS.open+'. Warlord rules, first to '+WILDS.target+' points. No Collapse, no Riftwalkers.':'A new round board every game, with flags, the Wellspring and the Rift Beast.'}</div></div>
+        <div class="hint">${cfg.map==='wilds'?'A hand-made map for 4 players: safe camps far apart, three roads each, twelve hidden rooms with monsters and treasure you must carry home, rivers, and a Throne Hall whose walls fall in round '+WILDS.open+' to wake the Rift Beast; slay it, sit the Throne and be crowned King. Warlord rules, first to '+WILDS.target+' points. No Collapse, no Riftwalkers.':'A new round board every game, with flags, the Wellspring and the Rift Beast.'}</div></div>
       ${cfg.map==='wilds'?'':`<div class="field"><div class="label">Game mode</div>${seg(Object.keys(MODES).filter(m=>m!=='conquest').map(m=>[m,MODES[m].name]),cfg.mode,'mode')}
         <div class="hint">${MODES[cfg.mode].desc}</div></div>`}
       ${cfg.map==='wilds'?'':`<div class="field"><div class="label">The Collapse</div>${COLLAPSE_START[cfg.mode]?seg([['1','On'],['0','Off']],cfg.collapse===false?'0':'1','col'):''}
@@ -5127,14 +5164,16 @@ function annText(e){
       else t=`${who} ${({collapse:'has fallen into the Collapse!',beast:'has fallen to the Rift Beast!',fire:'has burned on Ember ground!',self:'has fallen to friendly fire!'})[e.cause]||'has fallen!'}`;
       const left=e.left===0?'No leaders remain.':`${e.left} leader${e.left===1?' remains':'s remain'}.`;
       return {col:FAC[e.fac].color,t,s:left+(e.pts&&e.scores?`<br>${annSide(e.team)} +${e.pts}: ${annStanding(e.team,e.scores)}`:'')}}
-    case 'wall':return {col:'#e8b84e',t:G.map?'The Throne Hall opens':'The wall falls: the Heart is open',s:'Heart points and the Throne count from now on.'};
+    case 'wall':return {col:'#e8b84e',t:G.map?'The Throne Hall falls: the Rift Beast wakes on the Throne':'The wall falls: the Heart is open',s:G.map?'Slay it to reveal the Throne, then sit on it to be crowned King.':'Heart points and the Throne count from now on.'};
     case 'spring':{const [q,r]=e.at||[0,0];const a=Math.atan2(-1.5*r,S3*(q+r/2))*180/Math.PI;const dir=['east','north-east','north','north-west','west','south-west','south','south-east'][Math.round(((a+360)%360)/45)%8];
       return {col:'#7fe8ff',t:`The Wellspring rises in the ${dir}`,s:'Step on it to claim it: +1 AP every turn.'}}
+    case 'king':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} crowns a King!`,s:`The ${annEsc(e.unit)} sits the Throne: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives. It scores 1 point a turn on the Throne while no enemy stands on the Heart.`};
+    case 'throne':return {col:'#ffd766',t:'The Rift Beast falls: the Throne is revealed',s:'The first unit to sit on it is crowned King.'};
     case 'room':return {col:'#b9b3d6',t:`${e.fac?annFac(e.fac):'Someone'} discovers the ${annEsc(e.room)}`,s:`Inside: ${annEsc(e.enc)}${e.loot?', guarding a treasure':''}.`};
     case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Cursed Chest holds a ${annEsc(e.loot)}!`:`The Cursed Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Agony and Frailty. The chest is gone.'};
     case 'wraith':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} calls a Time Wraith!`,s:`Both Second Hands have fallen: the Wraith appears ${e.near?'beside the Chronarch':'at the army’s start'} (${WRAITH.hp} HP, ${WRAITH.atk} ATK, walks ${WRAITH.mov}).`};
-    case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`In no man’s land around the Heart. The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
+    case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`${G.map?'On the Throne.':'In no man’s land around the Heart.'} The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
     case 'beastdown':return {col:FAC[e.fac].color,t:`The Rift Beast is slain by the ${annFac(e.fac)}!${e.pts?` +${e.pts} points`:''}`,s:e.pts&&e.scores?annStanding(e.team,e.scores):`+${RULES.BEAST_CHARGE} Ultimate charge.`};
     case 'ult':return e.fac2?{col:FAC[e.fac].color,t:`${annFac(e.fac)} and ${annFac(e.fac2)} unleash ${annEsc(e.name)}!`,s:'Team Ultimate.'}
       :{col:FAC[e.fac].color,t:`${annFac(e.fac)} unleashes ${annEsc(e.name)}!`,s:annEsc(ULTS[e.fac]?ULTS[e.fac].text:'')};
@@ -5209,7 +5248,7 @@ function renderScoreStrip(){const el=$('#scoreStrip');if(!el)return;if(G.phase){
   const ts=[...new Set(G.players.map(p=>p.team))],TGT=heartTarget(),war=G.mode==='warlord',live=G.round>=RULES.CENTRE_FROM;
   const dots=t=>G.players.filter(p=>p.team===t).map(p=>`<i style="background:${FAC[p.fac].color}"></i>`).join('');
   const side=t=>{const dead=!G.players.some(p=>p.team===t&&p.alive),hold=G.holder===t,cur=P(G.cur).team===t;return `<span class="sc ${hold?'hold':''} ${dead?'dead':''} ${cur?'cur':''}" title="${teamName(t)}${hold?' holds the Heart':''}">${dots(t)}${war?`<b>${G.score[t]||0}</b><small>/${TGT}</small>`:''}${hold?'<em>⬢</em>':''}</span>`};
-  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall opens':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
+  el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall falls':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
 function refresh(){
   if(!G)return;
   renderDoom();renderScoreStrip();
@@ -5255,7 +5294,10 @@ function refresh(){
     <div class="heart" style="margin-top:8px"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 17L4.5 7.5 9 12 12 5 15 12 19.5 7.5 21 17Z" fill="#ffd766"/><rect x="3" y="18.5" width="18" height="2.6" fill="#ffd766"/></svg><div>The Throne (centre hex): ${(()=>{const t=G.units.find(u=>onThrone(u));return t?`<b style="color:${FAC[P(t.owner).fac].color}">${t.name}</b>`:'empty'})()}.<div class="hint">The unit on it gets +2 ATK, +1 range if ranged and double-speed cooldowns; from round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge per turn.</div></div></div>
     ${(()=>{// Act 1 objectives at a glance: the wall, flags owned per side, the Wellspring, the Rift Beast
       const lines=[];
-      if(G.map){if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The Throne Hall is closed</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (it opens next round)':''}.`);
+      if(G.map){if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The Throne Hall is sealed</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (its walls fall next round)':''}: then its walls fall and the Rift Beast wakes on the Throne.`);
+        else{const K=kingOf();if(!G.throneOpen)lines.push(`<b style="color:#ffd766">The Throne:</b> hidden under the Rift Beast. Slay it to reveal the Throne.`);
+          else if(K){const on=K.q===0&&K.r===0,blocked=heartFoes(tm(K.owner));lines.push(`<b style="color:#ffd766">♛ King:</b> the <b style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name} ${K.name}</b> (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF). ${on?(blocked?'On the Throne, but enemies stand on the Heart: no point this turn.':'On the Throne: 1 point at the start of its turn.'):'Away from the Throne: no points.'}`)}
+          else lines.push(`<b style="color:#ffd766">The Throne is free:</b> the first unit to sit on it is crowned King.`)}
         const rs=G.rooms||[],seen=rs.filter(R=>R.seen).length,open=rs.filter(R=>R.state==='active'||R.state==='loot').length;lines.push(`<b style="color:#b9b3d6">Rooms:</b> ${seen} of ${rs.length} discovered, ${open} still hold a fight or a treasure.`);
         for(const x of G.loot||[]){const c=x.carrier!=null?byId(x.carrier):null;lines.push(`<b style="color:${LOOT[x.kind].col}">${LOOT[x.kind].name}:</b> ${c?`carried by the <b style="color:${FAC[P(c.owner).fac].color}">${FAC[P(c.owner).fac].name} ${c.name}</b>`:'on the ground'}.`)}
         const bst=G.units.find(u=>u.beast);if(bst)lines.push(`<b style="color:#c99bff">Rift Beast:</b> ${fmt(bst.hp)}/${bst.maxhp} HP in its lair. Killing blow: +${RULES.BEAST_PTS} points and +${RULES.BEAST_CHARGE} charge.`);
@@ -5299,6 +5341,7 @@ function unitStatuses(u){if(!u||!u.st||u.kind==='wall')return [];const s=u.st,o=
   if(s.hex>0)add('hex','🔮','Hex',s.hex,'#b06bff',0,'2 less ATK and 1 more damage from abilities');
   if((s.dlA||0)+(s.dlB||0)>0)add('delay','⏳','Delayed','+'+((s.dlA||0)+(s.dlB||0))+' cooldown','#ff9be8',0,'its cooldowns were pushed back');
   if(s.duel)add('duel','⚔','Challenged',s.duel.ttl,'#ff6161',0,'basic attacks only at the Champion');
+  if(u.king)add('king','♛','King','for life','#ffd766',1,`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF; scores 1 point a turn on the Throne while no enemy stands on the Heart`);
   if(u.poss)add('poss','👁','Possessed','this turn','#e8e23a',0,'returns to its owner at the end of this turn');
   if(s.stealth)add('stealth','👤','Stealth','until it strikes','#c81ca6',1,'enemies can only target it from 2 hexes or closer');
   if(typeof hasBarrier==='function'&&hasBarrier(u))add('barrier','🛡','Barrier','until hit','#ffd766',1,'the first enemy attack or ability that hits it breaks it and takes 2 back');
@@ -5419,12 +5462,13 @@ function wireDock(){
 }
 /* full-screen play */
 let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e){}
+let MENU_RESET=0;
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="score">Score card</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
-    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
@@ -5501,6 +5545,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     const wn=wellNote(q,r),wellP=wn?`<p class="hint" style="margin:8px 0 0;padding:6px 8px;border-left:3px solid ${wellCol(wellAt(q,r))};background:${hexA(wellCol(wellAt(q,r)),0.12)};color:#e6fff6">${wn}</p>`:'';
     const rl=(G.relics||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);
     {const lo=(G.loot||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);if(lo){const L=LOOT[lo.kind];el.innerHTML=`<div class="label">Treasure</div><h3 style="color:${L.col}">${L.name}</h3><p style="margin:6px 0 0">${L.text}.</p><p class="hint" style="margin:6px 0 0">Step a unit onto it to pick it up, then walk it back into your own camp to claim it. If the carrier dies it drops the treasure and anyone can take it.</p>`;return}}
+    if(G.map&&isHeart(q,r)&&!isCentreWall(q,r)){el.innerHTML=q===0&&r===0?`<div class="label">Hex</div><h3>The Throne</h3><p class="hint" style="margin:6px 0 0">${G.throneOpen?`The first unit to sit here is crowned King: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. The King scores 1 point at the start of its turn while it sits here and no enemy stands on the Heart. When the King falls, the next unit to sit here is crowned.`:'Hidden under the Rift Beast. Its killing blow reveals the Throne.'}</p>`:`<div class="label">Hex</div><h3>The Heart</h3><p class="hint" style="margin:6px 0 0">The ground around the Throne. Any enemy unit standing here stops the King from scoring. On this map the Heart gives no points and no buffs of its own.</p>`;return}
     if(G.map){const Rm=roomAt(q,r);if(Rm){el.innerHTML=Rm.seen?`<div class="label">Room</div><h3>${ROOM_NAMES[Rm.type]}</h3><p style="margin:6px 0 0">Here: ${ENC_NAMES[Rm.enc]}.${Rm.loot&&Rm.state!=='done'?' A treasure waits for whoever clears it'+(Rm.enc==='hold'?`: stand in it alone for ${WILDS.hold} of your turns (now ${Rm.holdN||0}).`:'.'):Rm.state==='done'?' It is spent.':''}</p>`:`<div class="label">Room</div><h3>Hidden ${ROOM_NAMES[Rm.type]}</h3><p class="hint" style="margin:6px 0 0">Nobody knows what waits inside. Step a unit into it or its way in to find out: a monster, a crate, a treasure to hold, a shrine... it changes every game.</p>`;return}
       const cp=G.players.find(x=>inCamp(x,q,r));if(cp){el.innerHTML=`<div class="label">Camp</div><h3 style="color:${FAC[cp.fac].color}">${FAC[cp.fac].name} camp</h3><p class="hint" style="margin:6px 0 0">Where this army starts. Treasure carried in here is claimed.</p>`;return}}
     if(rl){const Rl=RELICS[rl.kind];el.innerHTML=`<div class="label">Relic</div><h3 style="color:${Rl.col}">${Rl.name}</h3><p style="margin:6px 0 0">${Rl.text}</p><p class="hint" style="margin:6px 0 0">Step a unit onto this hex to pick it up. The carrier gets −1 move and drops it when it dies.</p>${wellP}`;return}
@@ -5620,11 +5665,12 @@ function showOver(){
   const t=G.over.team;const o=$('#overlay');
   const members=G.players.filter(p=>p.team===t).map(p=>`<span style="color:${FAC[p.fac].color}">P${p.id+1} ${FAC[p.fac].name}</span>`).join(' & ');
   o.innerHTML=`<div class="modal win"><div class="label">${MODES[G.mode].name} · round ${G.round}</div><div class="big" style="color:${teamColor(t)}">${teamName(t)} wins</div><p>${members}</p><p class="hint">${{heart:'By reaching the Warlord points target.',leaders:'The last side with a living Leader.',last:'Last side standing.'}[G.over.how]||''}</p>
-    <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary" id="again">Rematch</button><button class="btn" id="toSetup">Change setup</button><button class="btn" id="look">View board</button><button class="btn" id="scBtn">Score card</button></div></div>`;
+    <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary" id="again">Rematch</button><button class="btn" id="toSetup">${netOnline()&&netIsHost()?'New setup for the room':'Change setup'}</button><button class="btn" id="look">View board</button><button class="btn" id="scBtn">Score card</button></div></div>`;
   o.hidden=false;$('#scBtn').onclick=()=>showScoreCard();
   if(netOnline()&&!netIsHost())$('#again').hidden=true;
   $('#again').onclick=()=>{o.hidden=true;if(netOnline()){netStart()}else newGameUI()};
-  $('#toSetup').onclick=()=>{o.hidden=true;showScreen('setup')};
+  $('#toSetup').onclick=()=>{o.hidden=true;if(netOnline()&&netIsHost())netNewSetup();else showScreen('setup')};
+  if(netOnline()&&!netIsHost())$('#toSetup').hidden=true;
   $('#look').onclick=()=>{o.hidden=true};
 }
 function closeModal(){$('#overlay').hidden=true;if(G&&G.over&&screen==='game')showOver()}
@@ -5635,7 +5681,7 @@ function showRules(){
   o.innerHTML=`<div class="modal"><h2>How to play</h2>
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
-  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own walled camp with three gates and three roads: to the Throne Hall, to the North or South Hall, and past its Crypt to the East or West Grove. Rivers (blue) block walking; flyers cross them, and flyers may fly over walls. Twelve rooms are hidden (dark, with a ?) until a unit steps into one or its way in; what waits inside changes every game: a Stone Guardian, a pack of Ghouls, a Locked Crate to smash, a room to hold alone for ${WILDS.hold} of your turns, a Shrine, or the Rift Beast's lair (it never moves, and at the start of each round it strikes the last unit that hit it for 1 plus the number of hits it took). Room monsters never leave; at the start of every round each one strikes the weakest unit next to it. A cleared room leaves a <b>treasure</b>: a unit picks it up by stepping on it and must <b>carry it home into its own camp</b> to claim it (Crown Shards = points, War Banner +1 ATK to the whole army, Hourglass Sand +1 AP every turn, Storm Jar +6 charge, Healing Draught, an Ancient Relic, a Sellsword who joins you). A carrier that dies drops it for anyone. The <b>Cursed Chest</b> is a coin flip when picked up: a real treasure, or Agony and Frailty on the carrier. The Throne Hall opens in round ${WILDS.open}; from then Heart points count. First to ${WILDS.target} points wins. No Collapse, no flags, no Riftwalkers.</li>
+  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own walled camp with three gates and three roads: to the Throne Hall, to the North or South Hall, and past its Crypt to the East or West Grove. Rivers (blue) block walking; flyers cross them, and flyers may fly over walls. Twelve rooms are hidden (dark, with a ?) until a unit steps into one or its way in; what waits inside changes every game: a Stone Guardian, a pack of Ghouls, a Locked Crate to smash, a room to hold alone for ${WILDS.hold} of your turns, a Shrine, or a room to hold. Room monsters never leave; at the start of every round each one strikes the weakest unit next to it. A cleared room leaves a <b>treasure</b>: a unit picks it up by stepping on it and must <b>carry it home into its own camp</b> to claim it (Crown Shards = points, War Banner +1 ATK to the whole army, Hourglass Sand +1 AP every turn, Storm Jar +6 charge, Healing Draught, an Ancient Relic, a Sellsword who joins you). A carrier that dies drops it for anyone. The <b>Cursed Chest</b> is a coin flip when picked up: a real treasure, or Agony and Frailty on the carrier. In round ${WILDS.open} the walls of the Throne Hall fall and the Rift Beast (${WILDS.beastHp} HP) wakes on the Throne; its killing blow (+${RULES.BEAST_PTS} points) reveals the Throne. The first unit to sit on the Throne is crowned <b>King</b>: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives; it scores 1 point at the start of its side's turn while it sits on the Throne and no enemy unit stands on the Heart. When the King falls, the next unit to sit on the Throne is crowned. On this map the Heart gives no points or buffs by itself. First to ${WILDS.target} points wins. No Collapse, no flags, no Riftwalkers.</li>
   <li><b>Act 1, expand.</b> The centre is walled: a single ring of stone wall stands right around the Heart until round ${RULES.CENTRE_FROM} (the outer grey ring stays open ground). Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
   <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls and, in the same moment, the <b>Rift Beast</b> awakens right beside the Heart, touching the ring that just opened (both announced a round before): the Heart and the Throne are open and start to count.</li>
   <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre: the first rings fall quickly, then it slows down (a ring every 4 rounds) to leave time for objectives, relics and points.</li></ul>
@@ -6130,6 +6176,7 @@ function draw(now){
     const nc=curseCount(u);if(nc&&SZ>=10)badge(mx-rad*0.75,my-rad*0.75,Math.max(5,rad*0.36),'#e8e23a','#1b2008',nc);
     {const rl=relicOf(u);if(rl)drawRelicGlyph(rl.kind,mx+rad*0.95,my-rad*0.1,Math.max(8,rad*0.6),now)}
     {const lt=lootOf(u);if(lt)drawChest(ctx,mx-rad*0.95,my-rad*0.2,Math.max(9,rad*0.7),LOOT[lt.kind].col,now)}
+    if(u.king){ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=8;drawIcon(ctx,'crown',mx,my-rad*1.35,Math.max(12,rad*0.95),'#ffd766','#3a2a05');ctx.restore()}
     if(u.ability&&SZ>=9){const br=Math.max(5.5,rad*0.4),bx=mx-rad*0.72,by=my+rad*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     if(SZ>=9)hpPill(u,mx,my+rad*1.02,rad*0.5);
     if(hl.atk.has(u.id))dmgTag(mx+rad*0.95,my-rad*1.0,Math.max(11,rad*0.62),u);
