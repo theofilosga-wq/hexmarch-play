@@ -713,7 +713,7 @@ const ABIL={
   // Gnome workshop (v19, reworked 29 Sep 2026): every build ability places a machine (see MACHINES) on an EMPTY HEX NEXT TO the builder. Machines never move
   // and FIRE ON THEIR OWN, for free, at the start of the gnomes' turn (machineFire). v22b: a machine with a weapon may ALSO make one basic attack per turn for 1 AP. Cap 6 on the board, 6 turns each.
   mortar:{name:'Build Mortar',cost:2,cd:3,aim:'empty',range:1,special:'build',machine:'mortar',bot:'mortar',
-    desc:'Build a Mortar on an empty hex next to the Gearmaster: 8 HP, 4 ATK, 1 DEF. At the start of each of your turns it lobs a shell for free at one enemy 2 to 5 hexes away for 1 damage. It never moves and falls apart after 6 of your turns. It can also make one full-strength basic attack of its own each turn for 2 AP. Not while 5 of your machines are on the board.'},
+    desc:'Build a Mortar on an empty hex next to the Gearmaster: 8 HP, 3 ATK, 1 DEF. At the start of each of your turns it lobs a shell for free at one enemy 2 to 5 hexes away for 1 damage. It never moves and falls apart after 6 of your turns. It can also make one full-strength basic attack of its own each turn for 2 AP. Not while 5 of your machines are on the board.'},
   flameturret:{name:'Flame Turret',cost:2,cd:2,aim:'empty',range:1,special:'build',machine:'flame',bot:'flame',
     desc:'Build a Flame Turret on an empty hex next to the Flamewright: 7 HP, 2 ATK, 1 DEF. At the start of each of your turns it sprays fire for free over the 3 hexes in front of it toward the nearest enemy: every enemy there takes 1 damage. It never moves and falls apart after 6 of your turns. It can also make one full-strength basic attack of its own each turn for 2 AP. Not while 5 of your machines are on the board.'},
   coil:{name:'Tesla Coil',cost:2,cd:3,aim:'empty',range:1,special:'build',machine:'coil',bot:'coil',
@@ -1021,7 +1021,7 @@ const WRAITH={name:'Time Wraith',icon:'wraith',hp:16,atk:5,def:0,mov:4,mt:'walk'
 /* ---------- Gnome machines: built by abilities, live ttl of the owner's turns, then fall apart ---------- */
 const MACHINES={
   turret:{name:'Turret',icon:'turret',glyph:'●',hp:7,atk:4,def:2,mov:0,mt:'walk',at:'bolt',rng:4,ttl:6,trait:'construct'},
-  mortar:{name:'Mortar',icon:'mortar',glyph:'●',hp:8,atk:4,def:1,mov:0,mt:'walk',at:'lob',rng:5,rmin:2,ttl:6,trait:'construct'},
+  mortar:{name:'Mortar',icon:'mortar',glyph:'●',hp:8,atk:3,def:1,mov:0,mt:'walk',at:'lob',rng:5,rmin:2,ttl:6,trait:'construct'},
   flame:{name:'Flame Turret',icon:'flameturret',glyph:'●',hp:7,atk:2,def:1,mov:0,mt:'walk',at:'melee',rng:1,aoe:'arc',ttl:6,trait:'construct'},
   coil:{name:'Tesla Coil',icon:'coil',glyph:'●',hp:6,atk:0,def:1,mov:0,mt:'walk',at:'none',rng:0,ttl:6,trait:'tesla'},
 };
@@ -2711,7 +2711,7 @@ function genWilds(){
   road(hexLine([B[0]-1,B[1]-2],bridge));road(hexLine([B[0]-2,B[1]-1],[N[0]+3,N[1]-1]));road(hexLine([B[0]+2,B[1]-2],[C[0]-1,C[1]+3]));road(hexLine([C[0]+2,C[1]-1],[E[0]-1,E[1]+3]));
   // woods and hills scattered on open ground, one hex clear of every road and way in (deterministic, so every game has the same map)
   const h=(q,r)=>{let x=Math.imul(q*73856093^r*19349663,2654435761)>>>0;x^=x>>>13;return (x%1000)/1000};
-  for(const [q,r] of cellsAll){const [x,y]=pix(q,r);if(x<0||y<0||T[key(q,r)])continue;
+  for(const [q,r] of cellsAll){const [x,y]=pix(q,r);if(x<0||y<0||T[key(q,r)]||hd(q,r,0,0)<=6)continue;// nothing grows inside the moat: the Heart and the Throne Hall stay clear
     if(DIRS.some(([a,b])=>{const n=T[key(q+a,r+b)];return n==='road'||n==='gap'||n==='door'||n==='gate'||n==='bridge'}))continue;
     const v=h(q,r);if(v<0.07)set(q,r,'forest');else if(v<0.095)set(q,r,'hill')}
   // write the board
