@@ -527,6 +527,7 @@ body.wide .schip{font-size:13px}
           <div class="spacer"></div>
           <button class="btn sm focusbtn" id="focusBtn" title="Full-screen play">⛶ Full screen</button>
           <button class="btn sm" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+          <button class="btn sm" id="pauseBtn" title="Pause the game">⏸ Pause</button>
           <button class="btn sm" id="infoBtn" title="Game info">Info</button>
           <button class="btn sm" id="viewBtn">Flat map</button>
           <button class="btn sm" id="rotL" aria-label="Rotate board left">⟲</button>
@@ -5135,8 +5136,29 @@ function newGameUI(){
   layout();centerBoard();refresh();
   if(firstHuman)setTimeout(()=>{if(G&&screen==='game')frameArmy(firstHuman.id)},140);
 }
+/* Pause (v34, owner 1 Oct 2026): stops the game for everyone (bots wait, the turn timer stops, the board is covered) and offers Resume, a restart with
+   the same settings, or a new setup. G.paused travels with the online state, so every device shows it; anyone may pause or resume, only the host
+   (or the player on a local game) can start another game. */
+function pauseName(p){if(!netOnline()||!p||!p.uid)return '';if(p.uid===NET.me)return 'You';const s=Object.entries(NET.seats).find(([i,x])=>x&&x.uid===p.uid);return s?seatName(+s[0]):'A player'}
+function pauseGame(){if(!G||G.over||screen!=='game'||G.paused)return;G.paused={uid:netOnline()?NET.me:null,at:Date.now()};camStop();netPush();showPause()}
+function resumeGame(){if(!G||!G.paused)return;G.paused=null;$('#overlay').hidden=true;$('#overlay').dataset.kind='';netPush();refresh();if(netOnline())netKick();else if(P(G.cur).ctrl==='bot'){const t=++G.tok;setTimeout(()=>botLoop(t),200)}}
+function showPause(){
+  const o=$('#overlay');const host=!netOnline()||netIsHost();
+  o.dataset.kind='pause';
+  o.innerHTML=`<div class="modal win"><div class="label">${MODES[G.mode].name}${G.map?' · Crown Wilds':''} · round ${G.round}</div><div class="big">Game paused</div>
+    <p class="hint">${pauseName(G.paused)?annEsc(pauseName(G.paused))+' paused the game. ':''}Nothing moves until someone presses Resume.${netOnline()&&!host?' Only the host can start another game.':''}</p>
+    <div class="row" style="justify-content:center;margin-top:14px;flex-wrap:wrap;gap:8px"><button class="btn primary" id="psResume">▶ Resume</button>
+    ${host?`<button class="btn" id="psAgain">↺ Restart with the same settings</button><button class="btn" id="psSetup">⚙ New setup</button>`:''}<button class="btn" id="psScore">Score card</button></div>
+    ${host?`<p class="hint" id="psNote" style="margin:10px 0 0">Restart and New setup end this game${netOnline()?' for everyone in the room':''}: tap twice to confirm.</p>`:''}</div>`;
+  o.hidden=false;
+  $('#psResume').onclick=resumeGame;$('#psScore').onclick=()=>showScoreCard();
+  const twice=(id,fn)=>{const b=$(id);if(!b)return;let t=0;b.onclick=()=>{if(t&&Date.now()-t<5000){fn()}else{t=Date.now();b.textContent=b.textContent.replace(/^(↺|⚙) /,'$1 Tap again: ')}}};
+  twice('#psAgain',()=>{o.hidden=true;o.dataset.kind='';if(netOnline())netStart();else newGameUI()});
+  twice('#psSetup',()=>{o.hidden=true;o.dataset.kind='';if(netOnline())netNewSetup();else showScreen('setup')});
+}
 function botLoop(tok){
   if(!G||G.over||tok!==G.tok||screen!=='game')return;
+  if(G.paused){setTimeout(()=>botLoop(tok),500);return}
   if(G.phase==='deploy'){botDeploy();return}
   if(!botStep()){endTurn();return}
   if(G.over||tok!==G.tok)return;
@@ -5268,6 +5290,7 @@ function renderScoreStrip(){const el=$('#scoreStrip');if(!el)return;if(G.phase){
   el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span><span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall falls':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.mode!=='conquest'?(()=>{const K=kingOf();return K?`♛ <span style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name}</span> King${onThrone(K)?(kingChallenged(K)?' · challenged':' · on the Throne'):' · off the Throne'}`:throneOpen()?'Throne free':'Throne hidden'})():G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
 function refresh(){
   if(!G)return;
+  {const o=$('#overlay');if(G.paused&&screen==='game'&&!G.over&&o&&(o.hidden||o.dataset.kind!=='pause'))showPause();else if(!G.paused&&o&&o.dataset.kind==='pause'){o.hidden=true;o.dataset.kind=''}}
   renderDoom();renderScoreStrip();
   {const ub=$('#undoBtn');if(ub){ub.disabled=!canUndo();ub.hidden=!!G.phase||!isHumanTurn()}}
   const selU=G.sel!=null?byId(G.sel):null;if(G.sel!=null&&!selU){G.sel=null;G.amode=null;G.aim=null}
@@ -5482,10 +5505,10 @@ let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e
 let MENU_RESET=0;
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  <button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} HP numbers</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
-    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
@@ -5513,6 +5536,7 @@ setInterval(()=>{
   const el=$('#timerChip');if(!el)return;
   if(!G||G.over||!G.timer||!isHumanTurn()||screen!=='game'){el.hidden=true;turnClock.tok=null;return}
   if(turnClock.tok!==G.tok+':'+G.cur){turnClock={tok:G.tok+':'+G.cur,end:Date.now()+G.timer*1000}}
+  if(G.paused){turnClock.end+=500;return}
   const left=Math.max(0,Math.ceil((turnClock.end-Date.now())/1000));el.hidden=false;el.textContent='⏱ '+left+'s';el.classList.toggle('low',left<=10);
   if(left<=0){turnClock.tok=null;toast('Time is up');if(G.phase==='deploy'){curtain=null;deployReady();refresh();netPush()}else endTurn()}
 },500);
@@ -5690,7 +5714,7 @@ function showOver(){
   if(netOnline()&&!netIsHost())$('#toSetup').hidden=true;
   $('#look').onclick=()=>{o.hidden=true};
 }
-function closeModal(){$('#overlay').hidden=true;if(G&&G.over&&screen==='game')showOver()}
+function closeModal(){$('#overlay').hidden=true;if(G&&G.over&&screen==='game')showOver();else if(G&&G.paused&&screen==='game')showPause()}
 function showRules(){
   const o=$('#overlay');
   const mv=Object.entries(MOVES).filter(([k])=>k!=='fly').map(([k,m])=>`<li><span class="glyph">${m.glyph}︎</span> <b>${m.free?'Free':'Pattern'}</b>: ${m.text(k==='march'?2:3)}</li>`).join('');
@@ -6415,6 +6439,7 @@ $('#rotR').onclick=()=>{CAM.azT+=Math.PI/3};
 syncViewButtons();
 $('#balBtn').onclick=()=>showBalance();
 $('#setupBtn').onclick=()=>showScreen('setup');
+$('#pauseBtn').onclick=()=>pauseGame();
 $('#takeBots').onclick=netTakeHost;
 setInterval(()=>{if(G&&screen==='game'&&netOnline()){const tb=$('#takeBots');tb.hidden=!(!netIsHost()&&P(G.cur).ctrl==='bot'&&!G.over&&Date.now()-NET.lastChange>12000)}},3000);
 window.addEventListener('resize',()=>layout());
