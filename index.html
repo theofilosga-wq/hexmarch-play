@@ -1146,7 +1146,8 @@ function allCells(){return ringCells().filter(([q,r])=>!G.voids[key(q,r)])}
 function cells(u){if(u.tri)return u.tri;return u.size===2?[[u.q,u.r],[u.q+DIRS[u.dir][0],u.r+DIRS[u.dir][1]]]:[[u.q,u.r]]}
 function occ(){const m=new Map();for(const u of G.units)for(const c of cells(u))m.set(key(c[0],c[1]),u);return m}
 // Wall gates: a hex that lies between two wall pieces, or between a wall and a rock (two of its six neighbours are hard, at least one a wall), is too narrow for a two-hex body.
-function gated(m,q,r){let walls=0,hard=0;for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;const o=m.get(key(a,b));if(o&&o.kind==='wall'){walls++;hard++}else if(inR(a,b)&&featAt(a,b)==='rock')hard++}return walls>=1&&hard>=2}
+// Room monsters and the Rift Beast are creatures, not wall pieces: they never make a gate (v30).
+function gated(m,q,r){let walls=0,hard=0;for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;const o=m.get(key(a,b));if(o&&o.kind==='wall'&&!o.monster&&!o.beast){walls++;hard++}else if(inR(a,b)&&featAt(a,b)==='rock')hard++}return walls>=1&&hard>=2}
 function freeFor(m,u,q,r){if(!passable(q,r)&&!(u&&u.mt==='fly'&&u.size!==2&&solid(q,r)&&featAt(q,r)==='rock'))return false;const o=m.get(key(q,r));if(o&&o!==u)return false;if(u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r))return false;return true}
 function fitDir(m,u,q,r){
   if(!freeFor(m,u,q,r))return -1;
