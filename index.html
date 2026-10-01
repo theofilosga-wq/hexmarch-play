@@ -1095,7 +1095,13 @@ const solid=(q,r)=>inR(q,r)&&!G.voids[key(q,r)]&&!isTrap(q,r);
 const FEATURES={rock:{name:'Rock',text:'Impassable for walkers. Blocks shots. Flyers can fly over it or perch on top (walkers can\u2019t reach them, but their attacks lose 1 range). Jumpers can pass over.'},
   forest:{name:'Forest',text:'Hidden: a unit inside can only be targeted from 2 hexes or closer. +1 DEF. Straight shots stop here.'},
   hill:{name:'Hill',text:'High ground: a ranged unit on it gets +1 range and +1 damage. Melee attacks up the hill from lower ground deal 1 less.'},
-  shrine:{name:'Shrine',text:'Heals the unit standing on it 2 HP at the start of your turn. One drink only: after it heals a unit the shrine is spent for the next 2 rounds, then returns.'}};
+  shrine:{name:'Shrine',text:'Heals the unit standing on it 2 HP at the start of your turn. One drink only: after it heals a unit the shrine is spent for the next 2 rounds, then returns.'},
+  river:{name:'River',text:'Walkers cannot enter or cross it; flyers fly over. Cross at a bridge.'},
+  rubble:{name:'Rubble',text:'Fallen stones: walkers cannot enter or cross; flyers fly over. Shots pass.'},
+  tower:{name:'Watchtower',text:'A ranged unit on it gets +1 range. A unit on it sees into every hidden room within 4 hexes (the rooms are revealed).'},
+  lever:{name:'Lever',text:'A unit standing on it pulls it for its side. When levers of two different sides have been pulled, a trap door opens and the Wanderer runs out (once per game).'},
+  runestone:{name:'Runestone',text:'One of the three Standing Stones. From round 6: hold all three at the start of two of your turns in a row to score 3 points; an enemy on any stone stops it.'},
+  forge:{name:'Forge',text:'A unit that starts its side’s turn here is tempered for good: +1 ATK (+1 DEF if it has no attack). Each army may use it once; then it rests 3 rounds.'}};
 const featAt=(q,r)=>G.feat&&G.feat[key(q,r)]||null;
 // A shrine that healed someone is spent: G.shrineOff[key] = the round it returns (v22b).
 const shrineBack=(q,r)=>{const b=G.shrineOff&&G.shrineOff[key(q,r)];return b&&b>G.round?b:0};
@@ -1107,7 +1113,7 @@ const centreWalled=()=>!!G&&G.round<RULES.CENTRE_FROM&&!G.noWall;
 // v27 (owner, 1 Oct 2026: "only ONE ring of wall"): the wall is the single ring directly around the Heart (heartR+1); the Heart inside stays sealed with it.
 // The outer grey ring (heartR+2) is open ground from the start.
 const isCentreWall=(q,r)=>centreWalled()&&hd(q,r,0,0)<=heartR()+1;
-const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock'&&featAt(q,r)!=='river'&&!isCentreWall(q,r);
+const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock'&&featAt(q,r)!=='river'&&featAt(q,r)!=='rubble'&&!isCentreWall(q,r);
 /* The Collapse: from a set round, the outer ring crumbles into void, each ring a little later than the last,
    down to the grey no man's land around the Heart. The ring is marked a full round before it falls. */
 // v27 (owner, 1 Oct 2026: "it closes too fast in later rounds"): the first ring falls at the start round, then the gaps are
@@ -1226,11 +1232,11 @@ function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;r
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
   const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
-  return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0));
+  return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u));
 }
 function effDef(u){
   if(u.kind==='wall')return u.beast?RULES.BEAST_DEF:u.monster?u.def:0;const F=facOf(u);
-  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def'));
+  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def')+wildsDef(u));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
  Seared (Ember Court: Flame Breath, Fireball): st.seared=1 until the end of the target's next turn; every heal on it is blocked (healUnit).
@@ -1263,7 +1269,7 @@ function cleanse(u,t){const d=debuffOf(t);if(!d)return null;const s=t.st;
 function cleanseValue(t){const d=debuffOf(t);if(!d)return 0;const w=Math.min(worth(t),40);
   if(d==='stun'||d==='frozen')return 3+w*0.12;if(d==='curse:silence')return t.ability?3:0.5;if(d.startsWith('curse:'))return 1+Math.min(4,pendingDot(t)*0.6);
   if(d==='seared')return t.hp<t.maxhp?1.2:0.3;if(d==='hex')return 1+Math.min(2,t.atk)*0.6;if(d==='sunder')return 1.5;if(d==='delay')return 0.8+(t.st.dl||0)*0.6;if(d==='chill')return 0.8;return 0}
-function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&oldCentre()?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill')?1:0))}
+function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&oldCentre()?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill'||featAt(q,r)==='tower')?1:0))}
 // A flyer can perch on a rock: out of reach of walkers, but its attacks lose 1 range.
 const perched=u=>u.mt==='fly'&&u.kind!=='wall'&&featAt(u.q,u.r)==='rock';
 function abilCost(u,k){const F=facOf(u);if((k==='march'&&utal(u,'warchief'))||(k==='quicken'&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0)-(spellEcho(u)?1:0))}
@@ -1278,7 +1284,7 @@ const summonBadge=u=>u.statue?`${u.stone||0}/${statueNeed(u)}`:u.ttl;
 // Inert pieces: an ember egg or a Gargoyle statue (they engage nobody, surround nobody, hold nothing).
 const inert=v=>!!(v&&(v.egg||v.statue));
 // Chilled: 1 less move while st.chill > 0 (it counts down at the end of the unit's own turn).
-function effMov(u){const F=facOf(u);if(!u.mov)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0))}
+function effMov(u){const F=facOf(u);if(!u.mov)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
 const isRoad=(q,r)=>G.map?!!(G.roads&&G.roads[key(q,r)]):hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
@@ -1549,7 +1555,7 @@ function newGame(c){
   // Tile layout: 'classic' (default, today's clusters) or 'bands' (rotated bands, see genTerrainBands). Only set on G when not classic.
   if(c.tiles==='bands'){G.tiles='bands';genTerrainBands()}else genTerrain();
   G.players.forEach(p=>{p.zone=zoneOf(p)});}
-  G.players.forEach(deploy);
+  G.players.forEach(deploy);if(G.map)wildsSetup();
   addLog(null,`${MODES[G.mode].name}${teams?', teams of 2':''}.`);
   if(c.deploy){G.phase='deploy';G.cur=0;G.round=1;addLog(null,'Deployment: each side arranges its army in secret.');HOOKS.turn();return G}
   talentStats();beginTurn();
@@ -1632,7 +1638,7 @@ function beginTurn(){
    if(talent(p,'tithe'))c+=1;
    for(const x of G.relics||[])if(x.kind==='idol'&&x.carrier!=null){const cu=byId(x.carrier);if(cu&&cu.owner===p.id)c+=1}
    if(c&&(p.ult||0)<ultNeed(p)){addCharge(p.id,c);if(held.length)addLog(p.id,`${held[0]} flag${held[0]>1?'s':''} owned: Ultimate charge ${p.ult}/${ultNeed(p)}.`)}}
-  spawnWraith(p);
+  spawnWraith(p);const gemAP=wildsGems(p);
   computeHolder();G.lead=leadingTeam();p.ultThisTurn=false;
   if(checkVictory())return;
   if(!p.alive){advance();return}
@@ -1641,11 +1647,11 @@ function beginTurn(){
   const relicAP=(G.relics||[]).filter(x=>x.kind==='hourglass'&&x.carrier!=null&&byId(x.carrier)&&byId(x.carrier).owner===p.id).length;
   // The first player's −3 AP on its round-2 turn (G.apParts.first) was removed on 29 Sep 2026: the owner said it "feels bad". The first-player win rate is measured after; if it drifts, the second player gets a gift (e.g. Ultimate charge) instead of a penalty.
   const wellAP=springOwner()===p.id?1:0;// the Wellspring (v23): +1 AP to the side that owns it
-  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0,well:wellAP,loot:p.lootAP||0};
+  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0,well:wellAP,loot:(p.lootAP||0)+gemAP};
   const apNo=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);
   // Banked Time tracking: AP the bank actually added this turn (the cap can eat some), as 'Banked Time (passive)' apGranted, one use per turn with a bank.
   if(bank&&trk()&&!SIM){const got=apNo-Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP);const e=tFx(p.fac,'','Banked Time (passive)');if(e){e.uses++;e.apGranted+=Math.max(0,got)}}
-  G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP+(p.lootAP||0));G.ap=G.apMax;
+  G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP+(p.lootAP||0)+gemAP);G.ap=G.apMax;
   if(wellAP){const O=tObj();if(O){const e=O.well[p.id]=O.well[p.id]||{caps:0,ap:0,turns:0};e.turns++;e.ap+=G.apMax-apNo}}
   const target=heartTarget();const s0=G.score[p.team]||0;
   G.scoredAt=G.scoredAt||{};
@@ -1832,6 +1838,8 @@ function hurt(t,n,col,tick){
   if(t.st&&t.st.shield>0){const a=Math.min(t.st.shield,n);t.st.shield-=a;n-=a;fx(t,'blocked','#d7c9ff');
     if(hostile){const by=t.st.shieldBy;if(by!=null&&by>=0)tSupBy(by,null,t.st.shieldNm||ABIL.aegis.name,'blocked',a);else if(by===-2)tSupBy(-1,G.players[t.owner].fac,'Glacial Armour (talent)','blocked',a)}
     if(n<=0)return 0}
+  if(t.suitHp>0&&t.kind!=='wall'){const a=Math.min(t.suitHp,n);t.suitHp-=a;n-=a;fx(t,'suit −'+a,'#c9a24a');if(t.suitHp<=0){t.suitHp=0;suitBreak(t)}if(n<=0)return 0}
+  if(t.monster&&!tick&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner])t.lastBy=CUR_SRC.id;// v36: room monsters answer the last unit that hit them, at the next round start
   if(t.kind==='wall'&&t.by!=null&&hostile)tSupBy(t.by,null,t.abil,'blocked',Math.min(n,Math.max(0,t.hp)));
   if(trk()&&!SIM&&t.kind!=='wall'){const d=tStat(t),sc=tStat(CUR_SRC),eff=Math.min(n,Math.max(0,t.hp));d.taken+=eff;
     if(sc&&CUR_SRC!==t&&tm(CUR_SRC.owner)!==tm(t.owner)){sc.dmg+=eff;sc['dmg'+(tick?'Dot':CUR_TAG||'Other')]+=eff;const e=srcFx();if(e){e.dmg+=eff;e.hits++}planDmg(sc.fac,CUR_SRC,t,eff,tick)}
@@ -2200,6 +2208,7 @@ function hitDmg(u,t,A){
   let base=A.useAtk?effAtk(u)+(A.atkBonus||0):(A.dmg||0);
   if(base<=0)return 0;
   if(coldDouble(t,A))base*=2;// Ice Lance (chilled or frozen) and Shatter Strike (frozen) hit twice as hard
+  if(hasRelic(u,'spellstone'))base+=1;// Spellstone relic (v36)
   if(focused(u,A))base+=1;// Arcane Focus: a mage that has not moved this turn
   if(t.kind!=='wall'&&t.st&&t.st.hex>0)base+=1;// Hexed: 1 more damage from abilities
   let d=A.pierce?base:afterDef(base,effDef(t));
@@ -2435,6 +2444,7 @@ const RELICS={
   aegis:{name:'Aegis',icon:'shield',col:'#7fd4ff',text:'Carrier +2 DEF and can’t be pushed, pulled or thrown.'},
   hourglass:{name:'Sand of Ages',icon:'hourglass',col:'#ff9be8',text:'Its side gets +1 AP at the start of each turn.'},
   idol:{name:'Storm Idol',icon:'lightning',col:'#ffd766',text:'Its side gets +1 Ultimate charge at the start of each turn.'},
+  spellstone:{name:'Spellstone',icon:'crystal',col:'#6ec8ff',text:'The carrier’s abilities deal +1 damage.'},
 };
 const RKEYS=Object.keys(RELICS);
 function relicOf(u){return G.relics&&u?G.relics.find(x=>x.carrier===u.id)||null:null}
@@ -2664,167 +2674,276 @@ function actEvents(){
    Loot must be CARRIED back into your own camp to take effect; a carrier that dies drops it and anyone may pick it up. The Cursed chest is a coin flip
    when picked up (50% it turns into a real reward, 50% it curses the carrier and is gone); the flip is a hash of round, unit and room, so undo cannot reroll it.
    No Collapse, no flags, no Wellspring, no random relics, no Riftwalkers in this mode. Heart points (from round 10), loot and leader takedowns win. */
-const WILDS={R:17,open:10,target:12,hold:3,beastHp:30,kingAtk:2,kingDef:2,camp:[4,11],north:[-7,14],east:[14,0],crypt:[9,3],fort:[2,7]};
+const WILDS={R:17,open:10,target:12,hold:3,beastHp:30,kingAtk:2,kingDef:2,camp:[4,11],fort:[2,7],crypt:[9,3],vault:[-5,10],lair:[-8,16],stones:[14,0],tower:[6,5],lever:[0,10],
+  midAt:6,dragonPts:3,stonesPts:3,stonesDark:4,suitHp:8,plateHp:5,gemMax:2,wanderMove:3,forgeRest:3};
+// v36 (owner, 1 Oct 2026): every room monster only answers the last unit that hit it, at the next round start. No more round-start strikes, no Ghoul packs.
 const MONSTERS={
-  guardian:{name:'Stone Guardian',icon:'golem',hp:14,atk:4,def:1},
-  ghoul:{name:'Ghoul',icon:'skull',hp:5,atk:2,def:0},
-  crate:{name:'Locked Crate',icon:'chest',hp:8,atk:0,def:1}};
+  guardian:{name:'Stone Guardian',icon:'golem',hp:12,atk:3,def:1},
+  golem:{name:'Vault Golem',icon:'golem',hp:16,atk:3,def:1},
+  crate:{name:'Locked Crate',icon:'chest',hp:8,atk:0,def:1},
+  dragon:{name:'Dragon',icon:'drake',hp:20,atk:3,def:1},
+  wanderer:{name:'Wanderer',icon:'paw',hp:20,atk:2,def:0},
+  cracked:{name:'Cracked Wall',icon:'mountain',hp:6,atk:0,def:0}};
+// Crown Shards (v36): gems set into your army's crown. They do nothing on their own: they power your side's King (each gem counts at most twice).
+const GEMS={
+  ruby:{name:'Ruby',col:'#ff4a5c',text:'the King +1 ATK'},
+  sapphire:{name:'Sapphire',col:'#4a8cff',text:'the King +1 DEF'},
+  emerald:{name:'Emerald',col:'#3fd67a',text:'the King heals 1 HP at the start of your turn'},
+  topaz:{name:'Topaz',col:'#ffc23a',text:'+1 AP each turn while you have a King'},
+  amethyst:{name:'Amethyst',col:'#b35cff',text:'+1 Ultimate charge each turn while you have a King'},
+  onyx:{name:'Onyx',col:'#8a8a99',text:'enemies next to the King take 1 damage at the start of your turn'}};
+const GKEYS=Object.keys(GEMS);
+const SUIT_ITEMS={boots:{name:'Boots',text:'+1 move'},club:{name:'Ogre Club',text:'+1 ATK'},shield:{name:'Tower Shield',text:'+1 DEF'}};
 const LOOT={
-  points1:{name:'Crown Shard',text:'+1 Warlord point',col:'#f2c75c'},
-  points2:{name:'Crown Shards',text:'+2 Warlord points',col:'#f2c75c'},
-  points3:{name:'Crown Jewel',text:'+3 Warlord points',col:'#f2c75c'},
-  draught:{name:'Healing Draught',text:'every unit of yours heals 4',col:'#5fd68e'},
-  jar:{name:'Storm Jar',text:'+6 Ultimate charge',col:'#7fc8ff'},
+  gem:{name:'Crown Shard',text:'a gem for your crown: it powers your King',col:'#f2c75c'},
+  suit:{name:'War Suit',text:`a unit that steps on it climbs in: ${8} extra HP that take every hit first, plus its item`,col:'#c9a24a'},
+  captive:{name:'Captive',text:'a prisoner in chains: step on him to free him, then walk him into your camp',col:'#d8b49a'},
   relic:{name:'Ancient Relic',text:'the unit that brings it home carries a random relic',col:'#b98cff'},
-  sand:{name:'Hourglass Sand',text:'+1 AP every turn for the rest of the game',col:'#d94cf0'},
-  banner:{name:'War Banner',text:'every unit of yours +1 ATK for the rest of the game',col:'#ff7a5c'},
-  sellsword:{name:'Sellsword Contract',text:'a Sellsword (12 HP, 3 ATK, 1 DEF, walks 3) joins your army in your camp',col:'#e8b84e'},
-  cursed:{name:'Cursed Chest',text:'a coin flip when picked up: a real reward, or a curse on the carrier',col:'#9a6bd0'}};
-const SELLSWORD={name:'Sellsword',icon:'sword',hp:12,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1};
-const WILDS_DECKS={
-  fort:{enc:['crate','hold','pack','shrine'],loot:['points1','draught','jar','cursed']},
-  crypt:{enc:['guardian','pack','crate','hold'],loot:['points2','relic','sand','cursed']},
-  big:{enc:['guardian','pack','hold','crate'],loot:['points3','banner','sellsword','cursed']}};
-const ROOM_NAMES={hall:'Hall',grove:'Grove',crypt:'Crypt',fort:'Hill Fort'};
-const ENC_NAMES={guardian:'a Stone Guardian',pack:'a pack of Ghouls',crate:'a Locked Crate',hold:'an empty hall: hold it alone',shrine:'a Shrine',beast:'the Rift Beast'};
-const isBlock=(q,r)=>{const f=featAt(q,r);return f==='rock'||f==='river'};
+  cursed:{name:'Cursed Chest',text:'a coin flip when picked up: a Crown Shard, or a curse on the carrier',col:'#9a6bd0'}};
+const lootName=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].name+' Crown Shard':x.kind==='suit'&&SUIT_ITEMS[x.item]?`War Suit (${SUIT_ITEMS[x.item].name})`:LOOT[x.kind].name;
+const lootCol=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].col:LOOT[x.kind].col;
+const lootText=x=>x.kind==='gem'&&GEMS[x.gem]?`carry it home: ${GEMS[x.gem].text}`:x.kind==='suit'&&SUIT_ITEMS[x.item]?`a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first (a giant straps it on as plating: ${WILDS.plateHp}), and ${SUIT_ITEMS[x.item].text}`:LOOT[x.kind].text;
+const CAPTIVE={name:'Captive',icon:'hand',hp:6,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0};
+const FREEDMAN={name:'Freedman',icon:'helm',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1};
+const ROOM_NAMES={fort:'Hill Fort',crypt:'Crypt',vault:'Vault',lair:'Dragon’s Lair'};
+const ENC_NAMES={guardian:'a Stone Guardian',golem:'a Vault Golem',crate:'a Locked Crate',hold:'an empty hall: hold it alone',forge:'a Forge',captive:'a Captive in chains',dragon:'a Dragon',shrine:'a Shrine',beast:'the Rift Beast'};
+const isBlock=(q,r)=>{const f=featAt(q,r);return f==='rock'||f==='river'||f==='rubble'};
 function wildsMirrors(q,r){const o=[[q,r],[-q-r,r],[q+r,-r],[-q,-r]];const s=new Set(),out=[];for(const c of o){const k=key(c[0],c[1]);if(!s.has(k)){s.add(k);out.push(c)}}return out}
 function hexLine(a,b){const n=hd(a[0],a[1],b[0],b[1]);const out=[];for(let i=0;i<=n;i++){const t=n?i/n:0;const x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t,y=-x-z;let rx=Math.round(x),rz=Math.round(z);const ry=Math.round(y);const dx=Math.abs(rx-x),dy=Math.abs(ry-y),dz=Math.abs(rz-z);if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy<=dz)rz=-rx-ry;out.push([rx,rz])}return out}
-// Builds the board: G.feat (rock walls, river, forest, hill, shrine), G.roads, G.rooms, camps (p.home, p.zone, home ground) and the shuffled room decks.
+function wildsHash(s){let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
+// Builds the board: G.feat, G.roads, G.rooms (hidden rooms + the two Dragon's Lairs), G.circles (Standing Stones), G.cracks (cracked walls, placed by
+// wildsSetup once the armies exist), camps, and the room contents. v36 (owner): rooms have as few walls as possible: stone pillars on the six corners,
+// the edge between them a mix of rubble, streams, woods, cracked walls and open gaps. Contents are dealt in MIRROR SETS: every Hill Fort holds the
+// same kind of thing, every Crypt the same, so no corner is luckier than another (which thing it is changes every game).
 function genWilds(){
-  const W=WILDS,cellsAll=allCells(),T={},roomOf={};
+  const W=WILDS,cellsAll=allCells(),T={},roomOf={},cracks=[];
   const ang=(q,r,aq,ar)=>{const [x,y]=pix(q,r),[ax,ay]=pix(aq,ar);return Math.atan2(y-ay,x-ax)};
   const near=(a,b,tol)=>{let d=Math.abs(a-b)%(2*Math.PI);if(d>Math.PI)d=2*Math.PI-d;return d<tol};
   const angTo=(a,b)=>ang(b[0],b[1],a[0],a[1]);
-  // set a hex and its three mirror images; rooms keep one id per copy
   const set=(q,r,t,room)=>{wildsMirrors(q,r).forEach(([a,b])=>{if(!inR(a,b))return;T[key(a,b)]=t;if(room)roomOf[key(a,b)]=room})};
   const ring=(c,d,doors,tol,t,room,gapT)=>{for(const [q,r] of cellsAll){if(hd(q,r,c[0],c[1])!==d)continue;const a=ang(q,r,c[0],c[1]);set(q,r,doors.some(g=>near(a,g,tol))?(gapT||'gap'):t,room&&doors.some(g=>near(a,g,tol))?room+':gate':null)}};
   const fill=(c,d,t,room)=>{for(const [q,r] of cellsAll)if(hd(q,r,c[0],c[1])<d)set(q,r,t,room)};
-  const B=W.camp,N=W.north,E=W.east,C=W.crypt,F=W.fort;
+  const corner=(c,q,r,d)=>DIRS.some(([a,b])=>q===c[0]+a*d&&r===c[1]+b*d);
+  // a room's edge: pillars (cornerT) on the corners, the mix in between, open where a door faces; open hexes and cracked walls are ways into the room
+  const edge=(c,d,doors,mix,room,cornerT,tol)=>{let i=0;
+    const cs=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])===d).map(([q,r])=>[q,r,ang(q,r,c[0],c[1])]).sort((a,b)=>a[2]-b[2]);
+    for(const [q,r,a] of cs){let t=doors.some(g=>near(a,g,tol||0.3))?'gap':corner(c,q,r,d)?(cornerT||'rock'):mix[(i++)%mix.length];
+      if(t==='crack'){for(const m of wildsMirrors(q,r))if(inR(m[0],m[1]))cracks.push(m);set(q,r,'crackbase',room?room+':gate':null);continue}
+      set(q,r,t,room&&t==='gap'?room+':gate':null)}};
+  const B=W.camp,F=W.fort,C=W.crypt,V=W.vault,L=W.lair,S=W.stones,B2=[-B[0]-B[1],B[1]],B3=[B[0]+B[1],-B[1]];
   for(let q=7;q<=11;q++)set(q,0,'river');
   {const moat=cellsAll.filter(([q,r])=>hd(q,r,0,0)===6);for(const [q,r] of moat)set(q,r,'river');
    const bq=moat.slice().sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1])||Math.abs(ang(a[0],a[1],0,0)-angTo([0,0],B))-Math.abs(ang(b[0],b[1],0,0)-angTo([0,0],B)))[0];set(bq[0],bq[1],'bridge')}
   // Throne Hall: a stone ring right around the Heart (heartR+1) with a door on each axis; the doors are sealed by the centre wall until round WILDS.open
   ring([0,0],G.heartR+1,[0,Math.PI/2,Math.PI,-Math.PI/2],0.25,'rock',null,'door');
-  ring(N,2,[0,Math.PI],0.35,'rock','hall');fill(N,2,'room','hall');
-  ring(E,2,[angTo(E,B),angTo(E,[B[0]+B[1],-B[1]]),Math.PI],0.33,'forest','grove');fill(E,2,'room','grove');
-  ring(C,2,[angTo(C,B)],0.3,'rock','crypt');fill(C,2,'room','crypt');
-  ring(F,2,[angTo(F,B),angTo(F,[0,0])],0.4,'hill','fort');fill(F,2,'room','fort');
-  ring(B,3,[angTo(B,[0,0]),angTo(B,N),angTo(B,C)],0.2,'rock',null,'gate');
+  edge(F,2,[angTo(F,B),angTo(F,[0,0])],['hill','gap','forest','gap'],'fort','hill',0.4);fill(F,2,'room','fort');
+  edge(C,2,[angTo(C,B)],['rubble','gap','crack','river','gap'],'crypt');fill(C,2,'room','crypt');
+  edge(V,2,[angTo(V,B),angTo(V,B2)],['rubble','gap','crack','forest','gap'],'vault');fill(V,2,'room','vault');
+  edge(L,2,[angTo(L,B),angTo(L,B2),angTo(L,V)],['rubble','gap','forest'],'lair');fill(L,2,'room','lair');
+  edge(S,2,[angTo(S,B),angTo(S,B3),Math.PI],['gap','forest','gap','rubble'],null,'rock');fill(S,2,'circle');
+  for(const j of [0,2,4])set(S[0]+DIRS[j][0],S[1]+DIRS[j][1],'runestone');
+  edge(B,3,[angTo(B,[0,0]),angTo(B,V),angTo(B,C)],['rubble','forest','gap','rubble','crack','forest'],null,'rock',0.2);
   fill(B,3,'camp');
-  const road=path=>{for(const [q,r] of path){const t=T[key(q,r)];if(!t||t==='forest'||t==='hill')set(q,r,'road')}};
+  set(W.tower[0],W.tower[1],'tower');set(W.lever[0],W.lever[1],'lever');
+  const road=path=>{for(const [q,r] of path){const t=T[key(q,r)];if(!t||t==='forest'||t==='hill'||t==='rubble'||t==='crackbase'||(t==='rock'&&hd(q,r,0,0)>6))set(q,r,'road')}};
   const bridge=cellsAll.filter(([q,r])=>T[key(q,r)]==='bridge').sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1]))[0];
-  road(hexLine([B[0]-1,B[1]-2],bridge));road(hexLine([B[0]-2,B[1]-1],[N[0]+3,N[1]-1]));road(hexLine([B[0]+2,B[1]-2],[C[0]-1,C[1]+3]));road(hexLine([C[0]+2,C[1]-1],[E[0]-1,E[1]+3]));
+  road(hexLine([B[0]-1,B[1]-2],bridge));road(hexLine([B[0]-2,B[1]-1],[V[0]+3,V[1]-1]));road(hexLine([V[0]+2,V[1]+1],[L[0]+3,L[1]-1]));
+  road(hexLine([B[0]+2,B[1]-2],[C[0]-1,C[1]+3]));road(hexLine([C[0]+2,C[1]-1],[S[0]-1,S[1]+3]));
   // woods and hills scattered on open ground, one hex clear of every road and way in (deterministic, so every game has the same map)
   const h=(q,r)=>{let x=Math.imul(q*73856093^r*19349663,2654435761)>>>0;x^=x>>>13;return (x%1000)/1000};
-  for(const [q,r] of cellsAll){const [x,y]=pix(q,r);if(x<0||y<0||T[key(q,r)]||hd(q,r,0,0)<=6)continue;// nothing grows inside the moat: the Heart and the Throne Hall stay clear
-    if(DIRS.some(([a,b])=>{const n=T[key(q+a,r+b)];return n==='road'||n==='gap'||n==='door'||n==='gate'||n==='bridge'}))continue;
+  for(const [q,r] of cellsAll){const [x,y]=pix(q,r);if(x<0||y<0||T[key(q,r)]||hd(q,r,0,0)<=6)continue;// nothing grows inside the moat
+    if(DIRS.some(([a,b])=>{const n=T[key(q+a,r+b)];return n==='road'||n==='gap'||n==='door'||n==='bridge'||n==='crackbase'||n==='lever'}))continue;
     const v=h(q,r);if(v<0.07)set(q,r,'forest');else if(v<0.095)set(q,r,'hill')}
-  // write the board
   G.feat={};G.roads={};G.terr={};
-  for(const [k,t] of Object.entries(T)){if(t==='rock'||t==='river'||t==='forest'||t==='hill')G.feat[k]=t;if(t==='road'||t==='bridge')G.roads[k]=1}
-  // rooms: one record per copy, cells (inside) and ways (the gaps in its ring)
-  // each room hex belongs to the nearest copy of its room's centre (rooms on a mirror line have 2 copies, the others 4)
-  const centres={hall:N,grove:E,crypt:C,fort:F},rooms={};
+  for(const [k,t] of Object.entries(T)){if(['rock','river','forest','hill','rubble','tower','lever','runestone'].includes(t))G.feat[k]=t;if(t==='road'||t==='bridge')G.roads[k]=1}
+  // rooms: one record per copy; each room hex belongs to the nearest copy of its room's centre (rooms on a mirror line have 2 copies, the others 4)
+  const centres={fort:F,crypt:C,vault:V,lair:L},rooms={};
   for(const [k,id] of Object.entries(roomOf)){const gate=id.includes(':gate'),type=id.replace(':gate','');const [q,r]=k.split(',').map(Number);
     const cs=wildsMirrors(...centres[type]);let bi=0,bd=99;cs.forEach((c,i)=>{const d=hd(q,r,c[0],c[1]);if(d<bd){bd=d;bi=i}});
     const rid=type+'#'+bi;const R=rooms[rid]=rooms[rid]||{id:rid,type,c:cs[bi],cells:[],ways:[]};(gate?R.ways:R.cells).push(k)}
   G.rooms=Object.values(rooms).map(R=>Object.assign(R,{seen:false,enc:null,loot:null,state:'hidden',holdTeam:null,holdN:0,monMax:0}));
   G.rooms.sort((a,b)=>a.id<b.id?-1:1);
-  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(RNG()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-  for(const [grp,types] of [['fort',['fort']],['crypt',['crypt']],['big',['hall','grove']]]){const rs=G.rooms.filter(R=>types.includes(R.type));const D=WILDS_DECKS[grp];const enc=shuffle(D.enc.slice());const loot=shuffle(D.loot.slice());let li=0;
-    rs.forEach((R,i)=>{R.enc=enc[i%enc.length];R.loot=R.enc==='shrine'||R.enc==='beast'?null:loot[li++%loot.length];R.tier=grp})}
-  // camps: walled, the inside is the deployment zone and home ground; seats go round the board
+  const pick=a=>a[Math.floor(RNG()*a.length)];
+  const fortEnc=pick(['forge','captive','crate']),cryptEnc=pick(['guardian','crate','hold']),g1=pick(GKEYS),g2=pick(GKEYS.filter(g=>g!==g1)),item=pick(Object.keys(SUIT_ITEMS));
+  for(const R of G.rooms){
+    if(R.type==='fort'){R.enc=fortEnc;R.loot=fortEnc==='captive'?'captive':fortEnc==='crate'?'cursed':null;R.gem=g2;R.tier='fort'}
+    else if(R.type==='crypt'){R.enc=cryptEnc;R.loot='gem';R.gem=g1;R.tier='crypt'}
+    else if(R.type==='vault'){R.enc='golem';R.loot='suit';R.item=item;R.tier='vault'}
+    else if(R.type==='lair'){R.enc='dragon';R.seen=true;R.state='sleeping';R.tier='lair'}}
+  G.circles=wildsMirrors(...S).map(c=>({c,stones:DIRS.map(([a,b])=>[c[0]+a,c[1]+b]).filter(([q,r])=>G.feat[key(q,r)]==='runestone'),team:null,charge:0,dark:0}));
+  {const s=new Set();G.cracks=cracks.filter(([q,r])=>{const k=key(q,r);if(s.has(k)||T[k]!=='crackbase')return false;s.add(k);return true})}
+  G.levers={};G.gems={};G.wander=null;G.midUp=false;
+  // camps: the inside is the deployment zone and home ground; seats go round the board
   const camps=wildsMirrors(...B);const order=[0,1,3,2].map(i=>camps[i]);
   G.players.forEach((p,i)=>{const c=order[p.spot%4];p.home=c;p.camp=c;p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2).map(([q,r])=>key(q,r));for(const k of p.zone)G.terr[k]=p.fac});
 }
+// After the armies are placed: the cracked walls (6 HP, no DEF, every side may smash them; once broken the way stays open).
+function wildsSetup(){if(!G.map)return;for(const [q,r] of G.cracks||[])if(passable(q,r)&&!unitAt(q,r))G.units.push(makeMonster('cracked',q,r,null))}
 const inCamp=(p,q,r)=>!!(p&&p.zone&&p.zone.includes(key(q,r)));
 function roomAt(q,r){if(!G.rooms||!G.rooms.length)return null;if(!roomAt.c||roomAt.c.r!==G.rooms){const m=new Map();for(const R of G.rooms){for(const k of R.cells)m.set(k,R);for(const k of R.ways)m.set(k,R)}roomAt.c={r:G.rooms,m}}return roomAt.c.m.get(key(q,r))||null}
 function makeMonster(kind,q,r,room){const M=MONSTERS[kind];return {id:G.nid++,kind:'wall',wall:'monster',monster:kind,owner:-1,name:M.name,icon:M.icon,q,r,dir:0,size:1,hp:M.hp,maxhp:M.hp,atk:M.atk,def:M.def,st:{},moved:true,acted:true,cd:0,room}}
-// A unit stepped into a hidden room (or its way in): everyone sees it now, and its encounter wakes.
+const roomFree=R=>R.cells.map(k=>k.split(',').map(Number)).filter(([q,r])=>passable(q,r)&&!unitAt(q,r)).sort((a,b)=>hd(a[0],a[1],R.c[0],R.c[1])-hd(b[0],b[1],R.c[0],R.c[1]));
+// A unit stepped into a hidden room (or its way in): everyone sees it now, and its contents wake.
 function revealRoom(R,u){
-  R.seen=true;R.state='active';const free=()=>R.cells.map(k=>k.split(',').map(Number)).filter(([q,r])=>passable(q,r)&&!unitAt(q,r));
+  R.seen=true;R.state='active';
   const put=(kind,c)=>{const m=makeMonster(kind,c[0],c[1],R.id);G.units.push(m);R.monMax+=m.maxhp;return m};
-  if(R.enc==='guardian'){const c=unitAt(R.c[0],R.c[1])?free()[0]:R.c;if(c)put('guardian',c)}
-  else if(R.enc==='pack'){const sp=free().sort((a,b)=>hd(a[0],a[1],R.c[0],R.c[1])-hd(b[0],b[1],R.c[0],R.c[1]));for(const c of sp.slice(0,3))put('ghoul',c)}
-  else if(R.enc==='crate'){const c=unitAt(R.c[0],R.c[1])?free()[0]:R.c;if(c)put('crate',c)}
+  const spot=()=>unitAt(R.c[0],R.c[1])?roomFree(R)[0]:R.c;
+  if(R.enc==='guardian'||R.enc==='golem'||R.enc==='crate'){const c=spot();if(c)put(R.enc,c)}
+  else if(R.enc==='forge')G.feat[key(R.c[0],R.c[1])]='forge';
+  else if(R.enc==='captive'){const c=spot();if(c)dropLoot(R,c[0],c[1],true)}
   else if(R.enc==='shrine'){G.feat[key(R.c[0],R.c[1])]='shrine';R.state='done'}
-  else if(R.enc==='beast'){const tri=[[R.c[0],R.c[1]],[R.c[0]+1,R.c[1]],[R.c[0],R.c[1]+1]];if(tri.every(([q,r])=>passable(q,r)&&!unitAt(q,r))&&!(G.beast&&G.beast.spawned)){spawnBeast(tri);if(G.beast)G.beast.room=R.id}else R.state='done'}
   const who=u&&u.kind!=='wall'?FAC[G.players[u.owner].fac].name:'Someone';
-  addLog(u&&u.owner>=0?u.owner:null,`${who} discovers the ${ROOM_NAMES[R.type]}: ${ENC_NAMES[R.enc]}${R.loot?' guards a treasure':''}.`);
-  announce({k:'room',room:ROOM_NAMES[R.type],enc:ENC_NAMES[R.enc],fac:u&&u.owner>=0?G.players[u.owner].fac:null,loot:!!R.loot});
+  addLog(u&&u.owner>=0?u.owner:null,`${who} discovers the ${ROOM_NAMES[R.type]}: ${ENC_NAMES[R.enc]}${R.loot&&R.enc!=='captive'?' guards a treasure':''}.`);
+  announce({k:'room',room:ROOM_NAMES[R.type],enc:ENC_NAMES[R.enc],fac:u&&u.owner>=0?G.players[u.owner].fac:null,loot:!!R.loot&&R.enc!=='captive'});
   vfx({k:'buff',at:R.c,col:'#b9b3d6',cam:1});
   if(trk()){const O=tObj();if(O){O.rooms=O.rooms||{};O.rooms[R.id]={enc:R.enc,loot:R.loot,seen:G.round}}}
 }
-// Loot appears in a room (monsters cleared, crate broken, room held).
-function dropLoot(R,q,r){if(!R.loot)return;R.state='loot';G.loot=G.loot||[];G.loot.push({id:G.nid++,kind:R.loot,room:R.id,q,r,carrier:null});
-  addLog(null,`The ${ROOM_NAMES[R.type]}'s treasure lies open: ${LOOT[R.loot].name}. Carry it home to your camp!`);vfx({k:'relic',at:[q,r],col:LOOT[R.loot].col})}
+// Loot appears in a room (monsters cleared, crate broken, room held), or the Wanderer drops a Crown Shard.
+function dropLoot(R,q,r,quiet){if(!R.loot)return;R.state='loot';G.loot=G.loot||[];const x={id:G.nid++,kind:R.loot,gem:R.gem,item:R.item,room:R.id,q,r,carrier:null};G.loot.push(x);
+  if(!quiet)addLog(null,`The ${ROOM_NAMES[R.type]}'s treasure lies open: ${lootName(x)}. ${x.kind==='suit'?'Step a unit onto it to climb in!':'Carry it home to your camp!'}`);vfx({k:'relic',at:[q,r],col:lootCol(x)})}
+function wildsWin(team){if(G.score[team]>=heartTarget()&&!G.over){G.over={team,how:'heart'};HOOKS.over()}}
 function monsterSlain(t){
-  const R=(G.rooms||[]).find(x=>x.id===t.room);addLog(null,`${t.name} falls.`);vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:'#b9b3d6'});
+  const R=(G.rooms||[]).find(x=>x.id===t.room);
+  if(t.monster==='cracked'){addLog(null,'A cracked wall crumbles: the way is open.');vfx({k:'death',at:[t.q,t.r],icon:'mountain',col:'#9a9283'});return}
+  addLog(null,`${t.name} falls.`);vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:'#b9b3d6',big:t.monster==='dragon'||t.monster==='wanderer'});
+  const k=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC:null;
+  if(t.monster==='dragon'){if(R)R.state='done';if(k){const p=G.players[k.owner];G.score[p.team]=(G.score[p.team]||0)+WILDS.dragonPts;tPts(p.id,'dragon',WILDS.dragonPts);
+      addLog(p.id,`The ${k.name} slays the Dragon: +${WILDS.dragonPts} points (${G.score[p.team]}/${heartTarget()}).`);
+      announce({k:'note',col:FAC[p.fac].color,t:`The ${FAC[p.fac].name} slay a Dragon! +${WILDS.dragonPts} points`,s:'',team:p.team,scores:scoreSnap()});
+      if(trk()){const O=tObj();if(O){O.dragons=O.dragons||[];O.dragons.push({pid:p.id,round:G.round})}}wildsWin(p.team)}return}
+  if(t.monster==='wanderer'){const gem=GKEYS[Math.floor(wildsHash(`${G.round}|${t.id}|${t.q},${t.r}`)*GKEYS.length)];
+    G.loot=G.loot||[];const x={id:G.nid++,kind:'gem',gem,room:null,q:t.q,r:t.r,carrier:null};G.loot.push(x);
+    addLog(null,`The Wanderer falls and drops a ${lootName(x)}. Carry it home!`);announce({k:'note',col:GEMS[gem].col,t:'The Wanderer is slain',s:`It drops a ${lootName(x)}: carry it home to set it in your crown.`});
+    vfx({k:'relic',at:[t.q,t.r],col:GEMS[gem].col,cam:1});return}
   if(R&&!G.units.some(v=>v.monster&&v.room===R.id))dropLoot(R,t.q,t.r);
 }
 const lootOf=u=>u&&G.loot?G.loot.find(x=>x.carrier===u.id)||null:null;
 // Coin flip for the Cursed chest: a fixed hash of round, unit and room, so undo cannot reroll it.
-function lootFlip(u,x){let h=0x811c9dc5;for(const c of `${G.round}|${u.id}|${x.room}|${x.id}`){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
+function lootFlip(u,x){return wildsHash(`${G.round}|${u.id}|${x.room}|${x.id}`)}
+const canCarry=u=>!!u&&u.kind!=='wall'&&!u.summon&&!u.statue&&!u.captive;
 function pickupLoot(){
   if(!G.loot||!G.loot.length)return;
   for(const x of G.loot.slice()){if(x.carrier!=null){if(!byId(x.carrier)){x.carrier=null}continue}
-    const u=unitAt(x.q,x.r);if(!u||u.kind==='wall'||u.summon||u.statue||lootOf(u))continue;
-    x.carrier=u.id;const F=FAC[G.players[u.owner].fac];
-    if(x.kind==='cursed'){const R=(G.rooms||[]).find(r=>r.id===x.room);const good=lootFlip(u,x)<0.5;
-      if(good){const pool=WILDS_DECKS[R?R.tier:'crypt'].loot.filter(k=>k!=='cursed');x.kind=pool[Math.floor(lootFlip(u,Object.assign({},x,{id:x.id+7}))*pool.length)];
-        addLog(u.owner,`${u.name} opens the Cursed Chest... and it holds a ${LOOT[x.kind].name}! Carry it home.`);announce({k:'chest',good:true,fac:F&&G.players[u.owner].fac,unit:u.name,loot:LOOT[x.kind].name})}
+    const u=unitAt(x.q,x.r);if(!canCarry(u))continue;const p=G.players[u.owner],F=FAC[p.fac],R=(G.rooms||[]).find(r=>r.id===x.room);
+    if(x.kind==='suit'){if(u.suitHp>0||u.machine)continue;G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';
+      u.suitHp=u.suitMax=u.size===2?WILDS.plateHp:WILDS.suitHp;u.suitItem=x.item||'boots';const I=SUIT_ITEMS[u.suitItem];
+      addLog(u.owner,u.size===2?`The ${u.name} tears the War Suit apart and straps it on: ${u.suitHp} HP of plating and ${I.name} (${I.text}).`:`The ${u.name} climbs into the War Suit: ${u.suitHp} extra HP and ${I.name} (${I.text}).`);
+      fx(u,'War Suit','#c9a24a');vfx({k:'buff',at:[u.q,u.r],col:F.color,cam:1});announce({k:'note',col:F.color,t:`${F.name}: the ${u.name} ${u.size===2?'straps on the War Suit':'climbs into the War Suit'}`,s:`${u.suitHp} HP of armour that takes every hit first, and ${I.name}: ${I.text}.`});
+      if(trk()){const O=tObj();if(O){O.suits=O.suits||[];O.suits.push({pid:p.id,unit:u.name,round:G.round})}}continue}
+    if(x.kind==='captive'){if(lootOf(u))continue;const c=DIRS.map(([a,b])=>[x.q+a,x.r+b]).find(([q,r])=>passable(q,r)&&!unitAt(q,r));if(!c)continue;
+      G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';const s=makeUnit(p,CAPTIVE);s.size=1;s.q=c[0];s.r=c[1];s.moved=true;s.acted=true;s.captive=1;G.units.push(s);tStat(s);
+      addLog(u.owner,`The ${u.name} frees the Captive! Walk him into your camp and he takes up arms (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`);
+      vfx({k:'buff',at:c,col:F.color,cam:1});announce({k:'note',col:F.color,t:`${F.name} frees the Captive`,s:'Bring him home alive: in camp he takes up armour and a sword and fights for them.'});continue}
+    if(lootOf(u))continue;x.carrier=u.id;
+    if(x.kind==='cursed'){const good=lootFlip(u,x)<0.5;
+      if(good){x.kind='gem';x.gem=(R&&R.gem)||GKEYS[Math.floor(lootFlip(u,Object.assign({},x,{id:x.id+7}))*GKEYS.length)];
+        addLog(u.owner,`${u.name} opens the Cursed Chest... and it holds a ${lootName(x)}! Carry it home.`);announce({k:'chest',good:true,fac:p.fac,unit:u.name,loot:lootName(x)})}
       else{G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';applyCurse(u,u,'agony');applyCurse(u,u,'frailty');fx(u,'cursed!','#9a6bd0');
-        addLog(u.owner,`${u.name} opens the Cursed Chest... a curse! It is struck by Agony and Frailty.`);announce({k:'chest',good:false,fac:G.players[u.owner].fac,unit:u.name})}
+        addLog(u.owner,`${u.name} opens the Cursed Chest... a curse! It is struck by Agony and Frailty.`);announce({k:'chest',good:false,fac:p.fac,unit:u.name})}
       continue}
-    addLog(u.owner,`${u.name} picks up the ${LOOT[x.kind].name}. Bring it back to camp!`);fx(u,LOOT[x.kind].name,LOOT[x.kind].col);vfx({k:'buff',at:[u.q,u.r],col:LOOT[x.kind].col,cam:1})}
+    addLog(u.owner,`${u.name} picks up the ${lootName(x)}. Bring it back to camp!`);fx(u,lootName(x),lootCol(x));vfx({k:'buff',at:[u.q,u.r],col:lootCol(x),cam:1})}
 }
 function dropLootOf(u){const x=lootOf(u);if(!x)return;x.carrier=null;x.q=u.q;x.r=u.r;if(!solid(x.q,x.r)||isBlock(x.q,x.r)){const c=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)).sort((a,b)=>hd(a[0],a[1],u.q,u.r)-hd(b[0],b[1],u.q,u.r))[0];if(c){x.q=c[0];x.r=c[1]}}
-  addLog(null,`The ${LOOT[x.kind].name} falls to the ground.`)}
-// A carrier standing inside its own camp delivers the loot.
+  addLog(null,`The ${lootName(x)} falls to the ground.`)}
+// A carrier standing inside its own camp delivers the loot; a Captive walking into his rescuers' camp takes up arms.
 function deliverLoot(){
+  for(const u of G.units)if(u.captive===1&&u.kind!=='wall'&&cells(u).some(([q,r])=>inCamp(G.players[u.owner],q,r))){const F=FAC[G.players[u.owner].fac];
+    Object.assign(u,{captive:2,name:FREEDMAN.name,icon:FREEDMAN.icon,hp:FREEDMAN.hp,maxhp:FREEDMAN.hp,atk:FREEDMAN.atk,def:FREEDMAN.def,at:FREEDMAN.at,rng:FREEDMAN.rng});u.glyph=glyphOf(FREEDMAN);
+    addLog(u.owner,`The Captive reaches the ${F.name} camp, takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`);
+    fx(u,'Freedman','#d8b49a');vfx({k:'buff',at:[u.q,u.r],col:F.color,cam:1});announce({k:'note',col:F.color,t:`The Captive reaches the ${F.name} camp`,s:`He takes up armour and a sword: a Freedman joins the army (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`})}
   if(!G.loot)return;
   for(const x of G.loot.slice()){if(x.carrier==null)continue;const u=byId(x.carrier);if(!u){x.carrier=null;continue}const p=G.players[u.owner];if(!cells(u).some(([q,r])=>inCamp(p,q,r)))continue;
     G.loot.splice(G.loot.indexOf(x),1);const R=(G.rooms||[]).find(r=>r.id===x.room);if(R)R.state='done';
-    const pid=p.id,k=x.kind;
-    if(k==='points1'||k==='points2'||k==='points3'){const n=+k.slice(-1);G.score[p.team]=(G.score[p.team]||0)+n;tPts(pid,'loot',n);if(G.score[p.team]>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}}
-    else if(k==='draught'){for(const v of G.units)if(v.owner===pid&&v.kind!=='wall')healUnit(v,4,'#5fd68e','Healing Draught (loot)')}
-    else if(k==='jar')addCharge(pid,6);
+    const pid=p.id,k=x.kind;let text=lootText(x);
+    if(k==='gem'){const g=G.gems[p.team]=G.gems[p.team]||{};const was=g[x.gem]||0;g[x.gem]=Math.min(WILDS.gemMax,was+1);
+      text=was>=WILDS.gemMax?`the crown already holds ${WILDS.gemMax} ${GEMS[x.gem].name}s: no more effect`:`set in the crown (${g[x.gem]}/${WILDS.gemMax}): ${GEMS[x.gem].text}`}
     else if(k==='relic'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(lootFlip(u,x)*free.length)]:null;if(rk){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:u.id})}}
-    else if(k==='sand')p.lootAP=(p.lootAP||0)+1;
-    else if(k==='banner')p.lootAtk=(p.lootAtk||0)+1;
-    else if(k==='sellsword'){const c=p.zone.map(z=>z.split(',').map(Number)).find(([q,r])=>passable(q,r)&&!unitAt(q,r));if(c){const s=makeUnit(p,SELLSWORD);s.q=c[0];s.r=c[1];s.moved=true;s.acted=true;G.units.push(s);tStat(s)}}
-    addLog(pid,`${FAC[p.fac].name} brings home the ${LOOT[k].name}: ${LOOT[k].text}.`);fx(u,LOOT[k].name,LOOT[k].col);vfx({k:'buff',at:[u.q,u.r],col:LOOT[k].col,cam:1});
-    announce({k:'loot',fac:p.fac,loot:LOOT[k].name,text:LOOT[k].text,team:p.team,scores:scoreSnap(),target:heartTarget()});
-    if(trk()){const O=tObj();if(O){O.loot=O.loot||[];O.loot.push({kind:k,pid,round:G.round})}}}
+    addLog(pid,`${FAC[p.fac].name} brings home the ${lootName(x)}: ${text}.`);fx(u,lootName(x),lootCol(x));vfx({k:'buff',at:[u.q,u.r],col:lootCol(x),cam:1});
+    announce({k:'loot',fac:p.fac,loot:lootName(x),text});
+    if(trk()){const O=tObj();if(O){O.loot=O.loot||[];O.loot.push({kind:k,gem:x.gem,pid,round:G.round})}}}
 }
-// After every action and at each turn start: reveal rooms, pick up and deliver loot, count held rooms.
+// War Suit and Forge bonuses, and the crown gems on a King (wildsAtk/wildsDef are added in effAtk/effDef)
+const kingGem=(u,g)=>u&&u.king&&G.gems?Math.min(WILDS.gemMax,(G.gems[tm(u.owner)]||{})[g]||0):0;
+function wildsAtk(u){if(!G.map)return 0;return (u.suitHp>0&&u.suitItem==='club'?1:0)+(u.forgeAtk||0)+kingGem(u,'ruby')}
+function wildsDef(u){if(!G.map)return 0;return (u.suitHp>0&&u.suitItem==='shield'?1:0)+(u.forgeDef||0)+kingGem(u,'sapphire')}
+function suitBreak(t){if(SIM)return;addLog(t.owner,`The ${t.name}'s War Suit breaks apart; the ${t.name} steps out unhurt.`);fx(t,'suit broken','#c9a24a');vfx({k:'crack',at:[t.q,t.r],col:'#c9a24a'})}
+// Start of the King's owner's turn: Emerald heals the King, Amethyst gives charge, Onyx burns enemies beside it; returns the Topaz AP.
+function wildsGems(p){if(!G.map||SIM||!G.gems)return 0;const k=kingOf();if(!k||k.owner!==p.id)return 0;const g=G.gems[p.team]||{},n=x=>Math.min(WILDS.gemMax,g[x]||0);
+  if(n('emerald'))healUnit(k,n('emerald'),'#3fd67a','Emerald (crown gem)');
+  if(n('amethyst'))addCharge(p.id,n('amethyst'));
+  if(n('onyx')){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=k;CUR_TAG='Other';CUR_NAME='Onyx (crown gem)';
+    for(const v of G.units.slice())if(v.kind!=='wall'&&tm(v.owner)!==p.team&&distUU(v,k)===1&&alive(v)){vfx({k:'slash',from:[k.q,k.r],to:[v.q,v.r],col:'#8a8a99'});hurt(v,n('onyx'),'#8a8a99')}
+    [CUR_SRC,CUR_TAG,CUR_NAME]=o}
+  return n('topaz')}
+// The Wanderer: once per game, when levers of two different sides have been pulled, a trap door opens somewhere on open ground and it runs out.
+function spawnWanderer(){
+  const camps=G.players.map(p=>p.camp).filter(Boolean);
+  const spots=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!roomAt(q,r)&&hd(q,r,0,0)>7&&camps.every(c=>hd(q,r,c[0],c[1])>=5)&&!featAt(q,r));
+  if(!spots.length)return;const c=spots[Math.floor(wildsHash(`${G.round}|wander|${Object.keys(G.levers).sort().join(';')}`)*spots.length)];
+  const m=makeMonster('wanderer',c[0],c[1],null);G.units.push(m);G.wander={id:m.id,round:G.round};
+  addLog(null,'Two levers are pulled: a trap door bursts open and the Wanderer runs out! It roams 3 hexes a round and only hits back when attacked. Its killing blow drops a Crown Shard.');
+  vfx({k:'trapdoor',at:c,col:'#b9a2ff',cam:1});announce({k:'note',col:'#b9a2ff',t:'A trap door opens: the Wanderer runs free',s:'It roams the board and only hits back when attacked. Its killing blow drops a Crown Shard.'});
+  if(trk()){const O=tObj();if(O)O.wander={round:G.round}}}
+function wanderRoam(){const m=G.wander&&byId(G.wander.id);if(!m||!alive(m))return;let last=null;
+  for(let i=0;i<WILDS.wanderMove;i++){const opts=DIRS.map(([a,b])=>[m.q+a,m.r+b]).filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!G.players.some(p=>inCamp(p,q,r))&&!(G.loot||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)&&!(last&&q===last[0]&&r===last[1]));
+    if(!opts.length)break;const c=opts[Math.floor(RNG()*opts.length)];last=[m.q,m.r];m.anim={fq:m.q,fr:m.r,t0:performance.now(),dur:300};m.q=c[0];m.r=c[1]}}
+// After every action and at each turn start: reveal rooms, levers, watchtowers, loot, held rooms, the Forge and the Standing Stones.
 function wildsTick(turnStart){
   if(!G.map||SIM)return;
   for(const R of G.rooms||[])if(!R.seen){const u=G.units.find(v=>v.kind!=='wall'&&!v.statue&&cells(v).some(([q,r])=>R.cells.includes(key(q,r))||R.ways.includes(key(q,r))));if(u)revealRoom(R,u)}
+  // Watchtower: a unit on it sees into every room within 4 hexes (the rooms are revealed for everyone)
+  for(const u of G.units)if(u.kind!=='wall'&&cells(u).some(([q,r])=>featAt(q,r)==='tower'))for(const R of G.rooms||[])if(!R.seen&&hd(u.q,u.r,R.c[0],R.c[1])<=4)revealRoom(R,u);
+  // Levers: a unit standing on one pulls it for its side
+  for(const k of Object.keys(G.feat)){if(G.feat[k]!=='lever')continue;const [q,r]=k.split(',').map(Number);const u=unitAt(q,r);if(!u||u.kind==='wall'||u.summon||u.statue)continue;const t=tm(u.owner);
+    if(G.levers[k]!==t){G.levers[k]=t;addLog(u.owner,`The ${u.name} pulls a lever. Somewhere below, chains rattle...`);fx(u,'lever!','#b9a2ff');
+      if(!G.wander&&new Set(Object.values(G.levers)).size>=2)spawnWanderer()}}
   pickupLoot();deliverLoot();
   if(turnStart){const p=P(G.cur);
     for(const R of G.rooms||[]){if(R.enc!=='hold'||R.state!=='active')continue;const teams=new Set(G.units.filter(v=>v.kind!=='wall'&&!v.statue&&!v.summon&&cells(v).some(([q,r])=>R.cells.includes(key(q,r)))).map(v=>tm(v.owner)));
       if(teams.size!==1){if(teams.size>1||R.holdTeam===p.team){R.holdTeam=null;R.holdN=0}continue}
       const t=[...teams][0];if(t!==p.team)continue;if(R.holdTeam!==t){R.holdTeam=t;R.holdN=0}R.holdN++;
       addLog(p.id,`${FAC[p.fac].name} holds the ${ROOM_NAMES[R.type]}: ${R.holdN}/${WILDS.hold}.`);
-      if(R.holdN>=WILDS.hold){R.holdTeam=null;dropLoot(R,R.c[0],R.c[1]);pickupLoot()}}}
+      if(R.holdN>=WILDS.hold){R.holdTeam=null;dropLoot(R,R.c[0],R.c[1]);pickupLoot()}}
+    // Forge: a unit that started this turn on it (it stood there a whole turn) is tempered for good: +1 ATK, or +1 DEF if it has no attack. Once per army; then it rests 3 rounds.
+    for(const R of G.rooms||[]){if(R.enc!=='forge'||!R.seen||p.forged||G.round<(R.forgeReady||0))continue;const u=unitAt(R.c[0],R.c[1]);
+      if(!u||u.kind==='wall'||u.owner!==p.id||u.summon||u.statue||u.captive===1)continue;p.forged=true;R.forgeReady=G.round+WILDS.forgeRest;
+      const atkU=u.atk>0&&u.at!=='none';if(atkU)u.forgeAtk=1;else u.forgeDef=1;const F=FAC[p.fac];
+      addLog(p.id,`The Forge tempers the ${u.name}: +1 ${atkU?'ATK':'DEF'} for the rest of the game.`);fx(u,atkU?'+1 ATK':'+1 DEF','#ff9a3d');vfx({k:'buff',at:[u.q,u.r],col:'#ff9a3d',cam:1});
+      announce({k:'note',col:F.color,t:`The Forge tempers the ${F.name} ${u.name}`,s:`+1 ${atkU?'ATK':'DEF'} for the rest of the game. Each army may use a Forge once.`});
+      if(trk()){const O=tObj();if(O){O.forge=O.forge||[];O.forge.push({pid:p.id,unit:u.name,round:G.round})}}}
+    // Standing Stones (from round WILDS.midAt): your units on all three runestones at the start of two turns in a row = 3 points; then the circle sleeps 4 rounds.
+    if(G.midUp)for(const c of G.circles||[]){if(G.round<c.dark)continue;const us=c.stones.map(([q,r])=>unitAt(q,r));
+      const mine=us.every(u=>u&&u.kind!=='wall'&&!u.statue&&tm(u.owner)===p.team);
+      if(!mine){if(c.team===p.team){c.team=null;c.charge=0}continue}
+      if(c.team!==p.team){c.team=p.team;c.charge=0}c.charge++;const F=FAC[p.fac];
+      if(c.charge<2){addLog(p.id,`${F.name} begin the ritual at the Standing Stones (1/2). Hold all three stones until your next turn!`);vfx({k:'buff',at:c.c,col:F.color,cam:1});
+        announce({k:'note',col:F.color,t:`The ${F.name} begin the ritual at the Standing Stones`,s:'If they still hold all three runestones at the start of their next turn, they score 3 points. Step on a stone to break it.'})}
+      else{c.charge=0;c.team=null;c.dark=G.round+WILDS.stonesDark;G.score[p.team]=(G.score[p.team]||0)+WILDS.stonesPts;tPts(p.id,'stones',WILDS.stonesPts);
+        addLog(p.id,`The ritual is complete: +${WILDS.stonesPts} points (${G.score[p.team]}/${heartTarget()}). The circle sleeps until round ${c.dark}.`);vfx({k:'buff',at:c.c,col:'#ffd766',cam:1});
+        announce({k:'note',col:F.color,t:`The ${F.name} complete the ritual! +${WILDS.stonesPts} points`,s:`The Standing Stones sleep until round ${c.dark}.`,team:p.team,scores:scoreSnap()});
+        if(trk()){const O=tObj();if(O){O.stones=O.stones||[];O.stones.push({pid:p.id,round:G.round})}}wildsWin(p.team)}}}
 }
-// Start of every round: room monsters strike the weakest unit next to them; the Rift Beast in its lair answers the hits it took.
+// Start of every round: the mid game wakes (Dragons and Standing Stones), monsters answer the last unit that hit them, the Throne Beast too, the Wanderer roams.
 function wildsRound(){
   if(!G.map)return;
+  if(G.round===WILDS.midAt-1){addLog(null,'The ground trembles: next round the Dragons wake in their lairs and the Standing Stones start to glow.');announce({k:'note',col:'#ff9a3d',t:'The Dragons stir',s:'Next round they wake in their lairs, and the Standing Stones start to glow.'})}
+  if(G.round>=WILDS.midAt&&!G.midUp){G.midUp=true;
+    for(const R of G.rooms||[])if(R.type==='lair'){R.state='active';const c=unitAt(R.c[0],R.c[1])?roomFree(R)[0]:R.c;if(c){const m=makeMonster('dragon',c[0],c[1],R.id);G.units.push(m);R.monMax+=m.maxhp;vfx({k:'buff',at:c,col:'#ff7a1a'})}}
+    addLog(null,`The Dragons wake! Each one's killing blow wins ${WILDS.dragonPts} points. The Standing Stones glow: hold all three runestones at the start of two turns in a row for ${WILDS.stonesPts} points.`);
+    announce({k:'note',col:'#ff7a1a',t:'The Dragons wake and the Standing Stones glow',s:`Slay a Dragon: ${WILDS.dragonPts} points for the killing blow. Hold all three runestones of a circle for two turns: ${WILDS.stonesPts} points.`})}
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Room monster';
-  for(const m of G.units.slice()){if(!m.monster||!alive(m)||!m.atk)continue;
-    const ts=G.units.filter(v=>v.kind!=='wall'&&!v.statue&&distUU(m,v)===1).sort((a,b)=>a.hp-b.hp);const t=ts[0];if(!t)continue;
-    const d=Math.max(1,m.atk-effDef(t));addLog(t.owner,`${m.name} strikes ${t.name} for ${d}.`);vfx({k:'slash',from:[m.q,m.r],to:[t.q,t.r],col:'#b9b3d6'});hurt(t,d,'#b9b3d6')}
+  for(const m of G.units.slice()){if(!m.monster||!alive(m)||!m.atk||m.lastBy==null)continue;const a=byId(m.lastBy);m.lastBy=null;if(!a||!alive(a)||a.kind==='wall')continue;
+    const d=Math.max(1,m.atk-effDef(a));CUR_NAME=m.monster==='dragon'?'Dragon fire':'Room monster';addLog(a.owner,`${m.name} ${m.monster==='dragon'?'breathes fire on':'strikes back at'} ${a.name} for ${d}.`);
+    vfx({k:'slash',from:[m.q,m.r],to:[a.q,a.r],col:m.monster==='dragon'?'#ff7a1a':'#b9b3d6'});hurt(a,d,m.monster==='dragon'?'#ff7a1a':'#b9b3d6')}
   const b=G.units.find(v=>v.beast&&alive(v));
   if(b&&G.beast&&G.beast.hitN>0){const a=byId(G.beast.lastBy);const d=1+G.beast.hitN;
     if(a&&alive(a)){CUR_NAME=BEAST_SB;addLog(a.owner,`The Rift Beast strikes back at ${a.name} for ${d}.`);vfx({k:'slash',from:[b.q,b.r],to:[a.q,a.r],col:'#b06bff'});hurt(a,d,'#b06bff')}}
   if(G.beast){G.beast.hitN=0}
   CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2];
+  wanderRoam();
 }
 
-// Walking distance on the Crown Wilds (around walls and rivers, through doors and over bridges; units ignored; the Throne Hall doors count as open).
+// Walking distance on the Crown Wilds (around walls, rubble and rivers, through doors and over bridges; units ignored; the Throne Hall doors count as open).
 // One field per goal hex, cached per game. Flyers use straight hex distance.
 let WPATH=null;
 function wildsDist(g,q,r,u){
@@ -2835,11 +2954,24 @@ function wildsDist(g,q,r,u){
     WPATH.m.set(k,f)}
   const d=f.get(key(q,r));return d==null?hd(q,r,g[0],g[1])*2+20:d}
 function wildsGoal(u){
-  const p=G.players[u.owner];if(!p)return null;const x=lootOf(u);if(x)return [p.camp[0],p.camp[1],7];
+  const p=G.players[u.owner];if(!p)return null;const x=lootOf(u);if(x||u.captive===1)return [p.camp[0],p.camp[1],7];
   if(u.leader||u.summon||u.statue)return null;
   const late=G.round>=RULES.CENTRE_FROM-2;const opts=[];
-  for(const l of G.loot||[]){if(l.carrier==null)opts.push([l.q,l.r,3]);else{const c=byId(l.carrier);if(c&&tm(c.owner)!==p.team)opts.push([c.q,c.r,2.2])}}
-  for(const R of G.rooms||[]){if(R.state==='active')opts.push([R.c[0],R.c[1],R.enc==='hold'?1.6:1.3]);else if(R.state==='hidden')opts.push([R.c[0],R.c[1],1.1])}
+  for(const l of G.loot||[]){if(l.carrier==null){if(l.kind==='suit'&&(u.suitHp>0||u.machine))continue;opts.push([l.q,l.r,l.kind==='suit'?3.5:3])}else{const c=byId(l.carrier);if(c&&tm(c.owner)!==p.team)opts.push([c.q,c.r,2.2])}}
+  // v36 mid game: each unit gets a job by its id: one in five goes for the centre, two hunt the Dragon, two hold the Standing Stones; before round 6 all explore
+  const job=u.id%5,mid=G.midUp;
+  if(mid&&(job===1||job===2)){const L=(G.rooms||[]).filter(R=>R.type==='lair'&&R.state==='active').sort((a,b)=>hd(a.c[0],a.c[1],p.camp[0],p.camp[1])-hd(b.c[0],b.c[1],p.camp[0],p.camp[1]))[0];
+    const d=L&&G.units.find(m=>m.monster==='dragon'&&m.room===L.id);if(d)opts.push([d.q,d.r,3])}
+  if(mid&&job>=3){const c=(G.circles||[]).filter(c=>G.round>=c.dark).sort((a,b)=>hd(a.c[0],a.c[1],p.camp[0],p.camp[1])-hd(b.c[0],b.c[1],p.camp[0],p.camp[1]))[0];
+    if(c){const mineOn=c.stones.findIndex(([q,r])=>q===u.q&&r===u.r);if(mineOn>=0)opts.push([u.q,u.r,9]);else{const free=c.stones.filter(([q,r])=>{const o=unitAt(q,r);return !o||(o.kind!=='wall'&&tm(o.owner)!==p.team)});const s0=free.sort((a,b)=>hd(a[0],a[1],u.q,u.r)-hd(b[0],b[1],u.q,u.r))[0];if(s0)opts.push([s0[0],s0[1],3])}}}
+  // any unit near a circle where its side already holds two runestones goes for the third
+  if(mid)for(const c of G.circles||[]){if(G.round<c.dark)continue;const own=c.stones.filter(([q,r])=>{const o=unitAt(q,r);return o&&o.kind!=='wall'&&tm(o.owner)===p.team});
+    if(own.length===2&&!own.some(([q,r])=>q===u.q&&r===u.r)){const t=c.stones.find(([q,r])=>!own.some(o=>o[0]===q&&o[1]===r));if(t&&wildsDist(t,u.q,u.r,u)<=8)opts.push([t[0],t[1],4])}}
+  for(const R of G.rooms||[]){if(R.type==='lair')continue;
+    if(R.enc==='forge'){if(R.seen&&!p.forged&&u.id%4===0)opts.push([R.c[0],R.c[1],1.7]);else if(!R.seen)opts.push([R.c[0],R.c[1],1.1]);continue}
+    if(R.state==='active')opts.push([R.c[0],R.c[1],R.enc==='hold'?1.6:1.3]);else if(R.state==='hidden')opts.push([R.c[0],R.c[1],1.1])}
+  if(!G.wander&&u.id%5===2)for(const k of Object.keys(G.feat))if(G.feat[k]==='lever'&&G.levers[k]!==p.team){const [q,r]=k.split(',').map(Number);if(hd(q,r,p.camp[0],p.camp[1])<=8)opts.push([q,r,1.5])}
+  if(mid&&job>=1&&opts.some(g=>g[2]>=3))return opts.filter(g=>g[2]>=3).sort((a,b)=>wildsDist(a,u.q,u.r,u)/a[2]-wildsDist(b,u.q,u.r,u)/b[2])[0];
   if(G.throneBeast)opts.push([0,0,G.throneOpen&&!kingOf()?3.5:2.6]);// v32: once the Beast wakes on the Throne the centre is the main goal
   else if(late&&u.id%3!==0)opts.push([0,0,1.6]);// a third of each army keeps exploring
   let best=null,bs=1e9;for(const g of opts){const d=wildsDist(g,u.q,u.r,u);const sc=d/g[2]+(u.id%3)*0.7*(g[2]<1.5?1:0);if(sc<bs){bs=sc;best=g}}return best}
@@ -2917,7 +3049,8 @@ function evaluate(team){
    const so=springOwner();if(so!=null)s+=tm(so)===team?5:-2;
    if(G.beast){const b=G.beast,gate=G.map&&b.room==='throne';s+=((b.dmgT&&b.dmgT[team])||0)*(gate?2.2:0.9);if(b.dead&&b.killTeam===team)s+=gate?20:10}}// on the Crown Wilds the Beast guards the Throne: worth much more
   if(G.map){for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
-    for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*0.5+(left<=0?6:0)}}
+    for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*(R.type==='lair'?0.8:0.5)+(left<=0?(R.type==='lair'?14:6):0)}
+    if(G.midUp)for(const c of G.circles||[])if(G.round>=c.dark){let n=0;for(const [q,r] of c.stones){const o=unitAt(q,r);if(o&&o.kind!=='wall'&&tm(o.owner)===team)n++}s+=n*n*1.5}}
   for(const p of G.players){if(!p.alive)s+=tm(p.id)===team?-150:150;else if(p.leaderless)s+=tm(p.id)===team?-90:90}
   // Warlord points: a lead over the best rival counts, and every point matters more as the target nears.
   if(G.mode==='warlord'){const my=G.score[team]||0;let rival=0;for(const t in G.score)if(+t!==team&&G.players.some(p=>p.team===+t&&p.alive))rival=Math.max(rival,G.score[t]||0);const tgt=heartTarget();s+=(my-rival)*3+(my>=tgt?200:0)-(rival>=tgt?200:0)}
@@ -3418,6 +3551,7 @@ function draw3D(now){
     if(ftt==='rock'&&!GLON){polyPath(top);ctx.fillStyle='#2a2d33';ctx.fill()}
     if(ftt==='river'&&!GLON){polyPath(top);ctx.fillStyle='#2468a3';ctx.fill();const [a,b]=proj(x,z,0.01);ctx.strokeStyle='rgba(200,235,255,.45)';ctx.lineWidth=Math.max(1,CAM.S*0.06);ctx.beginPath();ctx.moveTo(a-CAM.S*0.45,b);ctx.quadraticCurveTo(a-CAM.S*0.15,b-CAM.S*0.12,a+CAM.S*0.1,b);ctx.quadraticCurveTo(a+CAM.S*0.3,b+CAM.S*0.12,a+CAM.S*0.45,b);ctx.stroke()}
     if(G.map){if(isRoad(q,r)&&!ftt){polyPath(top);ctx.fillStyle='rgba(216,192,138,.36)';ctx.fill()}const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){if(!GLON){polyPath(top);ctx.fillStyle='rgba(24,22,40,.82)';ctx.fill()}if(Rm.c[0]===q&&Rm.c[1]===r){const [a,b]=proj(x,z,0.02);ctx.fillStyle='#b9b3d6';ctx.font=`700 ${Math.max(10,CAM.S*1.1)}px Georgia,serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',a,b)}}}
+    if(!GLON&&(ftt==='rubble'||ftt==='tower'||ftt==='lever'||ftt==='runestone'||ftt==='forge')){const [a,b]=proj(x,z,0);drawFeature2D(ftt,a,b,CAM.S*0.85,q,r)}
     if(ftt==='hill'&&!GLON){ctx.save();ctx.strokeStyle='rgba(230,215,170,.85)';ctx.lineWidth=Math.max(1.2,CAM.S*0.06);for(const k2 of [0.62,0.36]){polyPath(hexTop(x,z,k2,0.02));ctx.stroke()}ctx.restore()}
     if(ftt==='shrine'&&!GLON){const [a,b]=proj(x,z,0);ctx.save();ctx.fillStyle=shrineBack(q,r)?'rgba(90,100,95,.3)':'rgba(159,240,192,.35)';ctx.beginPath();ctx.ellipse(a,b,CAM.S*0.6,CAM.S*0.6*Math.cos(CAM.tilt),0,0,7);ctx.fill();ctx.restore()}
     if(painted&&CAM.S>9){ctx.fillStyle=hexA('#ffb347',0.5+0.35*flick);for(const [ox,oz] of [[-0.35,0.3],[0.3,0.35],[0,-0.35]]){const [a,b]=proj(x+ox,z+oz,0);ctx.beginPath();ctx.arc(a,b,Math.max(1.2,CAM.S*0.06),0,7);ctx.fill()}}
@@ -3455,7 +3589,7 @@ function draw3D(now){
   // the walled centre: a stone block on every hex of the grey ring, sorted with the figures so nothing behind it shows through
   if(centreWalled()&&!GLON)for(const [q,r] of ringCells()){if(!isCentreWall(q,r)||isHeart(q,r))continue;const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:'cwall',q,r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   for(const x2 of G.relics||[]){if(x2.carrier!=null||x2.q==null||unitAt(x2.q,x2.r))continue;const [x,z]=world(x2.q,x2.r);list.push({u:{kind:'prop',feat:'relic',relic:x2.kind,q:x2.q,r:x2.r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
-  for(const x2 of G.loot||[]){if(x2.carrier!=null||x2.q==null||unitAt(x2.q,x2.r))continue;const [x,z]=world(x2.q,x2.r);list.push({u:{kind:'prop',feat:'loot',loot:x2.kind,q:x2.q,r:x2.r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
+  for(const x2 of G.loot||[]){if(x2.carrier!=null||x2.q==null||unitAt(x2.q,x2.r))continue;const [x,z]=world(x2.q,x2.r);list.push({u:{kind:'prop',feat:'loot',loot:x2.kind,col:lootCol(x2),q:x2.q,r:x2.r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   for(const e of G.eggs||[]){if(unitAt(e.q,e.r))continue;const [x,z]=world(e.q,e.r);list.push({u:{kind:'prop',feat:'egg',q:e.q,r:e.r,ttl:e.ttl},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}
   list.sort((a,b)=>a.d-b.d);
   drawnUnits=[];
@@ -3463,6 +3597,8 @@ function draw3D(now){
     const {u,pts,x,z}=it;const [sx,sy]=proj(x,z,0);
     if(u.kind==='prop'){drawProp3D(u.feat,x,z,sx,sy,s,c,u,now);continue}
     if(u.beast){drawBeast3D(u,pts,x,z,sx,sy,now);continue}
+    if(u.monster&&GLON){const top=glUnit(u,pts,x,z,now,false);const [tx,ty]=proj(x,z,top+0.15);drawMonster2D(ctx,u,tx,ty-CAM.S*0.32,CAM.S*0.5,now);
+      if(hl.atk.has(u.id))groundRing(x,z,0.8,'#ff6161',Math.max(2,CAM.S*0.1));drawnUnits.push({u,rect:[sx-0.6*CAM.S,ty-CAM.S*0.9,sx+0.6*CAM.S,sy+0.4*CAM.S],cell:[u.q,u.r]});continue}
     if(u.monster){const crate=u.monster==='crate',top=hexTop(x,z,0.6,crate?0.45:0.3),bot=hexTop(x,z,0.6,0);
       for(let i=0;i<6;i++){const j=(i+1)%6,na=Math.PI/180*(60*i),nz=Math.cos(na)*s+Math.sin(na)*c;if(nz<=0)continue;polyPath([top[i],top[j],bot[j],bot[i]]);ctx.fillStyle=mix(crate?'#6b4423':'#2a2140','#000000',0.4-0.3*nz);ctx.fill()}
       polyPath(top);ctx.fillStyle=crate?'#8a5a2e':'#3a2d5c';ctx.fill();ctx.strokeStyle=crate?'#e8b84e':'#b9a2ff';ctx.lineWidth=1.5;ctx.stroke();
@@ -3547,7 +3683,7 @@ function drawProp3D(f,x,z,sx,sy,s,c,p,now){
     {const a=proj(x-0.45,z,h),b=proj(x+0.45,z,h),c1=proj(x,z-0.45,h),d=proj(x,z+0.45,h);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.moveTo(c1[0],c1[1]);ctx.lineTo(d[0],d[1]);ctx.strokeStyle='rgba(60,45,30,.55)';ctx.lineWidth=1;ctx.stroke()}
     if(last){const fl=0.5+0.5*Math.sin((now||0)/240);const pp=[[-0.5,-0.2],[-0.1,0.1],[0.15,-0.15],[0.5,0.25]].map(([a,b])=>proj(x+a,z+b,h+0.01));ctx.beginPath();pp.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.strokeStyle=`rgba(255,150,70,${0.55+0.4*fl})`;ctx.lineWidth=Math.max(1.5,S*0.08);ctx.stroke()}
     return}
-  if(f==='loot'){const bob=Math.sin((now||0)/350)*V*0.06;drawChest(ctx,sx,sy-V*0.45+bob,S*0.95,LOOT[p.loot].col,now||0);return}
+  if(f==='loot'){const bob=Math.sin((now||0)/350)*V*0.06;drawChest(ctx,sx,sy-V*0.45+bob,S*0.95,p.col||'#f2c75c',now||0);return}
   if(f==='relic'){const bob=Math.sin((now||0)/350)*V*0.08;ctx.beginPath();ctx.ellipse(sx,sy,S*0.4,S*0.4*Math.cos(CAM.tilt),0,0,7);ctx.fillStyle=hexA(RELICS[p.relic].col,0.25);ctx.fill();drawRelicGlyph(p.relic,sx,sy-V*0.75+bob,S*0.8,now||0);return}
   if(f==='egg'){const r=S*0.28,cy=sy-V*0.32;ctx.save();ctx.shadowColor='#ffb03d';ctx.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/200));const g=ctx.createRadialGradient(sx-r*0.3,cy-r*0.4,r*0.1,sx,cy,r*1.3);g.addColorStop(0,'#ffe0a8');g.addColorStop(0.6,'#ff8a3d');g.addColorStop(1,'#8a2a10');
     ctx.beginPath();ctx.ellipse(sx,cy,r,r*1.3,0,0,7);ctx.fillStyle=g;ctx.fill();ctx.restore();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;ctx.stroke();badge(sx+r*1.2,cy-r*1.1,Math.max(5,S*0.22),'#0b0e14','#ffb03d',p&&p.ttl);return}
@@ -3674,7 +3810,11 @@ const LOOK={
   'Enchanter':{body:'robe',head:'pointhat',hand:'wand',off:'grimoire'}, // pointed hat, a star-tipped wand and an open spellbook
   'Gargoyle':{body:'gargoyle'}, // a crouching stone creature, horns and spread bat wings, eyes glowing green
   'Drake':{body:'drake'}, // a small dragon hovering on beating wings, embers at its snout
-  'Gargoyle Statue':{body:'statue'}, // the Gargoyle asleep in grey stone on a plinth; its eyes light up as spells pour in
+  'Gargoyle Statue':{body:'statue'},
+  // Crown Wilds (v36): the Captive (a bare, chained prisoner) and the Freedman he becomes in his rescuers' camp; the room monsters (3D view only)
+  'Captive':{body:'slim',head:'none',naked:1}, // a thin bare man in a loincloth, chains on his wrists
+  'Freedman':{body:'armor',head:'helm',hand:'sword',off:'buckler',tabard:1,cape:1}, // plate armour, a tabard and cape in his army's colour, a sword and a round shield
+  'Dragon':{body:'dragon'},'Stone Guardian':{body:'golem'},'Vault Golem':{body:'golem',horns:1},'Wanderer':{body:'hound'},'Locked Crate':{body:'crate'},'Cracked Wall':{body:'cracked'}, // the Gargoyle asleep in grey stone on a plinth; its eyes light up as spells pour in
 };
 const FIG_ACCENT={fire:'#ffb347',ice:'#e6fbff',giants:'#7fa35a',gnomes:'#ffd35c',arcane:'#d9c8ff',warband:'#b98a4a',rift:'#9ff5de',curse:'#fff6b0',chrono:'#ffe08a',mage:'#c8ffd4'};
 const LAMP='#ffd9a8'; // the warm lamp light of gnome machines (turret muzzle, Tesla globe, flame pilot light)
@@ -4070,7 +4210,7 @@ function glInst(list,geo,mat,shadow){if(!list.length)return null;const m=new THR
   m.castShadow=shadow!==false;m.receiveShadow=true;return m}
 function glBuildStatics(){
   const T=THREE;if(GL.statics)GL.scene.remove(GL.statics);const grp=new T.Group();GL.water=[];GL.glow=[];
-  const L={trunk:[],crown:[],crown2:[],pine:[],peak:[],snow:[],peak2:[],wall:[],merlon:[],hill:[],shrine:[],shrineStone:[],water:[],cwall:[],pebble:[],grass:[]};
+  const L={trunk:[],crown:[],crown2:[],pine:[],peak:[],snow:[],peak2:[],wall:[],merlon:[],hill:[],shrine:[],shrineStone:[],water:[],cwall:[],pebble:[],grass:[],rubble:[],post:[],deck:[],roof:[],lever:[],rune:[],anvil:[],coal:[]};
   for(const [q,r] of ringCells()){const k=key(q,r);if(G.voids[k])continue;const [x,z]=world(q,r);const f=featAt(q,r);const h=(i)=>hexRand(q,r,i);
     if(f==='forest')for(let i=0;i<3;i++){const a=i*2.1+h(i)*1.2,d=0.45,tx=x+Math.cos(a)*d,tz=z+Math.sin(a)*d,tall=1.0+h(i+5)*0.6;
       L.trunk.push([tx,tall*0.22,tz,0,1,tall,0,0,1,q,r]);
@@ -4081,6 +4221,11 @@ function glBuildStatics(){
     else if(f==='hill'){L.hill.push([x,0,z,h(1)*3,1,1])}
     else if(f==='shrine'){L.shrine.push([x,0.55,z,h(1)*3,1]);for(let i=0;i<4;i++){const a=i*1.57+0.4;L.shrineStone.push([x+Math.cos(a)*0.45,0.12,z+Math.sin(a)*0.45,a,1])}}
     else if(f==='river'){L.water.push([x,-0.06,z,0,1])}
+    else if(f==='rubble'){for(let i=0;i<6;i++){const a=i*1.05+h(i)*0.8,d=0.15+h(i+3)*0.5;L.rubble.push([x+Math.cos(a)*d,0.12,z+Math.sin(a)*d,h(i+6)*3,0.7+h(i+9)*0.8])}}
+    else if(f==='tower'){for(const [a,b] of [[-0.4,-0.4],[0.4,-0.4],[-0.4,0.4],[0.4,0.4]])L.post.push([x+a,1.1,z+b,0,1]);L.deck.push([x,2.15,z,0,1]);L.roof.push([x,2.65,z,Math.PI/4,1])}
+    else if(f==='lever'){L.lever.push([x,0,z,h(1)*3,1])}
+    else if(f==='runestone'){L.rune.push([x,0.7,z,h(1)*3,1])}
+    else if(f==='forge'){L.anvil.push([x,0.25,z,0,1]);L.coal.push([x+0.35,0.15,z-0.3,0,1])}
     else if(!isHeart(q,r)&&!G.map){if(h(7)<0.5)L.pebble.push([x+(h(8)-0.5)*1.2,0.03,z+(h(9)-0.5)*1.2,h(10)*3,0.6+h(11)*0.8]);if(h(12)<0.45)for(let i=0;i<3;i++)L.grass.push([x+(h(13+i)-0.5)*1.3,0.1,z+(h(16+i)-0.5)*1.3,h(19+i),1])}
     if(isCentreWall(q,r)&&!isHeart(q,r)&&!f)L.cwall.push([x,0,z,0,1,1])}
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
@@ -4096,6 +4241,14 @@ function glBuildStatics(){
   add(glInst(L.hill,gGeo('hill',()=>{const g=new T.SphereGeometry(0.95,10,6,0,Math.PI*2,0,Math.PI/2);g.scale(1,0.38,1);return g}),gMat('#7f8f52')));
   if(L.shrine.length){add(glInst(L.shrine,gGeo('shrine',()=>new T.OctahedronGeometry(0.28,0)),gMat('#bff7d8',{emissive:'#5fd68e',emissiveIntensity:0.9,flatShading:true}),false));add(glInst(L.shrineStone,gGeo('sstone',()=>new T.BoxGeometry(0.16,0.3,0.16)),gMat('#9aa3a0')))}
   if(L.water.length){const w=glInst(L.water,gGeo('water',()=>new T.CylinderGeometry(0.99,0.99,0.06,6)),new T.MeshStandardMaterial({color:'#4c9ad6',transparent:true,opacity:0.82,roughness:0.15,metalness:0.2}),false);add(w);GL.water.push(w)}
+  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));
+  add(glInst(L.post,gGeo('tpost',()=>new T.CylinderGeometry(0.08,0.1,2.2,6)),gMat('#6b4a2e')));
+  add(glInst(L.deck,gGeo('tdeck',()=>new T.BoxGeometry(1.2,0.14,1.2)),gMat('#a8875a')));
+  add(glInst(L.roof,gGeo('troof',()=>new T.ConeGeometry(0.95,0.8,4)),gMat('#7a2a24')));
+  add(glInst(L.lever,gGeo('lever',()=>{const a=new T.BoxGeometry(0.6,0.22,0.4);a.translate(0,0.11,0);const b=new T.CylinderGeometry(0.04,0.04,0.8,6);b.rotateZ(0.6);b.translate(-0.2,0.5,0);const c=new T.SphereGeometry(0.1,8,6);c.translate(-0.42,0.85,0);return glMerge([a,b,c])}),gMat('#5a5566',{metalness:0.5})));
+  {const rm=glInst(L.rune,gGeo('rune',()=>{const g=new T.CylinderGeometry(0.22,0.32,1.4,5);return g}),gMat('#8d8a96',G.midUp?{emissive:'#9a7bff',emissiveIntensity:0.6}:{}));add(rm)}
+  add(glInst(L.anvil,gGeo('anvil',()=>{const a=new T.BoxGeometry(0.6,0.2,0.3);a.translate(0,0.15,0);const b=new T.BoxGeometry(0.25,0.3,0.22);a.translate(0,0,0);return glMerge([a,b])}),gMat('#3a3436',{metalness:0.7})));
+  add(glInst(L.coal,gGeo('coal',()=>new T.SphereGeometry(0.22,8,6,0,Math.PI*2,0,Math.PI/2)),gMat('#ff7a2a',{emissive:'#ff5a1a',emissiveIntensity:1.6}),false));
   add(glInst(L.cwall,gGeo('cwall',()=>{const g=new T.CylinderGeometry(0.97,0.99,0.85,6);g.translate(0,0.42,0);return g}),gMat('#9a8a70')));
   add(glInst(L.pebble,gGeo('pebble',()=>new T.DodecahedronGeometry(0.09,0)),gMat('#8a8574'),false));
   add(glInst(L.grass,gGeo('grass',()=>new T.ConeGeometry(0.04,0.2,4)),gMat('#88a85e'),false));
@@ -4141,14 +4294,15 @@ const ARMY3D={
   rift:{skin:'#1f3242',skinEm:'#0b5a4a',cloth:'#16232e',metal:'#7ff5dc',eye:'#7ff5dc',glow:'#12d69a'},
   curse:{skin:'#8a917a',cloth:'#2c2a2a',metal:'#6b6a5a',eye:'#d6ff4a',glow:'#c8e83a'},
   chrono:{skin:'#e6c4a6',cloth:'#4a2468',metal:'#d9b46a',eye:'#ffe8a0',glow:'#d94cf0'},
-  mage:{skin:'#e2c4a8',cloth:'#22356b',metal:'#c8d4e8',eye:'#9fe0ff',glow:'#4aa8ff'}};
+  mage:{skin:'#e2c4a8',cloth:'#22356b',metal:'#c8d4e8',eye:'#9fe0ff',glow:'#4aa8ff'},
+  monster:{skin:'#7d7a86',cloth:'#3a3346',metal:'#5a5566',eye:'#c9a2ff',glow:'#9a7bff'}};
 function armyMat(fac,part){const A=ARMY3D[fac]||ARMY3D.warband;
   if(part==='skin')return gMat(A.skin,Object.assign({},A.skinEm?{emissive:A.skinEm,emissiveIntensity:0.6}:{},A.skinT?{transparent:true,opacity:A.skinT,roughness:0.25,metalness:0.1}:{}));
   if(part==='cloth')return gMat(A.cloth,{side:THREE.DoubleSide});
   if(part==='metal')return gMat(A.metal,{metalness:0.65,roughness:0.38});
   if(part==='eye')return gMat(A.eye,{emissive:A.eye,emissiveIntensity:1.6});
   if(part==='glow')return gMat(A.glow,{emissive:A.glow,emissiveIntensity:1.2});
-  if(part==='army')return gMat(FAC[fac].color,{metalness:0.3,roughness:0.5,emissive:FAC[fac].color,emissiveIntensity:0.05});
+  if(part==='army')return gMat(FAC[fac]?FAC[fac].color:'#8a7bb0',{metalness:0.3,roughness:0.5,emissive:FAC[fac]?FAC[fac].color:'#8a7bb0',emissiveIntensity:0.05});
   return gMat('#777777')}
 const G3={cyl:(a,b,h,s)=>gGeo(`c${a}|${b}|${h}|${s||8}`,()=>new THREE.CylinderGeometry(a,b,h,s||8)),ball:(r,s)=>gGeo(`b${r}|${s||8}`,()=>new THREE.SphereGeometry(r,s||8,Math.max(4,(s||8)-2))),
   box:(a,b,c)=>gGeo(`x${a}|${b}|${c}`,()=>new THREE.BoxGeometry(a,b,c)),cone:(r,h,s)=>gGeo(`k${r}|${h}|${s||6}`,()=>new THREE.ConeGeometry(r,h,s||6)),
@@ -4224,19 +4378,22 @@ function wings3d(g,kind,y,s,mat){if(!kind)return;const col={hell:'#3a1714',imp:'
 // Build one miniature. userData.top = height of the head top; bob = parts that float; wings = parts that flap; spin = a propeller.
 function buildFigure(u,fac){
   if(u.size===2)return buildGiant(u,fac);
-  const L=LOOK[u.name]||{body:'robe',head:'hood'};const g=new THREE.Group();const M=k=>armyMat(fac,k);const add=adder(g);
+  let L=LOOK[u.name]||{body:'robe',head:'hood'};if(u.suitHp>0)L={body:'warsuit',item:u.suitItem};const g=new THREE.Group();const M=k=>armyMat(fac,k);const add=adder(g);
   g.userData={top:1.5,bob:[],wings:[],hover:0};hexBase(g,fac);
   const B=0.17;
   const hands=(hy,sp,hand,off)=>{if(hand){const it=item3d(hand,fac);it.position.set(sp,hy,0.14);it.rotation.z=-0.12;g.add(it)}if(off){const it=item3d(off,fac);it.position.set(-sp,hy,0.14);it.rotation.z=0.12;g.add(it)}};
-  const humanoid=o=>{const h=o.h,w=o.w,top=B+h;const body=o.armor?M('metal'):M('cloth');
+  const nakedSkin=gMat('#c9a184',{roughness:0.8});// the Captive: a bare human, whatever army freed him
+  const humanoid=o=>{const h=o.h,w=o.w,top=B+h;const body=L.naked?nakedSkin:o.armor?M('metal'):M('cloth');
     if(o.robe){add(G3.cone(+(w*1.35).toFixed(3),+(h*0.62).toFixed(3),10),M('cloth'),0,B+h*0.31,0);add(G3.cyl(+(w*0.7).toFixed(3),+(w*0.9).toFixed(3),+(h*0.25).toFixed(3),10),M('cloth'),0,B+h*0.68,0)}
     else{for(const s of [-1,1])add(G3.cyl(+(w*0.32).toFixed(3),+(w*0.28).toFixed(3),+(h*0.42).toFixed(3),7),body,s*w*0.42,B+h*0.21,0);
       add(G3.cyl(+(w*(o.bulk?1.05:0.85)).toFixed(3),+(w*0.7).toFixed(3),+(h*0.36).toFixed(3),9),body,0,B+h*0.6,0)}
     if(o.armor||o.bulk)for(const s of [-1,1])add(G3.ball(+(w*0.42).toFixed(3),8),o.armor?M('metal'):M('skin'),s*w*0.95,B+h*0.76,0);
-    for(const s of [-1,1])add(G3.cyl(+(w*0.2).toFixed(3),+(w*0.17).toFixed(3),+(h*0.36).toFixed(3),7),o.armor?M('metal'):o.bulk?M('skin'):M('cloth'),s*w*1.08,B+h*0.6,0.03,0,s*0.12);
+    for(const s of [-1,1])add(G3.cyl(+(w*0.2).toFixed(3),+(w*0.17).toFixed(3),+(h*0.36).toFixed(3),7),L.naked?nakedSkin:o.armor?M('metal'):o.bulk?M('skin'):M('cloth'),s*w*1.08,B+h*0.6,0.03,0,s*0.12);
+    if(L.naked){add(G3.box(+(w*1.0).toFixed(3),+(h*0.12).toFixed(3),+(w*0.8).toFixed(3)),gMat('#6b5236'),0,B+h*0.44,0);for(const s of [-1,1])add(G3.tor(+(w*0.24).toFixed(3),0.025),gMat('#55504a',{metalness:0.7}),s*w*1.1,B+h*0.45,0.03,Math.PI/2)}
+    if(L.tabard)add(G3.box(+(w*0.9).toFixed(3),+(h*0.42).toFixed(3),0.04),M('army'),0,B+h*0.5,w*0.62);
     if(L.cape)add(G3.cone(+(w*1.3).toFixed(3),+(h*0.7).toFixed(3),8),M('army'),0,B+h*0.45,-w*0.45);
     if(L.sash)add(G3.box(+(w*1.8).toFixed(3),0.06,+(w*1.2).toFixed(3)),gMat('#8a1e1e'),0,B+h*0.55,0,0,0.6);
-    head3d(L.head||'none',fac,g,top-w*0.35,+(w*0.48).toFixed(3));
+    head3d(L.head||'none',L.naked||L.tabard?'warband':fac,g,top-w*0.35,+(w*0.48).toFixed(3));
     if(L.crown)add(G3.cyl(+(w*0.5).toFixed(3),+(w*0.55).toFixed(3),0.1,8),gMat('#d9b45a',{metalness:0.8,roughness:0.3}),0,top+w*0.2,0);
     hands(B+h*0.42,w*1.15,L.hand,L.off);
     if(L.echo){const e=gMesh(G3.cone(+(w*1.0).toFixed(3),+(h*0.9).toFixed(3),8),gMat('#d94cf0',{transparent:true,opacity:0.25,emissive:'#d94cf0',emissiveIntensity:0.6}),0,B+h*0.45,-0.35);e.castShadow=false;g.add(e)}
@@ -4274,6 +4431,24 @@ function buildFigure(u,fac){
       wings3d(g,'hell',B+0.9,1.1,gMat(sl?'#8d8d8d':'#76767c',{side:THREE.DoubleSide}));for(const s of [-1,1])add(G3.ball(0.035),gMat('#4aff8a',{emissive:'#2bff5a',emissiveIntensity:sl?0.3:1.5}),s*0.07,B+0.98,0.3);
       for(let i=0;i<3;i++)add(G3.box(0.03,0.25,0.02),gMat('#4aa8ff',{emissive:'#4aa8ff',emissiveIntensity:sl?0.2:1}),-0.12+i*0.12,B+0.55,0.33,0,(i-1)*0.4);if(sl)g.userData.wings=[];g.userData.top=B+1.3;break}
     case 'drake':{const sk=gMat('#3a6aa8');add(G3.cyl(0.2,0.24,0.8,8),sk,0,B+0.75,0,Math.PI/2);add(G3.ball(0.18,8),sk,0,B+0.95,0.45);add(G3.ball(0.05),glowMat('#9fe0ff'),0,B+0.92,0.62);add(G3.cone(0.1,0.6,6),sk,0,B+0.7,-0.6,-Math.PI/2);wings3d(g,'void',B+0.95,1.1,gMat('#5a8ad0',{side:THREE.DoubleSide}));g.userData.top=B+1.3;g.userData.hover=1;break}
+    case 'warsuit':{const A=gMat(FAC[fac]?FAC[fac].color:'#c9a24a',{metalness:0.55,roughness:0.4}),D=gMat('#2a2a30',{metalness:0.6,roughness:0.4}),glow=M('glow');
+      for(const s of [-1,1]){add(G3.cyl(0.16,0.13,0.6,8),A,s*0.24,B+0.3,0);add(G3.box(0.26,0.12,0.36),D,s*0.24,B+0.05,0.05);add(G3.ball(0.24,8),A,s*0.5,B+1.32,0);add(G3.cyl(0.13,0.11,0.6,8),A,s*0.6,B+0.98,0.05,0,s*0.15);add(G3.ball(0.15,8),D,s*0.66,B+0.66,0.08)}
+      add(G3.cyl(0.42,0.3,0.7,8),A,0,B+1.0,0);add(G3.box(0.5,0.32,0.08),D,0,B+1.05,0.32);add(G3.ball(0.08),glow,0,B+1.06,0.38);
+      add(G3.cyl(0.2,0.22,0.3,8),A,0,B+1.5,0.02);add(G3.box(0.26,0.06,0.04),gMat('#9fe0ff',{emissive:'#7fd0ff',emissiveIntensity:1.4}),0,B+1.52,0.2);
+      if(L.item==='boots')for(const s of [-1,1])add(G3.box(0.3,0.16,0.4),gMat('#d9b45a',{metalness:0.8,roughness:0.3}),s*0.24,B+0.1,0.06);
+      if(L.item==='club'){const it=item3d('maul',fac);it.scale.setScalar(1.6);it.position.set(0.66,B+0.6,0.14);g.add(it)}
+      if(L.item==='shield'){const it=item3d('towershield',fac);it.scale.setScalar(1.35);it.position.set(-0.66,B+0.7,0.12);g.add(it)}
+      g.userData.top=B+1.75;break}
+    case 'dragon':{const sk=gMat('#7a1e14',{roughness:0.7}),belly=gMat('#ff9a3d',{emissive:'#ff5a1a',emissiveIntensity:0.6}),horn=gMat('#e9dcc0');
+      add(G3.ball(0.5,10),sk,0,B+0.75,-0.1).scale.set(1,0.85,1.4);add(G3.ball(0.32,8),belly,0,B+0.62,0.25).scale.set(1,0.8,1.2);
+      add(G3.cyl(0.16,0.24,0.8,8),sk,0,B+1.25,0.45,0.7);add(G3.ball(0.26,8),sk,0,B+1.6,0.75).scale.set(0.9,0.8,1.3);add(G3.cone(0.16,0.4,6),sk,0,B+1.55,1.05,Math.PI/2);
+      for(const s of [-1,1]){add(G3.cone(0.06,0.4),horn,s*0.14,B+1.85,0.65,-0.6,-s*0.3);add(G3.ball(0.05),gMat('#ffd27a',{emissive:'#ff9a2a',emissiveIntensity:2}),s*0.12,B+1.68,0.92);
+        add(G3.cyl(0.1,0.08,0.5,6),sk,s*0.32,B+0.28,0.25);add(G3.cyl(0.1,0.08,0.5,6),sk,s*0.32,B+0.28,-0.45)}
+      add(G3.cone(0.16,1.1,6),sk,0,B+0.55,-1.0,-Math.PI/2+0.3);for(let i=0;i<5;i++)add(G3.cone(0.06,0.22,4),horn,0,B+1.12-i*0.05,0.2-i*0.25);
+      wings3d(g,'hell',B+1.15,2.0,gMat('#4a1410',{side:THREE.DoubleSide}));g.userData.top=B+2.0;break}
+    case 'crate':{const wd=gMat('#7a5232'),band=gMat('#c9a24a',{metalness:0.7,roughness:0.35});add(G3.box(0.8,0.6,0.6),wd,0,B+0.3,0);add(G3.box(0.84,0.08,0.64),band,0,B+0.45,0);add(G3.box(0.1,0.62,0.64),band,0,B+0.3,0);add(G3.box(0.14,0.14,0.04),gMat('#3a3436'),0,B+0.38,0.32);g.userData.top=B+0.75;break}
+    case 'cracked':{const st=gMat('#8f8778'),cr=gMat('#ffb070',{emissive:'#ff7a2a',emissiveIntensity:0.8});add(G3.cyl(0.9,0.95,1.0,6),st,0,B+0.4,0);
+      for(let i=0;i<5;i++)add(G3.box(0.04,0.4+((i*7)%3)*0.15,0.04),cr,Math.cos(i*1.3)*0.78,B+0.4+(i%2)*0.2,Math.sin(i*1.3)*0.78,0,(i-2)*0.4);g.userData.top=B+1.0;break}
     default:humanoid({h:1.4,w:0.3,robe:1})}
   if(L.wings&&!['bird','gargoyle','drake','statue'].includes(L.body))wings3d(g,L.wings,B+(L.body==='imp'?0.75:1.1),L.body==='imp'?0.6:1);
   if(L.tail)add(G3.cone(0.04,0.6,5),M('skin'),0,B+0.4,-0.38,-1.9);
@@ -4369,7 +4544,9 @@ const GIANT_BUILD={
 function buildGiant(u,fac){const g=new THREE.Group();g.userData={top:3,bob:[],wings:[],hover:0,giant:1};
   hexBase(g,fac,-S3/2,0);hexBase(g,fac,S3/2,0);// one hex base under each foot
   const body=new THREE.Group();body.position.y=0.15;body.scale.setScalar(GIANT_SC);g.add(body);g.userData.body=body;
-  const f=GIANT_BUILD[u.name]||GIANT_BUILD['Cliff Breaker'];const top=f(body);g.userData.top=0.15+top*GIANT_SC;delete g.userData.body;return glCompact(g)}
+  const f=GIANT_BUILD[u.name]||GIANT_BUILD['Cliff Breaker'];const top=f(body);
+  if(u.suitHp>0){const A=gMat(FAC[fac].color,{metalness:0.55,roughness:0.4});body.add(gMesh(G3.box(1.3,0.9,0.18),A,0,2.1,0.78));for(const s of [-1,1])body.add(gMesh(G3.ball(0.42,8),A,s*1.15,2.55,0.05));
+    if(u.suitItem==='boots')for(const s of [-1,1])body.add(gMesh(G3.box(0.5,0.3,0.6),gMat('#d9b45a',{metalness:0.8}),s*LEG_X,0.15,0.12))}g.userData.top=0.15+top*GIANT_SC;delete g.userData.body;return glCompact(g)}
 
 /* ---------- keeping the scene in step with the game ---------- */
 // ghost copies of materials for units in Stealth
@@ -4377,7 +4554,7 @@ const GHOST=new Map();
 function ghostOf(m){let g=GHOST.get(m);if(!g){g=m.clone();g.transparent=true;g.opacity=0.32;g.depthWrite=false;GHOST.set(m,g)}return g}
 function glSetGhost(fig,on){if(fig.userData.ghost===on)return;fig.userData.ghost=on;fig.traverse(o=>{if(!o.isMesh)return;if(on){o.userData.mat0=o.material;o.material=ghostOf(o.material);o.castShadow=false}else if(o.userData.mat0){o.material=o.userData.mat0;o.castShadow=true}})}
 function glSpent(fig,on){if(fig.userData.spent===on)return;fig.userData.spent=on;fig.traverse(o=>{if(o.userData&&o.userData.rim){o.userData.rimMat=o.userData.rimMat||o.material;o.material=on?gMat('#3a3a3a'):o.userData.rimMat}})}
-function glStaticSig(){let n=0,f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
+function glStaticSig(){let n=G.midUp?1000:0,f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
 function glTerrSig(){let h=0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
 function glPlinth(){if(GL.plinth)GL.scene.remove(GL.plinth);const Rw=G.R*S3+1.05;
   const m=gMesh(new THREE.CylinderGeometry(Rw,Rw+0.3,0.9,6),gMat('#171a21',{roughness:0.9}),0,-0.95,0);m.rotation.y=Math.PI/2;m.castShadow=false;GL.plinth=m;GL.scene.add(m)}
@@ -4394,8 +4571,8 @@ function glFrame(){
   GL.seen=new Set();return true}
 // place (and if needed build) one unit's miniature; returns the world height of its head top
 function glUnit(u,pts,x,z,now,spent){
-  const fac=u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:'warband';
-  const k=u.id+'|'+u.name+'|'+fac;let fig=GL.figs.get(k);
+  const fac=u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:u.monster?'monster':'warband';
+  const k=u.id+'|'+u.name+'|'+fac+'|'+(u.suitHp>0?u.suitItem:'');let fig=GL.figs.get(k);
   if(!fig){fig=buildFigure(u,fac);fig.userData.k=k;fig.userData.ph=(u.id*1.7)%6.28;GL.figs.set(k,fig);GL.scene.add(fig);glNoCull(fig)}
   GL.seen.add(k);const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
   fig.position.set(x,0,z);
@@ -4597,6 +4774,14 @@ function drawVFX(now){
           ctx.save();ctx.globalAlpha=Math.min(1,el/120);if(kind)drawRelicGlyph(kind,x,y,U*(1.25-0.3*e),now);else{ctx.fillStyle=ev.col;ctx.beginPath();ctx.arc(x,y,U*0.35,0,7);ctx.fill()}ctx.restore()}
         else{const kk=(el-T)/(dur-T);const [x,y]=vPos(ev.at[0],ev.at[1],0.5);if(el<T+40)shakeUntil=now+180;
           hexFlash(ev.at[0],ev.at[1],ev.col,0.6*(1-kk));burst(x,y,U*(0.4+2.4*kk),ev.col,Math.max(0,1-kk));burst(x,y,U*(0.2+1.4*kk),'#ffffff',Math.max(0,0.8-kk*1.5));sparks(x,y,14,U*1.4,ev.col,kk,0.7)}
+        break}
+      case 'trapdoor':{// v36: the Wanderer's trap door: the ground shakes, a dark pit opens, two wooden flaps swing up and dust bursts out as it runs free (both views)
+        dur=1900;const t=el/dur;if(el<40)shakeUntil=now+700;const [x,y]=vPos(ev.at[0],ev.at[1],0);const op=Math.min(1,t/0.35);
+        ctx.save();ctx.globalAlpha=Math.min(1,(1-t)*2.2);hexFlash(ev.at[0],ev.at[1],'#050308',0.9*op);
+        const w=U*0.42,hgt=U*0.75*Math.cos(op*Math.PI/2*0.92);ctx.fillStyle='#6b4a2e';ctx.strokeStyle='#2a1c10';ctx.lineWidth=1.5;
+        for(const sd of [-1,1]){ctx.save();ctx.translate(x+sd*w,y);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-sd*w,0);ctx.lineTo(-sd*w,-U*0.75+hgt);ctx.lineTo(0,-U*0.75+hgt);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+        ctx.restore();
+        if(t>0.25){const k=(t-0.25)/0.75;burst(x,y,U*(0.5+2.6*k),'#b9a2ff',Math.max(0,0.7-k));burst(x,y,U*(0.3+1.6*k),'#8a7a66',Math.max(0,0.8-k),true);sparks(x,y,16,U*1.6,'#d8cfc0',k,1.3)}
         break}
       case 'reveal':{dur=1300;const t=el/dur;ctx.save();ctx.globalAlpha=Math.max(0,0.5*(1-t));ctx.fillStyle='#ffffff';ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=Math.max(0,1-t);ctx.font=`900 ${Math.max(22,Math.min(CW/9,60))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('To battle!',CW/2,CH*0.42);ctx.fillStyle='#ffd766';ctx.fillText('To battle!',CW/2,CH*0.42);ctx.restore();break}
       case 'well':{// Gravity Well pull: a teal streak from where each unit stood to where it was dragged, an arrowhead, and rings closing in on the centre
@@ -5673,6 +5858,7 @@ function annText(e){
     case 'king':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} crowns a King!`,s:`The ${annEsc(e.unit)} sits the Throne: ${kingText()}`};
     case 'throne':return {col:'#ffd766',t:'The Rift Beast falls: the Throne is revealed',s:'The first unit to sit on it is crowned King.'};
     case 'room':return {col:'#b9b3d6',t:`${e.fac?annFac(e.fac):'Someone'} discovers the ${annEsc(e.room)}`,s:`Inside: ${annEsc(e.enc)}${e.loot?', guarding a treasure':''}.`};
+    case 'note':return {col:e.col||'#ffd766',t:annEsc(e.t||''),s:annEsc(e.s||'')+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Cursed Chest holds a ${annEsc(e.loot)}!`:`The Cursed Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Agony and Frailty. The chest is gone.'};
     case 'wraith':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} calls a Time Wraith!`,s:`Both Second Hands have fallen: the Wraith appears ${e.near?'beside the Chronarch':'at the army’s start'} (${WRAITH.hp} HP, ${WRAITH.atk} ATK, walks ${WRAITH.mov}).`};
@@ -5806,7 +5992,12 @@ function refresh(){
           else if(K){const on=K.q===0&&K.r===0,blocked=heartFoes(tm(K.owner));lines.push(`<b style="color:#ffd766">♛ King:</b> the <b style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name} ${K.name}</b> (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF). ${on?(blocked?'On the Throne, but enemies stand on the Heart: no point this turn.':'On the Throne: 1 point at the start of its turn.'):'Away from the Throne: no points.'}`)}
           else lines.push(`<b style="color:#ffd766">The Throne is free:</b> the first unit to sit on it is crowned King.`)}
         const rs=G.rooms||[],seen=rs.filter(R=>R.seen).length,open=rs.filter(R=>R.state==='active'||R.state==='loot').length;lines.push(`<b style="color:#b9b3d6">Rooms:</b> ${seen} of ${rs.length} discovered, ${open} still hold a fight or a treasure.`);
-        for(const x of G.loot||[]){const c=x.carrier!=null?byId(x.carrier):null;lines.push(`<b style="color:${LOOT[x.kind].col}">${LOOT[x.kind].name}:</b> ${c?`carried by the <b style="color:${FAC[P(c.owner).fac].color}">${FAC[P(c.owner).fac].name} ${c.name}</b>`:'on the ground'}.`)}
+        if(G.midUp){for(const R of rs.filter(R=>R.type==='lair')){const d=G.units.find(m=>m.monster==='dragon'&&m.room===R.id);lines.push(`<b style="color:#ff9a3d">Dragon’s Lair:</b> ${d?`the Dragon has ${fmt(d.hp)}/${d.maxhp} HP. Killing blow: +${WILDS.dragonPts} points.`:'the Dragon is slain.'}`)}
+          for(const c of G.circles||[]){const n=c.team!=null?c.charge:0;lines.push(`<b style="color:#c8b6ff">Standing Stones:</b> ${G.round<c.dark?`asleep until round ${c.dark}.`:n?`<b style="color:${teamColor(c.team)}">${teamName(c.team)}</b> started the ritual (1/2).`:`hold all three runestones at the start of two turns in a row: +${WILDS.stonesPts} points.`}`)}}
+        else lines.push(`<b style="color:#ff9a3d">Round ${WILDS.midAt}:</b> the Dragons wake (+${WILDS.dragonPts} points for the killing blow) and the Standing Stones glow (+${WILDS.stonesPts} points).`);
+        {const wd=G.wander&&byId(G.wander.id);lines.push(`<b style="color:#b9a2ff">Wanderer:</b> ${wd?`${fmt(wd.hp)}/${wd.maxhp} HP, roaming. Its killing blow drops a Crown Shard.`:G.wander?'slain.':'levers of two different sides open its trap door (once per game).'}`)}
+        for(const t of Object.keys(G.gems||{})){const g=G.gems[t];const list=GKEYS.filter(k=>g[k]).map(k=>`<b style="color:${GEMS[k].col}">${GEMS[k].name}${g[k]>1?' ×'+g[k]:''}</b>`);if(list.length)lines.push(`<b style="color:${teamColor(+t)}">${teamName(+t)} crown:</b> ${list.join(', ')}${kingOf()&&tm(kingOf().owner)===+t?' (powering their King)':' (no King yet: no effect)'}.`)}
+        for(const x of G.loot||[]){const c=x.carrier!=null?byId(x.carrier):null;lines.push(`<b style="color:${lootCol(x)}">${lootName(x)}:</b> ${c?`carried by the <b style="color:${FAC[P(c.owner).fac].color}">${FAC[P(c.owner).fac].name} ${c.name}</b>`:'on the ground'}.`)}
         const bst=G.units.find(u=>u.beast);if(bst)lines.push(`<b style="color:#c99bff">Rift Beast:</b> ${fmt(bst.hp)}/${bst.maxhp} HP in its lair. Killing blow: +${RULES.BEAST_PTS} points and +${RULES.BEAST_CHARGE} charge.`);
         return `<div class="hint" style="margin-top:8px">${lines.join('<br>')}</div>`}
       if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The centre is walled</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (it falls next round)':''}: nothing can enter the ring of wall around the Heart, or the Heart itself.`);
@@ -5843,6 +6034,10 @@ function unitStatuses(u){if(!u||!u.st||u.kind==='wall')return [];const s=u.st,o=
   if(s.chill>0)add('chill','❄️','Chilled',s.chill,'#5cc8ff',0,'1 less move; Ice Lance deals double');
   if(s.fimm>0)add('thaw','💧','Just thawed',s.fimm,'#9fdcff',1,'can’t be frozen or stunned again this turn');
   for(const c of Object.keys(s.curses||{}))add('curse','☠','Cursed: '+CURSES[c].name,s.curses[c],'#d4bd3c',0,CURSES[c].fx+'; curses deal damage at the start of each of its turns ('+fmt(dotOf(u))+' next)');
+  if(u.suitHp>0)add('suit','🛡','War Suit '+fmt(u.suitHp)+'/'+u.suitMax,'','#c9a24a',1,`takes every hit first; ${SUIT_ITEMS[u.suitItem]?SUIT_ITEMS[u.suitItem].name+': '+SUIT_ITEMS[u.suitItem].text:''}`);
+  if(u.forgeAtk||u.forgeDef)add('forge','⚒','Forged','','#ff9a3d',1,u.forgeAtk?'+1 ATK for the rest of the game':'+1 DEF for the rest of the game');
+  if(u.captive===1)add('captive','⛓','Captive','','#d8b49a',0,'no attack; walk him into your camp and he becomes a Freedman');
+  if(u.king&&G.gems){const g=G.gems[tm(u.owner)]||{};for(const k of GKEYS)if(g[k])add('gem','◆',GEMS[k].name+(g[k]>1?' ×'+g[k]:''),'',GEMS[k].col,1,GEMS[k].text)}
   if(s.seared>0)add('seared','🔥','Seared',1,'#ff9a3d',0,'can’t be healed until the end of its next turn');
   if(s.sunder>0)add('sunder','⛏','Sunder',s.sunder,'#d9a45b',0,'1 less DEF');
   if(s.hex>0)add('hex','🔮','Hex',s.hex,'#b06bff',0,'2 less ATK and 1 more damage from abilities');
@@ -6052,9 +6247,10 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u&&G.tile){const [q,r]=G.tile,f=featAt(q,r),t=terrAt(q,r);
     const wn=wellNote(q,r),wellP=wn?`<p class="hint" style="margin:8px 0 0;padding:6px 8px;border-left:3px solid ${wellCol(wellAt(q,r))};background:${hexA(wellCol(wellAt(q,r)),0.12)};color:#e6fff6">${wn}</p>`:'';
     const rl=(G.relics||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);
-    {const lo=(G.loot||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);if(lo){const L=LOOT[lo.kind];el.innerHTML=`<div class="label">Treasure</div><h3 style="color:${L.col}">${L.name}</h3><p style="margin:6px 0 0">${L.text}.</p><p class="hint" style="margin:6px 0 0">Step a unit onto it to pick it up, then walk it back into your own camp to claim it. If the carrier dies it drops the treasure and anyone can take it.</p>`;return}}
+    {const lo=(G.loot||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);if(lo){el.innerHTML=`<div class="label">Treasure</div><h3 style="color:${lootCol(lo)}">${lootName(lo)}</h3><p style="margin:6px 0 0">${lootText(lo)}.</p><p class="hint" style="margin:6px 0 0">${lo.kind==='suit'?'Step a unit onto it: it climbs in at once. When the suit breaks, the unit steps out unhurt.':lo.kind==='captive'?'Step a unit onto him to free him: he joins that army next to it. Walk him into your camp and he takes up armour and a sword.':'Step a unit onto it to pick it up, then walk it back into your own camp to claim it. If the carrier dies it drops the treasure and anyone can take it.'}</p>`;return}}
     if(G.map&&isHeart(q,r)&&!isCentreWall(q,r)){el.innerHTML=q===0&&r===0?`<div class="label">Hex</div><h3>The Throne</h3><p class="hint" style="margin:6px 0 0">${G.throneOpen?`The first unit to sit here is crowned King: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. The King scores 1 point at the start of its turn while it sits here and no enemy stands on the Heart. When the King falls, the next unit to sit here is crowned.`:'Hidden under the Rift Beast. Its killing blow reveals the Throne.'}</p>`:`<div class="label">Hex</div><h3>The Heart</h3><p class="hint" style="margin:6px 0 0">The ground around the Throne. Any enemy unit standing here stops the King from scoring. On this map the Heart gives no points and no buffs of its own.</p>`;return}
-    if(G.map){const Rm=roomAt(q,r);if(Rm){el.innerHTML=Rm.seen?`<div class="label">Room</div><h3>${ROOM_NAMES[Rm.type]}</h3><p style="margin:6px 0 0">Here: ${ENC_NAMES[Rm.enc]}.${Rm.loot&&Rm.state!=='done'?' A treasure waits for whoever clears it'+(Rm.enc==='hold'?`: stand in it alone for ${WILDS.hold} of your turns (now ${Rm.holdN||0}).`:'.'):Rm.state==='done'?' It is spent.':''}</p>`:`<div class="label">Room</div><h3>Hidden ${ROOM_NAMES[Rm.type]}</h3><p class="hint" style="margin:6px 0 0">Nobody knows what waits inside. Step a unit into it or its way in to find out: a monster, a crate, a treasure to hold, a shrine... it changes every game.</p>`;return}
+    if(G.map){const Rm=roomAt(q,r);if(Rm){el.innerHTML=Rm.type==='lair'?`<div class="label">Room</div><h3 style="color:#ff9a3d">Dragon’s Lair</h3><p style="margin:6px 0 0">${Rm.state==='sleeping'?`The Dragon wakes in round ${WILDS.midAt}.`:Rm.state==='done'?'The Dragon is slain.':`A Dragon (20 HP, 1 DEF) guards it. Its killing blow wins ${WILDS.dragonPts} points.`}</p><p class="hint" style="margin:6px 0 0">It never leaves the lair. At the start of each round it breathes fire on the last unit that hit it (3 damage minus DEF). Walking past is safe.</p>`
+      :Rm.seen?`<div class="label">Room</div><h3>${ROOM_NAMES[Rm.type]}</h3><p style="margin:6px 0 0">Here: ${ENC_NAMES[Rm.enc]}.${Rm.enc==='forge'?` A unit that starts its side’s turn on the Forge is tempered for good: +1 ATK (+1 DEF if it has no attack). Each army may use it once; then it rests ${WILDS.forgeRest} rounds${Rm.forgeReady>G.round?` (resting until round ${Rm.forgeReady})`:''}.`:Rm.loot&&Rm.state!=='done'?' A treasure waits for whoever clears it'+(Rm.enc==='hold'?`: stand in it alone for ${WILDS.hold} of your turns (now ${Rm.holdN||0}).`:'.'):Rm.state==='done'?' It is spent.':''}</p>`:`<div class="label">Room</div><h3>Hidden ${ROOM_NAMES[Rm.type]}</h3><p class="hint" style="margin:6px 0 0">Nobody knows what waits inside. Step a unit into it, or stand on a Watchtower within 4 hexes, to find out. Every ${ROOM_NAMES[Rm.type]} on the map holds the same kind of thing this game (it changes every game).</p>`;return}
       const cp=G.players.find(x=>inCamp(x,q,r));if(cp){el.innerHTML=`<div class="label">Camp</div><h3 style="color:${FAC[cp.fac].color}">${FAC[cp.fac].name} camp</h3><p class="hint" style="margin:6px 0 0">Where this army starts. Treasure carried in here is claimed.</p>`;return}}
     if(rl){const Rl=RELICS[rl.kind];el.innerHTML=`<div class="label">Relic</div><h3 style="color:${Rl.col}">${Rl.name}</h3><p style="margin:6px 0 0">${Rl.text}</p><p class="hint" style="margin:6px 0 0">Step a unit onto this hex to pick it up. The carrier gets −1 move and drops it when it dies.</p>${wellP}`;return}
     if(isSpring(q,r)){const so=springOwner();const sc=so!=null?FAC[P(so).fac].color:'#7fe8ff';el.innerHTML=`<div class="label">Objective</div><h3 style="color:${sc}">The Wellspring</h3><p style="margin:6px 0 0">${so!=null?`Owned by <b style="color:${sc}">${FAC[P(so).fac].name}</b>: +1 AP at the start of each of its turns.`:'Nobody owns it yet.'}</p><p class="hint" style="margin:6px 0 0">A unit that ends its move here, or stands here at the start of its side's turn, claims it. It stays claimed with nobody on it until an enemy steps on it. Its owner gets +1 AP every turn (within the maximum of ${RULES.AP_CAP}). The Collapse swallows it when ring ${hd(q,r,0,0)} falls.</p>${wellP}`;return}
@@ -6067,7 +6263,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
   if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${RULES.BEAST_DEF} DEF · fills 3 hexes</b></p><p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall), and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
-  if(u.monster){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Room monster</div><h3 style="color:#c9b6ff">${u.name}</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${u.def} DEF${u.atk?' · '+u.atk+' ATK':''}</b></p><p class="hint" style="margin:6px 0 0">${u.monster==='crate'?'A locked crate: smash it open to free the treasure inside.':'It never leaves its room. At the start of every round it strikes the weakest unit standing next to it. Clear the room to free its treasure.'}</p>`;return}
+  if(u.monster){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">${u.monster==='cracked'?'Obstacle':'Monster'}</div><h3 style="color:#c9b6ff">${u.name}</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${u.def} DEF${u.atk?' · '+u.atk+' ATK':''}</b></p><p class="hint" style="margin:6px 0 0">${({crate:'A locked crate: smash it open to free the treasure inside.',cracked:'A cracked wall: anyone can smash it. Once broken the way stays open.',dragon:`It never leaves its lair. At the start of each round it breathes fire on the last unit that hit it. Its killing blow wins ${WILDS.dragonPts} points.`,wanderer:'It roams 3 hexes a round. At the start of each round it hits back at the last unit that hit it. Its killing blow drops a Crown Shard.'})[u.monster]||'It never leaves its room and never attacks first: at the start of each round it hits back at the last unit that hit it. Clear the room to free its treasure.'}</p>`;return}
   if(u.kind==='wall'){el.innerHTML=`<div class="label">Obstacle</div><h3>${u.name}</h3><p class="hint">${u.hp}/${u.maxhp} HP. Gone in ${u.ttl} turn${u.ttl>1?'s':''} of its maker.</p>`;return}
   const p=P(u.owner),F=FAC[p.fac],pct=Math.max(0,u.hp/u.maxhp),M=MOVES[u.mt],AT=ATTACKS[u.at];
   const tags=[];
@@ -6189,7 +6385,13 @@ function showRules(){
   o.innerHTML=`<div class="modal"><h2>How to play</h2>
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
-  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own walled camp with three gates and three roads: to the Throne Hall, to the North or South Hall, and past its Crypt to the East or West Grove. Rivers (blue) block walking; flyers cross them, and flyers may fly over walls. Twelve rooms are hidden (dark, with a ?) until a unit steps into one or its way in; what waits inside changes every game: a Stone Guardian, a pack of Ghouls, a Locked Crate to smash, a room to hold alone for ${WILDS.hold} of your turns, a Shrine, or a room to hold. Room monsters never leave; at the start of every round each one strikes the weakest unit next to it. A cleared room leaves a <b>treasure</b>: a unit picks it up by stepping on it and must <b>carry it home into its own camp</b> to claim it (Crown Shards = points, War Banner +1 ATK to the whole army, Hourglass Sand +1 AP every turn, Storm Jar +6 charge, Healing Draught, an Ancient Relic, a Sellsword who joins you). A carrier that dies drops it for anyone. The <b>Cursed Chest</b> is a coin flip when picked up: a real treasure, or Agony and Frailty on the carrier. In round ${WILDS.open} the walls of the Throne Hall fall and the Rift Beast (${WILDS.beastHp} HP) wakes on the Throne; its killing blow (+${RULES.BEAST_PTS} points) reveals the Throne. The first unit to sit on the Throne is crowned <b>King</b>: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives; it scores 1 point at the start of its side's turn while it sits on the Throne and no enemy unit stands on the Heart. When the King falls, the next unit to sit on the Throne is crowned. On this map the Heart gives no points or buffs by itself. First to ${WILDS.target} points wins. No Collapse, no flags, no Riftwalkers.</li>
+  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own camp, ringed by stone pillars, rubble and woods with three gates and three roads: to the Throne Hall, to its Vault, and past its Crypt to the Standing Stones. Rivers and rubble block walking; flyers cross them and fly over walls. <b>Cracked walls</b> (6 HP) on some room and camp edges can be smashed by anyone to open a shortcut. A unit on a <b>Watchtower</b> gets +1 range if ranged and sees into every hidden room within 4 hexes.
+    <br><b>Rooms</b> are hidden (dark, with a ?) until a unit steps into one. Their edges are only partly walled: pillars on the corners, rubble, streams, woods and gaps between. Contents are dealt in mirror sets, so every corner of the map gets the same: every <b>Hill Fort</b> holds a Forge, a Captive or a Locked Crate (its Cursed Chest is a coin flip: a Crown Shard, or Agony and Frailty on the opener); every <b>Crypt</b> a Stone Guardian, a Locked Crate or a room to hold alone for ${WILDS.hold} of your turns, guarding a Crown Shard; each <b>Vault</b> (one between two neighbours) a Vault Golem guarding a <b>War Suit</b>. Monsters never leave their rooms and never attack first: at the start of each round they hit back at the last unit that hit them.
+    <br><b>Crown Shards</b> are gems: carry one into your camp and it is set in your army's crown (each gem counts twice at most). Gems do nothing by themselves; they power your side's <b>King</b>: Ruby +1 ATK, Sapphire +1 DEF, Emerald heals the King 1 a turn, Topaz +1 AP a turn, Amethyst +1 charge a turn, Onyx 1 damage to every enemy next to the King at your turn start. A carrier that dies drops its gem for anyone.
+    <br><b>War Suit:</b> a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first, plus its item (Boots +1 move, Ogre Club +1 ATK or Tower Shield +1 DEF). A giant straps it on as ${WILDS.plateHp} HP of plating with the same item. When the suit breaks the unit steps out unhurt. <b>Forge:</b> a unit that starts your turn on it is tempered for good (+1 ATK, or +1 DEF if it has no attack); once per army, then the Forge rests ${WILDS.forgeRest} rounds. <b>Captive:</b> step on him to free him; he joins you (${CAPTIVE.hp} HP, no attack). Walk him into your camp and he takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).
+    <br><b>Levers:</b> one near each camp. A unit standing on one pulls it for its side; once levers of two different sides are pulled, a trap door opens and the <b>Wanderer</b> runs out (once per game; 20 HP, no DEF, roams 3 hexes a round, only hits back). Its killing blow drops a Crown Shard.
+    <br><b>Mid game (round ${WILDS.midAt}):</b> the <b>Dragons</b> wake in the two lairs on the north and south edges (20 HP, 1 DEF; at each round start it breathes fire on the last unit that hit it): the killing blow wins ${WILDS.dragonPts} points. The <b>Standing Stones</b> on the east and west edges glow: if your units stand on all three runestones of a circle at the start of two of your turns in a row, you score ${WILDS.stonesPts} points and the circle sleeps ${WILDS.stonesDark} rounds; an enemy on any stone stops it.
+    <br><b>The Throne:</b> in round ${WILDS.open} the walls of the Throne Hall fall and the Rift Beast (${WILDS.beastHp} HP) wakes on the Throne; its killing blow (+${RULES.BEAST_PTS} points) reveals the Throne. The first unit to sit on it is crowned <b>King</b>: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives; it scores 1 point at the start of its side's turn while it sits on the Throne and no enemy unit stands on the Heart. When the King falls, the next unit to sit on the Throne is crowned. Points come from the King, the Dragons, the Standing Stones, the Rift Beast and Leader takedowns; first to ${WILDS.target} wins. No Collapse, no flags, no Riftwalkers.</li>
   <li><b>Act 1, expand.</b> The centre is walled: a single ring of stone wall stands right around the Heart until round ${RULES.CENTRE_FROM} (the outer grey ring stays open ground). Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
   <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls and, in the same moment, the <b>Rift Beast</b> awakens on a random stretch of the fallen wall (both announced a round before). The Throne is open: whoever sits on it is crowned <b>King</b>.</li>
   <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre: the first rings fall quickly, then it slows down (a ring every 4 rounds) to leave time for objectives, relics and points.</li></ul>
@@ -6410,7 +6612,7 @@ function unitPos(u,now){
 function drawChest(c,x,y,S,col,now){c.save();c.shadowColor=col;c.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/240));const w=S*0.62,h=S*0.42;
   c.fillStyle='#6b4423';c.fillRect(x-w/2,y-h*0.25,w,h*0.75);c.beginPath();c.ellipse(x,y-h*0.25,w/2,h*0.42,0,Math.PI,0);c.fillStyle='#8a5a2e';c.fill();c.shadowBlur=0;
   c.strokeStyle=col;c.lineWidth=Math.max(1.5,S*0.08);c.strokeRect(x-w/2,y-h*0.25,w,h*0.75);c.fillStyle=col;c.fillRect(x-S*0.06,y-h*0.2,S*0.12,S*0.16);c.restore()}
-const MON_GLYPH={guardian:'♜',ghoul:'☠',crate:'▣'};
+const MON_GLYPH={guardian:'♜',golem:'♜',ghoul:'☠',crate:'▣',dragon:'♆',wanderer:'☄',cracked:'▦'};
 function drawMonster2D(c,u,x,y,S,now){const r=S*0.78,crate=u.monster==='crate';c.save();c.shadowColor='#9a7bff';c.shadowBlur=crate?0:S*0.4*(0.6+0.4*Math.sin(now/300+u.id));
   c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=crate?'#6b4423':'#2a2140';c.fill();c.shadowBlur=0;c.lineWidth=Math.max(2,S*0.1);c.strokeStyle=crate?'#e8b84e':'#b9a2ff';c.stroke();
   c.fillStyle=crate?'#f6e2b0':'#e6dcff';c.font=`700 ${r*1.15}px 'Segoe UI Symbol','Noto Sans Symbols 2',serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(MON_GLYPH[u.monster]||'?',x,y+1);
@@ -6424,6 +6626,11 @@ function drawFeature2D(f,x,y,S,q,r){
     ctx.strokeStyle='rgba(200,235,255,.45)';ctx.lineWidth=Math.max(1,S*0.07);for(const dy of [-0.22,0.18]){ctx.beginPath();ctx.moveTo(x-S*0.5,y+dy*S);ctx.quadraticCurveTo(x-S*0.2,y+(dy-0.15)*S,x+S*0.05,y+dy*S);ctx.quadraticCurveTo(x+S*0.3,y+(dy+0.15)*S,x+S*0.5,y+dy*S);ctx.stroke()}}
   if(f==='forest'){for(const [ox,oy,s] of [[-0.35,0.2,0.34],[0.3,0.25,0.3],[0,-0.25,0.38]]){ctx.beginPath();ctx.moveTo(x+ox*S,y+(oy-s)*S);ctx.lineTo(x+(ox+s*0.7)*S,y+(oy+s*0.6)*S);ctx.lineTo(x+(ox-s*0.7)*S,y+(oy+s*0.6)*S);ctx.closePath();ctx.fillStyle='#2f7d45';ctx.fill();ctx.strokeStyle='#15361f';ctx.lineWidth=1;ctx.stroke()}}
   if(f==='hill'){ctx.strokeStyle='rgba(230,215,170,.8)';ctx.lineWidth=Math.max(1.2,S*0.06);for(const k of [0.55,0.32]){ctx.beginPath();ctx.ellipse(x,y+S*0.12,S*k,S*k*0.55,0,Math.PI,0);ctx.stroke()}}
+  if(f==='rubble'){for(const [ox,oy,k] of [[-0.3,0.15,0.3],[0.25,0.2,0.26],[0,-0.22,0.28],[0.35,-0.25,0.18],[-0.4,-0.25,0.16]]){ctx.beginPath();ctx.ellipse(x+ox*S,y+oy*S,k*S,k*S*0.75,0.4,0,7);ctx.fillStyle='#7c776d';ctx.fill();ctx.strokeStyle='#2c2a26';ctx.lineWidth=1;ctx.stroke()}}
+  if(f==='tower'){ctx.fillStyle='#6b4a2e';ctx.fillRect(x-S*0.22,y-S*0.5,S*0.44,S*0.9);ctx.fillStyle='#a8875a';ctx.fillRect(x-S*0.34,y-S*0.62,S*0.68,S*0.2);ctx.strokeStyle='#2a1c10';ctx.lineWidth=1.2;ctx.strokeRect(x-S*0.22,y-S*0.5,S*0.44,S*0.9)}
+  if(f==='lever'){const pulled=G.levers&&G.levers[key(q,r)]!=null;ctx.fillStyle='#4a4440';ctx.fillRect(x-S*0.3,y+S*0.1,S*0.6,S*0.22);ctx.strokeStyle=pulled?teamColor(G.levers[key(q,r)]):'#d9d2c0';ctx.lineWidth=Math.max(2,S*0.1);ctx.beginPath();ctx.moveTo(x,y+S*0.15);ctx.lineTo(x+(pulled?S*0.35:-S*0.35),y-S*0.45);ctx.stroke();ctx.beginPath();ctx.arc(x+(pulled?S*0.35:-S*0.35),y-S*0.45,S*0.1,0,7);ctx.fillStyle='#e85c4a';ctx.fill()}
+  if(f==='runestone'){const on=G.midUp;ctx.beginPath();ctx.moveTo(x-S*0.22,y+S*0.4);ctx.lineTo(x-S*0.26,y-S*0.3);ctx.lineTo(x,y-S*0.55);ctx.lineTo(x+S*0.26,y-S*0.3);ctx.lineTo(x+S*0.22,y+S*0.4);ctx.closePath();ctx.fillStyle='#8d8a96';ctx.shadowColor='#b9a2ff';ctx.shadowBlur=on?S*0.6:0;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#2a2833';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=on?'#d9ccff':'#5a5866';ctx.fillRect(x-S*0.05,y-S*0.3,S*0.1,S*0.45)}
+  if(f==='forge'){ctx.fillStyle='#3a3436';ctx.fillRect(x-S*0.35,y-S*0.05,S*0.7,S*0.22);ctx.fillRect(x-S*0.15,y+S*0.17,S*0.3,S*0.2);ctx.beginPath();ctx.arc(x,y-S*0.25,S*0.2,0,7);ctx.fillStyle='#ff9a3d';ctx.shadowColor='#ff7a1a';ctx.shadowBlur=S*0.5;ctx.fill();ctx.shadowBlur=0}
   if(f==='shrine'){const off=shrineBack(q,r);ctx.beginPath();ctx.moveTo(x,y-S*0.45);ctx.lineTo(x+S*0.28,y);ctx.lineTo(x,y+S*0.45);ctx.lineTo(x-S*0.28,y);ctx.closePath();ctx.fillStyle=off?'#4a5a52':'#bff7d8';ctx.shadowColor='#9ff0c0';ctx.shadowBlur=off?0:S*0.5;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#2e6b4a';ctx.lineWidth=1;ctx.stroke()}
   ctx.restore();
 }
@@ -6554,7 +6761,7 @@ function drawMarkers2D(now){
   {const z=myDeployZone();if(z){const P0=P(G.cur);for(const k of z){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);hexPath(x,y,SZ*0.9);ctx.fillStyle=hexA(FAC[P0.fac].color,0.16+0.08*Math.sin(now/300));ctx.fill();ctx.strokeStyle=hexA(FAC[P0.fac].color,0.8);ctx.lineWidth=1.5;ctx.stroke()}}}
   for(const [k,c] of Object.entries(G.claim||{})){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);ctx.save();ctx.setLineDash([4,3]);hexPath(x,y,SZ*0.8);ctx.strokeStyle=FAC[c.fac].color;ctx.lineWidth=Math.max(2,SZ*0.12);ctx.stroke();ctx.restore()}
   for(const x of G.relics||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);drawRelicGlyph(x.kind,a,b-SZ*0.05,SZ*0.95,now)}
-  for(const x of G.loot||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);drawChest(ctx,a,b,SZ*0.9,LOOT[x.kind].col,now)}
+  for(const x of G.loot||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);drawChest(ctx,a,b,SZ*0.9,lootCol(x),now)}
   // flank road: dashed line along its inner edge
   ctx.save();ctx.setLineDash([Math.max(2,SZ*0.18),Math.max(2,SZ*0.14)]);ctx.strokeStyle='rgba(236,222,190,.55)';ctx.lineWidth=Math.max(1.2,SZ*0.07);
   for(const [q,r] of ringCells()){if(G.map||!isRoad(q,r))continue;const [x,y]=px(q,r);
@@ -6684,7 +6891,7 @@ function draw(now){
     sts.forEach((c,i)=>{ctx.beginPath();ctx.arc(mx+rad*0.75-i*SZ*0.3,my-rad*0.8,Math.max(2.5,SZ*0.14),0,7);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1;ctx.stroke()});
     const nc=curseCount(u);if(nc&&SZ>=10)badge(mx-rad*0.75,my-rad*0.75,Math.max(5,rad*0.36),'#e8e23a','#1b2008',nc);
     {const rl=relicOf(u);if(rl)drawRelicGlyph(rl.kind,mx+rad*0.95,my-rad*0.1,Math.max(8,rad*0.6),now)}
-    {const lt=lootOf(u);if(lt)drawChest(ctx,mx-rad*0.95,my-rad*0.2,Math.max(9,rad*0.7),LOOT[lt.kind].col,now)}
+    {const lt=lootOf(u);if(lt)drawChest(ctx,mx-rad*0.95,my-rad*0.2,Math.max(9,rad*0.7),lootCol(lt),now)}
     if(u.king){ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=8;drawIcon(ctx,'crown',mx,my-rad*1.35,Math.max(12,rad*0.95),'#ffd766','#3a2a05');ctx.restore()}
     if(u.ability&&SZ>=9){const br=Math.max(5.5,rad*0.4),bx=mx-rad*0.72,by=my+rad*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     if(SZ>=9)hpPill(u,mx,my+rad*1.02,rad*0.5);
@@ -6765,7 +6972,7 @@ function centreOn(cx,cy,z){const box=$('#boardbox');if(z&&Math.abs(z-zoom)>0.001
    longer moves outside the mover's own start area. Tiny moves are skipped and nothing moves if the action is already well in view. Touching,
    dragging or zooming the board during someone else's turn stops the camera until your next turn. Switch: ☰ menu, saved as hexmarch.camfollow. */
 const CAMF={on:true,paused:false,seq:0,pos:new Map(),raf:0};try{CAMF.on=localStorage.getItem('hexmarch.camfollow')!=='off'}catch(e){}
-const CAM_KINDS=new Set(['slash','bolt','lob','ab','death','relic','beast','beastdown','chain','fall','ult','crack','flag','spring','well']);
+const CAM_KINDS=new Set(['trapdoor','slash','bolt','lob','ab','death','relic','beast','beastdown','chain','fall','ult','crack','flag','spring','well']);
 function camWatching(){return CAMF.on&&!CAMF.paused&&G&&!G.over&&!G.phase&&screen==='game'&&!isHumanTurn()}
 function camSnap(){if(!G)return;CAMF.pos=new Map(G.units.map(u=>[u.id,[u.q,u.r]]));CAMF.seq=G.fxSeq||0}
 function camStop(){if(CAMF.raf){cancelAnimationFrame(CAMF.raf);CAMF.raf=0}}
