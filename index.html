@@ -2791,7 +2791,8 @@ function genWilds(){
    for(const d of [2,3])for(const [q,r] of rg(S,d)){const a=ang(q,r,S[0],S[1]);putE(q,r,paths.some(p=>ad(a,p)<(d===2?0.27:0.18))?'path':'forest')}
    for(const j of [0,2,4])put(S[0]+DIRS[j][0],S[1]+DIRS[j][1],'runestone')}
   // camps: the yard is the deployment zone; the wall ring has three gates (Throne road, Vault, Crypt); its look is the army's own (set below)
-  {const r3=rg(B,3),gates=nearest(r3,B,[angTo(B,[0,0]),angTo(B,V),angTo(B,C)]);for(const [q,r] of disc(B,2))put(q,r,'camp');
+  // gates are 2 hexes wide so five two-hex giants never jam in their own camp (v38b fix: 1-hex gates trapped a giant behind the others)
+  {const r3=rg(B,3),gA=[angTo(B,[0,0]),angTo(B,V),angTo(B,C)],gates=new Set();for(const g of gA)for(const c of r3.slice().sort((x,y)=>ad(ang(x[0],x[1],B[0],B[1]),g)-ad(ang(y[0],y[1],B[0],B[1]),g)).slice(0,2))gates.add(key(c[0],c[1]));for(const [q,r] of disc(B,2))put(q,r,'camp');
    for(const [q,r] of r3)gates.has(key(q,r))?put(q,r,'gap'):put(q,r,'rock',null,'camp')}
   // the Watchtower on a rocky outcrop above the camp road, and the lever
   {const Wt=W.tower;put(Wt[0],Wt[1],'tower');const back=angTo(Wt,[0,0]);for(const [q,r] of rg(Wt,1))if(ad(ang(q,r,Wt[0],Wt[1]),back)<1.1)putE(q,r,'rock','cliff')}
