@@ -500,6 +500,16 @@ body.wide .turnbar .btn.sm{padding:7px 10px}
 .dock .schip{font-size:11.5px;padding:2px 7px 2px 4px}
 body.wide .schip{font-size:13px}
 
+/* tutorial coach box (v39) */
+#tutBox{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);z-index:60;width:min(560px,calc(100vw - 24px));box-sizing:border-box;
+  background:rgba(16,19,27,.96);border:1px solid #e8b84e;border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:#ece8dd}
+#tutBox h3{margin:2px 0 4px;font:700 17px Oxanium,sans-serif;color:#ffd766}
+#tutBox p{margin:0 0 10px;font-size:14px;line-height:1.45}
+#tutBox .tut-k{font:700 11px Oxanium,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#9da2ad}
+#tutBox .tut-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#tutBox .tut-wait{color:#9da2ad;font-size:13px;margin-right:auto}
+body.focus #tutBox{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 150px)}
+
 </style>
 
 <div class="wrap">
@@ -4780,6 +4790,7 @@ function burst(x,y,rad,col,alpha,fill){ctx.save();ctx.globalAlpha=alpha;ctx.begi
 function sparks(x,y,n,rad,col,t,seed){ctx.save();ctx.fillStyle=col;for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+seed,d=rad*(0.3+t);ctx.globalAlpha=Math.max(0,1-t);ctx.beginPath();ctx.arc(x+Math.cos(a)*d,y+Math.sin(a)*d*0.8-t*rad*0.6,Math.max(1.2,rad*0.07*(1-t)),0,7);ctx.fill()}ctx.restore()}
 function hexFlash(q,r,col,alpha){const U=vUnit();if(VIEW==='3d'){polyPath(hexTop(...world(q,r),0.95,0.02))}else{const [x,y]=px(q,r);hexPath(x,y,SZ*0.95)}ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=col;ctx.fill();ctx.restore()}
 function drawVFX(now){
+  if(typeof tutDraw==='function')tutDraw(now);
   pumpVFX(now);
   const U=vUnit();
   for(let i=ANIMS.length-1;i>=0;i--){
@@ -5788,7 +5799,8 @@ function renderSetup(){
         <div class="hint">From round ${RULES.RELIC_FROM}, powerful relics appear on the flanks every ${RULES.RELIC_EVERY} rounds. Carry one to use its power; drop it when the carrier dies.</div></div>
       ${inRoom?`<div class="field"><div class="label">Seats</div><div class="hint">${roomHostLobby?'You are hosting room '+NET.code+'. The seats, their armies and who plays them are set in the Online game box; the settings above apply to the room.':'The online game is in progress; leave the room to set up a game on this device.'}</div></div>`:`<div class="field"><div class="label">Seats</div><div class="seats">${seats}</div>
         <div class="hint">Humans share this device and pass it around. Bots play themselves.</div></div>
-      <button class="btn primary" id="startBtn" style="width:100%;padding:12px">Start on this device</button>`}
+      <button class="btn primary" id="startBtn" style="width:100%;padding:12px">Start on this device</button>
+      <button class="btn" id="tutBtn" style="width:100%;padding:10px;margin-top:8px">🎓 Learn to play (5-minute tutorial)</button>`}
       <p class="hint" style="margin:12px 0 0">Each army has up to 10 slots (a giant takes 2). ${BM?`<b>Wins</b> is how often Hard bots won with that army in ${BM.games} simulated games of ${BT.name} (War Room ${BALANCE.version}); a fair army would win ${BT.fair}% of the time.${BT.note(cfg)}`:''} <button class="btn sm" id="balBtn2" style="margin-top:6px">See the War Room numbers</button></p>`}
     </div>
     <div class="card" id="onlineBox" style="grid-column:1"></div>
@@ -5812,6 +5824,7 @@ function renderSetup(){
   $('#setupView').querySelectorAll('button[data-mach]').forEach(b=>b.onclick=()=>openPreview(b.dataset.fac,{m:b.dataset.mach}));
   $('#setupView').querySelectorAll('button[data-wraith]').forEach(b=>b.onclick=()=>openPreview(b.dataset.fac,{wr:1}));
   if($('#startBtn'))$('#startBtn').onclick=startGame;
+  if($('#tutBtn'))$('#tutBtn').onclick=()=>startTutorial();
   if(roomHostLobby)netSyncCfg();
   renderOnline();
   if($('#balBtn2'))$('#balBtn2').onclick=()=>showBalance();
@@ -5869,6 +5882,7 @@ HOOKS.turn=()=>{
 };
 function startGame(){newGameUI()}
 function newGameUI(){
+  if(window.TUT)tutStop();
   const seats=cfg.seats.slice(0,cfg.n);
   showScreen('game');
   if(cfg.map==='wilds'){cfg.n=4;cfg.teams=false;cfg.mode='warlord';wildsSeats()}
@@ -5902,12 +5916,14 @@ function botLoop(tok){
   if(!G||G.over||tok!==G.tok||screen!=='game')return;
   if(G.paused){setTimeout(()=>botLoop(tok),500);return}
   if(G.phase==='deploy'){botDeploy();return}
+  if(G.tutorial){endTurn();return}// the tutorial's enemy never acts
   if(!botStep()){endTurn();return}
   if(G.over||tok!==G.tok)return;
   const wait=camStep();
   setTimeout(()=>botLoop(tok),(netOnline()?300:230)+wait);
 }
 function showScreen(s){
+  if(s!=='game'&&window.TUT&&TUT.on)tutStop();
   screen=s;$('#setupView').hidden=s!=='setup';$('#gameView').hidden=s!=='game';$('#setupBtn').hidden=s!=='game';
   if(s!=='setup')closePreview();
   if(s==='setup'){renderSetup();$('#overlay').hidden=true}
@@ -7225,5 +7241,57 @@ function start(data){
 }
 try{window.claude?.hot?.snapshot?.(()=>netOnline()?{cfg}:({G,cfg,screen}))}catch(e){}
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+
+/* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"). "Learn to play" on the setup screen starts a short guided game on a clean board:
+   the Iron Warband (the introductory army) against a Frost Hold squad that never acts. A coach box at the top explains one thing at a time and
+   waits until the player has done it (select, move, attack, an ability, end turn, the Ultimate, the Throne and the King); a pulsing gold ring
+   with an arrow marks where to tap, in both views. The enemy side's turns pass at once (botLoop checks G.tutorial). */
+var TUT={on:false,i:0,timer:0,mem:{}};
+const TUT_STEPS=[
+  {t:'Welcome to Hexmarch',s:'You lead the <b>Iron Warband</b>. Every turn you get a pool of <b>action points (AP)</b>, shown as diamonds at the top. This short lesson shows you the moves you need for a real game.',next:1},
+  {t:'Select a unit',s:'Tap your <b>Berserker</b> (marked with the gold ring). Its card opens and the board shows what it can do.',at:()=>U('Berserker'),done:()=>G.sel===U('Berserker').id},
+  {t:'Move',s:'The white dots show where it can walk. Move the Berserker to the marked hex, next to the enemy Frostling. A move costs <b>1 AP</b>. Each unit can move once and act once per turn.',at:()=>[2,2],done:()=>U('Berserker').moved},
+  {t:'Attack',s:'Enemies you can hit right now are marked red. Tap the <b>Frostling</b> to attack it (<b>2 AP</b>). Damage is your ATK minus its DEF.',at:()=>E('Frostling'),done:()=>{const f=E('Frostling');return !f||f.hp<f.maxhp}},
+  {t:'Watch the gold rings',s:'A unit that did not act on its last turn has a gold <b>Barrier</b>: the first enemy to hit it takes 2 damage back. Melee units also strike back for half. Pick your fights.',next:1},
+  {t:'Use an ability',s:'Tap your <b>Warlord</b> and press <b>Rally</b> in the action bar: every Warband unit within 2 hexes gets +1 ATK. Abilities then rest for a few turns (the number on the unit).',at:()=>U('Warlord'),done:()=>G.units.some(u=>u.owner===0&&(u.cd>0||u.cd2>0))},
+  {t:'End your turn',s:'When you have spent your AP, press <b>End turn</b>. The other players move, then your AP refills. Unused AP is lost (only the Hourglass Order can keep some).',done:()=>G.round>TUT.mem.round0&&G.cur===0},
+  {t:'Your Ultimate',s:'Kills, losses, flags and the Throne fill your <b>Ultimate</b> charge. I filled it for you: press the <b>⚡ Ultimate</b> button. The Warband’s <b>Warhorn</b> gives +2 AP, +2 ATK and lets every unit act again this turn.',done:()=>(P(0).ultN||0)>0,enter:()=>{const p=P(0);p.ult=ultNeed(p)}},
+  {t:'Take the Throne',s:'The golden hex in the centre is the <b>Throne</b>. Walk your <b>Raider</b> onto it: the first unit to sit there is crowned <b>King</b> (+1 ATK, +1 DEF for life).',at:()=>[0,0],done:()=>{const k=kingOf();return !!k&&k.owner===0}},
+  {t:'Win the game',s:'In <b>Warlord</b> you win by points: the King scores 1 at the start of your turn while it sits on the Throne (unless an enemy stands on the gold Heart around it), killing an enemy Leader gives 2, the side with the most flags scores, and slaying the Rift Beast gives 3. Or be the last Leader standing.',next:1},
+  {t:'You are ready',s:'Tip: tap any unit, even an enemy, to see what it does; long-press on a phone for its full card. On the setup screen tap an army’s units to see each one in 3D. Easy bots are a good first opponent.',last:1}];
+const U=n=>G.units.find(u=>u.owner===0&&u.name===n)||{id:-1,q:0,r:0};
+const E=n=>G.units.find(u=>u.owner===1&&u.name===n);
+function startTutorial(){
+  cfg.map='random';showScreen('game');curtain=null;
+  newGame({n:2,teams:false,mode:'warlord',collapse:false,deploy:false,relics:false,timer:0,botLevel:'easy',seats:[{fac:'warband',ctrl:'human'},{fac:'ice',ctrl:'bot'}]});resetVFX(false);
+  labClear();G.tutorial=true;G.noWall=true;G.round=5;G.cur=0;
+  for(const [n,q,r] of [['Warlord',0,5],['Berserker',2,4],['Spearman',1,4],['Shieldbearer',-1,5],['Raider',-1,3]])labUnit(0,n,q,r,{dir:4});
+  for(const [n,q,r] of [['Rime Queen',0,-6],['Frostling',2,1],['Frost Warden',4,0]])labUnit(1,n,q,r,{dir:1});
+  for(const u of G.units)if(u.owner===1)u.bar=1;// the waiting enemies already hold their Barrier
+  G.ap=G.apMax=6;G.apParts={base:4,leader:2,throne:0,relic:0,bank:0,first:0,well:0,loot:0};
+  TUT.on=true;TUT.i=0;TUT.mem={round0:G.round};
+  if(window.innerWidth<700&&!document.body.classList.contains('focus'))setFocus(true);
+  faceHome(0);CAM.az=CAM.azT;layout();centerBoard();refresh();
+  tutRender();clearInterval(TUT.timer);TUT.timer=setInterval(tutTick,300)}
+function tutStop(){TUT.on=false;clearInterval(TUT.timer);const b=document.getElementById('tutBox');if(b)b.remove()}
+function tutGo(i){TUT.i=i;const S=TUT_STEPS[i];if(S&&S.enter)S.enter();if(G)refresh();tutRender()}
+function tutTick(){if(!TUT.on)return;if(!G||screen!=='game'||!G.tutorial){tutStop();return}const S=TUT_STEPS[TUT.i];if(S&&S.done&&S.done())tutGo(TUT.i+1)}
+function tutRender(){
+  let b=document.getElementById('tutBox');
+  if(!b){b=document.createElement('div');b.id='tutBox';b.setAttribute('role','dialog');b.setAttribute('aria-live','polite');document.body.appendChild(b)}
+  const S=TUT_STEPS[TUT.i];if(!S){tutStop();return}
+  b.innerHTML=`<div class="tut-k">Lesson ${TUT.i+1} of ${TUT_STEPS.length}</div><h3>${S.t}</h3><p>${S.s}</p><div class="tut-row">
+    ${S.next?'<button class="btn primary sm" id="tutNext">Next ▸</button>':S.last?'<button class="btn primary sm" id="tutPlay">Set up a real game</button>':'<span class="tut-wait">Waiting for you…</span>'}
+    <button class="btn sm" id="tutSkip">${S.last?'Keep playing here':'Skip tutorial'}</button></div>`;
+  const n=document.getElementById('tutNext');if(n)n.onclick=()=>tutGo(TUT.i+1);
+  const pl=document.getElementById('tutPlay');if(pl)pl.onclick=()=>{tutStop();G.tutorial=false;showScreen('setup')};
+  document.getElementById('tutSkip').onclick=()=>{tutStop();if(!S.last){G.tutorial=false;showScreen('setup')}else G.tutorial=false}}
+// the gold ring and arrow over the hex to tap (drawn from drawVFX in both views)
+function tutDraw(now){if(!TUT.on||!G||!G.tutorial)return;const S=TUT_STEPS[TUT.i];if(!S||!S.at)return;const a=S.at();if(!a)return;const q=Array.isArray(a)?a[0]:a.q,r=Array.isArray(a)?a[1]:a.r;
+  const U0=vUnit(),[x,y]=vPos(q,r,0),pk=0.5+0.5*Math.sin(now/220),bob=Math.sin(now/260)*U0*0.25;
+  ctx.save();ctx.strokeStyle=`rgba(255,215,102,${0.6+0.4*pk})`;ctx.lineWidth=Math.max(3,U0*0.14);ctx.shadowColor='#ffd766';ctx.shadowBlur=U0*0.8;
+  ctx.beginPath();ctx.ellipse(x,y,U0*(0.85+0.15*pk),U0*(0.85+0.15*pk)*(VIEW==='3d'?Math.cos(CAM.tilt):1),0,0,7);ctx.stroke();
+  const ay=y-U0*2.6+bob;ctx.fillStyle='#ffd766';ctx.beginPath();ctx.moveTo(x,ay+U0*0.9);ctx.lineTo(x-U0*0.45,ay+U0*0.3);ctx.lineTo(x-U0*0.16,ay+U0*0.3);ctx.lineTo(x-U0*0.16,ay-U0*0.3);ctx.lineTo(x+U0*0.16,ay-U0*0.3);ctx.lineTo(x+U0*0.16,ay+U0*0.3);ctx.lineTo(x+U0*0.45,ay+U0*0.3);ctx.closePath();ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle='#3a2a05';ctx.shadowBlur=0;ctx.stroke();ctx.restore()}
 
 </script>
