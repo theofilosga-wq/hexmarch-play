@@ -2696,7 +2696,7 @@ function actEvents(){
    Loot must be CARRIED back into your own camp to take effect; a carrier that dies drops it and anyone may pick it up. The Cursed chest is a coin flip
    when picked up (50% it turns into a real reward, 50% it curses the carrier and is gone); the flip is a hash of round, unit and room, so undo cannot reroll it.
    No Collapse, no flags, no Wellspring, no random relics, no Riftwalkers in this mode. Heart points (from round 10), loot and leader takedowns win. */
-const WILDS={R:17,open:10,target:12,hold:3,beastHp:30,kingAtk:2,kingDef:2,camp:[4,11],fort:[2,7],crypt:[9,3],vault:[-5,10],lair:[-8,16],stones:[14,0],tower:[6,5],lever:[0,10],
+const WILDS={R:17,open:10,target:12,hold:3,beastHp:30,kingAtk:2,kingDef:2,camp:[4,11],fort:[2,7],crypt:[9,3],vault:[-5,10],lair:[-8,16],stones:[14,0],tower:[5,5],lever:[0,10],
   midAt:6,dragonPts:3,stonesPts:3,stonesDark:4,suitHp:8,plateHp:5,gemMax:2,wanderMove:3,forgeRest:3};
 // v36 (owner, 1 Oct 2026): every room monster only answers the last unit that hit it, at the next round start. No more round-start strikes, no Ghoul packs.
 const MONSTERS={
@@ -2753,31 +2753,61 @@ function genWilds(){
       if(t==='crack'){for(const m of wildsMirrors(q,r))if(inR(m[0],m[1]))cracks.push(m);set(q,r,'crackbase',room?room+':gate':null);continue}
       set(q,r,t,room&&t==='gap'?room+':gate':null)}};
   const B=W.camp,F=W.fort,C=W.crypt,V=W.vault,L=W.lair,S=W.stones,B2=[-B[0]-B[1],B[1]],B3=[B[0]+B[1],-B[1]];
-  for(let q=7;q<=11;q++)set(q,0,'river');
+  for(let q=7;q<=10;q++)set(q,0,'river');
   {const moat=cellsAll.filter(([q,r])=>hd(q,r,0,0)===6);for(const [q,r] of moat)set(q,r,'river');
    const bq=moat.slice().sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1])||Math.abs(ang(a[0],a[1],0,0)-angTo([0,0],B))-Math.abs(ang(b[0],b[1],0,0)-angTo([0,0],B)))[0];set(bq[0],bq[1],'bridge')}
   // Throne Hall: a stone ring right around the Heart (heartR+1) with a door on each axis; the doors are sealed by the centre wall until round WILDS.open
   ring([0,0],G.heartR+1,[0,Math.PI/2,Math.PI,-Math.PI/2],0.25,'rock',null,'door');
-  edge(F,2,[angTo(F,B),angTo(F,[0,0])],['hill','gap','forest','gap'],'fort','hill',0.4);fill(F,2,'room','fort');
-  edge(C,2,[angTo(C,B)],['rubble','gap','crack','river','gap'],'crypt');fill(C,2,'room','crypt');
-  edge(V,2,[angTo(V,B),angTo(V,B2)],['rubble','gap','crack','forest','gap'],'vault');fill(V,2,'room','vault');
-  edge(L,2,[angTo(L,B),angTo(L,B2),angTo(L,V)],['rubble','gap','forest'],'lair');fill(L,2,'room','lair');
-  edge(S,2,[angTo(S,B),angTo(S,B3),Math.PI],['gap','forest','gap','rubble'],null,'rock');fill(S,2,'circle');
-  for(const j of [0,2,4])set(S[0]+DIRS[j][0],S[1]+DIRS[j][1],'runestone');
-  edge(B,3,[angTo(B,[0,0]),angTo(B,V),angTo(B,C)],['rubble','forest','gap','rubble','crack','forest'],null,'rock',0.2);
-  fill(B,3,'camp');
-  set(W.tower[0],W.tower[1],'tower');set(W.lever[0],W.lever[1],'lever');
-  const road=path=>{for(const [q,r] of path){const t=T[key(q,r)];if(!t||t==='forest'||t==='hill'||t==='rubble'||t==='crackbase'||(t==='rock'&&hd(q,r,0,0)>6))set(q,r,'road')}};
+  /* v38 places (owner, 3 Oct 2026, the Ravenswatch-inspired sketch): every place has its own shape and walls taken from the land. Walls are 'rock' for the rules
+     (blocks walking and straight shots, flyers pass); G.wallLook[k] only says how a wall hex is drawn (cliff, fence, mausoleum, arch, boulder, camp material). */
+  const LK={},DEC={},KEEP=new Set(['river','bridge','door']);
+  const put=(q,r,t,room,look,force)=>{wildsMirrors(q,r).forEach(([a,b])=>{if(!inR(a,b))return;const k=key(a,b);if(!force&&KEEP.has(T[k]))return;T[k]=t;if(room)roomOf[k]=room;else delete roomOf[k];if(look)LK[k]=look;else delete LK[k]})};
+  const putE=(q,r,t,look)=>{wildsMirrors(q,r).forEach(([a,b])=>{const k=key(a,b);if(!inR(a,b)||T[k])return;T[k]=t;if(look)LK[k]=look})};
+  const disc=(c,d)=>cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=d),rg=(c,d)=>cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])===d);
+  const ad=(a,b)=>{let d=Math.abs(a-b)%(2*Math.PI);return d>Math.PI?2*Math.PI-d:d};
+  const nearest=(cells,c,angles)=>new Set(angles.map(g=>cells.slice().sort((x,y)=>ad(ang(x[0],x[1],c[0],c[1]),g)-ad(ang(y[0],y[1],c[0],c[1]),g))[0]).map(x=>key(x[0],x[1])));
+  // Hill Fort: a raised ledge (hill: +1 range and damage for ranged units), cliffs all round, one ramp up facing the camp, an outcrop at its back
+  {const face=angTo(F,B),r2=rg(F,2),ramp=nearest(r2,F,[face]);for(const [q,r] of disc(F,1))put(q,r,'hill','fort');
+   for(const [q,r] of r2)ramp.has(key(q,r))?put(q,r,'ramp','fort:gate'):put(q,r,'rock',null,'cliff');
+   for(const [q,r] of rg(F,3))if(ad(ang(q,r,F[0],F[1]),face+Math.PI)<0.45)put(q,r,'rock',null,'cliff')}
+  // Crypt: a graveyard. Iron fence at the front with two gates and one cracked section, the mausoleum wall at the back, tombstones inside
+  {const face=angTo(C,B),r2=rg(C,2).map(c=>[c[0],c[1],ang(c[0],c[1],C[0],C[1])]).sort((a,b)=>a[2]-b[2]);const front=r2.filter(c=>ad(c[2],face)<=Math.PI/2+0.05);
+   const gates=nearest(front,C,[face-0.75,face+0.75]),crack=nearest(front.filter(c=>!gates.has(key(c[0],c[1]))),C,[face]);
+   for(const [q,r] of disc(C,1)){put(q,r,'room','crypt');if((q+r)%2===0||(q===C[0]&&r===C[1]))for(const [a,b] of wildsMirrors(q,r))DEC[key(a,b)]='tomb'}
+   for(const [q,r,a] of r2){const k=key(q,r);if(ad(a,face)>Math.PI/2+0.05)put(q,r,'rock',null,'mausoleum');else if(gates.has(k))put(q,r,'gap','crypt:gate');
+     else if(crack.has(k)){for(const m of wildsMirrors(q,r))if(inR(m[0],m[1]))cracks.push(m);put(q,r,'crackbase','crypt:gate')}else put(q,r,'rock',null,'fence')}
+   for(const [q,r] of rg(C,3))if(ad(ang(q,r,C[0],C[1]),face+Math.PI)<0.35)put(q,r,'rock',null,'mausoleum')}
+  // Vault: a half-moon of ruined arches and rubble, open toward the two neighbours who share it
+  {const face=ang((B[0]+B2[0])/2,(B[1]+B2[1])/2+0.6,V[0],V[1]);let n=0;for(const [q,r] of disc(V,1))put(q,r,'room','vault');
+   for(const [q,r] of rg(V,2).map(c=>[c[0],c[1],ang(c[0],c[1],V[0],V[1])]).sort((a,b)=>a[2]-b[2])){if(ad(ang(q,r,V[0],V[1]),face)<1.2)put(q,r,'room','vault');else (n++%2)?put(q,r,'rubble'):put(q,r,'rock',null,'arch')}
+   for(const [q,r] of rg(V,3))if(ad(ang(q,r,V[0],V[1]),face+Math.PI)<0.5&&(q+r)%2===0)put(q,r,'rubble')}
+  // Dragon's Lair: a cave cut into the map edge, cliffs all round, one wide mouth facing in, two boulders inside
+  {const face=angTo(L,[0,0]);for(const [q,r] of disc(L,1))put(q,r,'room','lair');
+   for(const [q,r] of rg(L,2))ad(ang(q,r,L[0],L[1]),face)<0.62?put(q,r,'room','lair'):put(q,r,'rock',null,'cliff');
+   for(const [q,r] of rg(L,3))if(ad(ang(q,r,L[0],L[1]),face)>0.45)put(q,r,'rock',null,'cliff');
+   for(const [q,r] of rg(L,1))if(ad(ang(q,r,L[0],L[1]),face)>2.0)put(q,r,'rock',null,'boulder')}// boulders only at the back, never in the way in
+  // Standing Stones: a clearing inside a forest ring, two narrow paths in (one from each neighbour), three runestones (the forest never covers a neighbouring room)
+  {for(const [q,r] of disc(S,1))put(q,r,'circle');const paths=[angTo(S,B),angTo(S,B3)];
+   for(const d of [2,3])for(const [q,r] of rg(S,d)){const a=ang(q,r,S[0],S[1]);putE(q,r,paths.some(p=>ad(a,p)<(d===2?0.27:0.18))?'path':'forest')}
+   for(const j of [0,2,4])put(S[0]+DIRS[j][0],S[1]+DIRS[j][1],'runestone')}
+  // camps: the yard is the deployment zone; the wall ring has three gates (Throne road, Vault, Crypt); its look is the army's own (set below)
+  {const r3=rg(B,3),gates=nearest(r3,B,[angTo(B,[0,0]),angTo(B,V),angTo(B,C)]);for(const [q,r] of disc(B,2))put(q,r,'camp');
+   for(const [q,r] of r3)gates.has(key(q,r))?put(q,r,'gap'):put(q,r,'rock',null,'camp')}
+  // the Watchtower on a rocky outcrop above the camp road, and the lever
+  {const Wt=W.tower;put(Wt[0],Wt[1],'tower');const back=angTo(Wt,[0,0]);for(const [q,r] of rg(Wt,1))if(ad(ang(q,r,Wt[0],Wt[1]),back)<1.1)putE(q,r,'rock','cliff')}
+  put(W.lever[0],W.lever[1],'lever');
+  const road=path=>{for(const [q,r] of path){const t=T[key(q,r)];if(!t||t==='forest'||t==='hill'&&!roomOf[key(q,r)])put(q,r,'road')}};
   const bridge=cellsAll.filter(([q,r])=>T[key(q,r)]==='bridge').sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1]))[0];
-  road(hexLine([B[0]-1,B[1]-2],bridge));road(hexLine([B[0]-2,B[1]-1],[V[0]+3,V[1]-1]));road(hexLine([V[0]+2,V[1]+1],[L[0]+3,L[1]-1]));
-  road(hexLine([B[0]+2,B[1]-2],[C[0]-1,C[1]+3]));road(hexLine([C[0]+2,C[1]-1],[S[0]-1,S[1]+3]));
+  road(hexLine([B[0]-1,B[1]-3],bridge));road(hexLine([B[0]-3,B[1]],[V[0]+2,V[1]+1]));road(hexLine([V[0]-1,V[1]+2],[L[0]+2,L[1]-2]));
+  road(hexLine([B[0]+3,B[1]-3],[C[0]-1,C[1]+2]));road(hexLine([C[0]+2,C[1]-2],[S[0]-2,S[1]+4]));road(hexLine([F[0]+1,F[1]+1],[B[0]-1,B[1]-3]));
   // woods and hills scattered on open ground, one hex clear of every road and way in (deterministic, so every game has the same map)
   const h=(q,r)=>{let x=Math.imul(q*73856093^r*19349663,2654435761)>>>0;x^=x>>>13;return (x%1000)/1000};
   for(const [q,r] of cellsAll){const [x,y]=pix(q,r);if(x<0||y<0||T[key(q,r)]||hd(q,r,0,0)<=6)continue;// nothing grows inside the moat
-    if(DIRS.some(([a,b])=>{const n=T[key(q+a,r+b)];return n==='road'||n==='gap'||n==='door'||n==='bridge'||n==='crackbase'||n==='lever'}))continue;
+    if(DIRS.some(([a,b])=>['road','gap','door','bridge','crackbase','lever','ramp','path'].includes(T[key(q+a,r+b)])))continue;
     const v=h(q,r);if(v<0.07)set(q,r,'forest');else if(v<0.095)set(q,r,'hill')}
+  G.wallLook=LK;G.decor=DEC;
   G.feat={};G.roads={};G.terr={};
-  for(const [k,t] of Object.entries(T)){if(['rock','river','forest','hill','rubble','tower','lever','runestone'].includes(t))G.feat[k]=t;if(t==='road'||t==='bridge')G.roads[k]=1}
+  for(const [k,t] of Object.entries(T)){if(['rock','river','forest','hill','rubble','tower','lever','runestone'].includes(t))G.feat[k]=t;if(t==='road'||t==='bridge'||t==='ramp')G.roads[k]=1}
   // rooms: one record per copy; each room hex belongs to the nearest copy of its room's centre (rooms on a mirror line have 2 copies, the others 4)
   const centres={fort:F,crypt:C,vault:V,lair:L},rooms={};
   for(const [k,id] of Object.entries(roomOf)){const gate=id.includes(':gate'),type=id.replace(':gate','');const [q,r]=k.split(',').map(Number);
@@ -2797,10 +2827,13 @@ function genWilds(){
   G.levers={};G.gems={};G.wander=null;G.midUp=false;
   // camps: the inside is the deployment zone and home ground; seats go round the board
   const camps=wildsMirrors(...B);const order=[0,1,3,2].map(i=>camps[i]);
-  G.players.forEach((p,i)=>{const c=order[p.spot%4];p.home=c;p.camp=c;p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2).map(([q,r])=>key(q,r));for(const k of p.zone)G.terr[k]=p.fac});
+  G.players.forEach((p,i)=>{const c=order[p.spot%4];p.home=c;p.camp=c;p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2).map(([q,r])=>key(q,r));for(const k of p.zone)G.terr[k]=p.fac;
+    // each army walls its camp in its own material (drawing only); the Ember Court keeps a lava pool in the middle of its yard
+    for(const [q,r] of cellsAll)if(hd(q,r,c[0],c[1])===3&&G.wallLook[key(q,r)])G.wallLook[key(q,r)]=CAMP_LOOK[p.fac]||'palisade';if(p.fac==='fire')G.decor[key(c[0],c[1])]='lava'});
 }
 // After the armies are placed: the cracked walls (6 HP, no DEF, every side may smash them; once broken the way stays open).
 function wildsSetup(){if(!G.map)return;for(const [q,r] of G.cracks||[])if(passable(q,r)&&!unitAt(q,r))G.units.push(makeMonster('cracked',q,r,null))}
+const CAMP_LOOK={warband:'palisade',ice:'icespire',fire:'obsidian',giants:'menhir',gnomes:'scrap',arcane:'marble',curse:'gravefence',rift:'crystal',chrono:'clockwall',mage:'bluestone'};
 const inCamp=(p,q,r)=>!!(p&&p.zone&&p.zone.includes(key(q,r)));
 function roomAt(q,r){if(!G.rooms||!G.rooms.length)return null;if(!roomAt.c||roomAt.c.r!==G.rooms){const m=new Map();for(const R of G.rooms){for(const k of R.cells)m.set(k,R);for(const k of R.ways)m.set(k,R)}roomAt.c={r:G.rooms,m}}return roomAt.c.m.get(key(q,r))||null}
 function makeMonster(kind,q,r,room){const M=MONSTERS[kind];return {id:G.nid++,kind:'wall',wall:'monster',monster:kind,owner:-1,name:M.name,icon:M.icon,q,r,dir:0,size:1,hp:M.hp,maxhp:M.hp,atk:M.atk,def:M.def,st:{},moved:true,acted:true,cd:0,room}}
@@ -4234,13 +4267,17 @@ function glInst(list,geo,mat,shadow){if(!list.length)return null;const m=new THR
   m.castShadow=shadow!==false;m.receiveShadow=true;return m}
 function glBuildStatics(){
   const T=THREE;if(GL.statics)GL.scene.remove(GL.statics);const grp=new T.Group();GL.water=[];GL.glow=[];
+  const WLK={};// v38: Crown Wilds wall looks (G.wallLook): fence, mausoleum, arch, boulder and each army's camp material
   const L={trunk:[],crown:[],crown2:[],pine:[],peak:[],snow:[],peak2:[],wall:[],merlon:[],hill:[],shrine:[],shrineStone:[],water:[],cwall:[],pebble:[],grass:[],rubble:[],post:[],deck:[],roof:[],lever:[],rune:[],anvil:[],coal:[]};
   for(const [q,r] of ringCells()){const k=key(q,r);if(G.voids[k])continue;const [x,z]=world(q,r);const f=featAt(q,r);const h=(i)=>hexRand(q,r,i);
     if(f==='forest')for(let i=0;i<3;i++){const a=i*2.1+h(i)*1.2,d=0.45,tx=x+Math.cos(a)*d,tz=z+Math.sin(a)*d,tall=1.0+h(i+5)*0.6;
       L.trunk.push([tx,tall*0.22,tz,0,1,tall,0,0,1,q,r]);
       if((i+q)%2)L.pine.push([tx,tall*0.62,tz,h(i+9)*3,1,tall,0,0,1,q,r]);else{L.crown.push([tx,tall*0.62,tz,h(i)*3,1+h(i+2)*0.3,0,0,0,0,q,r]);L.crown2.push([tx+0.16,tall*0.8,tz-0.1,h(i+1)*3,0.7,0,0,0,0,q,r])}}
     else if(f==='rock'){
-      if(G.map){L.wall.push([x,0,z,0,1,1]);for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;L.merlon.push([x+Math.cos(a)*0.72,1.16,z+Math.sin(a)*0.72,a,1])}}
+      const lk=G.map&&G.wallLook?G.wallLook[k]:null;
+      if(lk&&lk!=='cliff')(WLK[lk]=WLK[lk]||[]).push([x,0,z,h(4)*6.28,1]);
+      else if(lk==='cliff'){const hgt=1.3+h(1)*0.8;L.peak.push([x,hgt/2,z,h(2)*3,1,hgt]);L.peak2.push([x+0.4,hgt*0.25,z-0.3,h(3)*3,1,hgt*0.5])}
+      else if(G.map){L.wall.push([x,0,z,0,1,1]);for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;L.merlon.push([x+Math.cos(a)*0.72,1.16,z+Math.sin(a)*0.72,a,1])}}
       else{const hgt=1.6+h(1)*0.9;L.peak.push([x,hgt/2,z,h(2)*3,1,hgt]);L.snow.push([x,hgt*0.83,z,h(2)*3,1,hgt]);L.peak2.push([x+0.42,hgt*0.25,z-0.3,h(3)*3,1,hgt*0.5])}}
     else if(f==='hill'){L.hill.push([x,0,z,h(1)*3,1,1])}
     else if(f==='shrine'){L.shrine.push([x,0.55,z,h(1)*3,1]);for(let i=0;i<4;i++){const a=i*1.57+0.4;L.shrineStone.push([x+Math.cos(a)*0.45,0.12,z+Math.sin(a)*0.45,a,1])}}
@@ -4273,6 +4310,31 @@ function glBuildStatics(){
   {const rm=glInst(L.rune,gGeo('rune',()=>{const g=new T.CylinderGeometry(0.22,0.32,1.4,5);return g}),gMat('#8d8a96',G.midUp?{emissive:'#9a7bff',emissiveIntensity:0.6}:{}));add(rm)}
   add(glInst(L.anvil,gGeo('anvil',()=>{const a=new T.BoxGeometry(0.6,0.2,0.3);a.translate(0,0.15,0);const b=new T.BoxGeometry(0.25,0.3,0.22);a.translate(0,0,0);return glMerge([a,b])}),gMat('#3a3436',{metalness:0.7})));
   add(glInst(L.coal,gGeo('coal',()=>new T.SphereGeometry(0.22,8,6,0,Math.PI*2,0,Math.PI/2)),gMat('#ff7a2a',{emissive:'#ff5a1a',emissiveIntensity:1.6}),false));
+  // v38 wall looks and decor of the Crown Wilds places
+  {const box=(w,h,d,x,y,z)=>{const g=new T.BoxGeometry(w,h,d);g.translate(x||0,(y||0)+h/2,z||0);return g},cone=(r,h,x,z,y)=>{const g=new T.ConeGeometry(r,h,6);g.translate(x||0,(y||0)+h/2,z||0);return g},cyl=(a,b,h,x,z,y)=>{const g=new T.CylinderGeometry(a,b,h,8);g.translate(x||0,(y||0)+h/2,z||0);return g};
+   const B3D={
+    fence:()=>glMerge([-0.6,-0.2,0.2,0.6].map(x=>box(0.07,0.9,0.07,x,0,0)).concat([box(1.4,0.06,0.06,0,0.35,0),box(1.4,0.06,0.06,0,0.75,0)].concat([-0.6,-0.2,0.2,0.6].map(x=>cone(0.06,0.16,x,0,0.9))))),
+    gravefence:()=>glMerge([-0.6,-0.2,0.2,0.6].map(x=>box(0.07,0.8,0.07,x,0,0)).concat([box(1.4,0.06,0.06,0,0.6,0)],[-0.4,0.4].map(x=>box(0.28,0.5,0.1,x,0,0.25)))),
+    mausoleum:()=>{const a=box(1.6,1.1,1.5,0,0,0),b=new T.ConeGeometry(1.15,0.6,4);b.rotateY(Math.PI/4);b.translate(0,1.4,0);return glMerge([a,b])},
+    arch:()=>{const tor=new T.TorusGeometry(0.45,0.13,6,10,Math.PI);tor.translate(0,1.1,0);return glMerge([box(0.26,1.1,0.4,-0.45,0,0),box(0.26,1.1,0.4,0.45,0,0),tor])},
+    boulder:()=>{const g=new T.DodecahedronGeometry(0.62,0);g.scale(1,0.8,1);g.translate(0,0.45,0);return g},
+    palisade:()=>glMerge([-0.6,-0.3,0,0.3,0.6].map((x,i)=>cyl(0.12,0.12,1.1+(i%2)*0.15,x,0,0)).concat([-0.6,-0.3,0,0.3,0.6].map((x,i)=>cone(0.12,0.3,x,0,1.1+(i%2)*0.15)))),
+    icespire:()=>glMerge([cone(0.35,1.9,0,0),cone(0.25,1.3,0.45,0.25),cone(0.22,1.1,-0.4,-0.2)]),
+    obsidian:()=>glMerge([cone(0.3,1.5,-0.35,0.1),cone(0.32,1.9,0.15,-0.1),cone(0.25,1.2,0.5,0.25)]),
+    menhir:()=>{const g=box(0.55,1.7,0.4,0,0,0);g.rotateZ(0.05);return g},
+    scrap:()=>glMerge([box(0.6,0.6,0.6,-0.3,0,0),box(0.5,0.5,0.5,0.35,0,0.2),box(0.45,0.45,0.45,0.1,0.6,-0.1)]),
+    marble:()=>glMerge([box(1.5,0.9,0.9,0,0,0),cyl(0.15,0.15,0.5,-0.5,0,0,0.9),cyl(0.15,0.15,0.5,0.5,0,0,0.9)]),
+    crystal:()=>{const a=new T.OctahedronGeometry(0.4,0);a.scale(0.7,2,0.7);a.translate(0,0.8,0);const b=new T.OctahedronGeometry(0.3,0);b.scale(0.7,1.8,0.7);b.translate(0.4,0.55,0.2);return glMerge([a,b])},
+    clockwall:()=>{const t=new T.TorusGeometry(0.35,0.06,6,16);t.translate(0,0.75,0.47);return glMerge([box(1.5,1.2,0.9,0,0,0),t])},
+    bluestone:()=>glMerge([box(1.5,1.1,0.9,0,0,0),box(0.4,0.3,0.92,-0.45,1.1,0),box(0.4,0.3,0.92,0.45,1.1,0)]),
+    tomb:()=>{const a=box(0.3,0.35,0.12,0,0,0),b=new T.CylinderGeometry(0.15,0.15,0.12,10,1,false,0,Math.PI);b.rotateX(Math.PI/2);b.rotateZ(Math.PI/2);b.translate(0,0.35,0);return glMerge([a,b])},
+    lava:()=>{const g=new T.CylinderGeometry(0.8,0.85,0.06,6);g.translate(0,0.03,0);return g}};
+   const M3D={fence:gMat('#3a3a44',{metalness:0.6,roughness:0.4}),gravefence:gMat('#2c2e26'),mausoleum:gMat('#4a4650'),arch:gMat('#b0a58e'),boulder:gMat('#6b625a'),palisade:gMat('#7a5232'),
+    icespire:gMat('#dff3ff',{transparent:true,opacity:0.85,roughness:0.2,emissive:'#5cc8ff',emissiveIntensity:0.25}),obsidian:gMat('#151012',{roughness:0.3,metalness:0.4,emissive:'#5a1a08',emissiveIntensity:0.4}),
+    menhir:gMat('#8f8a80'),scrap:gMat('#8a6a42',{metalness:0.3}),marble:gMat('#e9e4d8'),crystal:gMat('#7ff5dc',{emissive:'#12d69a',emissiveIntensity:0.6,transparent:true,opacity:0.9}),
+    clockwall:gMat('#4a2468',{metalness:0.4}),bluestone:gMat('#2a4a8a'),tomb:gMat('#8f8b97'),lava:gMat('#ff6a1a',{emissive:'#ff4a00',emissiveIntensity:1.6})};
+   for(const [k2,v] of Object.entries(G.decor||{})){const [q,r]=k2.split(',').map(Number);const [x,z]=world(q,r);(WLK[v]=WLK[v]||[]).push(v==='tomb'?[x+0.25,0,z-0.2,hexRand(q,r,3)*0.6,1]:[x,0,z,0,1])}
+   for(const [lk,list] of Object.entries(WLK)){const geo=gGeo('wl_'+lk,B3D[lk]||B3D.menhir);const m=glInst(list,geo,M3D[lk]||M3D.menhir,lk!=='lava');if(m){add(m);if(lk==='lava')GL.glow.push(m)}}}
   add(glInst(L.cwall,gGeo('cwall',()=>{const g=new T.CylinderGeometry(0.97,0.99,0.85,6);g.translate(0,0.42,0);return g}),gMat('#9a8a70')));
   add(glInst(L.pebble,gGeo('pebble',()=>new T.DodecahedronGeometry(0.09,0)),gMat('#8a8574'),false));
   add(glInst(L.grass,gGeo('grass',()=>new T.ConeGeometry(0.04,0.2,4)),gMat('#88a85e'),false));
@@ -6414,8 +6476,8 @@ function showRules(){
   o.innerHTML=`<div class="modal"><h2>How to play</h2>
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
-  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own camp, ringed by stone pillars, rubble and woods with three gates and three roads: to the Throne Hall, to its Vault, and past its Crypt to the Standing Stones. Rivers and rubble block walking; flyers cross them and fly over walls. <b>Cracked walls</b> (6 HP) on some room and camp edges can be smashed by anyone to open a shortcut. A unit on a <b>Watchtower</b> gets +1 range if ranged and sees into every hidden room within 4 hexes.
-    <br><b>Rooms</b> are hidden (dark, with a ?) until a unit steps into one. Their edges are only partly walled: pillars on the corners, rubble, streams, woods and gaps between. Contents are dealt in mirror sets, so every corner of the map gets the same: every <b>Hill Fort</b> holds a Forge, a Captive or a Locked Crate (its Cursed Chest is a coin flip: a Crown Shard, or Agony and Frailty on the opener); every <b>Crypt</b> a Stone Guardian, a Locked Crate or a room to hold alone for ${WILDS.hold} of your turns, guarding a Crown Shard; each <b>Vault</b> (one between two neighbours) a Vault Golem guarding a <b>War Suit</b>. Monsters never leave their rooms and never attack first: at the start of each round they hit back at the last unit that hit them.
+  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own camp, walled in its army's own material (a palisade, ice spires, obsidian spikes, standing stones...) with three gates and three roads: to the Throne Hall, to its Vault, and past its Crypt to the Standing Stones. Rivers and rubble block walking; flyers cross them and fly over walls. <b>Cracked walls</b> (6 HP) on some room and camp edges can be smashed by anyone to open a shortcut. A unit on a <b>Watchtower</b> gets +1 range if ranged and sees into every hidden room within 4 hexes.
+    <br><b>Rooms</b> are hidden (dark, with a ?) until a unit steps into one. Every kind of place has its own shape: the <b>Hill Fort</b> is a raised ledge (high ground) with cliffs all round and one ramp up; the <b>Crypt</b> a graveyard with an iron fence at the front (two gates and a cracked section) and a mausoleum at the back; the <b>Vault</b> a half-moon of ruined arches open toward the two neighbours who share it; the <b>Dragon's Lair</b> a cave in the map edge with one wide mouth; the <b>Standing Stones</b> a clearing in a forest ring with two narrow paths in. Contents are dealt in mirror sets, so every corner of the map gets the same: every <b>Hill Fort</b> holds a Forge, a Captive or a Locked Crate (its Cursed Chest is a coin flip: a Crown Shard, or Agony and Frailty on the opener); every <b>Crypt</b> a Stone Guardian, a Locked Crate or a room to hold alone for ${WILDS.hold} of your turns, guarding a Crown Shard; each <b>Vault</b> (one between two neighbours) a Vault Golem guarding a <b>War Suit</b>. Monsters never leave their rooms and never attack first: at the start of each round they hit back at the last unit that hit them.
     <br><b>Crown Shards</b> are gems: carry one into your camp and it is set in your army's crown (each gem counts twice at most). Gems do nothing by themselves; they power your side's <b>King</b>: Ruby +1 ATK, Sapphire +1 DEF, Emerald heals the King 1 a turn, Topaz +1 AP a turn, Amethyst +1 charge a turn, Onyx 1 damage to every enemy next to the King at your turn start. A carrier that dies drops its gem for anyone.
     <br><b>War Suit:</b> a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first, plus its item (Boots +1 move, Ogre Club +1 ATK or Tower Shield +1 DEF). A giant straps it on as ${WILDS.plateHp} HP of plating with the same item. When the suit breaks the unit steps out unhurt. <b>Forge:</b> a unit that starts your turn on it is tempered for good (+1 ATK, or +1 DEF if it has no attack); once per army, then the Forge rests ${WILDS.forgeRest} rounds. <b>Captive:</b> step on him to free him; he joins you (${CAPTIVE.hp} HP, no attack). Walk him into your camp and he takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).
     <br><b>Levers:</b> one near each camp. A unit standing on one pulls it for its side; once levers of two different sides are pulled, a trap door opens and the <b>Wanderer</b> runs out (once per game; 20 HP, no DEF, roams 3 hexes a round, only hits back). Its killing blow drops a Crown Shard.
@@ -6649,7 +6711,7 @@ function drawMonster2D(c,u,x,y,S,now){const r=S*0.78,crate=u.monster==='crate';c
   if(S>=10){c.font=`800 ${Math.max(9,S*0.42)}px Oxanium,sans-serif`;c.lineWidth=3;c.strokeStyle='#0b0e14';const t=`${Math.ceil(u.hp)}`;c.strokeText(t,x+r*0.85,y-r*0.85);c.fillStyle='#f2e6ff';c.fillText(t,x+r*0.85,y-r*0.85)}c.restore()}
 function drawFeature2D(f,x,y,S,q,r){
   ctx.save();
-  if(f==='rock'){hexPath(x,y,S*0.97);ctx.fillStyle='#2a2d33';ctx.fill();ctx.beginPath();ctx.moveTo(x-S*0.6,y+S*0.35);ctx.lineTo(x-S*0.35,y-S*0.4);ctx.lineTo(x+S*0.1,y-S*0.6);ctx.lineTo(x+S*0.6,y-S*0.2);ctx.lineTo(x+S*0.55,y+S*0.4);ctx.closePath();
+  if(f==='rock'){const lk=G&&G.wallLook&&G.wallLook[key(q,r)];hexPath(x,y,S*0.97);ctx.fillStyle=lk?({fence:'#3a3a44',gravefence:'#2c2e26',mausoleum:'#4a4650',arch:'#8a8070',boulder:'#5a524b',palisade:'#6b4a2e',icespire:'#9fd6f2',obsidian:'#1c1418',menhir:'#77726a',scrap:'#6b5236',marble:'#cfc9bb',crystal:'#2f8f7a',clockwall:'#4a2468',bluestone:'#2a4a8a',cliff:'#2a2d33'})[lk]||'#2a2d33':'#2a2d33';ctx.fill();ctx.beginPath();ctx.moveTo(x-S*0.6,y+S*0.35);ctx.lineTo(x-S*0.35,y-S*0.4);ctx.lineTo(x+S*0.1,y-S*0.6);ctx.lineTo(x+S*0.6,y-S*0.2);ctx.lineTo(x+S*0.55,y+S*0.4);ctx.closePath();
     const g=ctx.createLinearGradient(x-S*0.6,y-S*0.6,x+S*0.6,y+S*0.4);g.addColorStop(0,'#9aa0aa');g.addColorStop(1,'#4b5059');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#1b1d22';ctx.lineWidth=1.2;ctx.stroke()}
   if(f==='river'){hexPath(x,y,S*0.99);const g=ctx.createLinearGradient(x-S,y-S,x+S,y+S);g.addColorStop(0,'#2f7fc0');g.addColorStop(1,'#1d5a8f');ctx.fillStyle=g;ctx.fill();
     ctx.strokeStyle='rgba(200,235,255,.45)';ctx.lineWidth=Math.max(1,S*0.07);for(const dy of [-0.22,0.18]){ctx.beginPath();ctx.moveTo(x-S*0.5,y+dy*S);ctx.quadraticCurveTo(x-S*0.2,y+(dy-0.15)*S,x+S*0.05,y+dy*S);ctx.quadraticCurveTo(x+S*0.3,y+(dy+0.15)*S,x+S*0.5,y+dy*S);ctx.stroke()}}
