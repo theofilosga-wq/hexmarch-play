@@ -693,8 +693,8 @@ const ABIL={
     desc:'Pick a hex within 3. Every enemy on it or next to it is chilled and takes 1 damage ignoring DEF: 2 if it was already chilled, 3 if it was frozen.'},
   frostbolt:{name:'Frost Bolt',cost:1,cd:2,aim:'unit',hits:'foe',los:'lob',range:2,shape:'single',dmg:1,pierce:1,chill:1,bot:'frostbolt',
     desc:'1 damage ignoring DEF to one enemy within 2, and it is chilled (1 less move for 2 turns).'},
-  coldfront:{name:'Cold Front',cost:2,cd:4,aim:'dir',shape:'arc',hits:'foe',freeze:1,
-    desc:'Freeze every enemy in the 3 hexes in front of the Warden: each loses its next turn (no move, attack or ability) and is chilled the turn after.'},
+  coldfront:{name:'Cold Front',cost:2,cd:4,aim:'dir',shape:'arc',hits:'foe',fbMarks:2,chill:1,
+    desc:'Every enemy in the 3 hexes in front of the Warden gets 2 Frostbite marks and is chilled. At 3 marks a unit freezes.'},
   icelance:{name:'Ice Lance',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',dmg:4,pierce:1,cold2:'chill',chainFreeze:1,
     desc:'4 damage ignoring DEF to one enemy within 3, doubled to 8 if it is chilled or frozen. On a frozen target the lance carries on: the enemy directly behind it (one hex further on the line from the Hailcaller) is frozen too.'},
   shatterstrike:{name:'Shatter Strike',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:1,shape:'single',dmg:4,cold2:'frozen',
@@ -906,7 +906,7 @@ const P_=(o)=>Object.assign({pawn:1,mt:'march',at:'fwd',rng:1,mov:3,def:0},o);
 const FAC={
   fire:{name:'Ember Court',color:'#ff4a3d',
     theme:'Creatures from hell and beasts that spit fire: they set the board ablaze and fight inside the flames.',
-    passive:'Hellfire: many of their abilities paint the ground red (Kindle and Fireball for 3 turns, Spit Fire for 2). Fireball, Flame Breath and Spit Fire sear: the target can’t be healed until the end of its next turn.',
+    passive:'Hellfire: many of their abilities paint the ground red (Kindle and Fireball for 3 turns, Spit Fire for 2). Fireball, Flame Breath and Spit Fire sear: the target can’t be healed until the end of its next turn. Hellspawn: when an Ember Court unit dies it bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.',
     home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage.',homeAtk:1,
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
     units:[
@@ -918,7 +918,7 @@ const FAC={
       {name:'Salamander',icon:'lizard',n:2,hp:11,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'spitfire',trait:'fireblood'}]},
   ice:{name:'Frost Hold',color:'#5cc8ff',
     theme:'Cold that builds up: chill the enemy, freeze it in place, then cash it in with lances and shattering blows.',
-    passive:'Cold: Chilled = 1 less move for 2 turns. Frozen = loses its next turn (no move, attack, ability or strike-back), then chilled for 1 turn; a unit that just thawed can\u2019t be frozen again on its next turn. Ice Lance deals double to chilled or frozen enemies, Shatter Strike double to frozen ones, Blizzard Burst more to both.',
+    passive:'Cold: Chilled = 1 less move for 2 turns. Frozen = loses its next turn (no move, attack, ability or strike-back), then chilled for 1 turn; a unit that just thawed can\u2019t be frozen again on its next turn. Ice Lance deals double to chilled or frozen enemies, Shatter Strike double to frozen ones, Blizzard Burst more to both. Frostbite: every hit from a Frost Hold unit (basic attack or damaging ability) leaves a frost mark; Cold Front leaves 2. At 3 marks the unit freezes. Marks fade after 2 of its turns without a new one.',
     home:'Blue ground: any enemy that starts its turn on blue ground is chilled.',homeChill:1,
     units:[
       {name:'Rime Queen',icon:'crown',leader:1,hp:15,atk:2,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'blizzardburst'},
@@ -928,7 +928,7 @@ const FAC={
       {name:'Glacier Knight',icon:'shield',n:2,hp:12,atk:3,def:1,mov:3,mt:'line',at:'melee',rng:1,ab:'shatterstrike',trait:'shatterfall'}]},
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
     theme:'Five walking fortresses. Few in number, impossible to shove around.',
-    passive:'Immovable: giants fill two hexes and can’t be pushed, pulled, swapped or knocked off the board; they take the slam damage instead. Too wide for gates: a giant can’t step onto a hex that lies between two wall pieces, or between a wall and a rock. Swarmed: a giant takes +1 damage from a melee basic attack while 2 or more enemies stand next to it.',gateBlock:1,swarmed:1,
+    passive:'Immovable: giants fill two hexes and can’t be pushed, pulled, swapped or knocked off the board; they take the slam damage instead. Too wide for gates: a giant can’t step onto a hex that lies between two wall pieces, or between a wall and a rock. Swarmed: a giant takes +1 damage from a melee basic attack while 2 or more enemies stand next to it. Last of the Old Ones: when a giant falls, every giant still standing heals 3 HP and gains +1 ATK for the rest of the game.',gateBlock:1,swarmed:1,
     home:'Stone ground: giants can’t be chilled, frozen or mired there. The Mountain King’s Earthshaker paints stone ground for 3 turns.',stoneFoot:1,
     units:[
       {name:'Mountain King',icon:'crown',leader:1,hp:18,atk:3,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'stomp'},
@@ -1232,7 +1232,7 @@ function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;r
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
   const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
-  return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u));
+  return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u)+(u.oldAtk||0));
 }
 function effDef(u){
   if(u.kind==='wall')return u.beast?RULES.BEAST_DEF:u.monster?u.def:0;const F=facOf(u);
@@ -1301,6 +1301,11 @@ function chillT(t,n,src){if(t.kind==='wall'||machineShrug(t)||hasTrait(t,'unstop
   if(trk()&&!SIM){const e=src?tFx(src.fac,src.unit||'',src.name):srcFx();if(e)e.chills=(e.chills||0)+1}return true}
 // Freeze (Frost) or stun (Earthshaker): the unit loses its next turn. A frozen unit thaws chilled for 1 turn; a stunned one does not.
 // A unit that just thawed (st.fimm) can't be locked again on its next turn. Unstoppable units and giants on stone ground shrug off cold, not stuns.
+// v37 Frostbite (owner, 2 Oct 2026): every damaging basic attack or ability hit from a Frost Hold unit leaves a mark (Cold Front leaves 2).
+// At 3 marks the unit freezes and the marks clear. Marks fade after 2 of the victim's own turns without a new one. A frozen unit gets no marks.
+function frostMark(src,t,n){if(!t||t.kind==='wall'||!alive(t)||machineShrug(t)||t.st.frozen>0)return;t.st.fb=(t.st.fb||0)+n;t.st.fbT=2;
+  if(t.st.fb>=3){if(freezeT(t,false)){t.st.fb=0;t.st.fbT=0;if(trk()&&!SIM){const e=tFx('ice','','Frostbite (freezes)');if(e)e.uses++}}else t.st.fb=2}
+  else fx(t,'frostbite '+t.st.fb+'/3','#bfefff')}
 function freezeT(t,stun){if(t.kind==='wall'||machineShrug(t))return false;if(t.st.fimm>0||(!stun&&(hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t))))){fx(t,'resists',stun?'#d9a45b':'#5cc8ff');return false}
   if(!(t.st.frozen>0))tSup('stasisTurns',1);t.st.frozen=Math.max(t.st.frozen||0,1);if(stun)t.st.stun=1;else t.st.stun=0;fx(t,stun?'stunned':'frozen',stun?'#d9a45b':'#5cc8ff');return true}
 const isOutpost=(q,r)=>!!(G.outposts&&G.outposts.some(o=>o[0]===q&&o[1]===r&&solid(q,r)));
@@ -1585,7 +1590,7 @@ function computeHolder(){
 function teamName(t){if(G.teams)return 'Team '+'ABC'[t];return FAC[G.players.find(p=>p.team===t).fac].name}
 function beginTurn(){
   const p=P(G.cur);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
-  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0}}// Rally (+1 ATK) and Guard last until the start of your next turn
+  for(const u of G.units)if(u.owner===p.id){u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0}}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
     for(const w of G.units){if(w.owner!==p.id||w.kind==='wall'||w.at==='none'||w.egg||distUU(w,s)<=2)continue;const set=atkCells(w,m);if(cells(s).some(([q,r])=>set.has(key(q,r))))n++}
@@ -1777,6 +1782,14 @@ function kill(t){
   const near=G.units.filter(v=>v.kind!=='wall'&&distUC(v,t.q,t.r)===1);
   if(hasTrait(t,'explosive')){vfx({k:'ab',ab:'bomb',shape:'nova',from:[t.q,t.r],to:[t.q,t.r],cells:DIRS.map(([a,b])=>[t.q+a,t.r+b]),col:facOf(t).color});
     const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Death blast';for(const v of near)if(tm(v.owner)!==tm(t.owner))hurt(v,afterDef(2,effDef(v)),'#ff9a3d');CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
+  // v37 Hellspawn (Ember Court passive, owner 2 Oct 2026): a dying Ember Court unit bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.
+  if(G.players[t.owner]&&G.players[t.owner].fac==='fire'&&!t.summon&&!t.egg){const ring=cells(t);if(!SIM)vfx({k:'ab',ab:'kindle',shape:'nova',from:[t.q,t.r],to:[t.q,t.r],cells:DIRS.map(([a,b])=>[t.q+a,t.r+b]),col:'#ff5a1a',cam:1});
+    const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Hellspawn (death burst)';let hit=0;for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner)){hurt(v,2,'#ff5a1a');hit++}
+    for(const [a,b] of ring)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:t.owner};
+    if(trk()&&!SIM){const e=tFx('fire',t.name,'Hellspawn (death burst)');if(e)e.uses++}if(!SIM&&hit)addLog(t.owner,`The ${t.name} bursts in hellfire as it dies.`);CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
+  // v37 Last of the Old Ones (Stone Giants passive): when a giant falls, every surviving giant of its army heals 3 and gains +1 ATK for the rest of the game (u.oldAtk).
+  if(G.players[t.owner]&&G.players[t.owner].fac==='giants'&&!t.summon){let n=0;for(const v of G.units)if(v.owner===t.owner&&v.kind!=='wall'&&v.size===2&&alive(v)){v.oldAtk=(v.oldAtk||0)+1;healUnit(v,3,'#ffb347','Last of the Old Ones');fx(v,'+1 ATK','#ffb347');n++}
+    if(n&&!SIM){addLog(t.owner,`The ${t.name} falls. The last of the Old Ones grow wrathful: +1 ATK and 3 HP for every giant still standing.`);if(trk()){const e=tFx('giants','','Last of the Old Ones');if(e)e.uses+=n}}}
   // Living Fuse (Cinder): 1 damage ignoring DEF to adjacent enemies, and the hex plus its 6 neighbours burn red for 2 turns.
   if(hasTrait(t,'fuse')){const ring=[[t.q,t.r],...DIRS.map(([a,b])=>[t.q+a,t.r+b])];vfx({k:'ab',ab:'kindle',shape:'blast',from:[t.q,t.r],to:[t.q,t.r],cells:ring,col:facOf(t).color});
     const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Living Fuse';for(const v of near)if(tm(v.owner)!==tm(t.owner))hurt(v,1,'#ff9a3d');
@@ -1835,6 +1848,8 @@ function hurt(t,n,col,tick){
   if(hostile)barrierCheck(t,tick);// Defender Barrier (v25): the first enemy attack or ability hit breaks it and queues the answer
   // Shield Wall (Warband): 1 less from a hostile hit, never below 1. Not on curse ticks or burning ground.
   if(hostile&&!tick&&n>1&&t.kind!=='wall'){const sb=shieldWallFor(t,CUR_SRC,CUR_TAG);if(sb){n-=1;fx(t,'shield wall','#eef0f4');tSupBy(sb.id,null,'Shield Wall (passive)','blocked',Math.min(1,Math.max(0,t.hp-n)))}}
+  const rsrc=hostile&&!tick&&t.kind!=='wall'&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC:null;
+  if(rsrc&&hasRelic(rsrc,'breaker')&&(t.st.shield>0||t.suitHp>0)){if(t.st.shield>0){t.st.shield=0;fx(t,'shield broken','#e8b84e')}if(t.suitHp>0){t.suitHp=0;suitBreak(t)}relicUse(rsrc,'breaker')}// Shieldbreaker relic (v37)
   if(t.st&&t.st.shield>0){const a=Math.min(t.st.shield,n);t.st.shield-=a;n-=a;fx(t,'blocked','#d7c9ff');
     if(hostile){const by=t.st.shieldBy;if(by!=null&&by>=0)tSupBy(by,null,t.st.shieldNm||ABIL.aegis.name,'blocked',a);else if(by===-2)tSupBy(-1,G.players[t.owner].fac,'Glacial Armour (talent)','blocked',a)}
     if(n<=0)return 0}
@@ -1849,6 +1864,7 @@ function hurt(t,n,col,tick){
   const hpB=t.hp;
   if(t.beast)beastHurt(t,n,tick,hpB);
   t.hp=r2(t.hp-n);fx(t,'−'+n,col||'#ff6161');
+  if(t.hp>0&&rsrc){if(G.players[rsrc.owner].fac==='ice'&&(CUR_TAG==='Basic'||CUR_TAG==='Abil'))frostMark(rsrc,t,1);if(hasRelic(rsrc,'ash')){sear(rsrc,t);relicUse(rsrc,'ash')}}
   if(t.hp<=0)kill(t);
   return n;
 }
@@ -2010,7 +2026,7 @@ function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
   if(t.size===2&&facOf(t).swarmed&&meleeAt(u.at)&&distUU(u,t)===1){let n=0;for(const v of G.units){if(v.kind==='wall'||inert(v)||tm(v.owner)===tm(t.owner))continue;if(distUU(v,t)===1&&++n>=2)break}if(n>=2)o.push(['Swarmed giant (+1)',1])}
   return o}
 function basicDmg(u,t,ret){
-  const F=facOf(u);let dmg=Math.max(1,afterDef(effAtk(u),effDef(t)));
+  const F=facOf(u);let dmg=Math.max(1,afterDef(effAtk(u),hasRelic(u,'shatter')&&t.kind!=='wall'?0:effDef(t)));
   if(t.kind!=='wall'){
     if(F.cursePlus&&curseCount(t)>0)dmg+=1;
     for(const [,n] of hitBonuses(u,t,ret))dmg+=n;
@@ -2211,7 +2227,7 @@ function hitDmg(u,t,A){
   if(hasRelic(u,'spellstone'))base+=1;// Spellstone relic (v36)
   if(focused(u,A))base+=1;// Arcane Focus: a mage that has not moved this turn
   if(t.kind!=='wall'&&t.st&&t.st.hex>0)base+=1;// Hexed: 1 more damage from abilities
-  let d=A.pierce?base:afterDef(base,effDef(t));
+  let d=A.pierce||(hasRelic(u,'shatter')&&t.kind!=='wall')?base:afterDef(base,effDef(t));
   if(d>0&&farGuard(u,t))d=Math.max(1,d-1);
   return d;
 }
@@ -2235,6 +2251,7 @@ function applyHit(u,t,A){
   if(A.sunder)sunderT(u,t,A.sunder);
   if(A.chill)chillT(t,2);
   if(A.freeze)freezeT(t,false);
+  if(A.fbMarks)frostMark(u,t,A.fbMarks);
   if(A.stun)freezeT(t,true);
   if(A.curse)applyCurse(u,t,A.curse);
   if(A.hex){t.st.hex=Math.max(t.st.hex||0,A.hex);t.st.hexBy=u.id;fx(t,'hexed','#2bff5a')}
@@ -2444,9 +2461,14 @@ const RELICS={
   aegis:{name:'Aegis',icon:'shield',col:'#7fd4ff',text:'Carrier +2 DEF and can’t be pushed, pulled or thrown.'},
   hourglass:{name:'Sand of Ages',icon:'hourglass',col:'#ff9be8',text:'Its side gets +1 AP at the start of each turn.'},
   idol:{name:'Storm Idol',icon:'lightning',col:'#ffd766',text:'Its side gets +1 Ultimate charge at the start of each turn.'},
+  shatter:{name:'Shatterglass',icon:'burst',col:'#e6f0ff',text:'The carrier\u2019s attacks and abilities ignore DEF.'},
+  ash:{name:'Ashen Brand',icon:'flame',col:'#ff8a5c',text:'Every enemy the carrier damages is Seared: it can\u2019t be healed until the end of its next turn.'},
+  breaker:{name:'Shieldbreaker',icon:'hammer',col:'#e8b84e',text:'The carrier\u2019s first hit on a shielded enemy breaks its shield and any War Suit, then lands in full.'},
   spellstone:{name:'Spellstone',icon:'crystal',col:'#6ec8ff',text:'The carrier’s abilities deal +1 damage.'},
 };
 const RKEYS=Object.keys(RELICS);
+// relic effect tracking (v37): how often each answer relic did its job
+function relicUse(u,k){if(!trk()||SIM||!u||u.kind==='wall')return;const e=tFx(G.players[u.owner].fac,u.name,'Relic: '+RELICS[k].name);if(e)e.uses++}
 function relicOf(u){return G.relics&&u?G.relics.find(x=>x.carrier===u.id)||null:null}
 const hasRelic=(u,k)=>{const x=relicOf(u);return !!x&&x.kind===k};
 function relicSpots(){const m=occ();const free=([q,r])=>passable(q,r)&&!m.get(key(q,r))&&!(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r);
@@ -2810,7 +2832,8 @@ function monsterSlain(t){
   if(t.monster==='dragon'){if(R)R.state='done';if(k){const p=G.players[k.owner];G.score[p.team]=(G.score[p.team]||0)+WILDS.dragonPts;tPts(p.id,'dragon',WILDS.dragonPts);
       addLog(p.id,`The ${k.name} slays the Dragon: +${WILDS.dragonPts} points (${G.score[p.team]}/${heartTarget()}).`);
       announce({k:'note',col:FAC[p.fac].color,t:`The ${FAC[p.fac].name} slay a Dragon! +${WILDS.dragonPts} points`,s:'',team:p.team,scores:scoreSnap()});
-      if(trk()){const O=tObj();if(O){O.dragons=O.dragons||[];O.dragons.push({pid:p.id,round:G.round})}}wildsWin(p.team)}return}
+      if(trk()){const O=tObj();if(O){O.dragons=O.dragons||[];O.dragons.push({pid:p.id,round:G.round})}}wildsWin(p.team)}
+    G.loot=G.loot||[];const x={id:G.nid++,kind:'relic',room:R?R.id:null,q:t.q,r:t.r,carrier:null};G.loot.push(x);addLog(null,'The Dragon\'s hoard holds an Ancient Relic: carry it home to claim it.');vfx({k:'relic',at:[t.q,t.r],col:lootCol(x)});return}
   if(t.monster==='wanderer'){const gem=GKEYS[Math.floor(wildsHash(`${G.round}|${t.id}|${t.q},${t.r}`)*GKEYS.length)];
     G.loot=G.loot||[];const x={id:G.nid++,kind:'gem',gem,room:null,q:t.q,r:t.r,carrier:null};G.loot.push(x);
     addLog(null,`The Wanderer falls and drops a ${lootName(x)}. Carry it home!`);announce({k:'note',col:GEMS[gem].col,t:'The Wanderer is slain',s:`It drops a ${lootName(x)}: carry it home to set it in your crown.`});
@@ -3051,6 +3074,7 @@ function evaluate(team){
   if(G.map){for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
     for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*(R.type==='lair'?0.8:0.5)+(left<=0?(R.type==='lair'?14:6):0)}
     if(G.midUp)for(const c of G.circles||[])if(G.round>=c.dark){let n=0;for(const [q,r] of c.stones){const o=unitAt(q,r);if(o&&o.kind!=='wall'&&tm(o.owner)===team)n++}s+=n*n*1.5}}
+  for(const v of G.units)if(v.st&&v.st.fb>0&&v.kind!=='wall'&&tm(v.owner)!==team)s+=v.st.fb*(v.leader?1.6:1.1);// Frostbite marks (v37)
   for(const p of G.players){if(!p.alive)s+=tm(p.id)===team?-150:150;else if(p.leaderless)s+=tm(p.id)===team?-90:90}
   // Warlord points: a lead over the best rival counts, and every point matters more as the target nears.
   if(G.mode==='warlord'){const my=G.score[team]||0;let rival=0;for(const t in G.score)if(+t!==team&&G.players.some(p=>p.team===+t&&p.alive))rival=Math.max(rival,G.score[t]||0);const tgt=heartTarget();s+=(my-rival)*3+(my>=tgt?200:0)-(rival>=tgt?200:0)}
@@ -4828,6 +4852,9 @@ function statusFlags(u){const s=u.st||{};return {frozen:s.frozen>0&&!s.stun,stun
   glow:s.bless>0||s.blessU>0||!!s.rally||!!s.emp||!!s.rush,shield:s.shield>0}}
 function drawStatusFX(c,u,x,y,w,h,now){
   if(!u||!u.st||u.kind==='wall')return;const f=statusFlags(u);
+  if(u.st.fb>0&&!(u.st.frozen>0)){// Frostbite marks: one snowflake per mark over the head, a third one means it freezes
+    c.save();const m0=Math.min(w,h);c.font=`700 ${Math.max(9,m0*0.42)}px 'Segoe UI Symbol','Noto Sans Symbols 2',sans-serif`;c.textAlign='center';c.textBaseline='middle';
+    for(let i=0;i<3;i++){c.globalAlpha=i<u.st.fb?1:0.25;c.fillStyle=i<u.st.fb?'#dff6ff':'#5c7a8a';c.strokeStyle='#0b1a24';c.lineWidth=3;const px=x+(i-1)*m0*0.42,py=y-h*0.95;c.strokeText('❄',px,py);c.fillText('❄',px,py)}c.restore()}
   if(!(f.frozen||f.stun||f.chill||f.curse||f.seared||f.sunder||f.hex||f.glow||f.shield))return;
   const still=typeof stillMotion==='function'&&stillMotion(),t=still?0:now/1000,m=Math.min(w,h);
   c.save();
@@ -6032,6 +6059,8 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
 function unitStatuses(u){if(!u||!u.st||u.kind==='wall')return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn, then chilled; Ice Lance and Shatter Strike deal double')}
   if(s.chill>0)add('chill','❄️','Chilled',s.chill,'#5cc8ff',0,'1 less move; Ice Lance deals double');
+  if(s.fb>0)add('frostbite','❄','Frostbite '+s.fb+'/3',s.fbT,'#bfefff',0,'one more frost mark from 3 freezes it; marks fade after 2 of its turns without a new one');
+  if(u.oldAtk)add('oldones','⛰','Wrath of the Old Ones +'+u.oldAtk,'','#ffb347',1,'+'+u.oldAtk+' ATK for the rest of the game (a giant fell)');
   if(s.fimm>0)add('thaw','💧','Just thawed',s.fimm,'#9fdcff',1,'can’t be frozen or stunned again this turn');
   for(const c of Object.keys(s.curses||{}))add('curse','☠','Cursed: '+CURSES[c].name,s.curses[c],'#d4bd3c',0,CURSES[c].fx+'; curses deal damage at the start of each of its turns ('+fmt(dotOf(u))+' next)');
   if(u.suitHp>0)add('suit','🛡','War Suit '+fmt(u.suitHp)+'/'+u.suitMax,'','#c9a24a',1,`takes every hit first; ${SUIT_ITEMS[u.suitItem]?SUIT_ITEMS[u.suitItem].name+': '+SUIT_ITEMS[u.suitItem].text:''}`);
