@@ -617,7 +617,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={LEADERLESS_AP:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -671,9 +671,9 @@ const MOVES={
   walk:  {glyph:'♛',free:true, text:n=>`Walks any path up to ${n} hex${n>1?'es':''}. Can't pass through units or voids.`},
   fly:   {glyph:'♛',free:true, text:n=>`Flies to any hex within ${n}, over units and voids.`},
   line:  {glyph:'♜',free:false,text:n=>`Straight lines only, in the 6 directions, up to ${n}. Stops at the first obstacle.`},
-  diag:  {glyph:'♝',free:false,text:n=>`Diagonals only (between two hexes), up to ${n} steps. Stops at the first obstacle.`},
+  diag:  {glyph:'♝',free:false,text:n=>`Slides along the diagonals (between two hexes), up to ${n} steps, stopping at the first obstacle; or takes one plain step in any direction.`},
   knight:{glyph:'♞',free:false,text:()=>`Jumps to one of 12 fixed hexes, over anything in between.`},
-  march: {glyph:'♟',free:false,text:n=>`Forward or sideways only, up to ${n} hex${n>1?'es':''}. Never back toward home.`},
+  march: {glyph:'♟',free:false,text:n=>G&&G.map?`Walks any path up to ${n} hex${n>1?'es':''} (on the Crown Wilds it may turn back).`:`Forward or sideways only, up to ${n} hex${n>1?'es':''}. Never back toward home.`},
 };
 const LEADER_GLYPH='♚';
 const ATTACKS={
@@ -1186,11 +1186,15 @@ function occ(){const m=new Map();for(const u of G.units)for(const c of cells(u))
 // Wall gates: a hex that lies between two wall pieces, or between a wall and a rock (two of its six neighbours are hard, at least one a wall), is too narrow for a two-hex body.
 // Room monsters and the Rift Beast are creatures, not wall pieces: they never make a gate (v30).
 function gated(m,q,r){let walls=0,hard=0;for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;const o=m.get(key(a,b));if(o&&o.kind==='wall'&&!o.monster&&!o.beast){walls++;hard++}else if(inR(a,b)&&featAt(a,b)==='rock')hard++}return walls>=1&&hard>=2}
-function freeFor(m,u,q,r){if(!passable(q,r)&&!(u&&u.mt==='fly'&&u.size!==2&&solid(q,r)&&featAt(q,r)==='rock'))return false;const o=m.get(key(q,r));if(o&&o!==u)return false;if(u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r))return false;return true}
+// v44 SQUEEZE (owner 3 Oct 2026, after a giant got stuck again; the D&D rule: a creature can squeeze through a space one size smaller, each square of
+// squeezing costs double). A giant may enter a gate hex (between two wall pieces, or a wall and a rock), but in moveOpts that step costs 2 moves.
+// RULES.SQUEEZE 0 = the old hard block. freeFor(...,squeeze=true) skips the gate test; squeezeCost tells moveOpts what a step costs.
+function freeFor(m,u,q,r,squeeze){if(!passable(q,r)&&!(u&&u.mt==='fly'&&u.size!==2&&solid(q,r)&&featAt(q,r)==='rock'))return false;const o=m.get(key(q,r));if(o&&o!==u)return false;if(!(squeeze&&RULES.SQUEEZE)&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r))return false;return true}
+const squeezeCost=(m,u,q,r)=>RULES.SQUEEZE&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r)?2:1;
 function fitDir(m,u,q,r){
-  if(!freeFor(m,u,q,r))return -1;
+  if(!freeFor(m,u,q,r,true))return -1;
   if(!u||u.size!==2)return 0;
-  for(const d of [u.dir,0,1,2,3,4,5])if(freeFor(m,u,q+DIRS[d][0],r+DIRS[d][1]))return d;
+  for(const d of [u.dir,0,1,2,3,4,5])if(freeFor(m,u,q+DIRS[d][0],r+DIRS[d][1],true))return d;
   return -1;
 }
 function distUU(a,b){let d=99;for(const x of cells(a))for(const y of cells(b))d=Math.min(d,hd(x[0],x[1],y[0],y[1]));return d}
@@ -1698,7 +1702,7 @@ function beginTurn(){
   const relicAP=(G.relics||[]).filter(x=>x.kind==='hourglass'&&x.carrier!=null&&byId(x.carrier)&&byId(x.carrier).owner===p.id).length;
   // The first player's −3 AP on its round-2 turn (G.apParts.first) was removed on 29 Sep 2026: the owner said it "feels bad". The first-player win rate is measured after; if it drifts, the second player gets a gift (e.g. Ultimate charge) instead of a penalty.
   const wellAP=springOwner()===p.id?1:0;// the Wellspring (v23): +1 AP to the side that owns it
-  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:0,throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0,well:wellAP,loot:(p.lootAP||0)+gemAP};
+  G.apParts={base:RULES.BASE_AP,leader:leaderUp?RULES.LEADER_AP:(p.leaderless?RULES.LEADERLESS_AP:0),throne:throneUp?RULES.THRONE_AP:0,relic:relicAP,bank,first:0,well:wellAP,loot:(p.lootAP||0)+gemAP};
   const apNo=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);
   // Banked Time tracking: AP the bank actually added this turn (the cap can eat some), as 'Banked Time (passive)' apGranted, one use per turn with a bank.
   if(bank&&trk()&&!SIM){const got=apNo-Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP);const e=tFx(p.fac,'','Banked Time (passive)');if(e){e.uses++;e.apGranted+=Math.max(0,got)}}
@@ -1956,17 +1960,26 @@ function moveOpts(u,ignoreState){
   const prey=pursuitOf(u),N=N0+(prey?1:0);
   const add=(q,r,gate)=>{if(q===u.q&&r===u.r)return;const k=key(q,r);if(out.has(k))return;const d=fitDir(m,u,q,r);if(d>=0)out.set(k,{q,r,dir:d,gate:!!gate})};
   if(N>0){
-    if(u.mt==='walk'||u.mt==='march'){
+    if((u.mt==='walk'||u.mt==='march')&&u.size===2&&RULES.SQUEEZE){
+      // giants: cheapest path where a squeezed gate hex costs 2 moves
+      const best=new Map([[key(u.q,u.r),0]]);let fr=[[u.q,u.r,0]];
+      while(fr.length){fr.sort((x,y)=>x[2]-y[2]);const [q,r,c]=fr.shift();if(c>(best.get(key(q,r))??99))continue;
+        for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(!freeFor(m,u,a,b,true))continue;if(u.mt==='march'&&!G.map&&fwdDot(u,dq,dr)<-0.1)continue;
+          const nc=c+squeezeCost(m,u,a,b);if(nc>N||nc>=(best.get(k)??99))continue;best.set(k,nc);fr.push([a,b,nc]);
+          if(nc<=N0||!prey||distUC(prey,a,b)<distUU(u,prey))add(a,b)}}
+    }else if(u.mt==='walk'||u.mt==='march'){
       const seen=new Set([key(u.q,u.r)]);let fr=[[u.q,u.r]];
       for(let s=0;s<N;s++){const nx=[];
         for(const [q,r] of fr)for(const [dq,dr] of DIRS){
           const a=q+dq,b=r+dr,k=key(a,b);
           if(seen.has(k)||!freeFor(m,u,a,b))continue;
-          if(u.mt==='march'&&fwdDot(u,dq,dr)<-0.1)continue;
+          if(u.mt==='march'&&!G.map&&fwdDot(u,dq,dr)<-0.1)continue;
           seen.add(k);nx.push([a,b]);if(s<N0||!prey||distUC(prey,a,b)<distUU(u,prey))add(a,b);
         }fr=nx}
     }else if(u.mt==='line'||u.mt==='diag'){
-      for(const [dq,dr] of (u.mt==='line'?DIRS:DIAG))for(let s=1;s<=N;s++){const a=u.q+dq*s,b=u.r+dr*s;if(!freeFor(m,u,a,b))break;add(a,b)}
+      // v44: a diagonal mover may also take one plain step in any direction (on the Crown Wilds it was shut out of two thirds of the map)
+      if(u.mt==='diag')for(const [dq,dr] of DIRS){const a=u.q+dq,b=u.r+dr;if(freeFor(m,u,a,b,true)&&squeezeCost(m,u,a,b)<=N)add(a,b)}
+      for(const [dq,dr] of (u.mt==='line'?DIRS:DIAG)){let c=0;for(let s=1;s<=N;s++){const a=u.q+dq*s,b=u.r+dr*s;if(!freeFor(m,u,a,b,true))break;c+=squeezeCost(m,u,a,b);if(c>N)break;add(a,b)}}
     }else if(u.mt==='knight'){
       for(const [dq,dr] of KNIGHT)add(u.q+dq,u.r+dr);
     }else if(u.mt==='fly'){
@@ -2812,15 +2825,18 @@ function actEvents(){
    Loot must be CARRIED back into your own camp to take effect; a carrier that dies drops it and anyone may pick it up. The Cursed chest is a coin flip
    when picked up (50% it turns into a real reward, 50% it curses the carrier and is gone); the flip is a hash of round, unit and room, so undo cannot reroll it.
    No Collapse, no flags, no Wellspring, no random relics, no Riftwalkers in this mode. Heart points (from round 10), loot and leader takedowns win. */
-const WILDS={R:17,open:10,target:12,hold:3,beastHp:30,kingAtk:2,kingDef:2,camp:[4,11],fort:[2,7],crypt:[9,3],vault:[-5,10],lair:[-8,16],stones:[14,0],tower:[5,5],lever:[0,10],
-  midAt:6,dragonPts:3,stonesPts:3,stonesDark:4,suitHp:8,plateHp:5,gemMax:2,wanderMove:3,forgeRest:3};
+const WILDS={R:17,open:10,target:12,hold:3,beastHp:16,kingAtk:2,kingDef:2,camp:[4,11],fort:[2,7],crypt:[9,3],vault:[-5,10],lair:[-8,16],stones:[14,0],tower:[5,5],lever:[0,10],
+  midAt:6,shardPts:1,dragonPts:3,stonesPts:3,stonesDark:4,suitHp:8,plateHp:5,gemMax:2,wanderMove:3,forgeRest:3};
 // v36 (owner, 1 Oct 2026): every room monster only answers the last unit that hit it, at the next round start. No more round-start strikes, no Ghoul packs.
 const MONSTERS={
-  guardian:{name:'Stone Guardian',icon:'golem',hp:12,atk:3,def:1},
-  golem:{name:'Vault Golem',icon:'golem',hp:16,atk:3,def:1},
-  crate:{name:'Locked Crate',icon:'chest',hp:8,atk:0,def:1},
-  dragon:{name:'Dragon',icon:'drake',hp:20,atk:3,def:1},
-  wanderer:{name:'Wanderer',icon:'paw',hp:20,atk:2,def:0},
+  // v44 (owner 3 Oct 2026: "the damage and actions needed to kill monsters in rooms for minor buffs is wrong"): an average attacker (2.4 ATK) needed
+  // 6-15 hits = 2-5 whole turns of AP against 1 DEF. Now no DEF and about half the HP: a room fight costs about one turn (Crate 2 hits, Guardian 3,
+  // Golem 4), a Dragon (3 points) about two turns.
+  guardian:{name:'Stone Guardian',icon:'golem',hp:6,atk:3,def:0},
+  golem:{name:'Vault Golem',icon:'golem',hp:8,atk:3,def:0},
+  crate:{name:'Locked Crate',icon:'chest',hp:4,atk:0,def:0},
+  dragon:{name:'Dragon',icon:'drake',hp:12,atk:3,def:0},
+  wanderer:{name:'Wanderer',icon:'paw',hp:12,atk:2,def:0},
   cracked:{name:'Cracked Wall',icon:'mountain',hp:6,atk:0,def:0}};
 // Crown Shards (v36): gems set into your army's crown. They do nothing on their own: they power your side's King (each gem counts at most twice).
 const GEMS={
@@ -2840,7 +2856,7 @@ const LOOT={
   cursed:{name:'Cursed Chest',text:'a coin flip when picked up: a Crown Shard, or a curse on the carrier',col:'#9a6bd0'}};
 const lootName=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].name+' Crown Shard':x.kind==='suit'&&SUIT_ITEMS[x.item]?`War Suit (${SUIT_ITEMS[x.item].name})`:LOOT[x.kind].name;
 const lootCol=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].col:LOOT[x.kind].col;
-const lootText=x=>x.kind==='gem'&&GEMS[x.gem]?`carry it home: ${GEMS[x.gem].text}`:x.kind==='suit'&&SUIT_ITEMS[x.item]?`a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first (a giant straps it on as plating: ${WILDS.plateHp}), and ${SUIT_ITEMS[x.item].text}`:LOOT[x.kind].text;
+const lootText=x=>x.kind==='gem'&&GEMS[x.gem]?`carry it home: +${WILDS.shardPts} point, and ${GEMS[x.gem].text}`:x.kind==='suit'&&SUIT_ITEMS[x.item]?`a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first (a giant straps it on as plating: ${WILDS.plateHp}), and ${SUIT_ITEMS[x.item].text}`:LOOT[x.kind].text;
 const CAPTIVE={name:'Captive',icon:'hand',hp:6,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0};
 const FREEDMAN={name:'Freedman',icon:'helm',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1};
 const ROOM_NAMES={fort:'Hill Fort',crypt:'Crypt',vault:'Vault',lair:'Dragon’s Lair'};
@@ -2871,6 +2887,8 @@ function genWilds(){
   const B=W.camp,F=W.fort,C=W.crypt,V=W.vault,L=W.lair,S=W.stones,B2=[-B[0]-B[1],B[1]],B3=[B[0]+B[1],-B[1]];
   for(let q=7;q<=10;q++)set(q,0,'river');
   {const moat=cellsAll.filter(([q,r])=>hd(q,r,0,0)===6);for(const [q,r] of moat)set(q,r,'river');
+   // v44 (owner: "access to the centre is so limited"): besides the camp bridges, six fords 2 hexes wide on the six main directions
+   for(const [q,r] of moat){const a=ang(q,r,0,0);if([0,1,2,3,4,5].some(k=>near(a,k*Math.PI/3+Math.PI/6,0.2)))set(q,r,'bridge')}
    const bq=moat.slice().sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1])||Math.abs(ang(a[0],a[1],0,0)-angTo([0,0],B))-Math.abs(ang(b[0],b[1],0,0)-angTo([0,0],B)))[0];set(bq[0],bq[1],'bridge')}
   // Throne Hall: a stone ring right around the Heart (heartR+1) with a door on each axis; the doors are sealed by the centre wall until round WILDS.open
   ring([0,0],G.heartR+1,[0,Math.PI/2,Math.PI,-Math.PI/2],0.25,'rock',null,'door');
@@ -3030,7 +3048,9 @@ function deliverLoot(){
     G.loot.splice(G.loot.indexOf(x),1);const R=(G.rooms||[]).find(r=>r.id===x.room);if(R)R.state='done';
     const pid=p.id,k=x.kind;let text=lootText(x);
     if(k==='gem'){const g=G.gems[p.team]=G.gems[p.team]||{};const was=g[x.gem]||0;g[x.gem]=Math.min(WILDS.gemMax,was+1);
-      text=was>=WILDS.gemMax?`the crown already holds ${WILDS.gemMax} ${GEMS[x.gem].name}s: no more effect`:`set in the crown (${g[x.gem]}/${WILDS.gemMax}): ${GEMS[x.gem].text}`}
+      text=was>=WILDS.gemMax?`the crown already holds ${WILDS.gemMax} ${GEMS[x.gem].name}s: no more effect`:`set in the crown (${g[x.gem]}/${WILDS.gemMax}): ${GEMS[x.gem].text}`;
+      // v44 (owner 3 Oct 2026: rooms must be worth it): every Crown Shard brought home also scores Warlord points, a path to victory away from the Throne
+      if(G.mode==='warlord'&&WILDS.shardPts&&!p.leaderless){G.score[p.team]=(G.score[p.team]||0)+WILDS.shardPts;tPts(pid,'shard',WILDS.shardPts);text+=` and +${WILDS.shardPts} point (${G.score[p.team]}/${heartTarget()})`;if(G.score[p.team]>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};if(!SIM)HOOKS.over()}}}
     else if(k==='relic'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(lootFlip(u,x)*free.length)]:null;if(rk){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:u.id})}}
     addLog(pid,`${FAC[p.fac].name} brings home the ${lootName(x)}: ${text}.`);fx(u,lootName(x),lootCol(x));vfx({k:'buff',at:[u.q,u.r],col:lootCol(x),cam:1});
     announce({k:'loot',fac:p.fac,loot:lootName(x),text});
@@ -3160,7 +3180,7 @@ function wildsThroneBeast(){
   addLog(null,'The walls of the Throne Hall collapse! The Rift Beast wakes on the Throne: slay it to reveal the Throne.');
   vfx({k:'wallfall',msg:'The Throne Hall falls: the Rift Beast wakes on the Throne'});announce({k:'wall'});
   const tri=[[0,0],[1,0],[0,1]];for(const [q,r] of tri){const o=unitAt(q,r);if(o&&o.kind!=='wall'){const c=allCells().filter(([a,b])=>passable(a,b)&&!unitAt(a,b)&&!tri.some(t=>t[0]===a&&t[1]===b)).sort((x,y)=>hd(x[0],x[1],q,r)-hd(y[0],y[1],q,r))[0];if(c){o.q=c[0];o.r=c[1]}}}
-  const b=spawnBeast(tri);if(b){b.hp=b.maxhp=WILDS.beastHp;G.beast.room='throne'}}
+  const b=spawnBeast(tri);if(b){b.hp=b.maxhp=WILDS.beastHp;b.def=0;G.beast.room='throne'}}// v44: 30 HP 1 DEF was ~21 hits; now 16 HP, no DEF (~7 hits shared by everyone)
 const kingOf=()=>G&&!oldCentre()?G.units.find(u=>u.king&&u.kind!=='wall')||null:null;
 // The Throne can be taken: on the Crown Wilds once the Beast that sleeps on it is slain; on the random board from the round the wall falls.
 const throneOpen=()=>G.map?!!G.throneOpen:G.round>=RULES.CENTRE_FROM;
@@ -4525,7 +4545,7 @@ const G3={cyl:(a,b,h,s)=>gGeo(`c${a}|${b}|${h}|${s||8}`,()=>new THREE.CylinderGe
   tor:(r,t,arc)=>gGeo(`t${r}|${t}|${arc||7}`,()=>new THREE.TorusGeometry(r,t,6,14,arc||Math.PI*2))};
 function glowMat(c){return gMat(c,{emissive:c,emissiveIntensity:1.4})}
 // owner, 1 Oct 2026: every piece stands on a HEX base (the giants on two, one under each leg)
-function hexBase(g,fac,x,z){const b=gMesh(gGeo('hbase',()=>new THREE.CylinderGeometry(0.64,0.7,0.14,6)),gMat('#26221d'),x||0,0.07,z||0);b.userData.base=1;g.add(b);
+function hexBase(g,fac,x,z){const b=gMesh(gGeo('hbase',()=>new THREE.CylinderGeometry(0.5,0.55,0.14,6)),gMat('#26221d'),x||0,0.07,z||0);b.userData.base=1;g.add(b);
   const rim=gMesh(gGeo('hrim',()=>new THREE.CylinderGeometry(0.655,0.655,0.035,6)),armyMat(fac,'army'),x||0,0.155,z||0);rim.userData.rim=1;rim.userData.base=1;g.add(rim);return rim}
 function adder(g){return (geo,mat,x,y,z,rx,rz,ry)=>{const m=gMesh(geo,mat,x,y,z);if(rx)m.rotation.x=rx;if(rz)m.rotation.z=rz;if(ry)m.rotation.y=ry;g.add(m);return m}}
 // a held item, by the name used in LOOK; built pointing up from the hand
@@ -4674,7 +4694,7 @@ function buildFigure(u,fac){
   if(L.sparks){const o=gMesh(G3.oct(0.05),glowMat('#ff6ec7'),0.2,g.userData.top,-0.1);g.add(o);g.userData.bob.push(o)}
   const FS=FIG3D_K;for(const ch of g.children){if(ch.userData.base)continue;ch.position.set(ch.position.x*FS,B+(ch.position.y-B)*FS,ch.position.z*FS);ch.scale.multiplyScalar(FS)}
   g.userData.top=B+(g.userData.top-B)*FS;return glCompact(g)}
-const FIG3D_K=1.15;// v42: was 1.3; a little shorter so a crowd of pieces hides fewer of its neighbours// miniatures stand taller than their hex base, like the 2D figures did (FIG_K)
+const FIG3D_K=0.85;// v44 (owner: bigger hexes RELATIVE to the units): pieces sit inside their hex with ground around them; was 1.15 (v42), 1.3 before// v42: was 1.3; a little shorter so a crowd of pieces hides fewer of its neighbours// miniatures stand taller than their hex base, like the 2D figures did (FIG_K)
 // merge every part that never moves into one mesh per material: a giant drops from ~90 draw calls to ~10
 function glCompact(g){const T=THREE,ud=g.userData,keep=new Set([...ud.bob,...ud.wings]);if(ud.spin)keep.add(ud.spin);
   g.updateMatrixWorld(true);const groups=new Map(),kept=[];
@@ -4686,7 +4706,7 @@ function glCompact(g){const T=THREE,ud=g.userData,keep=new Set([...ud.bob,...ud.
   return out}
 
 /* ---------- Stone Giants (look test 2, approved): each leg stands on its own hex, each hex has its own base ---------- */
-const GIANT_SC=0.82,LEG_X=S3/2/GIANT_SC;// the two hex centres are √3 apart; a foot sits on each
+const GIANT_SC=0.7,LEG_X=S3/2/GIANT_SC;// the two hex centres are √3 apart; a foot sits on each
 function gSkin(c){return gMat(c,{roughness:0.92,metalness:0})}
 const G_IRON=()=>gMat('#4a4440',{roughness:0.55,metalness:0.75}),G_RUST=()=>gMat('#6b4630',{roughness:0.8,metalness:0.4}),G_RUNE=()=>gMat('#ffb347',{emissive:'#ff9a2a',emissiveIntensity:1.4});
 function gCloth(c){return gMat(c,{roughness:1,side:THREE.DoubleSide})}
@@ -6259,7 +6279,7 @@ function refresh(){
   $('#curChip').innerHTML=`<span class="dot" style="background:${F.color}"></span>P${p.id+1} · ${F.name}${G.teams?` <span class="team">Team ${'ABC'[p.team]}</span>`:''}${p.ctrl==='bot'?' <span class="hint">(bot)</span>':''}${netOnline()?` <span class="hint">· ${NET.code} · ${p.ctrl==='bot'?'bots':isHumanTurn()?'your turn':'waiting for '+(p.uid===NET.me?'you':(NET.names[p.uid]||'Player '+(p.id+1)))}</span>`:''}`;
   const tb=$('#takeBots');if(tb)tb.hidden=!(netOnline()&&!netIsHost()&&p.ctrl==='bot'&&Date.now()-NET.lastChange>12000);
   let pips='';for(let i=0;i<G.apMax;i++)pips+=`<i class="${i<G.ap?'on':''}"></i>`;
-  const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+' Leader':'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.well?'+'+pa.well+' Wellspring':'',pa.bank?'+'+pa.bank+' banked':''].filter(Boolean).join(' ')})</span>`+(bankOf(P(G.cur))&&!G.phase?`<span class="aplabel bankl" title="Banked Time: unspent AP carry over to your next turn">⏳ Banked Time: keeps ${Math.min(G.ap,bankOf(P(G.cur)))} of up to ${bankOf(P(G.cur))} unspent</span>`:'');
+  const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+(P(G.cur).leaderless?' (no Leader)':' Leader'):'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.well?'+'+pa.well+' Wellspring':'',pa.bank?'+'+pa.bank+' banked':''].filter(Boolean).join(' ')})</span>`+(bankOf(P(G.cur))&&!G.phase?`<span class="aplabel bankl" title="Banked Time: unspent AP carry over to your next turn">⏳ Banked Time: keeps ${Math.min(G.ap,bankOf(P(G.cur)))} of up to ${bankOf(P(G.cur))} unspent</span>`:'');
   {const ub=$('#ultBtn');if(ub){const U=ULTS[p.fac],ch=p.ult||0,need=ultNeed(p),team=canTeamUlt(G.cur);ub.hidden=!isHumanTurn()||!!G.phase;
     ub.disabled=!canUlt(G.cur);ub.classList.toggle('ready',canUlt(G.cur));ub.classList.toggle('team',team);
     ub.innerHTML=`⚡${team?'⚡':''} <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':G.ap>=RULES.ULT_COST?(team?'team ready':'ready'):'needs '+RULES.ULT_COST+' AP'):ch+'/'+need}</span>`;ub.title=U.text}}
@@ -6694,7 +6714,7 @@ function showRules(){
     <br><b>War Suit:</b> a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first, plus its item (Boots +1 move, Ogre Club +1 ATK or Tower Shield +1 DEF). A giant straps it on as ${WILDS.plateHp} HP of plating with the same item. When the suit breaks the unit steps out unhurt. <b>Forge:</b> a unit that starts your turn on it is tempered for good (+1 ATK, or +1 DEF if it has no attack); once per army, then the Forge rests ${WILDS.forgeRest} rounds. <b>Captive:</b> step on him to free him; he joins you (${CAPTIVE.hp} HP, no attack). Walk him into your camp and he takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).
     <br><b>Levers:</b> one near each camp. A unit standing on one pulls it for its side; once levers of two different sides are pulled, a trap door opens and the <b>Wanderer</b> runs out (once per game; 20 HP, no DEF, roams 3 hexes a round, only hits back). Its killing blow drops a Crown Shard.
     <br><b>Mid game (round ${WILDS.midAt}):</b> the <b>Dragons</b> wake in the two lairs on the north and south edges (20 HP, 1 DEF; at each round start it breathes fire on the last unit that hit it): the killing blow wins ${WILDS.dragonPts} points. The <b>Standing Stones</b> on the east and west edges glow: if your units stand on all three runestones of a circle at the start of two of your turns in a row, you score ${WILDS.stonesPts} points and the circle sleeps ${WILDS.stonesDark} rounds; an enemy on any stone stops it.
-    <br><b>The Throne:</b> in round ${WILDS.open} the walls of the Throne Hall fall and the Rift Beast (${WILDS.beastHp} HP) wakes on the Throne; its killing blow (+${RULES.BEAST_PTS} points) reveals the Throne. The first unit to sit on it is crowned <b>King</b>: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives; it scores 1 point at the start of its side's turn while it sits on the Throne, always, and whoever kills it scores ${RULES.KING_KILL}. A living King can't be unseated: kill it. While the Beast lives, at each round start it strikes the last unit that hit it for 1 damage plus 1 for every hit it took that round. When the King falls, the next unit to sit on the Throne is crowned. Points come from the King, the Dragons, the Standing Stones, the Rift Beast and Leader takedowns; first to ${WILDS.target} wins. No Collapse, no flags, no Riftwalkers.</li>
+    <br><b>The Throne:</b> in round ${WILDS.open} the walls of the Throne Hall fall and the Rift Beast (${WILDS.beastHp} HP) wakes on the Throne; its killing blow (+${RULES.BEAST_PTS} points) reveals the Throne. The first unit to sit on it is crowned <b>King</b>: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives; it scores 1 point at the start of its side's turn while it sits on the Throne, always, and whoever kills it scores ${RULES.KING_KILL}. A living King can't be unseated: kill it. While the Beast lives, at each round start it strikes the last unit that hit it for 1 damage plus 1 for every hit it took that round. When the King falls, the next unit to sit on the Throne is crowned. Points come from the King, killing the King, the Dragons, the Standing Stones, the Rift Beast, Crown Shards carried home (+${WILDS.shardPts} each) and Leader takedowns; first to ${WILDS.target} wins. No Collapse, no flags, no Riftwalkers.</li>
   <li><b>Act 1, expand.</b> The centre is walled: a single ring of stone wall stands right around the Heart until round ${RULES.CENTRE_FROM} (the outer grey ring stays open ground). Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
   <li><b>Act 2, contest.</b> In round ${RULES.CENTRE_FROM} the wall falls and, in the same moment, the <b>Rift Beast</b> awakens on a random stretch of the fallen wall (both announced a round before). The Throne is open: whoever sits on it is crowned <b>King</b>.</li>
   <li><b>Act 3, showdown.</b> The Collapse eats the board from the edge in, pushing everyone toward the centre: the first rings fall quickly, then it slows down (a ring every 4 rounds) to leave time for objectives, relics and points.</li></ul>
@@ -6709,7 +6729,7 @@ function showRules(){
   <li>Your army's home bonus works on <b>all</b> your ground, so pushing forward carries your strength with you.</li>
   <li>The side holding the most ground gets +1 Ultimate charge each turn (★ in the side panel).</li></ul>
   <h3>Your turn</h3><ul>
-  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives, +1 while you own the Wellspring, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}.</li>
+  <li><b>Action points:</b> ${RULES.BASE_AP} base, +${RULES.LEADER_AP} while your Leader lives (+${RULES.LEADERLESS_AP} once it has fallen), +1 while you own the Wellspring, +1 per Sand of Ages relic you carry. Maximum ${RULES.AP_CAP}.</li>
   <li>Move a unit: 1 AP. Basic attack: 2 AP. Ability: its listed cost. Ultimate: ${RULES.ULT_COST} AP (team: ${RULES.TEAM_ULT_COST}). Gnome machines fire on their own for no AP at the start of the gnome turn for 1 damage, and a machine with a weapon may also make one full-strength basic attack of its own for 2 AP.</li>
   <li>Each unit can move once and act once per turn, in either order. Acting means a basic attack <b>or</b> its ability.</li></ul>
   <h3>Moving</h3><p>The chess symbol in a piece's corner shows how it moves.</p><ul>
@@ -6722,7 +6742,7 @@ function showRules(){
   <li><b>Counters on the board.</b> Pills beside a piece show what holds it and for how many of its turns: ice block = frozen, star = stunned, snowflake = chilled, one skull per curse, crack = Sunder, rune = Hex.</li>
   <li><b>Melee units move 1 further</b> (except the two-hex giants) than their listed move on the random board (included in the numbers you see). On the Crown Wilds every unit moves 1 further and Leaders 2.</li>
   <li><b>Pursuit.</b> A melee unit that hit an enemy on its last turn moves 1 more this turn, but only to hexes that bring it closer to that enemy.</li>
-  <li><b>Giants and gates.</b> A two-hex giant is too wide to squeeze through a gap of one hex: it can never step onto a hex that lies between two wall pieces (ice, stone or light wall), or between a wall and a rock. In practice: two of the hex's six neighbours are walls or rock, and at least one of them is a wall. Every one-hex unit walks through such a gap freely. Giants break gates by attacking the walls; the Cliff Breaker's Smash deals double damage to walls.</li>
+  <li><b>Giants squeeze.</b> A two-hex giant can pass a gap one hex wide (a hex between two wall pieces, or between a wall and a rock), but squeezing through costs it 2 moves for that hex, like squeezing in D&D. Every one-hex unit walks through such a gap freely. Giants break gates by attacking the walls; the Cliff Breaker's Smash deals double damage to walls.</li>
   <li><b>Brace</b> (Spearman). A Spearman that has not moved this turn holds its spear out: any enemy that ends a move on one of the hexes in front of it (facing away from home) takes 2 damage minus DEF.</li>
   <li><b>March</b> (Warlord, 1 AP). The Warlord and every Warband unit within 2 of him step 1 hex in one chosen direction, for free, front units first; a unit whose hex ahead is taken stays. The step uses nobody's move or action.</li></ul>
   <h3>Fighting</h3><ul>
@@ -6785,7 +6805,7 @@ function showQuick(){
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
   ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls and the Rift Beast breaks out beside the Heart · then the Collapse closes the board, slower as it goes`)}
-  ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
+  ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive (+${RULES.LEADERLESS_AP} without) · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free for 1 damage, and may attack at full strength once for 2 AP')}
   ${row('Machines','Gnomes build on an empty hex next to the builder (2 AP) · at most 5 on the board · Dismantle: remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less · build cooldowns Turret 2, Flame Turret 2, Mortar 3, Coil 3 · machines never move · each fires on its own for free at the start of the gnome turn and may also attack at full strength once for 2 AP (not the Coil); the free shot deals 1 · each falls apart after 6 gnome turns · can’t be chilled, frozen or stunned · killing one gives no charge and no star · builders and Gearmaster can’t attack (only Bombardiers do) · Cover: a gnome next to its own machine takes 1 less from basic attacks (min 1) · Clockwork Rush: 2 AP + 1 per 2 machines, max 5')}
   ${row('Per unit','Move once + one action (attack <b>or</b> ability)')}
@@ -6793,7 +6813,7 @@ function showQuick(){
   ${row('Riposte','Only Shieldbearer, Glacier Knight, Frost Warden, Infernal, Rampart, Penitent hit back (½) when struck in melee; not if surrounded/frozen')}
   ${row('Moving','Walk away from anyone except a guard (Hold the Line: Shieldbearer, Frost Warden, Rampart, Penitent, Gargoyle, Mortar: 1 step) · red ground: Ember enemies −1 move · chilled: no free moves · melee +1 move (not giants) · Pursuit: +1 more toward the enemy you hit last turn · Crown Wilds: everyone +1, Leaders +2')}
   ${row('Surround','Target touches 2+ of yours: +'+RULES.SURROUND+' damage')}
-  ${row('Giants','2 hexes, can’t be moved · +1 damage from melee while 2+ enemies touch it · can’t enter a hex between two walls (or wall + rock)')}
+  ${row('Giants','2 hexes, can’t be moved · +1 damage from melee while 2+ enemies touch it · squeezing through a one-hex gap costs 2 moves')}
   ${row('Battle Line','Warband: +1 ATK next to a comrade (not the Warlord himself)')}
   ${row('Phalanx','Warband: Battle Line +1 ATK next to a comrade · Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged attacks and abilities · Spear strikes 2 away over a friend · March moves the block 1 hex · Rally +1 ATK within 2')}
   ${row('Guards','Bodyguard: basic attacks on an adjacent friendly Leader hit the guard instead; abilities are not redirected')}
@@ -6876,7 +6896,7 @@ let SZ=20,CW=0,CH=0;
 /* Board size (v26, owner: "I need the game to be bigger"). The board uses the box's own width in full-screen play on a laptop, where the dock
    sits in a column beside it (body.fwide); elsewhere the column width. Pieces fill more of their hex: FIG_K (tabletop miniatures), TOKEN_K (flat tokens). */
 function boardW(box){return Math.max(260,document.body.classList.contains('fwide')?box.clientWidth-4:box.parentElement.clientWidth-10)}
-const FIG_K=()=>WIDE()?1.45:1.38,TOKEN_K=()=>0.8;
+const FIG_K=()=>WIDE()?1.15:1.1,TOKEN_K=()=>0.56;// v44: smaller tokens, more hex around each piece (was 0.8)
 // How far from a piece a tap still counts as that piece, in px.
 function tapTol(){const S=VIEW==='3d'?CAM.S:SZ;return Math.max(window.innerWidth<1000?46:34,S*1.3)}
 // The damage a basic attack would deal, as a red tag beside each piece you can attack now.
