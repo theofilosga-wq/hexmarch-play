@@ -617,7 +617,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={LEADERLESS_AP:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={GROUND3:1,CREATURE_FX:1,LEADERLESS_AP:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:2,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -875,7 +875,7 @@ const TRAITS={
   shatterfall:{name:'Shatterfall',text:'When it kills a frozen enemy, the shards fly: every enemy next to the fallen unit is chilled.'},
   stonesleep:{name:'Stone Sleep',text:'When it dies it turns into a statue on its hex (5 HP, 0 DEF): it blocks the hex, can’t act and can be smashed (no Ultimate charge for it). Every spell a friendly mage casts while standing within 2 of the statue adds that spell’s AP cost to it; at 4 the Gargoyle rises there with half the max HP it had (16, then 8, then 4). A Gargoyle of 4 max HP that dies, or a smashed statue, is gone for good.'},
   statue:{name:'Statue',text:'A sleeping Gargoyle. Can’t move or act. Mages casting spells within 2 of it wake it; smash it first and the Gargoyle is gone.'},
-  wraith:{name:'Time Wraith',text:'Called once per game when both Second Hands have fallen: it appears next to the Chronarch at the start of your turn. No ability, just a fast, heavy blade: fragile but mobile. It counts as a normal unit (charge, Warlord, staying in the game).'},
+  wraith:{name:'Time Wraith',text:'Called once per game when both Second Hands have fallen: it appears next to the Chronarch at once. No ability, just a fast, heavy blade: fragile but mobile. It counts as a normal unit (charge, Warlord, staying in the game).'},
   delaybolt:{name:'Delay Bolt',text:'Its basic attack pushes back time on the target: every ability cooldown of the target gets 1 more turn, and a ready ability must wait 1 turn. Its basic attack also deals +1 damage to an enemy that a Second Hand has hit this turn (Final Second).'},
 };
 const hasTrait=(u,t)=>u&&u.trait===t;
@@ -889,9 +889,9 @@ const TALENTS={
        {k:'frostthrone',name:'Frozen Throne',text:'Blizzard freezes every enemy, not just those near your units.'}],
   giants:[{k:'avalanche',name:'Avalanche',text:'Earthquake reaches 4 hexes from each giant and deals 3 damage minus DEF.'},
           {k:'oldmountain',name:'Old Mountain',text:'Every giant standing on stone ground heals 1 HP at the start of your turn.'},
-          {k:'stride',name:'Titan Stride',text:'Your giants are never held by Hold the Line: they walk away from enemy guards freely.'}],
+          {k:'stride',name:'Titan Stride',text:'Your giants are never held by Hold the Line, and squeezing through a one-hex gap costs them no extra move.'}],
   gnomes:[{k:'salvage',name:'Salvage',text:'Whenever one of your machines is destroyed or falls apart, the gnome who built it has its ability cooldown reduced by 1.'},
-          {k:'springs',name:'Spring-loaded',text:'All your units are Swift: never held by Hold the Line.'},
+          {k:'springs',name:'Spring-loaded',text:'All your gnomes are Swift (never held by Hold the Line) and move 1 hex further.'},
           {k:'surge',name:'Clockwork Surge',text:'Clockwork Rush gives 1 more AP (up to 6 instead of 5).'}],
   arcane:[{k:'martyrdom',name:'Martyrdom',text:'A Cleric\u2019s Mend also heals the Cleric itself by 2.'},
           {k:'sacredground',name:'Sacred Ground',text:'Groves last 5 turns instead of 3.'},
@@ -937,7 +937,7 @@ const FAC={
   fire:{name:'Ember Court',color:'#ff4a3d',
     theme:'Creatures from hell and beasts that spit fire: they set the board ablaze and fight inside the flames.',
     passive:'Hellfire: many of their abilities paint the ground red (Kindle and Fireball for 3 turns, Spit Fire for 2). Fireball, Flame Breath and Spit Fire sear: the target can’t be healed until the end of its next turn. Hellspawn: when an Ember Court unit dies it bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.',
-    home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage.',homeAtk:1,
+    home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage. An enemy standing on red ground moves 1 less.',homeAtk:1,
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
     units:[
       {name:'Pit Lord',icon:'crown',leader:1,hp:13,atk:3,def:1,mov:1,mt:'walk',at:'melee',rng:1,ab:'kindle'},
@@ -969,7 +969,7 @@ const FAC={
   gnomes:{name:'Gnome Tinkers',color:'#ff6ec7',
     theme:'The summoners of Hexmarch, but they summon only machines: fragile gnomes full of tricks who make you fight their tin before you can catch them.',
     passive:'Cover: a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1). Workshop: a gnome builds on an empty hex next to itself; at most 5 machines on the board at once. Machines never move, fire on their own for free at the start of your turn, may also make one full-strength basic attack of their own for 2 AP (not the Tesla Coil); the free fire deals 1 damage, fall apart after 6 of your turns, can’t be chilled, frozen or stunned, and give no Ultimate charge or veteran stars when destroyed. The builders and the Gearmaster carry no weapons at all (no attack, no strike-back): only the Bombardiers fight by hand.',cover:1,machineCap:5,
-    home:'Pink ground: +1 move for gnomes (machines get nothing).',homeMov:1,
+    home:'Pink ground: +1 move for gnomes (machines get nothing). An enemy standing on pink ground takes 1 more from machine attacks.',homeMov:1,
     units:[
       {name:'Gearmaster',icon:'crown',leader:1,hp:12,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'mortar',ab2:'dismantle',trait:'swift'},// v21: builders and Gearmaster deal no damage, the machines do (target about 80 percent of the army's damage)
       {name:'Tinker',icon:'gear',n:3,hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'turret',ab2:'dismantle'},
@@ -979,7 +979,7 @@ const FAC={
   arcane:{name:'Circle of Priests',color:'#8f5cff',
     theme:'Healers, druids and creatures of light who win by outlasting: little damage, mending, shields, blessings and holy ground. Heal through the fight, punish attackers with Retribution, and let the blessed Zealot strike whoever comes close.',
     passive:'Blessings: Bless and Hallowed Dawn give +1 ATK and healing over time; Mend lifts debuffs. Retribution: whoever hits a shielded or blessed priest takes 2 back.',
-    home:'Indigo ground: your units standing on it heal 1 at the start of your turn.',homeHeal:1,
+    home:'Indigo ground: your units standing on it heal 1 at the start of your turn. An enemy standing on indigo ground can’t be healed.',homeHeal:1,
     units:[
       {name:'High Priest',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'sanctuary'},
       {name:'Cleric',icon:'hand',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'mend'},
@@ -990,7 +990,7 @@ const FAC={
   warband:{name:'Iron Warband',color:'#eef0f4',
     theme:'The phalanx: swords, spears and shields that move as one block. Shields in front soak the arrows, spears strike over the shields from the second rank, every warrior hits harder with a comrade at his shoulder, and the Warlord marches the whole block forward and rallies it before the clash. Two riders and a raider hunt whoever strays. No spells, no area damage: you learn the game by learning where to stand.',
     passive:'Battle Line: a Warband unit standing next to at least one other Warband unit has +1 ATK. The Warlord himself gets no bonus. Walls and turrets do not count. (The phalanx +1 DEF was removed in v20c: the block won 43 percent of 4-player games and 85 percent of duels.)',line:1,phalanx:1,
-    home:'Bone ground: +1 ATK.',homeAtk:1,
+    home:'Bone ground: +1 ATK. An enemy standing on bone ground takes 1 more from Warband basic attacks.',homeAtk:1,
     units:[
       {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'march',ab2:'rally'},
       {name:'Berserker',icon:'axe',aoe:'cleave',n:2,hp:8,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,rage:1,trait:'rage'},
@@ -1026,7 +1026,7 @@ const FAC={
   chrono:{name:'Hourglass Order',color:'#c81ca6',
     theme:'One overpowered combo: save AP, gather the Tempo Mages and a Rewinder around an assassin, Quicken it again and again so its blows land for 4, 5 and 6, and Chase the Clock so every kill gives it a free move to the next victim. Only the Second Hands and the Chronarch deal damage; everyone else is a fragile time mage. Kill the blades or the mages and the clock stops.',
     passive:'Banked Time: up to 2 unspent AP carry over to your next turn. When both Second Hands have fallen, a Time Wraith answers the Chronarch’s call (once per game).',bank:2,
-    home:'Magenta ground: abilities cast from it cost 1 AP less.',cheap:1,
+    home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',cheap:1,
     units:[
       {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'timewarp',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
       {name:'Second Hand',icon:'clock',n:2,hp:11,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'tempo'},// v28: Vanish removed, the retreat comes from Rewind
@@ -1113,8 +1113,9 @@ const glyphOf=d=>d.leader?LEADER_GLYPH:MOVES[d.mt].glyph;
 
 /* ---------- board helpers ---------- */
 const P=id=>G.players[id];
-const tm=pid=>G.players[pid].team;
-const facOf=u=>FAC[G.players[u.owner].fac];
+const tm=pid=>G.players[pid]?G.players[pid].team:-1;// v45: monsters (owner -1) belong to no team
+const NO_FAC={};// v45: monsters (owner -1) have no army; facOf returns an empty army for them
+const facOf=u=>G.players[u.owner]?FAC[G.players[u.owner].fac]:NO_FAC;
 const alive=u=>G.units.includes(u);
 const inR=(q,r)=>Math.max(Math.abs(q),Math.abs(r),Math.abs(q+r))<=G.R;
 // Void Traps (Voidcaller) are temporary voids: G.traps[key] = {owner,by,ttl}.
@@ -1190,7 +1191,7 @@ function gated(m,q,r){let walls=0,hard=0;for(const [dq,dr] of DIRS){const a=q+dq
 // squeezing costs double). A giant may enter a gate hex (between two wall pieces, or a wall and a rock), but in moveOpts that step costs 2 moves.
 // RULES.SQUEEZE 0 = the old hard block. freeFor(...,squeeze=true) skips the gate test; squeezeCost tells moveOpts what a step costs.
 function freeFor(m,u,q,r,squeeze){if(!passable(q,r)&&!(u&&u.mt==='fly'&&u.size!==2&&solid(q,r)&&featAt(q,r)==='rock'))return false;const o=m.get(key(q,r));if(o&&o!==u)return false;if(!(squeeze&&RULES.SQUEEZE)&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r))return false;return true}
-const squeezeCost=(m,u,q,r)=>RULES.SQUEEZE&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r)?2:1;
+const squeezeCost=(m,u,q,r)=>RULES.SQUEEZE&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r)&&!utal(u,'stride')?2:1;
 function fitDir(m,u,q,r){
   if(!freeFor(m,u,q,r,true))return -1;
   if(!u||u.size!==2)return 0;
@@ -1307,7 +1308,7 @@ function cleanseValue(t){const d=debuffOf(t);if(!d)return 0;const w=Math.min(wor
 function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&oldCentre()?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill'||featAt(q,r)==='tower')?1:0))}
 // A flyer can perch on a rock: out of reach of walkers, but its attacks lose 1 range.
 const perched=u=>u.mt==='fly'&&u.kind!=='wall'&&featAt(u.q,u.r)==='rock';
-function abilCost(u,k){const F=facOf(u);if((k==='march'&&utal(u,'warchief'))||(k==='quicken'&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0)-(spellEcho(u)?1:0))}
+function abilCost(u,k){const F=facOf(u);if((k==='march'&&utal(u,'warchief'))||(k==='quicken'&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0)-(spellEcho(u)?1:0)+(onClaimOf(u,'chrono')?1:0))}// v45: magenta ground taxes enemy abilities
 // Spell Echo (Arcane Conclave talent): the Archmage's first spell each turn costs 1 AP less (u.echoed = already used this turn).
 const spellEcho=u=>!!(u.leader&&u.book&&!u.echoed&&utal(u,'spellecho'));
 // Spell range: green ground gives a mage's spells of range 2 or more +1 range (Arcane Conclave home bonus).
@@ -1322,7 +1323,8 @@ const inert=v=>!!(v&&(v.egg||v.statue));
 // v40: melee units (not the two-hex giants) +1 move on the random board; on the Crown Wilds every unit +1 and Leaders +1 more (machines and statues never move)
 // v41: an enemy of the Ember Court standing on red (fire) ground moves 1 less (Unstoppable ignores it)
 const redSlow=u=>RULES.RED_SLOW&&G&&!G.map&&u.mov>0&&G.players[u.owner]&&G.players[u.owner].fac!=='fire'&&G.players.some(p=>p.fac==='fire'&&p.alive&&tm(p.id)!==tm(u.owner))&&onRed(u)&&!hasTrait(u,'unstoppable')?1:0;
-function movBonus(u){if(u.kind==='wall'||u.machine||u.statue||u.egg||!u.mov)return 0;if(G&&G.map)return RULES.WILDS_MOV?1+(u.leader?1:0):0;return RULES.MELEE_MOV&&meleeAt(u.at)&&u.size!==2?1:0}// giants stay slow on the random board: their weakness is being kited (owner's picture); measured 3 Oct: with it giants won 77%
+function movBonus(u){if(u.kind==='wall'||u.machine||u.statue||u.egg||!u.mov)return 0;if(utal(u,'springs'))return movBase(u)+1;return movBase(u)}
+function movBase(u){if(G&&G.map)return RULES.WILDS_MOV?1+(u.leader?1:0):0;return RULES.MELEE_MOV&&meleeAt(u.at)&&u.size!==2?1:0}// giants stay slow on the random board: their weakness is being kited (owner's picture); measured 3 Oct: with it giants won 77%
 function effMov(u){const F=facOf(u);if(!u.mov)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
@@ -1347,7 +1349,7 @@ function machineShrug(t){if(!t.machine)return false;if(!SIM&&trk()){const e=tFx(
 function paintUnder(t,fac,ttl,owner,label){if(!RULES.GROUND2||!t||t.kind==='wall')return;let n=0;for(const [q,r] of cells(t)){const k=key(q,r);if(!solid(q,r)||isHeart(q,r))continue;const p=G.paint[k];if(p&&p.kind==='grove')continue;if(terrAt(q,r)===fac&&!(p&&p.fac===fac))continue;G.paint[k]={fac,ttl,owner};n++}
   if(n&&label&&!SIM&&trk()){const e=tFx(fac,'',label);if(e)e.uses+=n}}
 function frostPaint(t,src){if(t.kind==='wall')return;let owner=null;if(src&&src.fac==='ice'){const p=G.players.find(x=>x.fac==='ice'&&tm(x.id)!==tm(t.owner));if(!p)return;owner=p.id}else if(CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].fac==='ice'&&tm(CUR_SRC.owner)!==tm(t.owner))owner=CUR_SRC.owner;else return;paintUnder(t,'ice',2,owner,'Ice ground under an enemy (hexes)')}
-function chillT(t,n,src){if(t.kind==='wall'||machineShrug(t)||hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t)))return false;t.st.chill=Math.max(t.st.chill||0,n||2);frostPaint(t,src);
+function chillT(t,n,src){if((t.kind==='wall'&&!wildsCreature(t))||machineShrug(t)||hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t)))return false;t.st.chill=Math.max(t.st.chill||0,n||2);frostPaint(t,src);
   if(trk()&&!SIM){const e=src?tFx(src.fac,src.unit||'',src.name):srcFx();if(e)e.chills=(e.chills||0)+1}return true}
 // Freeze (Frost) or stun (Earthshaker): the unit loses its next turn. A frozen unit thaws chilled for 1 turn; a stunned one does not.
 // A unit that just thawed (st.fimm) can't be locked again on its next turn. Unstoppable units and giants on stone ground shrug off cold, not stuns.
@@ -1356,7 +1358,7 @@ function chillT(t,n,src){if(t.kind==='wall'||machineShrug(t)||hasTrait(t,'unstop
 function frostMark(src,t,n){if(!t||t.kind==='wall'||!alive(t)||machineShrug(t)||t.st.frozen>0)return;t.st.fb=(t.st.fb||0)+n;t.st.fbT=2;
   if(t.st.fb>=3){if(freezeT(t,false)){t.st.fb=0;t.st.fbT=0;if(trk()&&!SIM){const e=tFx('ice','','Frostbite (freezes)');if(e)e.uses++}}else t.st.fb=2}
   else fx(t,'frostbite '+t.st.fb+'/3','#bfefff')}
-function freezeT(t,stun){if(t.kind==='wall'||machineShrug(t))return false;if(t.st.fimm>0||(!stun&&(hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t))))){fx(t,'resists',stun?'#d9a45b':'#5cc8ff');return false}
+function freezeT(t,stun){if((t.kind==='wall'&&!wildsCreature(t))||machineShrug(t))return false;if(t.st.fimm>0||(!stun&&(hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t))))){fx(t,'resists',stun?'#d9a45b':'#5cc8ff');return false}
   if(!(t.st.frozen>0))tSup('stasisTurns',1);t.st.frozen=Math.max(t.st.frozen||0,1);if(stun)t.st.stun=1;else{t.st.stun=0;frostPaint(t,null)}fx(t,stun?'stunned':'frozen',stun?'#d9a45b':'#5cc8ff');return true}
 const isOutpost=(q,r)=>!!(G.outposts&&G.outposts.some(o=>o[0]===q&&o[1]===r&&solid(q,r)));
 // Ultimates recharge: each cast raises the next one's cost (8, 11, 14, ...).
@@ -1797,7 +1799,7 @@ function kill(t){
   if(t.poss){t.owner=t.poss.owner;t.home=t.poss.home;delete t.poss}
   addLog(t.owner,`${t.name} ${t.summon?'breaks apart':'falls'}.`);
   // Time Wraith (Hourglass, v28): the last Second Hand has fallen, so a Wraith answers at the start of this side's next turn (once per game).
-  if(hasTrait(t,'tempo')){const op=G.players[t.owner];if(op&&!op.wraith&&!op.wraithDue&&!G.units.some(v=>v.kind!=='wall'&&hasTrait(v,'tempo')&&(v.poss?v.poss.owner:v.owner)===op.id)){op.wraithDue=1;addLog(t.owner,'Both Second Hands have fallen: a Time Wraith will answer at the start of the next Hourglass turn.')}}
+  if(hasTrait(t,'tempo')){const op=G.players[t.owner];if(op&&!op.wraith&&!op.wraithDue&&!G.units.some(v=>v.kind!=='wall'&&hasTrait(v,'tempo')&&(v.poss?v.poss.owner:v.owner)===op.id)){op.wraithDue=1;if(SIM)addLog(t.owner,'Both Second Hands have fallen: a Time Wraith will answer at the start of the next Hourglass turn.');else spawnWraith(op)}}// v45: the Wraith answers at once, so a wiped-out Order still gets it
   vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:facOf(t).color,big:t.size===2,leader:t.leader});
   const k=CUR_SRC;
   if(trk()&&!SIM){const d=tStat(t);d.died=G.round;d.diedBy=k?(tm(k.owner)===tm(t.owner)?'self':k.name):(G.col&&G.col.justFell?'collapse':CUR_NAME===BEAST_SB?'beast':'other');
@@ -1927,7 +1929,9 @@ function hurt(t,n,col,tick){
 // Healing with tracking. name = the effect row ("Grove", "Heart healing"...); by = the id of an earlier caster to credit (a Druid's Grove); with neither, the current effect (CUR_SRC/CUR_NAME) gets it.
 // Also feeds Fervour (Zealot: u.fv = healing received this turn) and the priests' plan check (healing per damage taken).
 function healUnit(t,n,col,name,by){
-  if(!alive(t)||t.kind==='wall'||!(n>0))return 0;const h=Math.min(n,t.maxhp-t.hp);if(h<=0)return 0;
+  if(!alive(t)||t.kind==='wall'||!(n>0))return 0;
+  if(onClaimOf(t,'arcane')){if(!SIM)fx(t,'no healing here','#9a8cff');if(trk()&&!SIM){const e=tFx('arcane','','Indigo ground: heals denied');if(e)e.uses++}return 0}/* v45 */
+  const h=Math.min(n,t.maxhp-t.hp);if(h<=0)return 0;
   // Seared (Ember Court): no healing of any kind until the end of the unit's next turn; the heal it missed is credited to the fire unit that seared it.
   if(t.st&&t.st.seared>0){if(!SIM){fx(t,'seared','#ff9a3d');tFxBy(t.st.searBy,'fire','Seared (heals blocked)','blocked',h)}return 0}
   t.hp=r2(t.hp+h);t.fv=(t.fv||0)+h;
@@ -2137,7 +2141,13 @@ function resolveBarrier(){
     if(!SIM){addLog(t.owner,ret?`Retribution: ${a.name} struck a protected ${t.name} and takes ${d}.`:`${t.name}’s Barrier breaks and strikes ${a.name} for ${d}.`);vfx({k:'slash',from:[t.q,t.r],to:[a.q,a.r],col:ret?'#ffe9a8':'#ffd766'});if(ret&&trk()){const s=tStat(t);const e=s&&tFx(s.fac,s.name,'Retribution (passive)');if(e)e.uses++}}
     hurt(a,d,'#ffd766');[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 // The bonuses a basic attack carries beyond ATK minus DEF, by name, so each can be tracked as its own effect row.
+// v45 hostile ground for four more armies (owner: "make all the changes"; ideas of 3 Oct): an enemy standing on an army's CLAIMED ground (G.terr, not
+// painted patches or Groves) suffers there. Iron Warband bone: +1 from Warband basic attacks. Gnome pink: +1 from machine attacks. Hourglass magenta:
+// its abilities cost 1 more. Priests' indigo: it can't be healed. RULES.GROUND2 switches all ground weapons.
+const onClaimOf=(t,fac)=>RULES.GROUND2&&RULES.GROUND3&&t&&t.kind!=='wall'&&G.players[t.owner]&&G.players[t.owner].fac!==fac&&G.players.some(p=>p.fac===fac&&p.alive&&tm(p.id)!==tm(t.owner))&&cells(t).some(([q,r])=>G.terr[key(q,r)]===fac&&!(G.paint[key(q,r)]));
 function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
+  if(G.players[u.owner]&&G.players[u.owner].fac==='warband'&&onClaimOf(t,'warband'))o.push(['Bone ground (enemy on it)',1]);
+  if(u.machine&&onClaimOf(t,'gnomes'))o.push(['Pink ground (enemy on it)',1]);
   if(hasTrait(u,'tempo')&&(u.swings||0)>0)o.push(['Tempo (later strikes)',Math.min(2,u.swings)]);
   if((hasTrait(u,'finalsecond')||hasTrait(u,'delaybolt'))&&t.cut===u.owner)o.push(['Final Second',1]);
   // Fervour (Zealot): +1 per point of healing it received this turn, up to +3.
@@ -2258,7 +2268,7 @@ function aimCells(u,k){
   if(A.hits==='ally')pool.push(u);
   const out=[];
   for(const v of pool){
-    if(v.kind==='wall'){if((v.beast||v.monster)&&beastHittable(A)&&!hidden(u,v))out.push(...cells(v));continue}// the Rift Beast: any damaging ability aimed at enemies can hit it
+    if(v.kind==='wall'){if((v.beast||v.monster)&&beastHittable(A,v)&&!hidden(u,v))out.push(...cells(v));continue}// the Rift Beast: any damaging ability aimed at enemies can hit it
     const foe=tm(v.owner)!==tm(u.owner);
     if(A.hits==='foe'&&!foe)continue;if(A.hits==='ally'&&foe)continue;
     if(foe&&hidden(u,v))continue;
@@ -2298,7 +2308,7 @@ function shapeCells(u,k,q,r){
 }
 function areaUnits(u,A,area){
   const m=occ(),seen=new Set(),out=[];
-  for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v))continue;seen.add(v);if(v.kind==='wall'){if((v.beast||v.monster)&&beastHittable(A))out.push(v);continue}
+  for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v))continue;seen.add(v);if(v.kind==='wall'){if((v.beast||v.monster)&&beastHittable(A,v))out.push(v);continue}
     const foe=tm(v.owner)!==tm(u.owner);
     if(A.hits==='none')continue;
     if(A.hits==='foe'&&!foe)continue;
@@ -2309,7 +2319,7 @@ function areaUnits(u,A,area){
 }
 function abilityTargets(u,k,q,r){
   const A=ABIL[k];
-  if(A.special==='requiem')return G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&curseCount(v)>0&&distUU(u,v)<=A.range);
+  if(A.special==='requiem')return G.units.filter(v=>(v.kind!=='wall'?tm(v.owner)!==tm(u.owner):wildsCreature(v))&&curseCount(v)>0&&distUU(u,v)<=A.range);
   if(A.aim==='unit'||A.special==='dash'||A.special==='swap'){const t=unitAt(q,r);return t?[t]:[]}
   return areaUnits(u,A,shapeCells(u,k,q,r));
 }
@@ -2371,7 +2381,8 @@ function applyHit(u,t,A){
     if(L&&DIRS.some(d=>d[0]===L.v[0]&&d[1]===L.v[1]))b=unitBehind(c,t,1);// straight line: the unit just past the target (past both hexes of a giant)
     else{const dd=dirTo(c[0],c[1],t.q,t.r);let q=t.q,r=t.r;do{q+=DIRS[dd][0];r+=DIRS[dd][1]}while(unitAt(q,r)===t);b=unitAt(q,r)}
     if(b&&b!==t&&b.kind!=='wall'&&tm(b.owner)!==tm(u.owner)){const o=CUR_NAME,was=b.st.frozen>0;CUR_NAME=A.name+': chain freeze';if(freezeT(b,false)&&!was){const e=srcFx();if(e)e.uses++;if(!SIM)vfx({k:'bolt',from:[t.q,t.r],to:[b.q,b.r],col:'#bfefff'})}CUR_NAME=o}}
-  if(!alive(t)||t.kind==='wall')return;// the Rift Beast only takes the damage: no debuffs, no curses, no cold
+  if(alive(t)&&wildsCreature(t)){t.st.curses=t.st.curses||{};if(A.chill)chillT(t,2);if(A.freeze)freezeT(t,false);if(A.stun)freezeT(t,true);if(A.curse)applyCurse(u,t,A.curse);return}
+  if(!alive(t)||t.kind==='wall')return;// walls and the random board's Rift Beast only take the damage: no debuffs, no curses, no cold
   if(A.sear&&d>0)sear(u,t);
   if(A.sunder)sunderT(u,t,A.sunder);
   if(A.chill)chillT(t,2);
@@ -2693,7 +2704,10 @@ const BEAST_SB='Rift Beast strike-back';
 let BEAST_Q=[];// strike-backs waiting for the end of the current action (resolved in afterAction and after the machines' volley)
 // Abilities that can hit the beast: they deal damage and are aimed at enemies. Moves, swaps, hooks and buffs never touch it.
 const BEAST_NOT=['swap','hook','duel','possess','quicken','rewind','clock','blink','surge','dismantle','requiem','rally','march','build','trap','well','grove','wall','gainap','guard'];
-function beastHittable(A){return !!A&&(A.hits==='foe'||A.hits==='all'||A.hits==='any')&&!!(A.dmg||A.useAtk)&&!BEAST_NOT.includes(A.special)}
+// v45 (owner: Covenant and Frost lose their tools against monsters): on the Crown Wilds the room monsters, Dragons, the Wanderer and the Throne Beast
+// (not crates) can be chilled, frozen, stunned and cursed. A frozen or stunned creature skips its strike-back; curses tick on it at each round start.
+const wildsCreature=v=>RULES.CREATURE_FX&&!!G.map&&!!v&&v.kind==='wall'&&((v.monster&&v.monster!=='crate'&&v.monster!=='cracked')||v.beast);
+function beastHittable(A,v){if(!A||!(A.hits==='foe'||A.hits==='all'||A.hits==='any')||BEAST_NOT.includes(A.special))return false;return !!(A.dmg||A.useAtk)||(wildsCreature(v)&&!!(A.curse||A.chill||A.freeze||A.stun))}
 // The old 50% strike-back roll (v23-v26), kept only for reference: since v27 the Beast never strikes back and nothing calls it.
 function beastRoll(round,id,hp){let h=0x811c9dc5;for(const n of [round,id,Math.round(hp*2),0xbea57]){h^=n&0xffff;h=Math.imul(h,0x01000193);h^=n>>>16;h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
 function beastHurt(t,n,tick,hpB){
@@ -2826,7 +2840,7 @@ function actEvents(){
    when picked up (50% it turns into a real reward, 50% it curses the carrier and is gone); the flip is a hash of round, unit and room, so undo cannot reroll it.
    No Collapse, no flags, no Wellspring, no random relics, no Riftwalkers in this mode. Heart points (from round 10), loot and leader takedowns win. */
 const WILDS={R:17,open:10,target:12,hold:3,beastHp:16,kingAtk:2,kingDef:2,camp:[4,11],fort:[2,7],crypt:[9,3],vault:[-5,10],lair:[-8,16],stones:[14,0],tower:[5,5],lever:[0,10],
-  midAt:6,shardPts:1,dragonPts:3,stonesPts:3,stonesDark:4,suitHp:8,plateHp:5,gemMax:2,wanderMove:3,forgeRest:3};
+  midAt:6,shardPts:1,ramp2:'wide',dragonPts:3,stonesPts:3,stonesDark:4,suitHp:8,plateHp:5,gemMax:2,wanderMove:3,forgeRest:3};
 // v36 (owner, 1 Oct 2026): every room monster only answers the last unit that hit it, at the next round start. No more round-start strikes, no Ghoul packs.
 const MONSTERS={
   // v44 (owner 3 Oct 2026: "the damage and actions needed to kill monsters in rooms for minor buffs is wrong"): an average attacker (2.4 ATK) needed
@@ -2853,7 +2867,7 @@ const LOOT={
   suit:{name:'War Suit',text:`a unit that steps on it climbs in: ${8} extra HP that take every hit first, plus its item`,col:'#c9a24a'},
   captive:{name:'Captive',text:'a prisoner in chains: step on him to free him, then walk him into your camp',col:'#d8b49a'},
   relic:{name:'Ancient Relic',text:'the unit that brings it home carries a random relic',col:'#b98cff'},
-  cursed:{name:'Cursed Chest',text:'a coin flip when picked up: a Crown Shard, or a curse on the carrier',col:'#9a6bd0'}};
+  cursed:{name:'Mystery Chest',text:'a coin flip when picked up: a Crown Shard or an Ancient Relic, both to carry home',col:'#9a6bd0'}};
 const lootName=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].name+' Crown Shard':x.kind==='suit'&&SUIT_ITEMS[x.item]?`War Suit (${SUIT_ITEMS[x.item].name})`:LOOT[x.kind].name;
 const lootCol=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].col:LOOT[x.kind].col;
 const lootText=x=>x.kind==='gem'&&GEMS[x.gem]?`carry it home: +${WILDS.shardPts} point, and ${GEMS[x.gem].text}`:x.kind==='suit'&&SUIT_ITEMS[x.item]?`a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first (a giant straps it on as plating: ${WILDS.plateHp}), and ${SUIT_ITEMS[x.item].text}`:LOOT[x.kind].text;
@@ -2888,7 +2902,7 @@ function genWilds(){
   for(let q=7;q<=10;q++)set(q,0,'river');
   {const moat=cellsAll.filter(([q,r])=>hd(q,r,0,0)===6);for(const [q,r] of moat)set(q,r,'river');
    // v44 (owner: "access to the centre is so limited"): besides the camp bridges, six fords 2 hexes wide on the six main directions
-   for(const [q,r] of moat){const a=ang(q,r,0,0);if([0,1,2,3,4,5].some(k=>near(a,k*Math.PI/3+Math.PI/6,0.2)))set(q,r,'bridge')}
+   if(W.fords!==0)for(const [q,r] of moat){const a=ang(q,r,0,0);if([0,1,2,3,4,5].some(k=>near(a,k*Math.PI/3+Math.PI/6,0.2)))set(q,r,'bridge')}
    const bq=moat.slice().sort((a,b)=>hd(a[0],a[1],B[0],B[1])-hd(b[0],b[1],B[0],B[1])||Math.abs(ang(a[0],a[1],0,0)-angTo([0,0],B))-Math.abs(ang(b[0],b[1],0,0)-angTo([0,0],B)))[0];set(bq[0],bq[1],'bridge')}
   // Throne Hall: a stone ring right around the Heart (heartR+1) with a door on each axis; the doors are sealed by the centre wall until round WILDS.open
   ring([0,0],G.heartR+1,[0,Math.PI/2,Math.PI,-Math.PI/2],0.25,'rock',null,'door');
@@ -2901,7 +2915,7 @@ function genWilds(){
   const ad=(a,b)=>{let d=Math.abs(a-b)%(2*Math.PI);return d>Math.PI?2*Math.PI-d:d};
   const nearest=(cells,c,angles)=>new Set(angles.map(g=>cells.slice().sort((x,y)=>ad(ang(x[0],x[1],c[0],c[1]),g)-ad(ang(y[0],y[1],c[0],c[1]),g))[0]).map(x=>key(x[0],x[1])));
   // Hill Fort: a raised ledge (hill: +1 range and damage for ranged units), cliffs all round, one ramp up facing the camp, an outcrop at its back
-  {const face=angTo(F,B),r2=rg(F,2),ramp=nearest(r2,F,[face]);for(const [q,r] of disc(F,1))put(q,r,'hill','fort');
+  {const face=angTo(F,B),r2=rg(F,2),ramp=nearest(r2,F,W.ramp2==='wide'?[face-0.27,face+0.27]:W.ramp2?[face,face+Math.PI*2/3]:[face]);for(const [q,r] of disc(F,1))put(q,r,'hill','fort');// v45: the ramp is 2 hexes wide so one unit can't trap the others on the ledge (60 bot games: 27 time-outs vs 26 with one hex); a second ramp elsewhere (W.ramp2=1) slowed games (34)
    for(const [q,r] of r2)ramp.has(key(q,r))?put(q,r,'ramp','fort:gate'):put(q,r,'rock',null,'cliff');
    for(const [q,r] of rg(F,3))if(ad(ang(q,r,F[0],F[1]),face+Math.PI)<0.45)put(q,r,'rock',null,'cliff')}
   // Crypt: a graveyard. Iron fence at the front with two gates and one cracked section, the mausoleum wall at the back, tombstones inside
@@ -3029,9 +3043,9 @@ function pickupLoot(){
     if(lootOf(u))continue;x.carrier=u.id;
     if(x.kind==='cursed'){const good=lootFlip(u,x)<0.5;
       if(good){x.kind='gem';x.gem=(R&&R.gem)||GKEYS[Math.floor(lootFlip(u,Object.assign({},x,{id:x.id+7}))*GKEYS.length)];
-        addLog(u.owner,`${u.name} opens the Cursed Chest... and it holds a ${lootName(x)}! Carry it home.`);announce({k:'chest',good:true,fac:p.fac,unit:u.name,loot:lootName(x)})}
-      else{G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';applyCurse(u,u,'agony');applyCurse(u,u,'frailty');fx(u,'cursed!','#9a6bd0');
-        addLog(u.owner,`${u.name} opens the Cursed Chest... a curse! It is struck by Agony and Frailty.`);announce({k:'chest',good:false,fac:p.fac,unit:u.name})}
+        addLog(u.owner,`${u.name} opens the Mystery Chest... and it holds a ${lootName(x)}! Carry it home.`);announce({k:'chest',good:true,fac:p.fac,unit:u.name,loot:lootName(x)})}
+      // v45 (owner: fighting for a chest and then being cursed ruins the fun): the other side of the coin is an Ancient Relic, not a curse
+      else{x.kind='relic';addLog(u.owner,`${u.name} opens the Mystery Chest... and it holds an Ancient Relic! Carry it home.`);announce({k:'chest',good:true,fac:p.fac,unit:u.name,loot:lootName(x)})}
       continue}
     addLog(u.owner,`${u.name} picks up the ${lootName(x)}. Bring it back to camp!`);fx(u,lootName(x),lootCol(x));vfx({k:'buff',at:[u.q,u.r],col:lootCol(x),cam:1})}
 }
@@ -3078,8 +3092,8 @@ function spawnWanderer(){
   addLog(null,'Two levers are pulled: a trap door bursts open and the Wanderer runs out! It roams 3 hexes a round and only hits back when attacked. Its killing blow drops a Crown Shard.');
   vfx({k:'trapdoor',at:c,col:'#b9a2ff',cam:1});announce({k:'note',col:'#b9a2ff',t:'A trap door opens: the Wanderer runs free',s:'It roams the board and only hits back when attacked. Its killing blow drops a Crown Shard.'});
   if(trk()){const O=tObj();if(O)O.wander={round:G.round}}}
-function wanderRoam(){const m=G.wander&&byId(G.wander.id);if(!m||!alive(m))return;let last=null;
-  for(let i=0;i<WILDS.wanderMove;i++){const opts=DIRS.map(([a,b])=>[m.q+a,m.r+b]).filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!G.players.some(p=>inCamp(p,q,r))&&!(G.loot||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)&&!['runestone','lever','tower'].includes(featAt(q,r))&&!(last&&q===last[0]&&r===last[1]));// v43: never parks on a runestone, lever or tower
+function wanderRoam(){const m=G.wander&&byId(G.wander.id);if(!m||!alive(m))return;let last=null;if(m.heldRound===G.round)return;// v45: frozen this round: it stays
+  for(let i=0;i<WILDS.wanderMove-(m.st&&m.st.chill>0?1:0);i++){const opts=DIRS.map(([a,b])=>[m.q+a,m.r+b]).filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!G.players.some(p=>inCamp(p,q,r))&&!(G.loot||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)&&!['runestone','lever','tower'].includes(featAt(q,r))&&!(last&&q===last[0]&&r===last[1]));// v43: never parks on a runestone, lever or tower
     if(!opts.length)break;const c=opts[Math.floor(RNG()*opts.length)];last=[m.q,m.r];m.anim={fq:m.q,fr:m.r,t0:performance.now(),dur:300};m.q=c[0];m.r=c[1]}}
 // After every action and at each turn start: reveal rooms, levers, watchtowers, loot, held rooms, the Forge and the Standing Stones.
 function wildsTick(turnStart){
@@ -3125,12 +3139,17 @@ function wildsRound(){
     for(const R of G.rooms||[])if(R.type==='lair'){R.state='active';const c=unitAt(R.c[0],R.c[1])?roomFree(R)[0]:R.c;if(c){const m=makeMonster('dragon',c[0],c[1],R.id);G.units.push(m);R.monMax+=m.maxhp;vfx({k:'buff',at:c,col:'#ff7a1a'})}}
     addLog(null,`The Dragons wake! Each one's killing blow wins ${WILDS.dragonPts} points. The Standing Stones glow: hold all three runestones at the start of two turns in a row for ${WILDS.stonesPts} points.`);
     announce({k:'note',col:'#ff7a1a',t:'The Dragons wake and the Standing Stones glow',s:`Slay a Dragon: ${WILDS.dragonPts} points for the killing blow. Hold all three runestones of a circle for two turns: ${WILDS.stonesPts} points.`})}
+  // v45: curses tick on cursed creatures; a frozen or stunned creature skips its strike-back this round; chill wears off
+  for(const m of G.units.slice()){if(!wildsCreature(m)||!alive(m)||!m.st)continue;const n=curseCount(m);
+    if(n){const o2=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=m.st.curseBy!=null?byId(m.st.curseBy):null;CUR_TAG=null;CUR_NAME='Curse ticks';hurt(m,curseHit(m,n),'#e8e23a',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o2;
+      if(alive(m))for(const c of Object.keys(m.st.curses)){if(--m.st.curses[c]<=0)delete m.st.curses[c]}}}
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Room monster';
-  for(const m of G.units.slice()){if(!m.monster||!alive(m)||!m.atk||m.lastBy==null)continue;const a=byId(m.lastBy);m.lastBy=null;if(!a||!alive(a)||a.kind==='wall')continue;
+  for(const m of G.units.slice()){if(!m.monster||!alive(m))continue;if(m.st&&m.st.frozen>0){m.st.frozen--;m.heldRound=G.round;if(!m.st.frozen&&!m.st.stun)m.st.chill=Math.max(m.st.chill||0,1);m.st.stun=0;if(m.lastBy!=null){m.lastBy=null;if(!SIM)fx(m,'frozen: no strike','#bfefff')}continue}if(m.st&&m.st.chill>0)m.st.chill--;if(!m.atk||m.lastBy==null)continue;const a=byId(m.lastBy);m.lastBy=null;if(!a||!alive(a)||a.kind==='wall')continue;
     const d=Math.max(1,m.atk-effDef(a));CUR_NAME=m.monster==='dragon'?'Dragon fire':'Room monster';addLog(a.owner,`${m.name} ${m.monster==='dragon'?'breathes fire on':'strikes back at'} ${a.name} for ${d}.`);
     vfx({k:'slash',from:[m.q,m.r],to:[a.q,a.r],col:m.monster==='dragon'?'#ff7a1a':'#b9b3d6'});hurt(a,d,m.monster==='dragon'?'#ff7a1a':'#b9b3d6')}
   const b=G.units.find(v=>v.beast&&alive(v));
-  if(b&&G.beast&&G.beast.hitN>0){const a=byId(G.beast.lastBy);const d=1+G.beast.hitN;
+  if(b&&b.st&&b.st.frozen>0){b.st.frozen--;b.st.stun=0;if(G.beast)G.beast.hitN=0;if(!SIM)fx(b,'frozen: no strike','#bfefff')}// v45
+  else if(b&&G.beast&&G.beast.hitN>0){const a=byId(G.beast.lastBy);const d=1+G.beast.hitN;
     if(a&&alive(a)){CUR_NAME=BEAST_SB;addLog(a.owner,`The Rift Beast strikes back at ${a.name} for ${d}.`);vfx({k:'slash',from:[b.q,b.r],to:[a.q,a.r],col:'#b06bff'});hurt(a,d,'#b06bff')}}
   if(G.beast){G.beast.hitN=0}
   CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2];
@@ -3415,7 +3434,7 @@ function heuristic(u,k,q,r,ctx,dest){
     // for a striker that needs two walks to reach a target, and to pull a spent blade or the Leader out of a crowd.
     case 'riftmark':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)===tm(u.owner)||t.size===2||terrAt(q,r)==='rift')return 0;
       const movers=G.units.filter(v=>v.owner===u.owner&&v!==u&&v.kind!=='wall'&&(v.ability==='repel'||v.ability==='riptide'||v.ability==='well'||v.ability==='swap'||v.ability==='phaseswap')&&!(v.cd>0)&&distUU(v,t)<=4).length;if(!movers)return 0;
-      return 2+movers*0.8+(hd(t.q,t.r,0,0)>=G.R-2?2.5:0)+(t.leader||t.king?1.5:0)}
+      return 3.5+movers*1.0+(hd(t.q,t.r,0,0)>=G.R-2?2.5:0)+(t.leader||t.king?1.5:0)}// v45: was 2 + 0.8 a mover (cast 3 times in 15 games)
     case 'clock':{const t=unitAt(q,r);if(!t||t===u||t.acted&&!(t.freeAtk>0)||t.at==='none'||t.st.frozen||(t.st.clock>0))return 0;
       const reach=effMov(t)+effRng(t)+1,weak=ctx.foes.filter(f=>distUU(t,f)<=reach&&f.hp<=effAtk(t)+(hasTrait(t,'tempo')?2:0)).length;if(!weak)return 0;
       return 2.5+weak*1.5+(hasTrait(t,'tempo')?2.5:0)}
@@ -3769,7 +3788,7 @@ function draw3D(now){
       polyPath(hexTop(x,z,on?0.88:0.78,0));ctx.strokeStyle=on?'#fff3c4':'rgba(232,184,78,.95)';ctx.lineWidth=Math.max(1.5,CAM.S*(on?0.12:0.08));ctx.stroke()}
     if(hl.moves.has(k)){const mv=hl.moves.get(k);
       if(hl.ghost)groundRing(x,z,0.24,focusCol,2);
-      else groundRing(x,z,0.24,'#0b0e14',1.5,mv.gate?'#12d69a':'#ece8dd')}
+      else{const dz=dangerHexes();groundRing(x,z,0.24,'#0b0e14',1.5,mv.gate?'#12d69a':dz&&dz.has(k)?'#ff6b5b':'#ece8dd')}}
   }
   // bold gold border around the whole Heart so it never reads as ordinary ground
   {ctx.strokeStyle='#ffd766';ctx.lineWidth=Math.max(2,CAM.S*0.09);ctx.lineCap='round';
@@ -3801,8 +3820,8 @@ function draw3D(now){
   for(const it of list){
     const {u,pts,x,z}=it;const [sx,sy]=proj(x,z,0);
     if(u.kind==='prop'){drawProp3D(u.feat,x,z,sx,sy,s,c,u,now);continue}
-    if(u.beast){drawBeast3D(u,pts,x,z,sx,sy,now);continue}
-    if(u.monster&&GLON){const top=glUnit(u,pts,x,z,now,false);const [tx,ty]=proj(x,z,top+0.15);drawMonster2D(ctx,u,tx,ty-CAM.S*0.32,CAM.S*0.5,now);
+    if(u.beast){drawBeast3D(u,pts,x,z,sx,sy,now);queueStatusBadges(ctx,u,sx,sy-CAM.S*0.6,CAM.S*0.5,CAM.S*0.5);continue}
+    if(u.monster&&GLON){const top=glUnit(u,pts,x,z,now,false);const [tx,ty]=proj(x,z,top+0.15);drawMonster2D(ctx,u,tx,ty-CAM.S*0.32,CAM.S*0.5,now);queueStatusBadges(ctx,u,sx,sy-CAM.S*0.5,CAM.S*0.4,CAM.S*0.45);
       if(hl.atk.has(u.id))groundRing(x,z,0.8,'#ff6161',Math.max(2,CAM.S*0.1));drawnUnits.push({u,rect:[sx-0.6*CAM.S,ty-CAM.S*0.9,sx+0.6*CAM.S,sy+0.4*CAM.S],cell:[u.q,u.r]});continue}
     if(u.monster){const crate=u.monster==='crate',top=hexTop(x,z,0.6,crate?0.45:0.3),bot=hexTop(x,z,0.6,0);
       for(let i=0;i<6;i++){const j=(i+1)%6,na=Math.PI/180*(60*i),nz=Math.cos(na)*s+Math.sin(na)*c;if(nz<=0)continue;polyPath([top[i],top[j],bot[j],bot[i]]);ctx.fillStyle=mix(crate?'#6b4423':'#2a2140','#000000',0.4-0.3*nz);ctx.fill()}
@@ -4397,7 +4416,7 @@ function glTileColor(q,r,k){
   if(isHeart(q,r))return col.set(q===0&&r===0?GROUND.throne:GROUND.heart).lerp(new T.Color('#000000'),isCentreWall(q,r)?0.45:0);
   if(isNoMans(q,r)&&!G.map)col.lerp(new T.Color(GROUND.nomans),0.6);
   if(G.map){if(isRoad(q,r))col.lerp(new T.Color(GROUND.road),0.55);const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k))return col.set(GROUND.hidden)}
-  const tf=terrAt(q,r);if(tf){const fc=new T.Color(FAC[tf].color);col.lerp(fc,G.paint[k]?0.5:0.3)}
+  const tf=terrAt(q,r);if(tf){const fc=new T.Color(FAC[tf].color);col.lerp(fc,G.paint[k]?0.72:0.3)}
   if(isDoomed(q,r))col.lerp(new T.Color('#ff3c28'),0.35);
   return col}
 function glBuildTiles(){
@@ -5066,9 +5085,10 @@ function statusFlags(u){const s=u.st||{};return {frozen:s.frozen>0&&!s.stun,stun
 /* v41 status counters (owner 3 Oct 2026: "make chill, freeze and curse visible with a counter"): a column of pills on the left of the piece, one per
    effect, each with its sign and the number of the unit's own turns it still lasts. Frozen ❆, stunned ✦, chilled ❄, one ☠ per curse (so the count
    of curses is the count of skulls, what Requiem cares about), Sunder ⛏ and Hex ✧. Drawn in both views from the status overlay call sites. */
-function statusBadges(u){const s=u&&u.st;if(!s||u.kind==='wall')return [];const o=[];
+function statusBadges(u){const s=u&&u.st;if(!s||(u.kind==='wall'&&!(typeof wildsCreature==='function'&&wildsCreature(u))))return [];const o=[];
   if(s.frozen>0)o.push(s.stun?['stun',s.frozen,'#ffd766','#3a2a05']:['frozen',s.frozen,'#e4f8ff','#0b3a55']);
   if(s.chill>0)o.push(['chill',s.chill,'#2b8fd6','#ffffff']);
+  if(s.fb>0&&!(s.frozen>0))o.push(['chill',s.fb,'#e8f6ff','#1b6fae',s.fb+'/3']);// v45 Frostbite marks: the third one freezes
   for(const k of Object.keys(s.curses||{}))if(s.curses[k]>0)o.push(['curse',s.curses[k],'#7d6914','#fff4b0']);
   if(s.sunder>0)o.push(['sunder',s.sunder,'#8a5a22','#ffe3bf']);
   if(s.hex>0)o.push(['hex',s.hex,'#6b2fa8','#f0dcff']);
@@ -5091,16 +5111,14 @@ function drawStatusBadges(c,u,x,y,w,h){const L=statusBadges(u);if(!L.length)retu
   const r=Math.max(8,Math.min(12,Math.min(w,h)*0.36)),pw=r*2.9,ph=r*1.9,gap=Math.max(2,r*0.25);
   const x0=x-Math.min(w*0.5,pw*0.5),y0=y-((L.length-1)*(ph+gap))/2+h*0.1;// on the piece itself (left half), so it is never mistaken for a neighbour's
   c.save();c.textBaseline='middle';c.textAlign='center';
-  L.forEach(([k,n,bg,fg],i)=>{const px=x0,py=y0+i*(ph+gap);
-    c.beginPath();if(c.roundRect)c.roundRect(px-pw/2,py-ph/2,pw,ph,ph/2);else c.rect(px-pw/2,py-ph/2,pw,ph);c.fillStyle=bg;c.fill();c.lineWidth=Math.max(1.2,r*0.16);c.strokeStyle='rgba(8,10,14,.85)';c.stroke();
+  L.forEach(([k,n,bg,fg,lab],i)=>{const px=x0,py=y0+i*(ph+gap),wide=lab?1.35:1;
+    c.beginPath();if(c.roundRect)c.roundRect(px-pw/2,py-ph/2,pw*wide,ph,ph/2);else c.rect(px-pw/2,py-ph/2,pw*wide,ph);c.fillStyle=bg;c.fill();c.lineWidth=Math.max(1.2,r*0.16);c.strokeStyle='rgba(8,10,14,.85)';c.stroke();
     badgeIcon(c,k,px-pw*0.2,py,r*0.62,fg);
-    c.fillStyle=fg;c.font=`900 ${r*1.2}px Oxanium, sans-serif`;c.fillText(String(Math.ceil(n)),px+pw*0.24,py+0.5)});
+    c.fillStyle=fg;c.font=`900 ${r*(lab?1.0:1.2)}px Oxanium, sans-serif`;c.fillText(lab||String(Math.ceil(n)),px+pw*(lab?0.4:0.24),py+0.5)});
   c.restore()}
 function drawStatusFX(c,u,x,y,w,h,now){
   if(!u||!u.st||u.kind==='wall')return;const f=statusFlags(u);
-  if(u.st.fb>0&&!(u.st.frozen>0)){// Frostbite marks: one snowflake per mark over the head, a third one means it freezes
-    c.save();const m0=Math.min(w,h);c.font=`700 ${Math.max(9,m0*0.42)}px 'Segoe UI Symbol','Noto Sans Symbols 2',sans-serif`;c.textAlign='center';c.textBaseline='middle';
-    for(let i=0;i<3;i++){c.globalAlpha=i<u.st.fb?1:0.25;c.fillStyle=i<u.st.fb?'#dff6ff':'#5c7a8a';c.strokeStyle='#0b1a24';c.lineWidth=3;const px=x+(i-1)*m0*0.42,py=y-h*0.95;c.strokeText('❄',px,py);c.fillText('❄',px,py)}c.restore()}
+  // v45: Frostbite marks are shown as a counter pill (statusBadges) instead of snowflake glyphs over the head
   if(!(f.frozen||f.stun||f.chill||f.curse||f.seared||f.sunder||f.hex||f.glow||f.shield))return;
   const still=typeof stillMotion==='function'&&stillMotion(),t=still?0:now/1000,m=Math.min(w,h);
   c.save();
@@ -6142,7 +6160,7 @@ function annText(e){
     case 'room':return {col:'#b9b3d6',t:`${e.fac?annFac(e.fac):'Someone'} discovers the ${annEsc(e.room)}`,s:`Inside: ${annEsc(e.enc)}${e.loot?', guarding a treasure':''}.`};
     case 'note':return {col:e.col||'#ffd766',t:annEsc(e.t||''),s:annEsc(e.s||'')+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
-    case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Cursed Chest holds a ${annEsc(e.loot)}!`:`The Cursed Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Agony and Frailty. The chest is gone.'};
+    case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Mystery Chest holds ${/^[AEIOU]/.test(e.loot||'')?'an':'a'} ${annEsc(e.loot)}!`:`The Mystery Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Agony and Frailty. The chest is gone.'};
     case 'wraith':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} calls a Time Wraith!`,s:`Both Second Hands have fallen: the Wraith appears ${e.near?'beside the Chronarch':'at the army’s start'} (${WRAITH.hp} HP, ${WRAITH.atk} ATK, walks ${WRAITH.mov}).`};
     case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`${G.map?'On the Throne.':'In no man’s land around the Heart.'} The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
     case 'beastdown':return {col:FAC[e.fac].color,t:`The Rift Beast is slain by the ${annFac(e.fac)}!${e.pts?` +${e.pts} points`:''}`,s:e.pts&&e.scores?annStanding(e.team,e.scores):`+${RULES.BEAST_CHARGE} Ultimate charge.`};
@@ -6165,6 +6183,16 @@ function kingZoneDraw(now){if(!G||G.mode!=="warlord"||G.phase||RULES.KING_ADJ!==
     ctx.fillStyle=foe?`rgba(255,80,60,${0.18+0.12*pk})`:`rgba(255,215,102,${0.07+0.05*pk})`;ctx.fill();
     ctx.strokeStyle=foe?`rgba(255,90,70,${0.75+0.25*pk})`:`rgba(255,225,130,${0.55+0.3*pk})`;ctx.lineWidth=Math.max(2,vUnit()*(foe?0.12:0.08));ctx.setLineDash(foe?[]:[vUnit()*0.25,vUnit()*0.15]);ctx.stroke()}
   ctx.restore()}
+/* v45 danger hexes (owner's vision: show the stakes before a choice): the hexes any enemy could hit with a basic attack on its next turn, after moving.
+   Move dots on those hexes turn red. Cached per position of every piece. Abilities and Ultimates are not counted (basic attacks only). */
+let DANGER={k:null,set:null};
+function dangerHexes(){if(!G||G.phase||!isHumanTurn())return null;const me=tm(G.cur);
+  const k=G.round+'|'+G.cur+'|'+G.units.map(u=>u.id+':'+u.q+','+u.r).join(';');if(DANGER.k===k)return DANGER.set;
+  const set=new Set();
+  for(const v of G.units){if(v.kind==='wall'||tm(v.owner)===me||v.at==='none'||v.egg||v.statue||(v.st&&v.st.frozen>0))continue;
+    const q0=v.q,r0=v.r,d0=v.dir,spots=[[q0,r0,d0],...[...moveOpts(v,true).values()].map(o=>[o.q,o.r,o.dir])];
+    try{for(const [q,r,d] of spots){v.q=q;v.r=r;v.dir=d;for(const c of atkCells(v))set.add(c)}}finally{v.q=q0;v.r=r0;v.dir=d0}}
+  DANGER={k,set};return set}
 /* v40 turn recap (owner 3 Oct 2026: "when I make a choice, do I feel its impact?"). When a human ends a turn we remember the board; at the start of that
    player's next turn a small box says what happened in between: units lost and hurt, enemy losses, points scored and by what, a new King. */
 const RECAP={};
@@ -6347,7 +6375,7 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
 /* Status chips (v27, owner: "selecting a unit must show its buffs and debuffs noticeably"): every temporary state the engine keeps on a unit,
    as {k, ic (icon), nm (name), n (turns left, or a short text), col, good, tip}. Shown on the unit card and in the dock header; the board draws
    the matching overlays (vfx.js drawStatusFX). When the engine gets a new temporary state, add it here too. */
-function unitStatuses(u){if(!u||!u.st||u.kind==='wall')return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
+function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn, then chilled; Ice Lance and Shatter Strike deal double')}
   if(s.chill>0)add('chill','❄️','Chilled',s.chill,'#5cc8ff',0,'1 less move; Ice Lance deals double');
   if(s.fb>0)add('frostbite','❄','Frostbite '+s.fb+'/3',s.fbT,'#bfefff',0,'one more frost mark from 3 freezes it; marks fade after 2 of its turns without a new one');
@@ -6583,8 +6611,8 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u){
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
-  if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${RULES.BEAST_DEF} DEF · fills 3 hexes</b></p><p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. ${G.map?`It sleeps on the Throne and never moves. It never attacks on its own, but at the start of every round it strikes the last unit that hit it for 1 damage plus 1 for every hit it took that round`:`It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall)`}, and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
-  if(u.monster){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">${u.monster==='cracked'?'Obstacle':'Monster'}</div><h3 style="color:#c9b6ff">${u.name}</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${u.def} DEF${u.atk?' · '+u.atk+' ATK':''}</b></p><p class="hint" style="margin:6px 0 0">${({crate:'A locked crate: smash it open to free the treasure inside.',cracked:'A cracked wall: anyone can smash it. Once broken the way stays open.',dragon:`It never leaves its lair. At the start of each round it breathes fire on the last unit that hit it. Its killing blow wins ${WILDS.dragonPts} points.`,wanderer:'It roams 3 hexes a round. At the start of each round it hits back at the last unit that hit it. Its killing blow drops a Crown Shard.'})[u.monster]||'It never leaves its room and never attacks first: at the start of each round it hits back at the last unit that hit it. Clear the room to free its treasure.'}</p>`;return}
+  if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${RULES.BEAST_DEF} DEF · fills 3 hexes</b></p><p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. ${G.map?`It sleeps on the Throne and never moves. It never attacks on its own, but at the start of every round it strikes the last unit that hit it for 1 damage plus 1 for every hit it took that round`:`It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall)`}, and it can't be pushed, pulled or swapped${G&&G.map?'; it can be chilled, frozen, stunned and cursed (frozen or stunned, it skips its strike; curses tick on it each round)':', frozen, chilled, stunned or cursed'}. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
+  if(u.monster){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">${u.monster==='cracked'?'Obstacle':'Monster'}</div><h3 style="color:#c9b6ff">${u.name}</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${u.def} DEF${u.atk?' · '+u.atk+' ATK':''}</b></p>${statusChips(u,true)}<p class="hint" style="margin:6px 0 0">${u.monster!=='crate'?'Cold and curses work on it: frozen or stunned it skips its strike-back, curses tick on it each round. ':''}${({crate:'A locked crate: smash it open to free the treasure inside.',cracked:'A cracked wall: anyone can smash it. Once broken the way stays open.',dragon:`It never leaves its lair. At the start of each round it breathes fire on the last unit that hit it. Its killing blow wins ${WILDS.dragonPts} points.`,wanderer:'It roams 3 hexes a round. At the start of each round it hits back at the last unit that hit it. Its killing blow drops a Crown Shard.'})[u.monster]||'It never leaves its room and never attacks first: at the start of each round it hits back at the last unit that hit it. Clear the room to free its treasure.'}</p>`;return}
   if(u.kind==='wall'){el.innerHTML=`<div class="label">Obstacle</div><h3>${u.name}</h3><p class="hint">${u.hp}/${u.maxhp} HP. Gone in ${u.ttl} turn${u.ttl>1?'s':''} of its maker.</p>`;return}
   const p=P(u.owner),F=FAC[p.fac],pct=Math.max(0,u.hp/u.maxhp),M=MOVES[u.mt],AT=ATTACKS[u.at];
   const tags=[];
@@ -6709,7 +6737,7 @@ function showRules(){
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
   <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own camp, walled in its army's own material (a palisade, ice spires, obsidian spikes, standing stones...) with three gates and three roads: to the Throne Hall, to its Vault, and past its Crypt to the Standing Stones. Rivers and rubble block walking; flyers cross them and fly over walls. A unit on a <b>Watchtower</b> gets +1 range if ranged and sees into every hidden room within 4 hexes.
-    <br><b>Rooms</b> are hidden (dark, with a ?) until a unit steps into one. Every kind of place has its own shape: the <b>Hill Fort</b> is a raised ledge (high ground) with cliffs all round and one ramp up; the <b>Crypt</b> a graveyard with an iron fence at the front (two gates and a broken gap) and a mausoleum at the back; the <b>Vault</b> a half-moon of ruined arches open toward the two neighbours who share it; the <b>Dragon's Lair</b> a cave in the map edge with one wide mouth; the <b>Standing Stones</b> a clearing in a forest ring with two narrow paths in. Contents are dealt in mirror sets, so every corner of the map gets the same: every <b>Hill Fort</b> holds a Forge, a Captive or a Locked Crate (its Cursed Chest is a coin flip: a Crown Shard, or Agony and Frailty on the opener); every <b>Crypt</b> a Stone Guardian, a Locked Crate or a room to hold alone for ${WILDS.hold} of your turns, guarding a Crown Shard; each <b>Vault</b> (one between two neighbours) a Vault Golem guarding a <b>War Suit</b>. Monsters never leave their rooms and never attack first: at the start of each round they hit back at the last unit that hit them.
+    <br><b>Rooms</b> are hidden (dark, with a ?) until a unit steps into one. Every kind of place has its own shape: the <b>Hill Fort</b> is a raised ledge (high ground) with cliffs all round and one ramp up, 2 hexes wide; the <b>Crypt</b> a graveyard with an iron fence at the front (two gates and a broken gap) and a mausoleum at the back; the <b>Vault</b> a half-moon of ruined arches open toward the two neighbours who share it; the <b>Dragon's Lair</b> a cave in the map edge with one wide mouth; the <b>Standing Stones</b> a clearing in a forest ring with two narrow paths in. Contents are dealt in mirror sets, so every corner of the map gets the same: every <b>Hill Fort</b> holds a Forge, a Captive or a Locked Crate (its Mystery Chest is a coin flip: a Crown Shard or an Ancient Relic, both carried home); every <b>Crypt</b> a Stone Guardian, a Locked Crate or a room to hold alone for ${WILDS.hold} of your turns, guarding a Crown Shard; each <b>Vault</b> (one between two neighbours) a Vault Golem guarding a <b>War Suit</b>. Monsters never leave their rooms and never attack first: at the start of each round they hit back at the last unit that hit them.
     <br><b>Crown Shards</b> are gems: carry one into your camp and it is set in your army's crown (each gem counts twice at most). Gems do nothing by themselves; they power your side's <b>King</b>: Ruby +1 ATK, Sapphire +1 DEF, Emerald heals the King 1 a turn, Topaz +1 AP a turn, Amethyst +1 charge a turn, Onyx 1 damage to every enemy next to the King at your turn start. A carrier that dies drops its gem for anyone.
     <br><b>War Suit:</b> a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first, plus its item (Boots +1 move, Ogre Club +1 ATK or Tower Shield +1 DEF). A giant straps it on as ${WILDS.plateHp} HP of plating with the same item. When the suit breaks the unit steps out unhurt. <b>Forge:</b> a unit that starts your turn on it is tempered for good (+1 ATK, or +1 DEF if it has no attack); once per army, then the Forge rests ${WILDS.forgeRest} rounds. <b>Captive:</b> step on him to free him; he joins you (${CAPTIVE.hp} HP, no attack). Walk him into your camp and he takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).
     <br><b>Levers:</b> one near each camp. A unit standing on one pulls it for its side; once levers of two different sides are pulled, a trap door opens and the <b>Wanderer</b> runs out (once per game; 20 HP, no DEF, roams 3 hexes a round, only hits back). Its killing blow drops a Crown Shard.
@@ -6739,6 +6767,7 @@ function showRules(){
   <li><b>Red ground.</b> An enemy of the Ember Court standing on red ground moves 1 less. <b>Chill</b> also stops every free move (Hit and Run, Chase the Clock).</li>
   <li><b>Retribution</b> (Circle of Priests). Whoever hits a shielded or blessed Priest unit with an attack or ability takes 2 damage back (minus its DEF, at least 1), once per action.</li>
   <li><b>Ground as a weapon.</b> Some armies paint the ground under their enemies: Frost Hold’s chills and freezes leave blue ground (it chills again), the Covenant’s Bog Ring leaves pale ground (curses tick 1 harder there), and the Riftwalkers’ Rift Mark paints any hex teal (their pushes and pulls throw 1 hex further there).</li>
+  <li><b>Red move dots</b> mark hexes where an enemy could hit the unit with a basic attack on its next turn (abilities not counted). White dots are out of their reach.</li>
   <li><b>Counters on the board.</b> Pills beside a piece show what holds it and for how many of its turns: ice block = frozen, star = stunned, snowflake = chilled, one skull per curse, crack = Sunder, rune = Hex.</li>
   <li><b>Melee units move 1 further</b> (except the two-hex giants) than their listed move on the random board (included in the numbers you see). On the Crown Wilds every unit moves 1 further and Leaders 2.</li>
   <li><b>Pursuit.</b> A melee unit that hit an enemy on its last turn moves 1 more this turn, but only to hexes that bring it closer to that enemy.</li>
@@ -6757,7 +6786,7 @@ function showRules(){
   <li><b>Guards who take the hit.</b> Bodyguard (trait) redirects a <i>basic attack</i> aimed at an adjacent friendly Leader onto the guard. Abilities and Ultimates always land where they were aimed. The Hourglass Order has no guards or shields at all.</li>
   <li><b>Shield Wall</b> (Shieldbearer). Every friendly unit next to a Shieldbearer takes 1 less damage from ranged basic attacks and from abilities (never below 1); the Shieldbearer itself takes 1 less from every hit. Curse ticks and burning ground are not hits. No aiming: it is where the Shieldbearer stands that counts.</li>
   <li><b>Void Traps</b> (Riftwalkers). A Voidcaller tears open an empty hex for 3 of its side's turns (a black hex with a pulsing teal ring and the turns left). While open it is a void: nothing can step on it, and any unit shoved, pulled, dragged or thrown into it falls in and dies. Giants can't be moved, so they only take the slam.</li>
-  <li><b>Free actions</b> (Hourglass Order). Quicken gives a unit one extra basic attack this turn that costs no AP, even after it has acted; several Tempo Mages can Quicken the same unit in one turn. Chase the Clock (Rewinder) marks an ally for this turn: every enemy it kills gives it a free move at once (no AP, even after it has moved or attacked). A Second Hand strikes at most ${RULES.TEMPO_CAP} times a turn, each strike 1 harder than the last (4, 5, 6 before DEF), so a Leader or a giant survives one full combo. <b>Banked Time</b>: up to 2 unspent AP carry over to the next Hourglass turn (4 with Deep Pockets). <b>Time Wraith</b>: when both Second Hands have fallen, at the start of the next Hourglass turn a Time Wraith appears next to the Chronarch (at the army's start if he is dead too), once per game: ${WRAITH.hp} HP, ${WRAITH.atk} ATK, ${WRAITH.def} DEF, walks ${WRAITH.mov}, melee, no ability; a normal unit.</li>
+  <li><b>Free actions</b> (Hourglass Order). Quicken gives a unit one extra basic attack this turn that costs no AP, even after it has acted; several Tempo Mages can Quicken the same unit in one turn. Chase the Clock (Rewinder) marks an ally for this turn: every enemy it kills gives it a free move at once (no AP, even after it has moved or attacked). A Second Hand strikes at most ${RULES.TEMPO_CAP} times a turn, each strike 1 harder than the last (4, 5, 6 before DEF), so a Leader or a giant survives one full combo. <b>Banked Time</b>: up to 2 unspent AP carry over to the next Hourglass turn (4 with Deep Pockets). <b>Time Wraith</b>: when both Second Hands have fallen, a Time Wraith appears at once next to the Chronarch (at the army's start if he is dead too), once per game: ${WRAITH.hp} HP, ${WRAITH.atk} ATK, ${WRAITH.def} DEF, walks ${WRAITH.mov}, melee, no ability; a normal unit.</li>
   <li><b>Machines</b> (Gnome Tinkers). The gnomes build their army: Turrets, Mortars, Flame Turrets and Tesla Coils. A gnome builds for 2 AP on an <b>empty hex next to itself</b> (gnomes are tiny: they must walk up to the spot). Machines <b>never move</b>. <b>At the start of each gnome turn every machine fires on its own, for free</b>, at what it can reach for 1 damage each (Turret: one enemy on a straight line up to 4; Mortar: one enemy 2 to 5 away; Flame Turret: the nearest adjacent enemy and the two hexes beside it, 2 minus DEF each; Tesla Coil: 1 damage ignoring DEF to every enemy within 2). A machine finishes a kill if it can, otherwise it shoots the enemy Leader, otherwise the weakest enemy in reach. On top of that, a Turret, Mortar or Flame Turret may make <b>one full-strength basic attack of its own each turn for 2 AP</b>, at a target you pick (the Tesla Coil has no weapon). Build cooldowns: Turret and Flame Turret 2 turns, Mortar and Tesla Coil 3. The workshop holds at most <b>5 machines</b> on the board at once (Workshop full); a build button is greyed out until one falls apart, is destroyed or is dismantled. <b>Dismantle:</b> remove one of your machines within 4 hexes for free; this unit's build rests 1 turn less (every builder and the Gearmaster; no AP, no line of sight, uses neither the move nor the action, once per turn, gives nobody Ultimate charge). Every machine falls apart after 6 of the gnomes' turns. Machines can't be chilled, frozen or stunned. The gnomes themselves carry no weapons: the builders and the Gearmaster have no attack and no strike-back; only the Bombardiers fight by hand. Machines are summons: destroying one gives <b>no Ultimate charge and no veteran star</b>, they claim no ground, carry no relics, can't be possessed, can't be Leaders, and a side with only machines left is out. <b>Cover:</b> a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1); abilities, bombs, curses and strike-back are not reduced. Clockwork Rush gives 2 AP plus 1 for every 2 machines on the board (at most 5), repairs every machine to full, gives +1 ATK and makes every machine fire again at once.</li>
   <li><b>Battle Line</b> (Iron Warband): a Warband unit standing next to another Warband unit has +1 ATK, or +2 if one of its neighbours is the Warlord. The Warlord himself gets no bonus.</li>
   <li><b>Rally</b> (Warlord, 1 AP): every other Warband unit within 2 of him gets +1 ATK until the start of the Warband's next turn, strike-backs included.</li>
@@ -6771,7 +6800,7 @@ function showRules(){
   <li><b>Warlord points</b> come from five places: your King sitting on the Throne at the start of your turn (1 point, from round ${RULES.CENTRE_FROM}, every turn it sits there), killing the King (${RULES.KING_KILL} point), owning more flags than any other side at the start of your turn (1 point, from round ${RULES.FLAG_FROM}; a tie scores nothing; not in a 2-player duel), killing an enemy Leader (2 points at once) and the killing blow on the Rift Beast (${RULES.BEAST_PTS} points at once). First to ${RULES.WARLORD_TARGET} wins (10 with 4 or more players in free-for-all, 12 in team games). A leaderless army scores nothing (not even for the Rift Beast) until one of its units is crowned King: the King then becomes its new Leader. There is no win for being the last side with a Leader.</li>
   <li><b>The Throne and the King</b> (centre hex): whoever sits on the Throne is crowned King: ${kingText()} The Heart around it gives nothing by itself any more: it is where the fight for the Throne happens. (The hidden Conquest mode keeps the old Heart and Throne rules.)</li>
   <li><b>The walled centre:</b> until round ${RULES.CENTRE_FROM} the single ring of hexes right around the Heart is a stone wall (the outer half of the grey no man's land stays open). No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, dragged, teleported or swapped into it; a unit shoved into it takes the slam damage and stays. Straight shots stop at it (lobbed shots fly over). A warning comes at the start of round ${RULES.CENTRE_FROM-1}; at the start of round ${RULES.CENTRE_FROM} it falls and the Heart and the Throne start to count. After that the wall ring is ordinary grey ground that no army can colour.</li>
-  <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, the moment the wall falls, announced together with it a round before): a neutral monster on 3 hexes touching the ring right around the Heart (where the wall stood; if that is packed, the nearest free spot), ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall), and it can't be pushed, pulled, swapped, frozen, chilled, stunned or cursed. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. The Collapse never swallows the hexes it stands on (if its ring has already fallen, they crumble when it dies). If units stand where it breaks out, they are pushed to the nearest free hex; if there is no room at all, it breaks out at the start of the next round instead. There is only one per game.</li></ul>
+  <li><b>The Rift Beast</b> (round ${RULES.BEAST_AT}, the moment the wall falls, announced together with it a round before): a neutral monster on 3 hexes touching the ring right around the Heart (where the wall stood; if that is packed, the nearest free spot), ${RULES.BEAST_HP} HP and ${RULES.BEAST_DEF} DEF. It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall), and it can't be pushed, pulled or swapped${G&&G.map?'; it can be chilled, frozen, stunned and cursed (frozen or stunned, it skips its strike; curses tick on it each round)':', frozen, chilled, stunned or cursed'}. Every army may hit it with basic attacks and damaging abilities (Ultimates pass it by). The side that lands the killing blow gains ${RULES.BEAST_PTS} Warlord points at once (Warlord mode) and +${RULES.BEAST_CHARGE} Ultimate charge. The Collapse never swallows the hexes it stands on (if its ring has already fallen, they crumble when it dies). If units stand where it breaks out, they are pushed to the nearest free hex; if there is no room at all, it breaks out at the start of the next round instead. There is only one per game.</li></ul>
   <h3>Pillar 2: the Flanks</h3><ul>
   <li><b>Flank roads</b> (dashed line, the two outermost rings): from round ${RULES.ROAD_FROM}, a unit that starts its move there gets +${RULES.ROAD} move.</li>
   <li><b>Flags</b> (Outposts, between neighbouring armies): a unit that ends its move on a flag, or stands on it at the start of your turn, captures it and raises your banner. The flag <b>stays yours with nobody on it</b> until an enemy unit stands on it. Each flag you own gives +1 Ultimate charge at the start of your turn, and in Warlord the side owning MORE flags than anyone else scores 1 point per turn (from round ${RULES.FLAG_FROM}; a tie scores nothing; in a 2-player duel flags give Ultimate charge but no points). A partner's flag stays your partner's. The Collapse takes flags with the ring they stand on; an army that is knocked out leaves its flags neutral.</li>
@@ -7146,7 +7175,7 @@ function draw(now){
     const hc=homes.get(k);if(hc){hexPath(x,y,SZ*0.97);ctx.strokeStyle=hc;ctx.lineWidth=2;ctx.stroke()}
     if(hl.moves.has(k)){ctx.beginPath();ctx.arc(x,y,SZ*(window.innerWidth<700?0.36:0.3),0,7);
       if(hl.ghost){ctx.strokeStyle=focusCol;ctx.lineWidth=2;ctx.stroke()}
-      else{ctx.fillStyle=hl.moves.get(k).gate?'#12d69a':'#ece8dd';ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke()}}
+      else{const dz=dangerHexes();ctx.fillStyle=hl.moves.get(k).gate?'#12d69a':dz&&dz.has(k)?'#ff6b5b':'#ece8dd';ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke()}}
     if(hl.aim.has(k)){const on=G.aim&&G.aim[0]===q&&G.aim[1]===r;hexPath(x,y,SZ*0.97);ctx.fillStyle=on?'rgba(255,243,196,.38)':`rgba(232,184,78,${0.18+0.1*flick})`;ctx.fill();
       hexPath(x,y,SZ*(on?0.9:0.8));ctx.strokeStyle=on?'#fff3c4':'rgba(232,184,78,.95)';ctx.lineWidth=Math.max(1.5,SZ*(on?0.14:0.09));ctx.stroke()}
   }
@@ -7165,8 +7194,8 @@ function draw(now){
   for(const u of G.units){
     if(!visibleUnit(u))continue;
     const pts=unitPos(u,now);
-    if(u.beast){const [bx,by]=drawBeastBody(ctx,pts,SZ,now,u,hl.hitIds.has(u.id),G.inspect===u.id);if(hl.atk.has(u.id))crosshair(bx,by,SZ*0.95);continue}
-    if(u.monster){const [x,y]=pts[0];drawMonster2D(ctx,u,x,y,SZ,now);if(hl.atk.has(u.id))crosshair(x,y,SZ*0.8);continue}
+    if(u.beast){const [bx,by]=drawBeastBody(ctx,pts,SZ,now,u,hl.hitIds.has(u.id),G.inspect===u.id);if(hl.atk.has(u.id))crosshair(bx,by,SZ*0.95);queueStatusBadges(ctx,u,bx,by,SZ*0.8,SZ*0.8);continue}
+    if(u.monster){const [x,y]=pts[0];drawMonster2D(ctx,u,x,y,SZ,now);if(hl.atk.has(u.id))crosshair(x,y,SZ*0.8);queueStatusBadges(ctx,u,x,y,SZ*0.7,SZ*0.7);continue}
     if(u.kind==='wall'&&u.wall==='light'){const [x,y]=pts[0];ctx.save();ctx.shadowColor='#fff3a8';ctx.shadowBlur=SZ*0.6;hexPath(x,y,SZ*0.8);ctx.fillStyle='rgba(255,243,168,.45)';ctx.fill();ctx.restore();hexPath(x,y,SZ*0.8);ctx.strokeStyle='#fff3a8';ctx.lineWidth=2;ctx.stroke();
       ctx.fillStyle='#3a2f10';ctx.font=`700 ${SZ*0.55}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(u.hp,x,y+1);if(hl.atk.has(u.id))crosshair(x,y,SZ*0.72);continue}
     if(u.kind==='wall'){const [x,y]=pts[0];const ice=u.wall==='ice';hexPath(x,y,SZ*0.78);ctx.fillStyle=ice?'rgba(190,232,255,.85)':'#8c7458';ctx.fill();ctx.strokeStyle=ice?'#e8f8ff':'#d9a45b';ctx.lineWidth=1.5;ctx.stroke();
