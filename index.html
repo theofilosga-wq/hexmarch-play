@@ -892,12 +892,12 @@ const TALENTS={
   fire:[{k:'scorch',name:'Scorched Earth',text:'Your basic attacks set the target’s hex ablaze until your next turn.'},
         {k:'fury',name:'Pit Lord’s Fury',text:'Your Leader gets +2 ATK and +1 move.'},
         {k:'tithe',name:'Ember Tithe',text:'+1 Ultimate charge at the start of each of your turns.'}],
-  ice:[{k:'glacial',name:'Glacial Armour',text:'Your Leader starts each of your turns with a 2-point ice shield and can’t be pushed, pulled or thrown.'},
+  ice:[{k:'glacial',name:'Glacial Armour',text:'Your Leader starts each of your turns with a 3-point ice shield (and can’t be pushed, pulled or thrown).'},
        {k:'grip',name:'Winter’s Grip',text:'Enemies that start their turn next to any of your units are chilled.'},
        {k:'frostthrone',name:'Frozen Throne',text:'Blizzard freezes every enemy, not just those near your units.'}],
   giants:[{k:'avalanche',name:'Avalanche',text:'Earthquake reaches 4 hexes from each giant and deals 3 damage minus DEF.'},
           {k:'oldmountain',name:'Old Mountain',text:'Every giant standing on stone ground heals 1 HP at the start of your turn.'},
-          {k:'stride',name:'Titan Stride',text:'Your giants are never held by Hold the Line, and squeezing through a one-hex gap costs them no extra move.'}],
+          {k:'hunters',name:'Monster Hunters',text:'Your giants’ basic attacks deal +2 damage to room monsters, Dragons, the Wanderer and the Rift Beast.'}],
   gnomes:[{k:'salvage',name:'Salvage',text:'Whenever one of your machines is destroyed or falls apart, the gnome who built it has its ability cooldown reduced by 1.'},
           {k:'springs',name:'Spring-loaded',text:'All your gnomes are Swift (never held by Hold the Line) and move 1 hex further.'},
           {k:'surge',name:'Clockwork Surge',text:'Clockwork Rush gives 1 more AP (up to 6 instead of 5).'}],
@@ -1199,7 +1199,7 @@ function gated(m,q,r){let walls=0,hard=0;for(const [dq,dr] of DIRS){const a=q+dq
 // squeezing costs double). A giant may enter a gate hex (between two wall pieces, or a wall and a rock), but in moveOpts that step costs 2 moves.
 // RULES.SQUEEZE 0 = the old hard block. freeFor(...,squeeze=true) skips the gate test; squeezeCost tells moveOpts what a step costs.
 function freeFor(m,u,q,r,squeeze){if(!passable(q,r)&&!(u&&u.mt==='fly'&&u.size!==2&&solid(q,r)&&featAt(q,r)==='rock'))return false;const o=m.get(key(q,r));if(o&&o!==u)return false;if(!(squeeze&&RULES.SQUEEZE)&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r))return false;return true}
-const squeezeCost=(m,u,q,r)=>RULES.SQUEEZE&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r)&&!utal(u,'stride')?2:1;
+const squeezeCost=(m,u,q,r)=>RULES.SQUEEZE&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r)?2:1;
 function fitDir(m,u,q,r){
   if(!freeFor(m,u,q,r,true))return -1;
   if(!u||u.size!==2)return 0;
@@ -1345,7 +1345,7 @@ function engagedBy(u){return G.units.filter(v=>v.kind!=='wall'&&!inert(v)&&tm(v.
 const HOLD=new Set(['Shieldbearer','Frost Warden','Rampart','Penitent','Gargoyle','Mortar']);
 const holdsLine=v=>RULES.HOLD&&!!v&&HOLD.has(v.name)&&!(v.st&&(v.st.frozen>0))&&!v.statue;
 function engaged(u){const e=RULES.ENGAGE?engagedBy(u):engagedBy(u).filter(holdsLine);if(!e.length)return false;
-  return !(u.mt==='fly'||u.mt==='knight'||hasTrait(u,'swift')||hasTrait(u,'unstoppable')||hasTrait(u,'ambush')||utal(u,'springs')||(u.size===2&&utal(u,'stride')))}
+  return !(u.mt==='fly'||u.mt==='knight'||hasTrait(u,'swift')||hasTrait(u,'unstoppable')||hasTrait(u,'ambush')||utal(u,'springs'))}
 // Chill (v19): st.chill = how many of its own turns the unit still moves 1 less. chillT sets it to at least n (default 2).
 // src (optional {fac,unit,name}) credits the chill to a passive effect when no acting unit is set; otherwise the current effect gets it.
 // Machines (v21): cold and stuns don't reach their gears. Counted per army as "Cold immunity (machines)".
@@ -1691,7 +1691,7 @@ function beginTurn(){
     // Bless (Lightwarden, v27): heals 1 at the start of each of the owner's turns while it lasts (Seared blocks it like any heal).
     if(u.st.bless>0&&healUnit(u,1,'#ffe9a8','Bless',u.st.blessBy))vfx({k:'buff',at:[u.q,u.r],col:'#ffd766'});
     if(u.size===2&&talent(p,'oldmountain')&&onHome(u))healUnit(u,1,'#5fd68e','Old Mountain (talent)');
-    if(u.leader&&talent(p,'glacial')&&!(u.st.shield>0)){u.st.shield=2;u.st.shieldBy=-2;fx(u,'ice shield','#bfefff')}
+    if(u.leader&&talent(p,'glacial')&&!(u.st.shield>0)){u.st.shield=3;u.st.shieldBy=-2;fx(u,'ice shield','#bfefff')}
     if(G.units.some(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&utal(v,'grip')&&distUU(u,v)===1))chillT(u,2,{fac:'ice',name:'Winter’s Grip (talent)'});
     // Frost Hold's cold: blue ground under you chills you at the start of your turn.
     if(coldIn&&cells(u).some(([q,r])=>terrAt(q,r)==='ice')&&chillT(u,2,{fac:'ice',name:'Blue ground cold'}))fx(u,'chilled','#5cc8ff');
@@ -2167,6 +2167,8 @@ function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
   return o}
 function basicDmg(u,t,ret){
   const F=facOf(u);let dmg=Math.max(1,afterDef(effAtk(u),hasRelic(u,'shatter')&&t.kind!=='wall'?0:effDef(t)));
+  // v47 Monster Hunters (giants' talent, replaces Titan Stride): +2 against monsters and the Rift Beast
+  if((t.monster||t.beast)&&!ret&&u.size===2&&utal(u,'hunters')){dmg+=2;if(!SIM&&trk()&&CUR_SRC===u){const e=tFx('giants','','Monster Hunters (talent)');if(e)e.uses++}}
   if(t.kind!=='wall'){
     if(F.cursePlus&&curseCount(t)>0)dmg+=1;
     for(const [,n] of hitBonuses(u,t,ret))dmg+=n;
