@@ -625,7 +625,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -790,7 +790,7 @@ const ABIL={
 
   // Riftwalkers (v19): positioning army. Kill by throwing enemies off the board, into voids or into Void Traps.
   repel:{name:'Repel',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:1,shape:'single',push:3,
-    desc:'Blast an adjacent enemy 3 hexes straight away from the Repulsor. If it slams into something it takes slam damage (3); pushed off the board, into a void or into a Void Trap, it dies. Giants can\u2019t be moved and take the slam instead.'},
+    desc:'Blast an adjacent enemy 3 hexes straight away from the Repulsor. If it slams into a wall or a unit it takes 4 damage, plus 1 for each hex of the throw that was left (up to +2); thrown into a river, a small walking unit takes 2 more. Pushed off the board, into a void or into a Void Trap, it dies. Giants can\u2019t be moved, and neither can Crown Wilds monsters: they take the full slam instead (4 + 2).'},
   riftmark:{name:'Rift Mark',cost:1,cd:2,aim:'hex',range:3,special:'riftmark',bot:'riftmark',
     desc:'Turn a hex within 3 teal for 3 turns, even under an enemy. Riftwalkers on teal can step through the rift to any empty teal hex, and a Riftwalker push or pull moves an enemy standing on teal 1 hex further.'},
   /* v50 Sinkhole (owner 4 Oct 2026: "one more ability like the Void Trap but a bit different"). Aimed at the hex an ENEMY stands on: the ground
@@ -801,7 +801,7 @@ const ABIL={
   voidtrap:{name:'Void Trap',cost:2,cd:3,aim:'empty',range:3,special:'trap',bot:'trap',
     desc:'Tear open an empty hex within 3 (not the Heart) for 3 of your turns: it is a void. Nothing can step on it, and any unit pushed, pulled, dragged or thrown into it falls in and dies.'},
   riptide:{name:'Riptide',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:4,shape:'single',pull:3,bot:'riptide',
-    desc:'Drag one enemy within 4 up to 3 hexes toward the Tidecaller. Slamming into something stops it (slam damage 3); dragged over a void or a Void Trap, it falls in and dies. Giants can\u2019t be moved and take the slam instead.'},
+    desc:'Drag one enemy within 4 up to 3 hexes toward the Tidecaller. Slamming into a wall or a unit stops it: 4 damage, plus 1 for each hex of the drag that was left (up to +2); dragged into a river, a small walking unit takes 2 more. Dragged over a void or a Void Trap, it falls in and dies. Giants can\u2019t be moved, and neither can Crown Wilds monsters: they take the full slam instead (4 + 2).'},
   phaseswap:{name:'Phase Swap',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:3,special:'swap',bot:'phaseswap',
     desc:'Trade places with a one-hex enemy within 3: set it up on the edge, then let a Repulsor finish the job.'},
   swap:{name:'Rift Swap',cost:2,cd:4,aim:'unit',hits:'any',los:'lob',range:3,special:'swap',bot:'swap',
@@ -1008,7 +1008,7 @@ const FAC={
       {name:'Zealot',icon:'hammer',hp:9,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'fervour'}]},
   warband:{name:'Iron Warband',color:'#eef0f4',
     theme:'The phalanx: swords, spears and shields that move as one block. Shields in front soak the arrows, spears strike over the shields from the second rank, every warrior hits harder with a comrade at his shoulder, and the Warlord marches the whole block forward and rallies it before the clash. Two riders and a raider hunt whoever strays. No spells, no area damage: you learn the game by learning where to stand.',
-    passive:'Battle Line: a Warband unit standing next to at least one other Warband unit has +1 ATK. The Warlord himself gets no bonus. Walls and turrets do not count. King’s Guard: a Warband King with a comrade beside it has +1 ATK and +1 DEF. Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged attacks and abilities. Hold the Line: an enemy next to a Shieldbearer can only step 1 hex.',line:1,phalanx:1,
+    passive:'Battle Line: a Warband unit standing next to at least one other Warband unit has +1 ATK. The Warlord himself gets no bonus. Walls and turrets do not count. The Phalanx: 5 or more Warband units standing connected (each touching another of the group, in any shape) all have +1 ATK and +1 DEF, and an enemy next to any of them can only step 1 hex. King’s Guard: a Warband King with a comrade beside it has +1 ATK and +1 DEF. Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged attacks and abilities. Hold the Line: an enemy next to a Shieldbearer can only step 1 hex.',line:1,phalanx:1,
     home:'Bone ground: +1 ATK. An enemy standing on bone ground takes 1 more from Warband basic attacks.',homeAtk:1,
     units:[
       {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'march',ab2:'rally'},
@@ -1019,7 +1019,7 @@ const FAC={
       {name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:7,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
   rift:{name:'Riftwalkers',color:'#12d69a',voidWalk:1,
     theme:'Masters of displacement with thin bodies: they rarely kill with blows. They pull, swap and trap enemies into position, then throw them off the board or into a void.',
-    passive:'Crushing Pressure: enemies they shove into something take 3 slam damage instead of 2. Rift Mark (Voidcaller) paints a hex teal, even under an enemy: pushes and pulls throw an enemy on teal 1 hex further. Void-walkers: Riftwalkers walk across holes (voids, Void Traps, Sinkholes) as if they were solid ground and never fall in. Sinkhole (Phase Stalker) opens a hole under an enemy.',slam:1,
+    passive:'Crushing Pressure: enemies they throw into a wall or a unit take 4 slam damage instead of 2, plus 1 for each hex of the throw that was cut short (up to +2). Giants and Crown Wilds monsters cannot be moved and take the full 6. Any small walking unit thrown into a river takes 2 more (flyers stop at the bank unhurt). Rift Mark (Voidcaller) paints a hex teal, even under an enemy: pushes and pulls throw an enemy on teal 1 hex further. Void-walkers: Riftwalkers walk across holes (voids, Void Traps, Sinkholes) as if they were solid ground and never fall in. Sinkhole (Phase Stalker) opens a hole under an enemy.',slam:2,
     home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move, and a Riftwalker push or pull moves an enemy on teal 1 hex further. The Voidcaller’s Rift Mark paints any hex teal for 3 turns.',gate:1,
     units:[
       {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'swap'},
@@ -1035,13 +1035,11 @@ const FAC={
     units:[
       {name:'Hierophant',icon:'crown',leader:1,hp:13,atk:3,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
       {name:'Plague Priest',icon:'skull',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'miasma'},
-      {name:'Sorrow Priest',icon:'candle',hp:6,atk:2,def:0,mov:2,mt:'diag',at:'lob',rng:4,rmin:2,ab:'wither'},
+      {name:'Sorrow Priest',icon:'candle',n:2,hp:6,atk:2,def:0,mov:2,mt:'diag',at:'lob',rng:4,rmin:2,ab:'wither'},
       {name:'Bloodletter',icon:'drop',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'siphon',trait:'scavenger'},
       {name:'Mire Witch',icon:'hand',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bogring'},
       {name:'Censor',icon:'bell',hp:7,atk:2,def:0,mov:2,mt:'diag',at:'diag',rng:3,ab:'silence'},
-      {name:'Penitent',icon:'tomb',hp:18,atk:2,def:2,mov:2,mt:'line',at:'melee',rng:1,ab:'consecrate',trait:'bodyguard'},
-      {name:'Soul Thief',icon:'ghost',hp:6,atk:2,def:0,mov:2,mt:'fly',at:'bolt',rng:2,ab:'possess',trait:'swift'},
-      P_({name:'Acolyte',def:0,icon:'hood',n:1,hp:5,atk:3,trait:'martyr'})]},
+      {name:'Penitent',icon:'tomb',n:2,hp:18,atk:2,def:2,mov:2,mt:'line',at:'melee',rng:1,ab:'consecrate',trait:'bodyguard'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Sorrow Priest and a second Penitent took their places
   chrono:{name:'Hourglass Order',color:'#c81ca6',
     theme:'One overpowered combo: save AP, gather the Tempo Mages and a Rewinder around an assassin, Quicken it again and again so its blows land for 4, 5 and 6, and Chase the Clock so every kill gives it a free move to the next victim. Only the Second Hands and the Chronarch deal damage; everyone else is a fragile time mage. Kill the blades or the mages and the clock stops.',
     passive:'Banked Time: up to 2 unspent AP carry over to your next turn. When both Second Hands have fallen, a Time Wraith answers the Chronarch’s call (once per game).',bank:2,
@@ -1292,6 +1290,14 @@ function dotOf(u){return curseHit(u,curseCount(u))+paleBite(u)}
 function pendingDot(u){const c=u.st&&u.st.curses;if(!c)return 0;const ds=Object.values(c);let tot=0;for(let t=1;t<=5;t++){const n=ds.filter(x=>x>=t).length;if(!n)break;tot+=curseHit(u,n)}return tot}
 // Battle Line (Iron Warband): +1 ATK with a comrade of the same army at distance 1, +2 if that comrade is the Warlord. The Warlord himself gets nothing.
 function lineBonus(u){if(u.kind==='wall'||u.leader)return 0;const F=facOf(u);if(!F.line)return 0;let b=0;for(const v of G.units){if(v.id===u.id||v.kind==='wall'||v.summon||v.owner!==u.owner||distUU(u,v)!==1)continue;b=1}return b}// v20b: the Warlord's shoulder no longer doubles the bonus (Warband was 39 / 73 / 80 percent)
+/* v52 THE PHALANX (owner 5 Oct 2026: "as long as they keep formation they have maximum stats buff... figure out a positioning that you can do
+   with half the team that will serve as the combo of this team"). RULES.PHALANX (5) or more Warband units standing CONNECTED (each touching
+   another of the group; any shape: a line across a corridor, a ring round the Throne) are a Phalanx: every unit in it has +RULES.PHALANX_DEF DEF
+   (+RULES.PHALANX_ATK ATK) and holds the line like a Shieldbearer (RULES.PHALANX_HOLD). Walls, machines and summons do not count. */
+function phalanxSize(u){if(!RULES.PHALANX||!u||u.kind==='wall'||u.summon||!facOf(u).phalanx)return 0;
+  const cs=G.units.filter(v=>v.id!==u.id&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg);if(cs.length<RULES.PHALANX-1)return 1;
+  const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen.length}
+const inPhalanx=u=>RULES.PHALANX&&phalanxSize(u)>=RULES.PHALANX?1:0;
 // Phalanx (Iron Warband): comrades (same owner, no walls or summons) standing next to a unit. 2 or more = +1 DEF; also the plan check.
 function comradesAdj(u){if(u.kind==='wall')return 0;let n=0;for(const v of G.units){if(v.id===u.id||v.kind==='wall'||v.summon||v.owner!==u.owner||distUU(u,v)!==1)continue;n++}return n}
 // Melee-type attacks: melee, the pawns' forward strike and the Spearman's reach. Everything else is ranged (hill bonus, Shield Wall).
@@ -1308,12 +1314,12 @@ function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;r
 const kingsGuard=u=>!!RULES.KINGSGUARD&&u.king&&u.kind!=='wall'&&G.players[u.owner]&&G.players[u.owner].fac==='warband'&&G.units.some(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&distUU(u,v)===1)?1:0;
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u)+(u.oldAtk||0));
 }
 function effDef(u){
   if(u.kind==='wall')return u.beast?(u.def!=null?u.def:RULES.BEAST_DEF):u.monster?u.def:0;const F=facOf(u);
-  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def')+kingsGuard(u)+wildsDef(u));
+  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def')+kingsGuard(u)+(RULES.PHALANX_DEF&&inPhalanx(u)?RULES.PHALANX_DEF:0)+wildsDef(u));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
  Seared (Ember Court: Flame Breath, Fireball): st.seared=1 until the end of the target's next turn; every heal on it is blocked (healUnit).
@@ -1376,7 +1382,7 @@ function engagedBy(u){return G.units.filter(v=>v.kind!=='wall'&&!inert(v)&&tm(v.
 // v41 Hold the Line (owner 3 Oct 2026): pinning comes back as a trait on a few guard units, like Riposte for strike-back.
 // An enemy that stands next to one of these at the start of its move can only step 1 hex (fly, knight, Swift, Unstoppable, Ambush slip away).
 const HOLD=new Set(['Shieldbearer','Frost Warden','Rampart','Penitent','Gargoyle','Mortar']);
-const holdsLine=v=>RULES.HOLD&&!!v&&HOLD.has(v.name)&&!(v.st&&(v.st.frozen>0))&&!v.statue;
+const holdsLine=v=>RULES.HOLD&&!!v&&(HOLD.has(v.name)||(RULES.PHALANX_HOLD&&v.kind!=='wall'&&inPhalanx(v)))&&!(v.st&&(v.st.frozen>0))&&!v.statue;
 function engaged(u){const e=RULES.ENGAGE?engagedBy(u):engagedBy(u).filter(holdsLine);if(!e.length)return false;
   return !(u.mt==='fly'||u.mt==='knight'||hasTrait(u,'swift')||hasTrait(u,'unstoppable')||hasTrait(u,'ambush')||utal(u,'springs'))}
 // Chill (v19): st.chill = how many of its own turns the unit still moves 1 less. chillT sets it to at least n (default 2).
@@ -1783,6 +1789,7 @@ function endTurn(){
   if(G.over)return;
   const p=P(G.cur);
   p.bank=Math.max(0,Math.min(G.ap,bankOf(p)));tReady(p);G.combo=false;
+  if(RULES.PHALANX&&FAC[p.fac].phalanx&&!SIM&&trk()){const n=G.units.filter(u=>u.kind!=='wall'&&u.owner===p.id&&inPhalanx(u)).length;const e=tFx(p.fac,'','Phalanx: turns ended in formation');if(e){e.turns=(e.turns||0)+1;if(n){e.uses++;e.hits+=n}}}
   claimGround(p);
   for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){
     // Defender Barrier (v25): a unit that made no basic attack and used no ability this turn has a Barrier until an enemy hit breaks it.
@@ -2478,15 +2485,25 @@ function fallKill(t,q,r,src){const tr=G.traps&&G.traps[key(q,r)];const how=tr?'i
     if(tr){const by=trk().units[tr.by];const e2=tFx(G.players[tr.owner].fac,by?by.name:'','Void Trap');e2.kills++;if(t.leader)e2.lk++}}
   t.hp=0;t.fell=true;kill(t)}
 const tealBonus=(t,src)=>RULES.GROUND2&&src&&src.kind!=='wall'&&G.players[src.owner]&&G.players[src.owner].fac==='rift'&&t.kind!=='wall'&&tm(t.owner)!==tm(src.owner)&&cells(t).some(([q,r])=>terrAt(q,r)==='rift')?1:0;// v41b
-function pushUnit(t,d,n,src,quiet){
-  if(!alive(t)||t.kind==='wall')return;if(!quiet&&tealBonus(t,src)){n++;if(!SIM&&trk()){const e=tFx('rift','','Teal ground: pushed 1 further');if(e)e.uses++}}
+/* v52 (owner 5 Oct 2026: "thrown on a wall enemies take damage; thrown in a river they also take damage if they are small and can't fly").
+   Slam = RULES.SLAM (+1 Riftwalkers). New: a small walking unit thrown into a RIVER takes RULES.RIVER_SLAM more (a flyer stops at the bank, unhurt);
+   a Riftwalker throw hits harder the more of the throw was left when it hit: +1 per hex cut short, at most RULES.SLAM_MOM (mom0 = hexes left of a pull). */
+function pushUnit(t,d,n,src,quiet,mom0){
+  if(!alive(t))return;
+  if(t.kind==='wall'){// v52: a Crown Wilds monster, the Dragon, the Wanderer or the Throne Beast cannot be moved: like a giant it takes the slam instead
+    if(RULES.CREATURE_SLAM&&wildsCreature(t)&&src&&src.kind!=='wall'){hurt(t,slamOf(src)+(facOf(src).slam?RULES.SLAM_MOM:0),'#12d69a');fx(t,'immovable','#d9a45b')}return}if(!quiet&&tealBonus(t,src)){n++;if(!SIM&&trk()){const e=tFx('rift','','Teal ground: pushed 1 further');if(e)e.uses++}}
   const slam=slamOf(src),oq=t.q,or=t.r;
-  if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slam,'#12d69a');fx(t,'immovable','#d9a45b');return}
+  if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slam+(!quiet&&src&&src.kind!=='wall'&&facOf(src).slam?RULES.SLAM_MOM:0),'#12d69a');fx(t,'immovable','#d9a45b');return}
   for(let s=0;s<n;s++){
     const q=t.q+DIRS[d][0],r=t.r+DIRS[d][1];
     if(!solid(q,r)&&!(voidWalk(t)&&holeAt(q,r))){fallKill(t,q,r,src);return}
     const o=unitAt(q,r);
-    if((o&&o!==t)||isBlock(q,r)||isCentreWall(q,r)){hurt(t,slam,'#12d69a');break}
+    if((o&&o!==t)||isBlock(q,r)||isCentreWall(q,r)){const river=!(o&&o!==t)&&featAt(q,r)==='river';
+      if(river&&t.mt==='fly'){fx(t,'hovers over the water','#5cc8ff');break}
+      const mom=src&&src.kind!=='wall'&&facOf(src).slam?Math.min(RULES.SLAM_MOM,(n-s-1)+(mom0||0)):0,rv=river?RULES.RIVER_SLAM:0;
+      if((mom||rv)&&!SIM&&trk()){const sf=src&&src.kind!=='wall'&&G.players[src.owner]?G.players[src.owner].fac:null;if(sf){if(rv){const e=tFx(sf,'','Thrown into a river (extra damage)');if(e){e.uses++;e.dmg+=rv}}if(mom){const e=tFx(sf,'','Hard throw (extra slam damage)');if(e){e.uses++;e.dmg+=mom}}}}
+      if(rv)fx(t,'half drowned','#5cc8ff');
+      hurt(t,slam+mom+rv,'#12d69a');break}
     setAnim(t);t.q=q;t.r=r;
   }
   if(!quiet&&(t.q!==oq||t.r!==or))tSup('moved',1);
@@ -2497,8 +2514,9 @@ function pullUnit(t,src,n){
     if(!alive(t)||!alive(src))break;
     if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slamOf(src),'#12d69a');break}
     if(distUU(src,t)<=1)break;
-    const [cq,cr]=nearCell(src,t);
-    pushUnit(t,dirTo(t.q,t.r,cq,cr),1,src,true);
+    const [cq,cr]=nearCell(src,t);const pq=t.q,pr=t.r;
+    pushUnit(t,dirTo(t.q,t.r,cq,cr),1,src,true,n-s-1);
+    if(alive(t)&&t.q===pq&&t.r===pr)break;// it slammed into something: the drag ends (fixed v52: it used to slam once per remaining hex)
   }
   if(alive(t)&&(t.q!==oq||t.r!==or))tSup('moved',1);
 }
@@ -2801,7 +2819,7 @@ const BEAST_NOT=['swap','hook','duel','possess','quicken','rewind','clock','blin
 // v45 (owner: Covenant and Frost lose their tools against monsters): on the Crown Wilds the room monsters, Dragons, the Wanderer and the Throne Beast
 // (not crates) can be chilled, frozen, stunned and cursed. A frozen or stunned creature skips its strike-back; curses tick on it at each round start.
 const wildsCreature=v=>RULES.CREATURE_FX&&!!G.map&&!!v&&v.kind==='wall'&&((v.monster&&v.monster!=='crate'&&v.monster!=='cracked')||v.beast);
-function beastHittable(A,v){if(!A||!(A.hits==='foe'||A.hits==='all'||A.hits==='any')||BEAST_NOT.includes(A.special))return false;return !!(A.dmg||A.useAtk)||(wildsCreature(v)&&!!(A.curse||A.chill||A.freeze||A.stun))}
+function beastHittable(A,v){if(!A||!(A.hits==='foe'||A.hits==='all'||A.hits==='any')||BEAST_NOT.includes(A.special))return false;return !!(A.dmg||A.useAtk)||(wildsCreature(v)&&!!(A.curse||A.chill||A.freeze||A.stun||(RULES.CREATURE_SLAM&&(A.push||A.pull))))}// v52: throws can be aimed at Crown Wilds creatures (they take the slam)
 // The old 50% strike-back roll (v23-v26), kept only for reference: since v27 the Beast never strikes back and nothing calls it.
 function beastRoll(round,id,hp){let h=0x811c9dc5;for(const n of [round,id,Math.round(hp*2),0xbea57]){h^=n&0xffff;h=Math.imul(h,0x01000193);h^=n>>>16;h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
 function beastHurt(t,n,tick,hpB){
@@ -3642,6 +3660,7 @@ if(o.pilot!=null){const near=ctx.foes.some(f=>hd(f.q,f.r,o.q,o.r)<=6);return (ne
   // Phalanx (Warband): 2 or more comrades at your shoulders is +1 DEF and the plan; a Spearman wants a comrade between himself and the enemy;
   // when shooters are about, a warrior wants a Shieldbearer beside him and the Shieldbearer wants to stand in front.
   if(F.phalanx&&!u.summon&&d1<=6){const ph=x=>comradesAdj(x)>=2?1:0;s+=(ph(v)-ph(u))*3;
+    if(RULES.PHALANX){const N=RULES.PHALANX,a0=phalanxSize(u),b0=phalanxSize(v);s+=((b0>=N?1:0)-(a0>=N?1:0))*4+(Math.min(b0,N)-Math.min(a0,N))*0.7}// v52: join (and do not leave) the Phalanx
     if(u.at==='reach'){const behind=x=>foes.some(f=>distUU(x,f)===2&&G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&distUU(w,x)===1&&distUU(w,f)===1));if(behind(v)&&!behind(u))s+=2.5;if(behind(u)&&!behind(v))s-=2}
     const shooters=foes.some(f=>!meleeAt(f.at)&&f.at!=='none'&&distUU(f,v)<=effMov(f)+effRng(f)+1);
     if(shooters){const sb=x=>G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&hasTrait(w,'shieldwall')&&distUU(w,x)===1)?1:0;if(!hasTrait(u,'shieldwall'))s+=(sb(v)-sb(u))*1.8;
@@ -5955,9 +5974,9 @@ const LOSE_LINES={
   giants:'Only five bodies. Shoot from afar and walk away; never stand next to two of them.',
   gnomes:'Outside their machines the gnomes cannot fight: break a Walker and the pilot is helpless, wait the turrets out (they fall apart after 6 turns), and keep the Gearmaster away from his machines.',
   arcane:'Their damage comes from healing units that are already full: keep them wounded and spread out, stay more than 3 hexes from their healthy units, step off the holy ground, and never poke a shielded or blessed priest.',
-  warband:'Strong only shoulder to shoulder: split the block with area damage and pick off whoever stands alone.',
-  rift:'Thin bodies. Step off cracked ground at once, stay away from open holes, and kill the Repulsors and Phase Stalkers first.',
-  curse:'Fragile casters behind one tough Penitent: rush them before the curses stack.',
+  warband:'Strong only in formation: kill or drag one warrior out to break the Phalanx below five, hit the block with area damage, and pick off whoever stands alone.',
+  rift:'Thin bodies. Step off cracked ground at once, stay away from open holes, walls and river banks, and kill the Repulsors and Phase Stalkers first.',
+  curse:'Fragile casters behind two tough Penitents: rush the priests before the curses stack, and cleanse or heal through the rot.',
   chrono:'Everything depends on two Second Hands and their mages: kill either and the combo is gone.',
   mage:'One big turn, then every spellbook rests: bait the spells out, then charge. Smash the Gargoyle statues.',
 };
@@ -5967,8 +5986,8 @@ const WIN_LINES={
   giants:'Wins by weight: five huge giants that can’t be shoved around crush whatever they reach; ranged armies that keep their distance are their bane.',
   gnomes:'Wins with machines: unarmed gnomes build turrets, mortars and coils that fire for free every turn, or climb inside them and walk them into battle as Walkers; the Gearmaster’s Overclock makes every machine near him fire at once.',
   arcane:'Wins by overflowing: its healing mends the wounded, and every point that does not fit burns the nearest enemy. Holy ground heals its own and scorches intruders; Retribution punishes anyone who hits a shielded or blessed priest.',
-  warband:'Wins by standing together: a shield-and-spear block that hits harder shoulder to shoulder, marched forward by its Warlord, while riders hunt whoever strays.',
-  rift:'Wins by position: it opens holes in the ground (Void Traps, Sinkholes), then pulls, swaps and shoves enemies into them. Its own units walk across the holes as if they were solid.',
+  warband:'Wins by standing together: five or more warriors standing connected are a Phalanx (tougher, and nobody walks past it), so it plugs a corridor or rings the Throne while its riders hunt whoever strays.',
+  rift:'Wins by position: it opens holes in the ground (Void Traps, Sinkholes), then pulls, swaps and shoves enemies into them, or throws them hard against walls and into rivers. Its own units walk across the holes as if they were solid.',
   curse:'Wins by slow rot: it stacks curse after curse, lets them tick every turn, then the Hierophant cashes them all in at once.',
   chrono:'Wins with one big combo turn: save AP, gather the time mages around a Second Hand, Quicken it again and again so it strikes for 4, 5 and 6, and Chase the Clock so every kill gives it a free move to the next victim; kill the blades or the mages and it falls apart.',
   mage:'Wins with the right spell at the right moment: mages pick one spell a turn from their books and blast from where they stand, while Gargoyles take the blows and wake again from stone.',
@@ -6542,6 +6561,7 @@ function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))retu
   if(typeof hasBarrier==='function'&&hasBarrier(u))add('barrier','🛡','Barrier','until hit','#ffd766',1,'the first enemy attack or ability that hits it breaks it and takes 2 back');
   if(s.shield>0)add('shield','🔰','Shield',s.shield+' pt'+(s.shield>1?'s':''),'#d7c9ff',1,'soaks the next '+s.shield+' damage');
   if(u.leader&&G.players.length>=4&&!G.teams)add('guarded','♜','Guarded','always','#cfd3dc',1,'a Leader takes 1 less from attacks and abilities fired from 3 or more hexes away');
+  if(u.kind!=='wall'&&RULES.PHALANX&&facOf(u).phalanx&&inPhalanx(u))add('phalanx','▣','Phalanx','','#e8b84e',1,RULES.PHALANX+' or more Warband units standing connected: +1 ATK and +1 DEF each, and an enemy next to any of them can step only 1 hex');
   if(s.bless>0)add('bless','✚','Blessed',s.bless,'#ffd766',1,'+1 ATK, and heals 1 at the start of each of its turns');
   if(s.blessU>0)add('dawn','☀️','Hallowed Dawn',s.blessU,'#ffe9a8',1,'+1 ATK from the priests’ Ultimate');
   if(s.rally)add('rally','⚑','Rallied','until next turn','#eef0f4',1,'+1 ATK');
@@ -6798,6 +6818,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(hasTrait(u,'fervour'))tags.push(u.fv>0?`<span class="tag good">Fervour: +${Math.min(3,u.fv)} damage (healed ${u.fv} this turn)</span>`:'Fervour: no healing received this turn, no bonus');
   if(u.rage&&u.hp*2<=u.maxhp)tags.push('<span class="tag good">Raging: +2 ATK</span>');
   if(u.kind!=='wall'&&facOf(u).line&&!u.leader){const lb=lineBonus(u);tags.push(lb?`<span class="tag good">Battle Line +${lb} ATK${lb===2?' (next to the Warlord)':''}</span>`:'Battle Line: no comrade at its shoulder, no bonus')}
+  if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx&&RULES.PHALANX){const z=phalanxSize(u);tags.push(z>=RULES.PHALANX?`<span class="tag good">Phalanx: ${z} standing connected, +1 ATK, +1 DEF, enemies next to it step 1 hex only</span>`:`Phalanx: ${z} of ${RULES.PHALANX} connected, no bonus yet`)}
   if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx){const n=comradesAdj(u);tags.push(n>=1?`<span class="tag good">Battle Line: ${n} comrade${n===1?'':'s'} adjacent, +1 ATK</span>`:`Battle Line: no comrade adjacent, no bonus`);
     if(!hasTrait(u,'shieldwall'))tags.push(G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&hasTrait(w,'shieldwall')&&distUU(w,u)===1)?'<span class="tag good">Shield Wall: 1 less from ranged attacks and abilities</span>':'No Shieldbearer beside it')}
   if(u.st.rally)tags.push('<span class="tag good">Rallied: +1 ATK until the start of its next turn</span>');
