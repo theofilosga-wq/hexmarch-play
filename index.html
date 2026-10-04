@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>Hexmarch</title>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0e1117"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Hexmarch"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"></head><body><title>Hexmarch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;700;800&family=Barlow:wght@400;500;600&family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet">
@@ -7749,4 +7749,18 @@ function tutDraw(now){if(!TUT.on||!G||!G.tutorial)return;const S=TUT_STEPS[TUT.i
   const ay=y-U0*2.6+bob;ctx.fillStyle='#ffd766';ctx.beginPath();ctx.moveTo(x,ay+U0*0.9);ctx.lineTo(x-U0*0.45,ay+U0*0.3);ctx.lineTo(x-U0*0.16,ay+U0*0.3);ctx.lineTo(x-U0*0.16,ay-U0*0.3);ctx.lineTo(x+U0*0.16,ay-U0*0.3);ctx.lineTo(x+U0*0.16,ay+U0*0.3);ctx.lineTo(x+U0*0.45,ay+U0*0.3);ctx.closePath();ctx.fill();
   ctx.lineWidth=2;ctx.strokeStyle='#3a2a05';ctx.shadowBlur=0;ctx.stroke();ctx.restore()}
 
+</script>
+<script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
+(function(){
+  if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
+  window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+  var offer=null,btn=null;
+  function button(){
+    if(btn)return btn;var row=document.querySelector('.top .row');if(!row)return null;
+    btn=document.createElement('button');btn.className='btn sm';btn.id='installBtn';btn.textContent='Install app';btn.title='Add Hexmarch to this device like an app';
+    btn.onclick=function(){if(!offer)return;offer.prompt();offer.userChoice.then(function(){offer=null;btn.hidden=true})};
+    row.insertBefore(btn,row.firstChild);return btn}
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();offer=e;var b=button();if(b)b.hidden=false});
+  window.addEventListener('appinstalled',function(){offer=null;if(btn)btn.hidden=true});
+})();
 </script>
