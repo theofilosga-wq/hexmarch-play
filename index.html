@@ -628,7 +628,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={HEAVY:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -766,6 +766,21 @@ const ABIL={
   // v22c Dismantle: every builder's second button. Free (0 AP), uses neither the move nor the action, once per turn (cd 0 = cd2 1 until the next own turn).
   // aux: a side button, left out of "can this unit still do something" checks (canAbil(u) with no key), the strip badge and Delay.
   // v48 (owner 4 Oct 2026): the Gearmaster swings a fight. Every machine and Walker of his within 3 repairs 2 and fires once at a RANDOM enemy in its range.
+  /* v65 HEAVY WEAPONS (owner 6-7 Oct 2026): every gnome but the Bombardiers carries one weapon. Carried: it is the gnome's ability (carried:1), the
+     gnome walks 1 less and its basic attack adds the weapon's ATK. Set Down (1 AP, not an action): the weapon becomes a machine on a hex next to it
+     that fires on its own every turn at full strength, never expires and needs no workshop. Any empty-handed gnome may pick a weapon up by stepping
+     onto it. A destroyed weapon goes back to the gnome that owns it (no rest refreshed). Crew: a gnome next to a deployed weapon has +1 DEF and that
+     weapon deals +1. Ultimate Secret Weapon: once per game, permanent upgrades (p.secret). */
+  mortarshot:{name:'Mortar Shot',cost:2,cd:2,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:2,carried:1,
+    desc:'The carried Mortar: lob a shell at a hex 2 to 4 away; every enemy on it or next to it takes 2 damage minus DEF.'},
+  rivetgun:{name:'Rivet Gun',cost:2,cd:1,aim:'unit',hits:'foe',los:'bolt',range:4,shape:'single',dmg:3,carried:1,
+    desc:'The carried Turret: a straight shot up to 4 hexes for 3 damage minus DEF.'},
+  flamethrower:{name:'Flamethrower',cost:2,cd:2,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:2,carried:1,
+    desc:'The carried Flame Turret: a cone of fire 2 hexes deep, 2 damage minus DEF to every enemy in it.'},
+  arcshock:{name:'Arc',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:2,shape:'single',dmg:2,special:'lightning',arc:2,arcDmg:2,carried:1,
+    desc:'The carried Tesla Coil: 2 damage minus DEF to an enemy within 2, then the spark jumps to the nearest other enemy within 2 of it for 2 more.'},
+  deploy:{name:'Set Down',cost:1,cd:0,aim:'empty',range:1,special:'deploy',free:1,aux:1,bot:'deploy',
+    desc:'Set the carried weapon down on an empty hex next to this gnome. It fires on its own at the start of each of your turns, for free, at full strength. The gnome walks freely again and can still act this turn. Any empty-handed gnome can pick it up again by stepping onto it.'},
   overclock:{name:'Overclock',cost:2,cd:3,aim:'self',range:3,special:'overclock',bot:'overclock',
     desc:'Every machine and Walker of yours within 3 hexes of the Gearmaster repairs 2 HP and fires once, at full strength, at a random enemy in its range (a Tesla Coil zaps everyone within 2).'},
   dismantle:{name:'Dismantle',cost:0,cd:0,aim:'unit',hits:'ally',range:4,special:'dismantle',free:1,aux:1,bot:'dismantle',
@@ -930,9 +945,9 @@ const TALENTS={
   giants:[{k:'avalanche',name:'Avalanche',text:'Earthquake reaches 4 hexes from each giant and deals 3 damage minus DEF.'},
           {k:'oldmountain',name:'Old Mountain',text:'Every giant standing on stone ground heals 1 HP at the start of your turn.'},
           {k:'hunters',name:'Monster Hunters',text:'Your giants’ basic attacks deal +2 damage to room monsters, Dragons, the Wanderer and the Rift Beast.'}],
-  gnomes:[{k:'salvage',name:'Salvage',text:'Whenever one of your machines is destroyed or falls apart, the gnome who built it has its ability cooldown reduced by 1.'},
+  gnomes:[{k:'salvage',name:'Salvage',text:'Whenever one of your weapons is destroyed, the gnome who gets it back has its ability rest cut by 1.'},
           {k:'springs',name:'Spring-loaded',text:'All your gnomes are Swift (never held by Hold the Line) and move 1 hex further.'},
-          {k:'surge',name:'Clockwork Surge',text:'Clockwork Rush gives 1 more AP (up to 6 instead of 5).'}],
+          {k:'surge',name:'Clockwork Surge',text:'Your Secret Weapon needs 3 less Ultimate charge.'}],
   arcane:[{k:'martyrdom',name:'Martyrdom',text:'A Cleric\u2019s Mend also heals the Cleric itself by 2.'},
           {k:'sacredground',name:'Sacred Ground',text:'Groves last 5 turns instead of 3.'},
           {k:'lastrites',name:'Last Rites',text:'When one of your units dies, your units next to it heal 3.'}],
@@ -962,7 +977,7 @@ const ULTS={
   fire:{name:'Wildfire',text:'Every enemy takes 1 damage, ignoring DEF, or 2 if it is standing on red ground. Then the hex under every enemy bursts into flame for 3 turns.'},
   ice:{name:'Blizzard',text:'Every enemy takes 1 damage and is chilled. Enemies within 2 of any Frost Hold unit are frozen for their next turn.'},
   giants:{name:'Earthquake',text:'Every enemy within 3 of a giant takes 2 damage minus DEF and is shoved 1 hex away from the nearest giant.'},
-  gnomes:{name:'Clockwork Rush',text:'Your side gains 2 AP plus 1 for every 2 machines of yours on the board (at most 5), and every gnome may move again this turn. Every one of your machines is repaired to full HP, gets +1 ATK until the end of the turn and fires again immediately.'},
+  gnomes:{name:'Secret Weapon',text:'Once per game, for the rest of the game: every gnome weapon deals +1 damage (carried or set down), set-down weapons get +3 HP, every gnome gets +1 DEF; and each weapon learns a trick: Turrets pierce (the enemy behind is hit too), the Mortar’s shell bursts on the hexes around its target, the Flame Turret’s fire reaches one hex further, the Tesla Coil’s shock stuns.'},
   arcane:{name:'Radiance',text:'Every one of your units heals 3. Overflowing light: healing beyond full HP becomes damage (ignoring DEF) on the enemy nearest to that unit, within 3. A healthy army burns; a wounded one is mended.'},
   warband:{name:'Warhorn',text:'Your side gains 2 AP, and every unit of yours gets +2 ATK this turn and may act again, even if it already acted.'},
   rift:{name:'Rift Storm',text:'Open 3 holes on empty hexes anywhere on the board, at least 3 hexes apart. They stay open for 3 turns. They do not pull on the turn you cast; at the end of each of your next two turns, every enemy within 2 hexes of a hole is pulled 1 hex toward it, and one pulled into a hole falls and dies (a giant takes 6 damage instead). Then the holes close.',pick:3},
@@ -1008,14 +1023,14 @@ const FAC={
       {name:'Cliff Breaker',icon:'hammer',aoe:'cleave',hp:17,atk:4,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'smash'},
       {name:'Titan',icon:'fist',hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'crush',trait:'unstoppable'}]},
   gnomes:{name:'Gnome Tinkers',color:'#ff6ec7',
-    theme:'The summoners of Hexmarch, but they summon only machines: fragile gnomes full of tricks who make you fight their tin before you can catch them.',
-    passive:'Pilots: a gnome that walks onto one of your machines (not a Tesla Coil) climbs in and becomes a Walker: it walks 2, attacks with the machine’s weapon, and the machine’s HP take every hit first; when it breaks the gnome hops out unhurt. Cover: a gnome standing next to one of its own machines takes 1 less damage from enemy basic attacks (never below 1). Workshop: a gnome builds on an empty hex next to itself; at most 5 machines on the board at once. Machines never move, fire on their own for free at the start of your turn, may also make one full-strength basic attack of their own for 2 AP (not the Tesla Coil); the free fire deals 1 damage, fall apart after 6 of your turns, can’t be chilled, frozen or stunned, and give no Ultimate charge or veteran stars when destroyed. The builders and the Gearmaster carry no weapons at all (no attack, no strike-back): only the Bombardiers fight by hand.',cover:1,machineCap:5,
+    theme:'Tiny engineers hauling huge war machines. Carry a weapon to bring it to the fight, set it down to unleash it: you have to break their weapons before you can reach the gnomes.',
+    passive:'Heavy weapons: every gnome but the Bombardiers carries one weapon (the Gearmaster a Mortar, Tinkers Turrets, Flamewrights Flame Turrets, the Sparkwright a Tesla Coil). Carried, the weapon is the gnome’s ability, the gnome walks 1 less and its attack adds the weapon’s ATK. Set Down (1 AP, not an action): the weapon becomes a machine next to the gnome that fires on its own at the start of each of your turns, at full strength; it never runs out. Any empty-handed gnome picks a weapon up by stepping onto it. A destroyed weapon goes back to its gnome, who can set it up again. Crew: a gnome next to a deployed weapon has +1 DEF and that weapon deals +1.',
     home:'Pink ground: +1 move for gnomes (machines get nothing). An enemy standing on pink ground takes 1 more from machine attacks.',homeMov:1,
     units:[
-      {name:'Gearmaster',icon:'crown',leader:1,hp:12,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'mortar',ab2:'overclock',trait:'swift'},// v21: builders and Gearmaster deal no damage, the machines do (target about 80 percent of the army's damage)
-      {name:'Tinker',icon:'gear',n:3,hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'turret',ab2:'dismantle'},
-      {name:'Sparkwright',icon:'spark',hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'coil',ab2:'dismantle'},
-      {name:'Flamewright',icon:'flame',n:2,hp:7,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0,ab:'flameturret',ab2:'dismantle'},
+      {name:'Gearmaster',icon:'crown',leader:1,hp:12,atk:2,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'mortarshot',ab2:'overclock',trait:'swift',wpn:'mortar'},// v65: carries the Mortar// v21: builders and Gearmaster deal no damage, the machines do (target about 80 percent of the army's damage)
+      {name:'Tinker',icon:'gear',n:3,hp:9,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'rivetgun',wpn:'turret'},
+      {name:'Sparkwright',icon:'spark',hp:9,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'arcshock',wpn:'coil'},
+      {name:'Flamewright',icon:'flame',n:2,hp:9,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'flamethrower',wpn:'flame'},
       {name:'Bombardier',icon:'bomb',n:2,hp:7,atk:1,def:0,mov:3,mt:'fly',at:'lob',rng:3,rmin:2,ab:'bomb',trait:'explosive'}]},
   arcane:{name:'Circle of Priests',color:'#8f5cff',
     theme:'Healers, druids and creatures of light who win by outlasting: little damage, mending, shields, blessings and holy ground. Heal through the fight, punish attackers with Retribution, and let the blessed Zealot strike whoever comes close.',
@@ -1120,8 +1135,12 @@ const machineCount=pid=>G.units.filter(u=>u.owner===pid&&(u.machine||u.walker)).
    the machine leaves the board and the gnome becomes a WALKER: it walks 2, attacks with the machine's weapon (2 AP like any attack, no free
    auto-fire) and the machine's HP take every hit first (the War Suit rule: u.suitHp / u.suitMax, suitItem 'walker'). When that HP is gone the
    gnome hops out unhurt with its own stats back (walkerOut). u.walker = the machine kind, u.pre = the gnome's own attack and move. */
-const pilotable=(u,m)=>!!m&&m.machine&&m.machine!=='coil'&&m.owner===u.owner&&alive(m);
-const canPilot=u=>RULES.PILOTS&&u.kind!=='wall'&&!u.machine&&!u.summon&&!u.walker&&u.size===1&&!(u.suitHp>0)&&G.players[u.owner]&&!!FAC[G.players[u.owner].fac].machineCap;
+const pilotable=(u,m)=>!!m&&m.machine&&(RULES.HEAVY||m.machine!=='coil')&&m.owner===u.owner&&alive(m);
+function canPilot(u){if(!u||u.kind!=='wall'&&(u.machine||u.summon||u.walker))return false;if(!u||u.kind==='wall'||u.size!==1||u.suitHp>0||!G.players[u.owner])return false;
+  if(RULES.HEAVY)return G.players[u.owner].fac==='gnomes'&&!u.wpn&&u.mt!=='fly';// v65: an empty-handed gnome picks a weapon up by stepping onto it
+  return !!RULES.PILOTS&&!!FAC[G.players[u.owner].fac].machineCap}
+function pickUpWeapon(u,m){const i=G.units.indexOf(m);if(i>=0)G.units.splice(i,1);u.wpn=m.machine;u.wpnHp=Math.min(m.hp,MACHINES[m.machine].hp);u.wpnOwner=m.wpnOwner!=null?m.wpnOwner:m.builtBy;
+  if(!SIM){addLog(u.owner,`The ${u.name} picks up the ${m.name}.`);fx(u,'picks it up','#ff6ec7');if(trk()){const e=tFx('gnomes','','Weapons picked up');if(e)e.uses++;const d=tStat(m);if(d){d.died=G.round;d.diedBy='picked up'}}}}
 function walkerIn(u,m){const i=G.units.indexOf(m);if(i>=0)G.units.splice(i,1);
   u.pre={at:u.at,atk:u.atk,rng:u.rng,rmin:u.rmin,aoe:u.aoe,mov:u.mov,mt:u.mt};
   u.at=m.at;u.atk=m.atk;u.rng=m.rng;u.rmin=m.rmin||1;u.aoe=m.aoe||null;u.mov=2;u.mt='walk';
@@ -1145,9 +1164,16 @@ function machineTargets(c){
   return targetsIn(c,atkCells(c)).filter(v=>v.kind!=='wall');
 }
 // v24b (owner): the free auto-fire deals 1 damage at most; a commanded attack (2 AP) uses the machine's full ATK.
-function machineDmg(c,t){return 1}
+function machineDmg(c,t){if(!RULES.HEAVY)return 1;const sec=G.players[c.owner]&&G.players[c.owner].secret?1:0;if(c.machine==='coil')return 1+(crewed(c)?1:0)+sec;return Math.max(1,effAtk(c)+(crewed(c)?1:0)+sec-effDef(t))}// v65: deployed weapons fire at full strength
 // The machine finishes a kill if it can, else shoots the Leader, else the weakest enemy in reach.
 function machinePick(c,ts){return ts.slice().sort((a,b)=>{const ka=machineDmg(c,a)>=a.hp?1:0,kb=machineDmg(c,b)>=b.hp?1:0;if(ka!==kb)return kb-ka;if(!!a.leader!==!!b.leader)return (b.leader?1:0)-(a.leader?1:0);return a.hp-b.hp})[0]}
+// v65 Secret Weapon (part B): Turrets pierce (the enemy behind the target is hit too), the Mortar's shell bursts on the hexes around the target,
+// the Flame Turret's fire reaches one hex further, the Tesla Coil's shock stuns (handled where it zaps).
+function secretShot(c,t,col){const o=[];const d=dirTo(c.q,c.r,t.q,t.r);
+  if(c.machine==='turret'){const b=unitAt(t.q+DIRS[d][0],t.r+DIRS[d][1]);if(b&&b.kind!=='wall'&&tm(b.owner)!==tm(c.owner))o.push(b)}
+  if(c.machine==='mortar')for(const v of G.units)if(v!==t&&v.kind!=='wall'&&tm(v.owner)!==tm(c.owner)&&distUU(v,t)===1)o.push(v);
+  if(c.machine==='flame'){const b=unitAt(t.q+DIRS[d][0],t.r+DIRS[d][1]);if(b&&b.kind!=='wall'&&tm(b.owner)!==tm(c.owner))o.push(b)}
+  for(const v of o)if(alive(v))hurt(v,machineDmg(c,v),col)}
 function machineFire(p,name,tag){
   const col='#ff6ec7';
   for(const c of G.units.filter(c=>c.machine&&c.owner===p.id)){
@@ -1155,12 +1181,13 @@ function machineFire(p,name,tag){
     CUR_SRC=c;CUR_TAG=tag||'Basic';CUR_NAME=name;
     if(trk()&&!SIM){const e=srcFx();if(e)e.uses++;const s=tStat(c);if(s){s.attacks++;if(s.firstAct==null)s.firstAct=G.round}}
     if(c.machine==='coil'){vfx({k:'ab',ab:'coil',shape:'blast',from:[c.q,c.r],to:[c.q,c.r],cells:ringCells().filter(([a,b])=>hd(a,b,c.q,c.r)<=2),col});addLog(p.id,`${c.name} zaps ${ts.length} enem${ts.length>1?'ies':'y'}.`);
-      for(const v of ts)if(alive(v))hurt(v,1,col)}
+      for(const v of ts)if(alive(v)){hurt(v,RULES.HEAVY?machineDmg(c,v):1,col);if(RULES.HEAVY&&alive(v)&&G.players[c.owner]&&G.players[c.owner].secret)freezeT(v,true)}}
     else{const t=machinePick(c,ts);const extra=c.aoe==='arc'?splashTargets(c,t):[];
       vfx({k:c.at==='lob'?'lob':c.at==='melee'?'slash':'bolt',from:[c.q,c.r],to:[t.q,t.r],col,aoe:c.aoe,extra:extra.map(v=>[v.q,v.r])});
       if(extra.length)vfx({k:'ab',ab:'breath',shape:'arc',from:[c.q,c.r],to:[t.q,t.r],cells:[[t.q,t.r],...extra.map(v=>[v.q,v.r])],col});
       addLog(p.id,`${c.name} fires at ${t.name} for ${machineDmg(c,t)}${extra.length?` and ${extra.length} more (flame arc)`:''}.`);
-      hurt(t,machineDmg(c,t),col);for(const v of extra)if(alive(v))hurt(v,machineDmg(c,v),col)}
+      hurt(t,machineDmg(c,t),col);for(const v of extra)if(alive(v))hurt(v,machineDmg(c,v),col);
+      if(RULES.HEAVY&&G.players[c.owner]&&G.players[c.owner].secret)secretShot(c,t,col)}
     CUR_SRC=null;CUR_TAG=null;CUR_NAME=null;
   }
 }
@@ -1350,17 +1377,20 @@ function shieldWallFor(t,src,tag){if(!t||t.kind==='wall'||t.summon||!facOf(t).ph
   if(hasTrait(t,'shieldwall'))return t;
   return G.units.find(v=>v!==t&&v.kind!=='wall'&&v.owner===t.owner&&hasTrait(v,'shieldwall')&&distUU(v,t)===1)||null}
 // Cover (Gnome Tinkers): a gnome standing next to one of its own machines. Machines themselves get no Cover.
-function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;return G.units.some(v=>v.machine&&v.owner===t.owner&&distUU(v,t)===1)}
+// v65 Crew: a gnome (not a machine) next to one of its side's deployed weapons
+const heavyCrew=u=>!!RULES.HEAVY&&u.kind!=='wall'&&!u.machine&&!u.summon&&!!G.players[u.owner]&&G.players[u.owner].fac==='gnomes'&&G.units.some(v=>v.machine&&v.owner===u.owner&&distUU(v,u)===1);
+const crewed=m=>!!RULES.HEAVY&&!!m.machine&&G.units.some(v=>v!==m&&v.kind!=='wall'&&!v.machine&&!v.summon&&v.owner===m.owner&&distUU(v,m)===1);
+function covered(t){if(RULES.HEAVY)return false;if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;return G.units.some(v=>v.machine&&v.owner===t.owner&&distUU(v,t)===1)}
 // v50 King's Guard: a Warband King with a Warband comrade beside it has +1 ATK and +1 DEF (the phalanx holds the Throne)
 const kingsGuard=u=>!!RULES.KINGSGUARD&&u.king&&u.kind!=='wall'&&G.players[u.owner]&&G.players[u.owner].fac==='warband'&&G.units.some(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&distUU(u,v)===1)?1:0;
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.HEAVY&&u.wpn&&!u.machine&&MACHINES[u.wpn]?MACHINES[u.wpn].atk:0)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u)+(u.oldAtk||0));
 }
 function effDef(u){
   if(u.kind==='wall')return u.beast?(u.def!=null?u.def:RULES.BEAST_DEF):u.monster?u.def:0;const F=facOf(u);
-  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def')+kingsGuard(u)+(RULES.PHALANX_DEF&&inPhalanx(u)?RULES.PHALANX_DEF:0)+wildsDef(u));
+  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(hasCurse(u,'frailty')?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def')+kingsGuard(u)+(heavyCrew(u)?1:0)+(RULES.HEAVY&&u.kind!=='wall'&&!u.machine&&G.players[u.owner]&&G.players[u.owner].secret?1:0)+(RULES.PHALANX_DEF&&inPhalanx(u)?RULES.PHALANX_DEF:0)+wildsDef(u));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
  Seared (Ember Court: Flame Breath, Fireball): st.seared=1 until the end of the target's next turn; every heal on it is blocked (healUnit).
@@ -1420,7 +1450,7 @@ function movBase(u){if(G&&G.map)return RULES.WILDS_MOV?1+(u.leader?1:0):0;return
 const isRiftSrc=src=>!!RULES.RIFTKIT&&!!src&&src.kind!=='wall'&&!!G.players[src.owner]&&G.players[src.owner].fac==='rift';
 function rMark(t,src){if(!RULES.RIFTKIT||!t||t.kind==='wall'||!alive(t)||!isRiftSrc(src)||tm(t.owner)===tm(src.owner))return;const fresh=!(t.st.rmark>0);t.st.rmark=2;t.st.rmBy=src.owner;
   if(fresh&&!SIM){fx(t,'rift-marked','#12d69a');if(trk()){const e=tFx('rift','','Rift Mark (enemies marked)');if(e)e.uses++}}}
-function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
+function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(RULES.HEAVY&&u.wpn&&!u.machine?1:0)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
 const isRoad=(q,r)=>G.map?!!(G.roads&&G.roads[key(q,r)]):hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
@@ -1457,7 +1487,7 @@ function freezeT(t,stun){if((t.kind==='wall'&&!wildsCreature(t))||machineShrug(t
   if(!(t.st.frozen>0))tSup('stasisTurns',1);t.st.frozen=Math.max(t.st.frozen||0,1);if(!stun&&RULES.FREEZE_HOLD){const by=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC.owner:G.cur;if(by!==t.owner){t.st.frzBy=by;t.st.frzLost=0}}if(stun)t.st.stun=1;else{t.st.stun=0;frostPaint(t,null)}fx(t,stun?'stunned':'frozen',stun?'#d9a45b':'#5cc8ff');return true}
 const isOutpost=(q,r)=>!!(G.outposts&&G.outposts.some(o=>o[0]===q&&o[1]===r&&solid(q,r)));
 // Ultimates recharge: each cast raises the next one's cost (8, 11, 14, ...).
-function ultNeed(p){return RULES.ULT+RULES.ULT_STEP*(p.ultN||0)-(talent(p,'paradox')?3:0)}
+function ultNeed(p){return RULES.ULT+RULES.ULT_STEP*(p.ultN||0)-(talent(p,'paradox')?3:0)-(RULES.HEAVY&&talent(p,'surge')?3:0)}
 function addCharge(pid,n,why){const p=G.players[pid];if(!p||!p.alive||n<=0)return;const need=ultNeed(p),was=p.ult||0;p.ult=Math.min(need,was+n);if(p.ult>=need&&was<need)addLog(pid,`${FAC[p.fac].name}: ${ULTS[p.fac].name} is ready!`)}
 // The side in the lead (clearly the strongest army left) carries a bounty: its units give +1 extra charge when killed.
 function teamPower(){const w={};for(const u of G.units){if(u.kind==='wall'||u.summon)continue;const t=tm(u.owner);w[t]=(w[t]||0)+worth(u)*Math.max(0.2,u.hp/u.maxhp)}return w}
@@ -1468,13 +1498,13 @@ function makeUnit(p,d){
   const F=FAC[p.fac];
   return {id:G.nid++,owner:p.id,leader:!!d.leader,pawn:!!d.pawn,name:d.name,icon:d.icon,glyph:glyphOf(d),hp:d.hp,maxhp:d.hp,atk:d.atk,def:d.def,
     mov:d.mov,mt:d.mt,at:d.at,aoe:d.aoe||null,rng:d.rng,rmin:d.rmin||(d.at==='lob'?2:1),size:d.size||F.size||1,dir:0,q:0,r:0,moved:false,acted:false,cd:0,mom:false,rage:!!d.rage,
-    stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:d.ab||null,ability2:d.book?null:(d.ab2||null),cd2:0,book:d.book?d.book.slice():null,trait:d.trait||null,home:p.home};
+    stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:d.ab||null,ability2:d.book?null:(d.ab2||null),cd2:0,book:d.book?d.book.slice():null,trait:d.trait||null,home:p.home,wpn:d.wpn||null,wpnHome:d.wpn||null};
 }
 // Units may carry a second ability (the Warlord: March and Rally). Cooldowns: u.cd for the first, u.cd2 for the second.
 // Spellbooks (Arcane Conclave, v22): u.book lists 2 or 3 spells that share ONE cooldown, u.cd: casting any of them rests them all.
-function abilsOf(u){if(u.book)return u.book.slice();const o=[];if(u.ability)o.push(u.ability);if(u.ability2)o.push(u.ability2);return o}
-function cdOf(u,k){if(u.book)return u.cd||0;return k&&k===u.ability2?(u.cd2||0):(u.cd||0)}
-function setCd(u,k,n){if(u.book){u.cd=n;return}if(k&&k===u.ability2)u.cd2=n;else u.cd=n}
+function abilsOf(u){if(u.book)return u.book.slice();const o=[];if(u.ability&&!(ABIL[u.ability].carried&&!u.wpn))o.push(u.ability);if(u.ability2&&!(ABIL[u.ability2].carried&&!u.wpn))o.push(u.ability2);if(RULES.HEAVY&&u.wpn&&!u.machine)o.push('deploy');return o}
+function cdOf(u,k){if(k==='deploy')return 0;if(u.book)return u.cd||0;return k&&k===u.ability2?(u.cd2||0):(u.cd||0)}
+function setCd(u,k,n){if(k==='deploy')return;if(u.book){u.cd=n;return}if(k&&k===u.ability2)u.cd2=n;else u.cd=n}
 // Draconic Pact (talent): the Drake has +4 HP. Applied when the game starts (after deployment, where the talent can still change).
 function talentStats(){for(const u of G.units){if(u.kind==='wall'||u.name!=='Drake'||G.players[u.owner].fac!=='mage')continue;const d=FAC.mage.units.find(x=>x.name==='Drake');const hp=d.hp+(utal(u,'draconic')?4:0);u.hp=u.maxhp=hp}}
 /* ---------- deployment ----------
@@ -1963,6 +1993,7 @@ function kill(t){
     const ks=k&&tm(k.owner)!==tm(t.owner)?tStat(k):null;if(ks){ks.kills++;if(t.leader)ks.leaderKills++;const e=srcFx();if(e){e.kills++;if(t.leader)e.lk++}if(ks.fac==='rift')tPlan('rift',0,1)}
     if(t.leader)trk().events.push({k:'leaderDown',round:G.round,fac:d.fac,by:ks?ks.fac:null,byUnit:ks?ks.name:null})}
   salvage(t);
+  if(RULES.HEAVY&&t.machine){const g=byId(t.wpnOwner!=null?t.wpnOwner:t.builtBy);if(g&&alive(g)&&!g.wpn&&g.owner===t.owner){g.wpn=t.machine;g.wpnHp=null;g.wpnOwner=g.id;if(!SIM){fx(g,'weapon back','#ff6ec7');addLog(t.owner,`The ${t.name} is broken: the ${g.name} hauls the pieces back and can set it up again.`)}}}
   // Veterans: a star per kill (+1 ATK each, up to 3). Giants count as two soldiers, so they need 2 kills per star. Machines and eggs give no star.
   if(k&&alive(k)&&k.kind!=='wall'&&t.kind!=='wall'&&!t.summon&&tm(k.owner)!==tm(t.owner)&&(k.stars||0)<RULES.VET_MAX&&(k.kills=(k.kills||0)+1)%(k.size===2?2:1)===0){
     k.stars=(k.stars||0)+1;
@@ -2181,7 +2212,7 @@ function moveOpts(u,ignoreState){
 }
 function doMove(u,o){
   if(u.freeMove>0){u.freeMove--;if(!u.clockMv)tSupBy(u.rwBy,null,ABIL.rewind.name,'moved',1);else u.clockMv--;if(u.atkd)tSupBy(u.rwBy,null,'Rewind after strikes','moved',1)}else{G.ap-=1;u.moved=true}setAnim(u);u.mdist=hd(u.q,u.r,o.q,o.r);{const s=tStat(u);if(s){s.moves++;s.hexes+=u.mdist}}
-  {const pm=o.pilot!=null?byId(o.pilot):null;if(pm&&pilotable(u,pm))walkerIn(u,pm)}
+  {const pm=o.pilot!=null?byId(o.pilot):null;if(pm&&pilotable(u,pm)){if(RULES.HEAVY)pickUpWeapon(u,pm);else walkerIn(u,pm)}}
   u.q=o.q;u.r=o.r;u.dir=o.dir;if(o.gate)G.gateUsed=true;G.amode=null;G.aim=null;braceCheck(u);afterAction();
 }
 // Brace (Spearman): an enemy that ends a move on a hex in front of an un-moved Spearman runs onto the spear: 2 damage minus DEF.
@@ -2230,7 +2261,7 @@ const stealthed=v=>v.kind!=='wall'&&!!(v.st&&v.st.stealth);
 const hidden=(u,v)=>(inForest(v)||stealthed(v))&&distUU(u,v)>RULES.FOREST_HIDE;
 function targetsIn(u,set){return G.units.filter(v=>v!==u&&isFoe(u,v)&&!hidden(u,v)&&cells(v).some(([q,r])=>set.has(key(q,r))))}
 function attackTargets(u){
-  if(u.kind==='wall'||u.egg||u.at==='none'||(u.acted&&!(u.freeAtk>0))||G.ap<atkCost(u)||u.st.frozen||truce()||tempoSpent(u))return [];// machines also fire on their own (machineFire); the Tesla Coil has no weapon
+  if(u.kind==='wall'||u.egg||u.at==='none'||(u.acted&&!(u.freeAtk>0))||G.ap<atkCost(u)||u.st.frozen||truce()||tempoSpent(u)||(RULES.HEAVY&&u.machine))return [];// machines also fire on their own (machineFire); the Tesla Coil has no weapon
   let ts=targetsIn(u,atkCells(u));
   if(u.st.duel){const c=byId(u.st.duel.by);if(c)ts=ts.filter(v=>v===c)}
   return ts;
@@ -2532,6 +2563,7 @@ function canAbil(u,k){
   if(truce()&&hostileAbil(A))return false;
   if(G.ap<abilCost(u,k))return false;
   if(A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner))return false;// the workshop is full
+  if(A.special==='deploy'&&!u.wpn)return false;
   if(A.aim==='self'){
     if(A.special==='requiem'||A.hits==='foe')return abilityTargets(u,k,u.q,u.r).length>0;
     if(A.special==='rally')return abilityTargets(u,k,u.q,u.r).some(v=>v!==u);
@@ -2559,7 +2591,8 @@ function hitDmg(u,t,A){
   let base=A.useAtk?effAtk(u)+(A.atkBonus||0):(A.dmg||0);
   if(base<=0)return 0;
   if(coldDouble(t,A)||(!A.noShatter&&iceShatter(u,t)))base*=2;
-  if(hasTrait(u,'deepcold')&&t.st&&t.st.frozen>0)base+=1;// v61 Deep Cold: +1 against frozen enemies// Ice Lance (chilled or frozen), Shatter Strike (frozen), and since v50 every Frost ability on a frozen enemy
+  if(hasTrait(u,'deepcold')&&t.st&&t.st.frozen>0)base+=1;// v61 Deep Cold: +1 against frozen enemies
+  if(RULES.HEAVY&&A.carried&&G.players[u.owner]&&G.players[u.owner].secret)base+=1;// v65 Secret Weapon// Ice Lance (chilled or frozen), Shatter Strike (frozen), and since v50 every Frost ability on a frozen enemy
   if(hasRelic(u,'spellstone'))base+=1;// Spellstone relic (v36)
   if(focused(u,A))base+=1;// Arcane Focus: a mage that has not moved this turn
   if(t.kind!=='wall'&&t.st&&t.st.hex>0)base+=1;// Hexed: 1 more damage from abilities
@@ -2738,6 +2771,10 @@ function useAbility(u,k,q,r,dest){
       if(trk()&&!SIM){const ts=tStat(T);if(ts)ts.born=G.round;const e=tFx(G.players[u.owner].fac,'','Machines built');if(e)e.uses++}break}
     // Dismantle (v22c): the machine is taken off the board at once, like a timer running out: no kill, no Ultimate charge, no Salvage; diedBy 'dismantled'.
     // The caster's build ability rests 1 turn less (never below 0); the turns removed are tracked as cdCut on the Dismantle row.
+    case 'deploy':{if(!u.wpn||!passable(q,r)||unitAt(q,r))break;const M=MACHINES[u.wpn];const sec=G.players[u.owner].secret?3:0;
+      const T={id:G.nid++,owner:u.owner,leader:false,pawn:false,summon:true,machine:u.wpn,builtBy:u.id,ttl:9999,name:M.name,icon:M.icon,glyph:M.glyph,hp:(u.wpnHp||M.hp)+sec,maxhp:M.hp+sec,atk:M.atk,def:M.def,mov:0,mt:M.mt,at:M.at,aoe:M.aoe||null,rng:M.rng,rmin:M.rmin||1,size:1,dir:dirTo(u.q,u.r,q,r),q,r,
+        moved:true,acted:true,cd:0,mom:false,rage:false,stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:null,trait:M.trait,home:u.home,wpnOwner:u.wpnOwner!=null?u.wpnOwner:u.id};
+      G.units.push(T);u.wpn=null;u.wpnHp=null;u.wpnOwner=null;fx(T,'set down','#ff6ec7');if(!SIM){vfx({k:'buff',at:[q,r],col:F.color});addLog(u.owner,`The ${u.name} sets down the ${M.name}.`);if(trk()){const ts=tStat(T);if(ts)ts.born=G.round;const e=tFx('gnomes','','Weapons set down');if(e)e.uses++}}break}
     case 'overclock':{const col='#ff6ec7',o=[CUR_SRC,CUR_TAG,CUR_NAME];let shots=0;
       for(const v of G.units.slice()){if(v.owner!==u.owner||!(v.machine||v.walker)||!alive(v)||distUU(u,v)>A.range)continue;
         if(v.walker)v.suitHp=Math.min(v.suitMax,v.suitHp+2);else if(v.hp<v.maxhp)healUnit(v,Math.min(2,v.maxhp-v.hp),'#5fd68e',A.name,u.id);
@@ -2792,7 +2829,7 @@ function useAbility(u,k,q,r,dest){
 }
 
 /* ---------- Ultimates ---------- */
-function canUlt(pid){const p=G.players[pid];return !!p&&p.alive&&(p.ult||0)>=ultNeed(p)&&G.cur===pid&&G.ap>=(p.fac==='chrono'&&talent(p,'paradox')?0:RULES.ULT_COST)&&!truce()&&!G.over&&!p.ultThisTurn}
+function canUlt(pid){const p=G.players[pid];return !!p&&p.alive&&!(RULES.HEAVY&&p.fac==='gnomes'&&p.secret)&&(p.ult||0)>=ultNeed(p)&&G.cur===pid&&G.ap>=(p.fac==='chrono'&&talent(p,'paradox')?0:RULES.ULT_COST)&&!truce()&&!G.over&&!p.ultThisTurn}
 function partnerOf(pid){if(!G.teams)return null;const p=G.players[pid];return G.players.find(x=>x.id!==pid&&x.team===p.team&&x.alive)||null}
 // Team Ultimate: when both partners are charged, the one whose turn it is fires both at once.
 function canTeamUlt(pid){const q=partnerOf(pid);return !!q&&canUlt(pid)&&(q.ult||0)>=ultNeed(q)&&G.ap>=RULES.TEAM_ULT_COST}
@@ -2829,7 +2866,9 @@ function ultEffect(p){
       if(alive(v)){const [cq,cr]=nearCell(g,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,g)}}break}
     // Clockwork Rush: AP, every gnome may move again, and every machine (they never move) is repaired to full, gets +1 ATK this turn and fires again at once (timers do not reset). The volley is tracked under the Ultimate.
     // v22b: 2 AP plus 1 per 2 machines of this side on the board, at most 5 (Clockwork Surge: 1 more, at most 6).
-    case 'gnomes':{const add=rushAP(p),ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+add,G.ap+add);tSup('apGranted',G.ap-ap0);let m=0;for(const v of mine()){if(v.walker){v.suitHp=v.suitMax;fx(v,'repaired','#5fd68e')}if(v.machine){if(v.hp<v.maxhp)healUnit(v,v.maxhp-v.hp,'#5fd68e');v.st.rush=1;fx(v,'overclocked','#ff6ec7');vfx({k:'buff',at:[v.q,v.r],col:'#ff6ec7'})}else{if(v.moved)m++;v.moved=false}}tSup('moved',m);
+    case 'gnomes':if(RULES.HEAVY){p.secret=1;for(const v of mine()){if(v.machine){v.maxhp+=3;v.hp+=3;fx(v,'upgraded','#ff6ec7');if(!SIM)vfx({k:'buff',at:[v.q,v.r],col:'#ff6ec7'})}}
+        if(!SIM){addLog(p.id,'The Secret Weapon is unveiled: every gnome weapon is upgraded for the rest of the game.');announce({k:'note',col:FAC.gnomes.color,t:'The Gnomes unveil their Secret Weapon!',s:'Every weapon +1 damage, deployed weapons +3 HP, gnomes +1 DEF; Turrets pierce, Mortars burst, Flame Turrets reach further, Tesla Coils stun.'})}break}
+      {const add=rushAP(p),ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+add,G.ap+add);tSup('apGranted',G.ap-ap0);let m=0;for(const v of mine()){if(v.walker){v.suitHp=v.suitMax;fx(v,'repaired','#5fd68e')}if(v.machine){if(v.hp<v.maxhp)healUnit(v,v.maxhp-v.hp,'#5fd68e');v.st.rush=1;fx(v,'overclocked','#ff6ec7');vfx({k:'buff',at:[v.q,v.r],col:'#ff6ec7'})}else{if(v.moved)m++;v.moved=false}}tSup('moved',m);
       const SRC=CUR_SRC,TAG=CUR_TAG,NAME=CUR_NAME;machineFire(p,'Ultimate: Clockwork Rush','Ult');CUR_SRC=SRC;CUR_TAG=TAG;CUR_NAME=NAME}break;
     // Hallowed Dawn (v27, replaces Exodus): every priest heals 2 and gets +1 ATK for this turn and the next (st.blessU, counted down in endTurn);
     // every enemy unit heals 1 (tracked on the same Ultimate row as "Hallowed Dawn: enemies healed" through the caster's id).
@@ -3701,6 +3740,8 @@ function heuristic(u,k,q,r,ctx,dest){
         const lancers=mine.filter(v=>v.ability==='icelance'&&v.owner===u.owner&&v.cd<=1&&distUU(v,t)<=4+effMov(v));s+=Math.min(2,lancers.length)*2.5+(t.leader?2:0)}
       return s}
     // Mortar: a spot 2 to 4 hexes from enemies (it lobs, so not next to one).
+    case 'deploy':{if(!u.wpn)return 0;if(RULES.HEAVY&&!u.acted&&G.ap>=atkCost(u)+1&&attackTargets(u).length)return 0;// strike with the weapon in hand first; Set Down is free afterwards
+      const M=MACHINES[u.wpn];const reach=(M.rng||1)+(RULES.HEAVY?1:2);const inReach=ctx.foes.filter(f=>f.owner>=0&&distUC(f,q,r)<=reach&&distUC(f,q,r)>=(M.rmin||1));if(!inReach.length)return 0;const key={mortar:'mortar',turret:'turret',flame:'flameturret',coil:'coil'}[u.wpn];return Math.max(2,heuristic(u,key,q,r,ctx))+inReach.length}// v65: value a Set Down like the old build of that machine
     case 'mortar':{let s=0,n=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d>=2&&d<=4){n++;s+=2+(f.leader?1.5:0)}else if(d===1)s-=2}const poi=buildSpot(q,r,ctx);if(!n)return poi;return 3+Math.min(s,8)+poi}
     // Flame Turret: right where enemies stand or will walk in, ideally in front of a gnome so the enemy has to go through it.
     case 'flame':{let s=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d===1)s+=3+(f.leader?1:0);else if(d===2&&(f.at==='melee'||f.at==='fwd'||f.mov>=2))s+=1.2}
@@ -3779,7 +3820,7 @@ function stormEsc(u,o){if(!RULES.RIFTKIT||!G.traps||voidWalk(u)||u.size===2)retu
     const R=RULES.STORM_R+(talent(P(t.owner),'gravitylord')?1:0),dn=hd(o.q,o.r,hq,hr),d0=hd(u.q,u.r,hq,hr),w=d=>d===1?8+worth(u)*0.6:d<=R?2.5:0;sd+=w(d0)-w(dn)}return sd}
 function moveEval(u,o,ctx){return moveEval0(u,o,ctx)+stormEsc(u,o)}
 function moveEval0(u,o,ctx){  if(G.sinks&&!voidWalk(u)){const here=cells(u).some(([q,r])=>{const k=G.sinks[key(q,r)];return k&&tm(k.owner)!==tm(u.owner)}),there=(()=>{const k=G.sinks[key(o.q,o.r)];return k&&tm(k.owner)!==tm(u.owner)})();if(there)return -50;if(here)return 9+worth(u)*0.5+RULES_J()}// v50: get off cracked ground, never step onto it
-if(o.pilot!=null){const near=ctx.foes.some(f=>hd(f.q,f.r,o.q,o.r)<=6);return (near?4.5:1.2)+RNG()*0.3}// v48: climb into a machine, mostly when a fight is near
+if(o.pilot!=null){const near=ctx.foes.some(f=>hd(f.q,f.r,o.q,o.r)<=6);if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&&hd(f.q,f.r,m.q,m.r)<=(m.rng||1)+1);return (busy?-6:5)+RNG()*0.3}return (near?4.5:1.2)+RNG()*0.3}// v48: climb into a machine, mostly when a fight is near
 
   const {foes,m}=ctx;
   const v=Object.assign({},u,{q:o.q,r:o.r,dir:o.dir,moved:true});
@@ -3854,7 +3895,8 @@ if(o.pilot!=null){const near=ctx.foes.some(f=>hd(f.q,f.r,o.q,o.r)<=6);return (ne
   // Brace: don't end a move on the spear points of an un-moved enemy Spearman.
   if(ctx.braces&&ctx.braces.length){let d=0;for(const sp of ctx.braces)if(cells(v).some(([q,r])=>hd(q,r,sp.q,sp.r)===1&&fwdDot(sp,q-sp.q,r-sp.r)>=0.45))d+=afterDef(2,effDef(u));if(d)s-=d*(u.leader?2.5:1.2)}
   // Gnome Tinkers: living gnomes keep a machine between themselves and an enemy within 3.
-  if(!u.summon&&facOf(u).cover){const nearFoe=foes.some(f=>distUU(f,u)<=3||distUU(f,v)<=3);if(nearFoe){const behind=x=>G.units.some(w=>w.machine&&w.owner===u.owner&&distUU(w,x)===1&&nearest(w)<=nearest(x));s+=(behind(v)?3:0)-(behind(u)?2.5:0)}
+  if(RULES.HEAVY&&!u.summon&&u.owner>=0&&G.players[u.owner].fac==='gnomes'&&!u.wpn&&u.mt!=='fly'){const work=w=>w.machine&&w.owner===u.owner&&foes.some(f=>f.owner>=0&&distUU(f,w)<=(w.rng||1)+1);const crew=x=>G.units.some(w=>work(w)&&distUU(w,x)===1);s+=(crew(v)?2:0)-(crew(u)?1.5:0)}
+  else if(!u.summon&&facOf(u).cover){const nearFoe=foes.some(f=>distUU(f,u)<=3||distUU(f,v)<=3);if(nearFoe){const behind=x=>G.units.some(w=>w.machine&&w.owner===u.owner&&distUU(w,x)===1&&nearest(w)<=nearest(x));s+=(behind(v)?3:0)-(behind(u)?2.5:0)}
     // A builder with a build in hand (adjacent only) walks to where its machine would see the enemy: 2 to 4 hexes from the nearest foe, never into contact.
     if(u.ability&&ABIL[u.ability].special==='build'&&u.cd<=1&&!u.acted&&G.ap>=3&&machineCount(u.owner)<machineCap(u.owner)){const spot=x=>{const d=nearest(x);return d>=2&&d<=4};if(spot(v)&&!spot(u))s+=3;if(spot(u)&&!spot(v))s-=2.5;if(d1===1&&!u.leader)s-=2}}
   // Phase Stalker: with Phase Swap ready, perch next to the edge or a void within reach of an enemy, so the swap leaves the enemy there.
@@ -3924,6 +3966,7 @@ function botStep(){
   if(canUlt(pid)){const fac=G.players[pid].fac;let s;
     if(fac==='chrono')s=G.ap<=RULES.ULT_COST+1?30:0;
     // Clockwork Rush: best once the AP is spent and the machines have fired (a second volley) or are damaged; worth more with more tin on the board.
+    else if(fac==='gnomes'&&RULES.HEAVY){s=25}
     else if(fac==='gnomes'){const mach=G.units.filter(v=>v.owner===pid&&v.machine);const loaded=mach.filter(v=>machineTargets(v).length).length;const near=G.units.filter(v=>v.owner===pid&&v.kind!=='wall'&&foes.some(f=>distUU(v,f)<=4)).length;
       s=loaded>=2||(G.ap<=3&&near>=3&&loaded>=1)?20+mach.length*2+loaded*3:0}
     // Arcane Storm: the damage is judged by the lookahead; each resting mage that can still act this turn gets its book back (worth a spell).
@@ -6147,7 +6190,7 @@ const PASSIVE_SHORT={
   fire:'Red ground: the Court hits harder in fire and burns whoever stands in it. Units that die burst in flame. At 10 souls an Archdemon rises.',
   ice:'Every Frost hit chills and leaves a frost mark; 3 marks freeze. A frozen enemy stays frozen until Frost plays again, and any Frost hit on it does double damage.',
   giants:'Five two-hex giants that can’t be pushed or pulled. When one falls the others heal 3 and get +1 ATK.',
-  gnomes:'Gnomes build machines that fire on their own every turn; a gnome can climb into a machine and walk it as a Walker.',
+  gnomes:'Every gnome hauls a heavy weapon: carried it is the gnome’s ability; set down it fires on its own every turn. Destroyed weapons go back to their gnome.',
   arcane:'Healing beyond full HP burns the nearest enemy. Holy ground heals allies and burns enemies. Hitting a shielded or blessed priest costs 2.',
   warband:'Shoulder to shoulder: +1 ATK next to a comrade; five or more standing connected are a Phalanx (+1 ATK, +1 DEF, enemies beside it step only 1).',
   rift:'Enemies they move are marked (move 1 less, thrown 1 further). Throws into walls, units, rivers and holes hurt or kill. They step through the rift over anything.',
@@ -6169,7 +6212,7 @@ const LOSE_LINES={
   fire:'Stay off the red ground and it loses its edge; kill a dying demon from range so its death burst hits nobody.',
   ice:'Its units hit softly until the cold builds up: keep moving off the blue ground, and strike before the third frost mark freezes you.',
   giants:'Only five bodies. Shoot from afar and walk away; never stand next to two of them.',
-  gnomes:'Outside their machines the gnomes cannot fight: break a Walker and the pilot is helpless, wait the turrets out (they fall apart after 6 turns), and keep the Gearmaster away from his machines.',
+  gnomes:'Catch the gnomes while they are still carrying (slow and exposed), and fight away from the hexes their set-down weapons cover; a broken weapon costs them a turn to set up again.',
   arcane:'Their damage comes from healing units that are already full: keep them wounded and spread out, stay more than 3 hexes from their healthy units, step off the holy ground, and never poke a shielded or blessed priest.',
   warband:'Strong only in formation: kill or drag one warrior out to break the Phalanx below five, hit the block with area damage, and pick off whoever stands alone.',
   rift:'Thin bodies. When you are marked or anchored, get away from holes, walls and river banks before their next turn, and kill the Repulsors and Tidecallers first.',
@@ -6181,7 +6224,7 @@ const WIN_LINES={
   fire:'Wins by dragging the enemy into hell: its demons and fire-spitting beasts set the ground alight and fight inside the flames, where they hit harder and every enemy standing in it burns each turn. When enough souls have fallen, an Archdemon climbs out of the pit.',
   ice:'Wins with cold that builds up: chill the enemy, freeze it in place, then cash it in with Ice Lances and Shatter Strikes that hit frozen targets twice as hard.',
   giants:'Wins by weight: five huge giants that can’t be shoved around crush whatever they reach; ranged armies that keep their distance are their bane.',
-  gnomes:'Wins with machines: unarmed gnomes build turrets, mortars and coils that fire for free every turn, or climb inside them and walk them into battle as Walkers; the Gearmaster’s Overclock makes every machine near him fire at once.',
+  gnomes:'Wins with heavy weapons: each gnome hauls a Mortar, Turret, Flame Turret or Tesla Coil, fires it by hand while carrying it, then sets it down on a choke point where it fires on its own every turn; the Secret Weapon upgrades them all for good.',
   arcane:'Wins by overflowing: its healing mends the wounded, and every point that does not fit burns the nearest enemy. Holy ground heals its own and scorches intruders; Retribution punishes anyone who hits a shielded or blessed priest.',
   warband:'Wins by standing together: five or more warriors standing connected are a Phalanx (tougher, and nobody walks past it), so it plugs a corridor or rings the Throne while its riders hunt whoever strays.',
   rift:'Wins over two turns: it marks and anchors an enemy, opens a hole or finds a wall, gives the enemy one turn to escape, then throws it in. Its own units step through the rift, over anything, and walk across the holes.',
@@ -6771,6 +6814,7 @@ function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))retu
   if(s.rmark>0)add('rmark','◎','Rift-marked',s.rmark,'#12d69a',0,'moves 1 less, and Riftwalker throws carry it 1 hex further, until the end of the Riftwalkers\u2019 next turn');
   if(s.anchorImm>0&&!(s.anchor>0))add('anchorImm','⚓','Cannot be Anchored',s.anchorImm,'#8fbfb0',1,'was Anchored recently');
   if(u.leader&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='fire'&&RULES.ARCHDEMON&&!G.players[u.owner].demon){const p=G.players[u.owner];add('souls','🔥','The pit hungers',`${p.souls||0}/${RULES.DEMON_SOULS}`,'#ff4a3d',1,`souls: every Ember unit that falls and every enemy unit the Court kills; at ${RULES.DEMON_SOULS} the Archdemon rises`)}
+  if(u.wpn&&!u.machine&&MACHINES[u.wpn])add('wpn','⚙','Carrying a '+MACHINES[u.wpn].name,'','#ff6ec7',1,'walks 1 less, +'+MACHINES[u.wpn].atk+' ATK; use Set Down to deploy it');
   if(s.bless>0)add('bless','✚','Blessed',s.bless,'#ffd766',1,'+1 ATK, and heals 1 at the start of each of its turns');
   if(s.blessU>0)add('dawn','☀️','Hallowed Dawn',s.blessU,'#ffe9a8',1,'+1 ATK from the priests’ Ultimate');
   if(s.rally)add('rally','⚑','Rallied','until next turn','#eef0f4',1,'+1 ATK');
@@ -7160,7 +7204,7 @@ function rulesTop(){
   <li>On the Crown Wilds every unit moves 1 hex further than its card says, and Leaders 2.</li>
   <li>Two-hex <b>giants</b> squeeze through one-hex gaps at the cost of 2 moves.</li>
   <li><b>Sinkholes</b> (Riftwalkers): cracked red ground under a unit falls at the start of the Riftwalkers’ next turn. Move off it, or the unit dies (a Leader or giant takes 6). Riftwalkers walk across holes; nobody else can.</li>
-  <li><b>Gnome pilots:</b> a gnome that walks onto one of its own machines (pink dot) climbs in and becomes a Walker: it walks 2, attacks with the machine’s weapon, and the machine’s HP take every hit first.</li></ul>
+  <li><b>Gnome weapons:</b> each gnome carries a heavy weapon (slower, and its attack adds the weapon's ATK; the weapon is its ability). <b>Set Down</b> (1 AP) puts it on a hex next to the gnome, where it fires on its own every turn. An empty-handed gnome picks a weapon up by walking onto it (pink dot).</li></ul>
   <h3>The Crown Wilds, in the order a game goes</h3><ul>
   <li><b>Your base</b> is 7 hexes on the edge of the map, filled in your colour with your banner. You deploy around it (one-tap presets per army, then move units as you like). Roads lead to the Throne Hall in the middle, to your Vault and past your Crypt.</li>
   <li><b>Rooms are hidden</b> (dark, with a ?) until one of your units steps in. Every corner of the map gets the same contents, so the start is fair.
