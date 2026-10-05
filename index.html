@@ -625,7 +625,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -808,6 +808,11 @@ const ABIL={
     desc:'Trade places with any one-hex unit within 3, friend or foe.'},
 
   // Hourglass Order (v28, design sheet v3): banked AP, stacking Quickens and Rewind all feed the two Second Hands. No guards, shields or stasis in this army.
+  /* v53 Turn Back Time (owner 5-6 Oct 2026: "an ability that takes one of your units back in time 1 turn... if it got damaged it gets healed and moves
+     back to where it was; cast on an enemy it can undo a heal; curses and debuffs revert"). The target returns to how it was at the START of the
+     caster's previous turn (u.tb[pid].prev, recorded in beginTurn): hex, HP, statuses and curses. Cooldowns and deaths are never undone. */
+  turnback:{name:'Turn Back Time',cost:2,cd:4,aim:'unit',hits:'any',los:'lob',range:4,special:'turnback',bot:'turnback',
+    desc:'One unit within 4, yours or an enemy\u2019s, goes back to how it was at the start of your previous turn: the hex it stood on, its HP, its curses and statuses. Your wounded blade comes home healed; an enemy loses the healing, cleanses and shields it got, and the ground it ran away over. Cooldowns are not undone, and the dead stay dead.'},
   timewarp:{name:'Time Warp',cost:0,cd:3,aim:'self',special:'gainap',amount:3,bot:'gainap',
     desc:'Bend time: your side gains 3 AP this turn. Costs no AP.'},
   quicken:{name:'Quicken',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,special:'quicken',bot:'quicken',
@@ -1045,7 +1050,7 @@ const FAC={
     passive:'Banked Time: up to 2 unspent AP carry over to your next turn. When both Second Hands have fallen, a Time Wraith answers the Chronarch’s call (once per game).',bank:2,
     home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',cheap:1,
     units:[
-      {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'timewarp',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
+      {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'timewarp',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
       {name:'Second Hand',icon:'clock',n:2,hp:11,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'tempo'},// v28: Vanish removed, the retreat comes from Rewind
       {name:'Tempo Mage',icon:'hourglass',n:3,hp:8,atk:0,def:1,mov:2,mt:'diag',at:'none',rng:0,ab:'quicken'},
       {name:'Rewinder',icon:'rewind',n:2,hp:8,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'clock'}]},
@@ -1687,8 +1692,12 @@ function computeHolder(){
   G.holder=ts.length===1?ts[0]:null;G.contested=ts.length>1;
 }
 function teamName(t){if(G.teams)return 'Team '+'ABC'[t];return FAC[G.players.find(p=>p.team===t).fac].name}
+const tbSnap=u=>{const st=Object.assign({},u.st);st.curses=Object.assign({},u.st&&u.st.curses||{});return {q:u.q,r:u.r,dir:u.dir,hp:u.hp,st}};
+function tbRecord(p){if(!RULES.TURNBACK||!G.units.some(v=>v.owner===p.id&&v.kind!=='wall'&&(v.ability==='turnback'||v.ability2==='turnback')))return;
+  for(const v of G.units){if(v.kind==='wall'||v.egg||v.statue)continue;v.tb=v.tb||{};const o=v.tb[p.id];v.tb[p.id]={prev:o?o.cur:null,cur:tbSnap(v)}}}
+const tbState=(u,v)=>v&&v.tb&&v.tb[u.owner]&&v.tb[u.owner].prev||null;
 function beginTurn(){
-  const p=P(G.cur);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
+  const p=P(G.cur);tbRecord(p);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
   for(const u of G.units)if(u.owner===p.id){u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0}}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
@@ -2342,7 +2351,7 @@ function aimCells(u,k){
   let pool;
   if(A.los==='bolt')pool=[...rayUnits(u,R,DIRS,m)];
   else pool=G.units.filter(v=>{if(v===u)return false;const d=distUU(u,v);return d>=rmin&&d<=R});
-  if(A.hits==='ally')pool.push(u);
+  if(A.hits==='ally'||A.special==='turnback')pool.push(u);
   const out=[];
   for(const v of pool){
     if(v.kind==='wall'){if((v.beast||v.monster)&&beastHittable(A,v)&&!hidden(u,v))out.push(...cells(v));continue}// the Rift Beast: any damaging ability aimed at enemies can hit it
@@ -2350,6 +2359,7 @@ function aimCells(u,k){
     if(A.hits==='foe'&&!foe)continue;if(A.hits==='ally'&&foe)continue;
     if(foe&&hidden(u,v))continue;
     if(A.special==='swap'&&(v.size===2||v===u))continue;
+    if(A.special==='turnback'&&(v.summon||v.egg||v.statue||!tbState(u,v)))continue;// v53: only a unit whose state at the start of your previous turn is known
     if(A.special==='quicken'&&(v===u||v.at==='none'||v.egg||v.machine||(hasTrait(v,'tempo')&&tempoRoom(v)<=0)))continue;// v28: the same unit can be Quickened again; a Second Hand only while it has room under its 3-strike cap
     if(A.special==='hook'&&(v.size===2||distUU(u,v)<=1))continue;// Chain Hook drags one-hex enemies that are not already beside the Rampart
     if(A.special==='rewind'&&(v===u||!v.mov||v.summon||v.egg))continue;// only a unit that can walk
@@ -2585,6 +2595,16 @@ function useAbility(u,k,q,r,dest){
     // Void Trap: a temporary void for 3 of the caster's turns.
     case 'sinkhole':if(tgt&&tgt.kind!=='wall'){G.sinks=G.sinks||{};for(const [a,b] of cells(tgt))if(!isHeart(a,b)||true)G.sinks[key(a,b)]={owner:u.owner,by:u.id};fx(tgt,'the ground cracks!','#12d69a');vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[tgt.q,tgt.r],cells:cells(tgt),col:F.color,cam:1});addLog(u.owner,`${u.name} cracks the ground under the ${tgt.name}: it falls at the start of the Riftwalkers’ next turn.`)}break;
     case 'trap':if(passable(q,r)&&!unitAt(q,r)&&!isHeart(q,r)){G.traps=G.traps||{};G.traps[key(q,r)]={owner:u.owner,by:u.id,ttl:3};vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[q,r],cells:[[q,r]],col:F.color})}break;
+    case 'turnback':{const t0=tgt,S0=tbState(u,t0);if(!t0||t0.kind==='wall'||!S0)break;const foe=tm(t0.owner)!==tm(u.owner),hp0=t0.hp;
+      // the hex: back where it stood, if it is still free; else the nearest free hex next to it; else it stays
+      const fits=(q,r)=>{const oq=t0.q,or=t0.r;t0.q=q;t0.r=r;const ok=cells(t0).every(([a,b])=>passable(a,b)&&!G.units.some(w=>w!==t0&&cells(w).some(([c,d])=>c===a&&d===b)));t0.q=oq;t0.r=or;return ok};
+      const od=t0.dir;t0.dir=S0.dir;let spot=null;if(S0.q===t0.q&&S0.r===t0.r)spot=null;else if(fits(S0.q,S0.r))spot=[S0.q,S0.r];else for(const [dq,dr] of DIRS)if(fits(S0.q+dq,S0.r+dr)){spot=[S0.q+dq,S0.r+dr];break}
+      if(spot){setAnim(t0);t0.q=spot[0];t0.r=spot[1];tSup('moved',1)}else t0.dir=od;
+      t0.hp=Math.max(1,Math.min(t0.maxhp,S0.hp));const st=Object.assign({},S0.st);st.curses=Object.assign({},S0.st.curses||{});if(t0.st&&t0.st.stealth)st.stealth=t0.st.stealth;t0.st=st;
+      const d=t0.hp-hp0;if(!SIM){if(d>0)tSupBy(u.id,null,A.name,'heal',d);if(d<0)tSupBy(u.id,null,A.name,'undone',-d);tSupBy(u.id,null,A.name,'uses',0);
+        vfx({k:'ab',ab:'timewarp',shape:'single',from:[u.q,u.r],to:[t0.q,t0.r],cells:[[t0.q,t0.r]],col:F.color,cam:1});
+        fx(t0,d>0?`time turns back (+${d})`:d<0?`time turns back (${d})`:'time turns back','#c81ca6');addLog(u.owner,`${u.name} turns back time for the ${t0.name}${foe?' (an enemy)':''}: ${d>0?'it is healed '+d+', ':d<0?'it loses '+(-d)+' HP of healing, ':''}${spot?'it returns to where it stood':'it stays where it is (its old hex is taken)'}, and its statuses are as they were.`)}
+      break}
     case 'swap':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b;tSup('moved',2)}break;
     // Rally: +1 ATK to every other Warband unit within 2 until the start of your next turn (st.rally, cleared in beginTurn).
     case 'rally':{let n=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.summon)continue;v.st.rally=1;n++;fx(v,'+1 ATK','#e8b84e');healUnit(v,1,'#5fd68e');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}addLog(u.owner,`Rally: ${n} comrade${n===1?'':'s'} sharpen their blades.`);break}
@@ -2815,7 +2835,7 @@ function spawnSpring(){
 const BEAST_SB='Rift Beast strike-back';
 let BEAST_Q=[];// strike-backs waiting for the end of the current action (resolved in afterAction and after the machines' volley)
 // Abilities that can hit the beast: they deal damage and are aimed at enemies. Moves, swaps, hooks and buffs never touch it.
-const BEAST_NOT=['swap','hook','duel','possess','quicken','rewind','clock','blink','surge','dismantle','requiem','rally','march','build','trap','well','grove','wall','gainap','guard'];
+const BEAST_NOT=['turnback','swap','hook','duel','possess','quicken','rewind','clock','blink','surge','dismantle','requiem','rally','march','build','trap','well','grove','wall','gainap','guard'];
 // v45 (owner: Covenant and Frost lose their tools against monsters): on the Crown Wilds the room monsters, Dragons, the Wanderer and the Throne Beast
 // (not crates) can be chilled, frozen, stunned and cursed. A frozen or stunned creature skips its strike-back; curses tick on it at each round start.
 const wildsCreature=v=>RULES.CREATURE_FX&&!!G.map&&!!v&&v.kind==='wall'&&((v.monster&&v.monster!=='crate'&&v.monster!=='cracked')||v.beast);
@@ -3478,6 +3498,7 @@ function heuristic(u,k,q,r,ctx,dest){
       const near=mine.filter(v=>v!==u&&!v.acted&&distUC(v,u.q,u.r)<=2).length;
       let s2=sim+riftSetup(u,t,ctx,mine)+(t.at!=='melee'&&near>=1?1.5+near*0.5:0);return s2>1?s2+3:0}
     // Riptide: the lookahead, plus the same edge-and-trap setup value for the hex the enemy is dragged to.
+    case 'turnback':{const t=unitAt(q,r);if(!t||t.kind==='wall'||!tbState(u,t))return 0;const v=simScore(team,()=>useAbility(byId(u.id),k,q,r))-ctx.base;return v>1.5?v:0}
     case 'riptide':{const t=unitAt(q,r);if(!t||t.kind==='wall')return 0;let land=null;const sim=simScore(team,()=>{const tt=byId(t.id);useAbility(byId(u.id),k,q,r);if(tt&&alive(tt))land={q:tt.q,r:tt.r}})-ctx.base;
       return sim+(land&&t.size!==2?riftSetup(land,t,ctx,mine,true):0)}
     // Aegis: the ally most likely to be hit next: enemy ATK that can reach it, the Leader and fragile or wounded units first.
