@@ -818,6 +818,10 @@ const ABIL={
     desc:'Pin one enemy within 4 to its place in the rift: on its next turn it cannot move at all (it can still attack and use abilities), and it is Rift-marked. Afterwards it cannot be Anchored again for 2 of its turns.'},
   turnback:{name:'Turn Back Time',cost:2,cd:4,aim:'unit',hits:'any',los:'lob',range:4,special:'turnback',bot:'turnback',
     desc:'One unit within 4, yours or an enemy\u2019s, goes back to how it was at the start of your previous turn: the hex it stood on, its HP, its curses and statuses. Your wounded blade comes home healed; an enemy loses the healing, cleanses and shields it got, and the ground it ran away over. Cooldowns are not undone, and the dead stay dead.'},
+  /* v59 SYNCHRONY (owner 6 Oct 2026 chose it to replace Time Warp: the Hourglass never lacks AP). 1 AP, every turn: a Second Hand within 4 is in step
+     with the clock this turn: every strike it lands deals 1 more (Tempo 5, 6, 7 instead of 4, 5, 6). */
+  synchrony:{name:'Synchrony',cost:1,cd:0,aim:'unit',hits:'ally',los:'lob',range:4,special:'synchrony',bot:'synchrony',
+    desc:'Pick a Second Hand within 4: this turn every strike it lands deals 1 more (its Tempo goes 5, 6, 7 instead of 4, 5, 6). Usable every turn.'},
   timewarp:{name:'Time Warp',cost:0,cd:3,aim:'self',special:'gainap',amount:3,bot:'gainap',
     desc:'Bend time: your side gains 3 AP this turn. Costs no AP.'},
   quicken:{name:'Quicken',cost:1,cd:1,aim:'unit',hits:'ally',los:'lob',range:3,special:'quicken',bot:'quicken',
@@ -1058,7 +1062,7 @@ const FAC={
     passive:'Banked Time: up to 2 unspent AP carry over to your next turn. When both Second Hands have fallen, a Time Wraith answers the Chronarch’s call (once per game).',bank:2,
     home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',cheap:1,
     units:[
-      {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'timewarp',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
+      {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'synchrony',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
       {name:'Second Hand',icon:'clock',n:2,hp:11,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'tempo'},// v28: Vanish removed, the retreat comes from Rewind
       {name:'Tempo Mage',icon:'hourglass',n:3,hp:8,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'quicken'},
       {name:'Rewinder',icon:'rewind',n:2,hp:8,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'clock'}]},
@@ -1747,7 +1751,7 @@ function hellAura(p){if(!RULES.ARCHDEMON)return;const ds=G.units.filter(d=>d.kin
     for(const v of G.units.slice())if(v.owner===p.id&&v.kind!=='wall'&&!v.statue&&alive(v)&&distUU(v,d)===1)hurt(v,1,'#ff4a3d',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 function beginTurn(){
   const p=P(G.cur);tbRecord(p);hellAura(p);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
-  for(const u of G.units)if(u.owner===p.id){u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0}}}// Rally (+1 ATK) and Guard last until the start of your next turn
+  for(const u of G.units)if(u.owner===p.id){u.sync=0;u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0}}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
     for(const w of G.units){if(w.owner!==p.id||w.kind==='wall'||w.at==='none'||w.egg||distUU(w,s)<=2)continue;const set=atkCells(w,m);if(cells(s).some(([q,r])=>set.has(key(q,r))))n++}
@@ -2303,6 +2307,7 @@ function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
   if(G.players[u.owner]&&G.players[u.owner].fac==='warband'&&onClaimOf(t,'warband'))o.push(['Bone ground (enemy on it)',1]);
   if(u.machine&&onClaimOf(t,'gnomes'))o.push(['Pink ground (enemy on it)',1]);
   if(hasTrait(u,'tempo')&&(u.swings||0)>0)o.push(['Tempo (later strikes)',Math.min(2,u.swings)]);
+  if(u.sync)o.push(['Synchrony',1]);
   if((hasTrait(u,'finalsecond')||hasTrait(u,'delaybolt'))&&t.cut===u.owner)o.push(['Final Second',1]);
   // Fervour (Zealot): +1 per point of healing it received this turn, up to +3.
   if(hasTrait(u,'fervour')&&(u.fv||0)>0)o.push(['Fervour (healing received)',Math.min(3,u.fv)]);
@@ -2430,6 +2435,7 @@ function aimCells(u,k){
     if(A.hits==='foe'&&!foe)continue;if(A.hits==='ally'&&foe)continue;
     if(foe&&hidden(u,v))continue;
     if(A.special==='swap'&&(v.size===2||v===u))continue;
+    if(A.special==='synchrony'&&(!hasTrait(v,'tempo')||v.sync))continue;
     if(A.special==='anchor'&&(v.st.anchorImm>0||v.st.anchor>0))continue;
     if(A.special==='turnback'&&(v.summon||v.egg||v.statue||!tbState(u,v)))continue;// v53: only a unit whose state at the start of your previous turn is known
     if(A.special==='quicken'&&(v===u||v.at==='none'||v.egg||v.machine||(hasTrait(v,'tempo')&&tempoRoom(v)<=0)))continue;// v28: the same unit can be Quickened again; a Second Hand only while it has room under its 3-strike cap
@@ -2674,6 +2680,7 @@ function useAbility(u,k,q,r,dest){
     // Void Trap: a temporary void for 3 of the caster's turns.
     case 'sinkhole':if(tgt&&tgt.kind!=='wall'){G.sinks=G.sinks||{};for(const [a,b] of cells(tgt))if(!isHeart(a,b)||true)G.sinks[key(a,b)]={owner:u.owner,by:u.id};fx(tgt,'the ground cracks!','#12d69a');vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[tgt.q,tgt.r],cells:cells(tgt),col:F.color,cam:1});addLog(u.owner,`${u.name} cracks the ground under the ${tgt.name}: it falls at the start of the Riftwalkers’ next turn.`)}break;
     case 'trap':if(passable(q,r)&&!unitAt(q,r)&&!isHeart(q,r)){G.traps=G.traps||{};G.traps[key(q,r)]={owner:u.owner,by:u.id,ttl:3};vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[q,r],cells:[[q,r]],col:F.color})}break;
+    case 'synchrony':if(tgt&&hasTrait(tgt,'tempo')){tgt.sync=1;fx(tgt,'in step: +1 each strike','#c81ca6');if(!SIM)vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}break;
     case 'anchor':if(tgt&&tgt.kind!=='wall'){tgt.st.anchor=1;rMark(tgt,u);fx(tgt,'anchored','#12d69a');if(!SIM)vfx({k:'buff',at:[tgt.q,tgt.r],col:'#12d69a',cam:1});tSup('stasisTurns',1)}break;
     case 'turnback':{const t0=tgt,S0=tbState(u,t0);if(!t0||t0.kind==='wall'||!S0)break;const foe=tm(t0.owner)!==tm(u.owner),hp0=t0.hp;
       // the hex: back where it stood, if it is still free; else the nearest free hex next to it; else it stays
@@ -2936,7 +2943,7 @@ function spawnSpring(){
 const BEAST_SB='Rift Beast strike-back';
 let BEAST_Q=[];// strike-backs waiting for the end of the current action (resolved in afterAction and after the machines' volley)
 // Abilities that can hit the beast: they deal damage and are aimed at enemies. Moves, swaps, hooks and buffs never touch it.
-const BEAST_NOT=['turnback','swap','hook','duel','possess','quicken','rewind','clock','blink','surge','dismantle','requiem','rally','march','build','trap','well','grove','wall','gainap','guard'];
+const BEAST_NOT=['synchrony','turnback','swap','hook','duel','possess','quicken','rewind','clock','blink','surge','dismantle','requiem','rally','march','build','trap','well','grove','wall','gainap','guard'];
 // v45 (owner: Covenant and Frost lose their tools against monsters): on the Crown Wilds the room monsters, Dragons, the Wanderer and the Throne Beast
 // (not crates) can be chilled, frozen, stunned and cursed. A frozen or stunned creature skips its strike-back; curses tick on it at each round start.
 const wildsCreature=v=>RULES.CREATURE_FX&&!!G.map&&!!v&&v.kind==='wall'&&((v.monster&&v.monster!=='crate'&&v.monster!=='cracked')||v.beast);
@@ -3250,7 +3257,8 @@ function monsterSlain(t){
   addLog(null,`${t.name} falls.`);vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:'#b9b3d6',big:t.monster==='dragon'||t.monster==='wanderer'});
   const k=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC:null;
   // v58 (owner: "make it so the unit that kills it takes the treasure automatically"): the treasure lands under the killer, who picks it up at once
-  const lq=RULES.AUTO_LOOT&&k&&alive(k)&&canCarry(k)&&!lootOf(k)&&!(k.suitHp>0)?k.q:t.q,lr=RULES.AUTO_LOOT&&k&&alive(k)&&canCarry(k)&&!lootOf(k)&&!(k.suitHp>0)?k.r:t.r;
+  const auto=RULES.AUTO_LOOT&&k&&alive(k)&&canCarry(k)&&!lootOf(k)&&!(k.suitHp>0)&&!(R&&R.loot==='suit');// v59 (owner): a War Suit stays on the floor, you choose who wears it
+  const lq=auto?k.q:t.q,lr=auto?k.r:t.r;
   if(t.monster==='dragon'){if(R)R.state='done';if(k){const p=G.players[k.owner];G.score[p.team]=(G.score[p.team]||0)+WILDS.dragonPts;tPts(p.id,'dragon',WILDS.dragonPts);
       addLog(p.id,`The ${k.name} slays the Dragon: +${WILDS.dragonPts} points (${G.score[p.team]}/${heartTarget()}).`);
       announce({k:'note',col:FAC[p.fac].color,t:`The ${FAC[p.fac].name} slay a Dragon! +${WILDS.dragonPts} points`,s:'',team:p.team,scores:scoreSnap()});
@@ -3606,6 +3614,7 @@ function heuristic(u,k,q,r,ctx,dest){
       const near=mine.filter(v=>v!==u&&!v.acted&&distUC(v,u.q,u.r)<=2).length;
       let s2=sim+riftSetup(u,t,ctx,mine)+(t.at!=='melee'&&near>=1?1.5+near*0.5:0);return s2>1?s2+3:0}
     // Riptide: the lookahead, plus the same edge-and-trap setup value for the hex the enemy is dragged to.
+    case 'synchrony':{const t=unitAt(q,r);if(!t||!hasTrait(t,'tempo')||t.sync||t.st.frozen)return 0;const can=(!t.acted||t.freeAtk>0||t.qk>0)&&ctx.foes.some(f=>distUU(t,f)<=effMov(t)+1);return can?2.5+(t.qk||0):0}
     case 'anchor':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)===team||t.st.anchorImm>0||t.st.anchor>0)return 0;
       const holes=[...Object.keys(G.traps||{}),...Object.keys(G.voids||{}),...Object.keys(G.sinks||{})].map(x=>x.split(',').map(Number));const nearHole=holes.some(([a,b])=>hd(a,b,t.q,t.r)<=3);
       const pushers=G.units.filter(w=>w.owner===u.owner&&w.kind!=='wall'&&(w.ability==='repel'||w.ability==='riptide'||w.ability==='phaseswap')&&distUU(w,t)<=4).length;
@@ -6920,13 +6929,13 @@ function roomGoal(Rm){if(Rm.state==='done')return '';const loot=Rm.loot?lootName
   if(Rm.enc==='captive')return goalBox('step a unit onto the Captive to free him, then walk him into your base.','a Freedman: a new armoured unit for your army.');
   if(Rm.enc==='shrine')return goalBox('end your move on the shrine.','the unit heals 2 at the start of your turn.');
   if(Rm.enc==='crate')return goalBox('smash the Locked Crate.',`${loot}. ${RULES.AUTO_LOOT?'The unit that smashes it picks it up at once':'It drops on the floor'}; carry it into your base.`);
-  if(Rm.enc==='guardian'||Rm.enc==='golem')return goalBox(`kill the ${Rm.enc==='golem'?'Vault Golem':'Stone Guardian'}.`,Rm.loot==='suit'?`${loot}: the unit that lands the killing blow climbs into it at once.`:`${loot}. ${RULES.AUTO_LOOT?'The unit that lands the killing blow picks it up at once':'It drops on the floor'}; carry it into your base.`);
+  if(Rm.enc==='guardian'||Rm.enc==='golem')return goalBox(`kill the ${Rm.enc==='golem'?'Vault Golem':'Stone Guardian'}.`,Rm.loot==='suit'?`${loot}: it drops where the monster stood; step the unit you choose onto it and it climbs in.`:`${loot}. ${RULES.AUTO_LOOT?'The unit that lands the killing blow picks it up at once':'It drops on the floor'}; carry it into your base.`);
   return ''}
 function monsterGoal(u){const R=(G.rooms||[]).find(r=>r.id===u.room)||((G.rooms||[]).find(r=>r.c&&hd(r.c[0],r.c[1],u.q,u.r)<=2));const loot=R&&R.loot?lootName({kind:R.loot,gem:R.gem,item:R.item}):'the treasure it guards';
   if(u.monster==='dragon')return goalBox(`slay the Dragon (${u.maxhp} HP, ${u.def} DEF). It breathes fire each round on the last unit that hit it.`,`${WILDS.dragonPts} Warlord points to the side that lands the killing blow.`);
   if(u.monster==='wanderer')return goalBox('slay the Wanderer. It roams 3 hexes a round and hits back at the last unit that hit it.','a Crown Shard: the killer carries it; bring it into your base for +1 point and a gem for your King.');
   if(u.monster==='crate')return goalBox('smash the crate open (no strike-back).',`${loot}. ${RULES.AUTO_LOOT?'The unit that smashes it picks it up at once':'It drops on the floor'}; carry it into your base.`);
-  const suit=R&&R.loot==='suit';return goalBox(`kill the ${u.name}. It hits back at the last unit that hit it, at the start of each round.`,suit?`${loot}: the unit that lands the killing blow climbs into it at once (${WILDS.suitHp} extra HP; a giant straps on ${WILDS.plateHp}).`:`${loot}. ${RULES.AUTO_LOOT?'The unit that lands the killing blow picks it up at once':'It drops on the floor'}; carry it into your base for it to count.`)}
+  const suit=R&&R.loot==='suit';return goalBox(`kill the ${u.name}. It hits back at the last unit that hit it, at the start of each round.`,suit?`${loot}: it drops where the monster stood; step the unit you choose onto it and it climbs in (${WILDS.suitHp} extra HP; a giant straps on ${WILDS.plateHp}).`:`${loot}. ${RULES.AUTO_LOOT?'The unit that lands the killing blow picks it up at once':'It drops on the floor'}; carry it into your base for it to count.`)}
 function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u&&G.tile){const mo=unitAt(G.tile[0],G.tile[1]);if(mo&&mo.kind==='wall'&&(mo.monster||mo.beast))return renderUnitCardInner(mo)}// v58: tapping a monster shows the monster (with what to do and what you get)
   if(!u&&G.tile){const [q,r]=G.tile,f=featAt(q,r),t=terrAt(q,r);
