@@ -625,7 +625,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -678,6 +678,7 @@ const r2=x=>Math.round(x*2)/2;
 const MOVES={
   walk:  {glyph:'♛',free:true, text:n=>`Walks any path up to ${n} hex${n>1?'es':''}. Can't pass through units or voids.`},
   fly:   {glyph:'♛',free:true, text:n=>`Flies to any hex within ${n}, over units and voids.`},
+  blink: {glyph:'♛',free:true, text:n=>`Rift Step: appears on any empty hex within ${n}, over units, walls and water. Never held next to an enemy.`},
   line:  {glyph:'♜',free:false,text:n=>`Straight lines only, in the 6 directions, up to ${n}. Stops at the first obstacle.`},
   diag:  {glyph:'♝',free:false,text:n=>`Slides along the diagonals (between two hexes), up to ${n} steps, stopping at the first obstacle; or takes one plain step in any direction.`},
   knight:{glyph:'♞',free:false,text:()=>`Jumps to one of 12 fixed hexes, over anything in between.`},
@@ -811,6 +812,8 @@ const ABIL={
   /* v53 Turn Back Time (owner 5-6 Oct 2026: "an ability that takes one of your units back in time 1 turn... if it got damaged it gets healed and moves
      back to where it was; cast on an enemy it can undo a heal; curses and debuffs revert"). The target returns to how it was at the START of the
      caster's previous turn (u.tb[pid].prev, recorded in beginTurn): hex, HP, statuses and curses. Cooldowns and deaths are never undone. */
+  anchor:{name:'Anchor',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:4,special:'anchor',bot:'anchor',
+    desc:'Pin one enemy within 4 to its place in the rift: on its next turn it cannot move at all (it can still attack and use abilities), and it is Rift-marked. Afterwards it cannot be Anchored again for 2 of its turns.'},
   turnback:{name:'Turn Back Time',cost:2,cd:4,aim:'unit',hits:'any',los:'lob',range:4,special:'turnback',bot:'turnback',
     desc:'One unit within 4, yours or an enemy\u2019s, goes back to how it was at the start of your previous turn: the hex it stood on, its HP, its curses and statuses. Your wounded blade comes home healed; an enemy loses the healing, cleanses and shields it got, and the ground it ran away over. Cooldowns are not undone, and the dead stay dead.'},
   timewarp:{name:'Time Warp',cost:0,cd:3,aim:'self',special:'gainap',amount:3,bot:'gainap',
@@ -925,7 +928,7 @@ const TALENTS={
            {k:'warchief',name:'Warchief',text:'March costs no AP and rests only 1 turn.'}],
   rift:[{k:'horizon',name:'Event Horizon',text:'Your shoves slam for 4 damage instead of 3.'},
         {k:'phasestep',name:'Phase Step',text:'Your rift gate works from any hex, not just teal ground.'},
-        {k:'gravitylord',name:'Gravity Lord',text:'Board Tilt pushes enemies 2 hexes (Leaders 1).'}],
+        {k:'gravitylord',name:'Gravity Lord',text:'Rift Storm holes pull from 3 hexes away instead of 2.'}],
   curse:[{k:'plaguewind',name:'Plague Wind',text:'Your curses last 1 turn longer.'},
          {k:'chorus',name:'Martyr’s Chorus',text:'When one of your units dies, enemies next to it get Agony.'},
          {k:'rites',name:'Final Rites',text:'Doom also inflicts Frailty and Feeble.'}],
@@ -949,7 +952,7 @@ const ULTS={
   gnomes:{name:'Clockwork Rush',text:'Your side gains 2 AP plus 1 for every 2 machines of yours on the board (at most 5), and every gnome may move again this turn. Every one of your machines is repaired to full HP, gets +1 ATK until the end of the turn and fires again immediately.'},
   arcane:{name:'Radiance',text:'Every one of your units heals 3. Overflowing light: healing beyond full HP becomes damage (ignoring DEF) on the enemy nearest to that unit, within 3. A healthy army burns; a wounded one is mended.'},
   warband:{name:'Warhorn',text:'Your side gains 2 AP, and every unit of yours gets +2 ATK this turn and may act again, even if it already acted.'},
-  rift:{name:'Board Tilt',wilds:'On the Crown Wilds: every enemy within 4 hexes of a hole is pushed 1 hex toward the nearest one.',text:'The whole board tips: every enemy is pushed 1 hex toward the nearest edge. Off the board or into a void, it dies.'},
+  rift:{name:'Rift Storm',text:'Open 3 holes on empty hexes anywhere on the board, at least 3 hexes apart. They stay open for 3 turns. They do not pull on the turn you cast; at the end of each of your next two turns, every enemy within 2 hexes of a hole is pulled 1 hex toward it, and one pulled into a hole falls and dies (a giant takes 6 damage instead). Then the holes close.',pick:3},
   curse:{name:'Doom',text:'Every enemy on the board gets Agony, and every curse it already carries is renewed to full length. Enemies already carrying 2 or more curses also get Rot.'},
   chrono:{name:'Time Stop',text:'When you end this turn, you immediately take another one.'},
   mage:{name:'Arcane Storm',text:'Every spellbook of yours comes off cooldown, and every enemy within 3 of any of your mages takes 2 damage ignoring DEF.'},
@@ -1023,16 +1026,18 @@ const FAC={
       {name:'Raider',icon:'knives',hp:7,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,trait:'ambush'},
       {name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:7,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
   rift:{name:'Riftwalkers',color:'#12d69a',voidWalk:1,
-    theme:'Masters of displacement with thin bodies: they rarely kill with blows. They pull, swap and trap enemies into position, then throw them off the board or into a void.',
-    passive:'Crushing Pressure: enemies they throw into a wall or a unit take 4 slam damage instead of 2, plus 1 for each hex of the throw that was cut short (up to +2). Giants and Crown Wilds monsters cannot be moved and take the full 6. Any small walking unit thrown into a river takes 2 more (flyers stop at the bank unhurt). Rift Mark (Voidcaller) paints a hex teal, even under an enemy: pushes and pulls throw an enemy on teal 1 hex further. Void-walkers: Riftwalkers walk across holes (voids, Void Traps, Sinkholes) as if they were solid ground and never fall in. Sinkhole (Phase Stalker) opens a hole under an enemy.',slam:2,
-    home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move, and a Riftwalker push or pull moves an enemy on teal 1 hex further. The Voidcaller’s Rift Mark paints any hex teal for 3 turns.',gate:1,
+    theme:'Masters of displacement who win in two turns: one turn they mark, anchor and open holes, the enemy gets one turn to escape, the next turn they throw it in. They rarely kill with blows; they step through the rift and never stand and fight.',
+    passive:'Rift Mark: an enemy a Riftwalker moves (or Anchors) is marked until the end of the Riftwalkers\u2019 next turn: it moves 1 less, and their throws carry it 1 hex further. Collision: an enemy thrown into another enemy hurts both, and the one it hits is knocked 1 hex. Rift Step: Riftwalkers appear on any empty hex within their move, over units, walls and water, and are never held next to an enemy. Crushing Pressure: enemies they throw into a wall or a unit take 4 slam damage instead of 2, plus 1 for each hex of the throw that was cut short (up to +2). Giants and Crown Wilds monsters cannot be moved and take the full 6. Any small walking unit thrown into a river takes 2 more (flyers stop at the bank unhurt). Rift Mark (Voidcaller) paints a hex teal, even under an enemy: pushes and pulls throw an enemy on teal 1 hex further. Void-walkers: Riftwalkers walk across holes (voids, Void Traps, Sinkholes) as if they were solid ground and never fall in. Sinkhole (Phase Stalker) opens a hole under an enemy.',slam:2,
+    home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move, and a Riftwalker push or pull moves an enemy on teal 1 hex further. ',gate:1,
     units:[
-      {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'swap'},
-      {name:'Repulsor',icon:'burst',n:2,hp:9,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'repel'},
-      {name:'Voidcaller',icon:'void',n:2,hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'voidtrap',ab2:'riftmark'},
-      {name:'Tidecaller',icon:'wave',n:2,hp:7,atk:2,def:0,mov:2,mt:'diag',at:'bolt',rng:3,ab:'riptide'},
-      {name:'Phase Stalker',icon:'wing',n:2,hp:8,atk:2,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'phaseswap',ab2:'sinkhole'},
-      {name:'Gravity Singer',icon:'gravity',hp:7,atk:2,def:0,mov:2,mt:'diag',at:'bolt',rng:3,ab:'well'}]},
+      {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'swap',ab2:'anchor'},
+      // v54 (owner 6 Oct 2026: "they should be able to move freely... make the pattern in which they move better"; "give some HP to the units but not the leader"):
+      // Rift Step (mt 'blink'): appear on any empty hex within reach, over units, walls and water, and never held next to an enemy. +2 HP each.
+      {name:'Repulsor',icon:'burst',n:2,hp:11,atk:2,def:1,mov:2,mt:'blink',at:'melee',rng:1,ab:'repel'},
+      {name:'Voidcaller',icon:'void',n:2,hp:9,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:2,ab:'voidtrap'},
+      {name:'Tidecaller',icon:'wave',n:2,hp:9,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:3,ab:'riptide'},
+      {name:'Phase Stalker',icon:'wing',n:2,hp:10,atk:2,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'phaseswap',ab2:'sinkhole'},
+      {name:'Gravity Singer',icon:'gravity',hp:9,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:3,ab:'well'}]},
   curse:{name:'Pale Covenant',color:'#e8e23a',
     theme:'A choir of priests who stack curses. Each different curse on a target makes it rot faster.',
     passive:'Curses stack: a target takes damage at the start of each of its turns based on how many different curses it carries: 0.5 for one, 2 for two, 3.5 for three, +1.5 for each more (leaders take 1 less, never below 0.5). Every Covenant basic attack inflicts Rot. The Bog Ring leaves pale ground under its victims, where curses bite 1 harder.',onHit:'rot',
@@ -1377,7 +1382,14 @@ const inert=v=>!!(v&&(v.egg||v.statue));
 const redSlow=u=>RULES.RED_SLOW&&G&&!G.map&&u.mov>0&&G.players[u.owner]&&G.players[u.owner].fac!=='fire'&&G.players.some(p=>p.fac==='fire'&&p.alive&&tm(p.id)!==tm(u.owner))&&onRed(u)&&!hasTrait(u,'unstoppable')?1:0;
 function movBonus(u){if(u.kind==='wall'||u.machine||u.statue||u.egg||!u.mov)return 0;if(utal(u,'springs'))return movBase(u)+1;return movBase(u)}
 function movBase(u){if(G&&G.map)return RULES.WILDS_MOV?1+(u.leader?1:0):0;return RULES.MELEE_MOV&&meleeAt(u.at)&&u.size!==2?1:0}// giants stay slow on the random board: their weakness is being kited (owner's picture); measured 3 Oct: with it giants won 77%
-function effMov(u){const F=facOf(u);if(!u.mov)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u))}
+/* v54 RIFT MARK (owner 6 Oct 2026): an enemy moved by a Riftwalker (push, pull, swap, Gravity Well, Rift Storm) or Anchored is marked until the end of
+   the Riftwalkers' next turn (st.rmark 2, counted down at the end of the marking side's turns; st.rmBy = that side): it moves RULES.RMARK_MOV less on its
+   own turn, and Riftwalker throws move it RULES.RMARK_PUSH hex further. ANCHOR (Rift Sovereign): st.anchor = it cannot move on its next turn; after
+   that it cannot be Anchored again for 2 of its turns (st.anchorImm). */
+const isRiftSrc=src=>!!RULES.RIFTKIT&&!!src&&src.kind!=='wall'&&!!G.players[src.owner]&&G.players[src.owner].fac==='rift';
+function rMark(t,src){if(!RULES.RIFTKIT||!t||t.kind==='wall'||!alive(t)||!isRiftSrc(src)||tm(t.owner)===tm(src.owner))return;const fresh=!(t.st.rmark>0);t.st.rmark=2;t.st.rmBy=src.owner;
+  if(fresh&&!SIM){fx(t,'rift-marked','#12d69a');if(trk()){const e=tFx('rift','','Rift Mark (enemies marked)');if(e)e.uses++}}}
+function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
 const isRoad=(q,r)=>G.map?!!(G.roads&&G.roads[key(q,r)]):hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
@@ -1389,7 +1401,7 @@ function engagedBy(u){return G.units.filter(v=>v.kind!=='wall'&&!inert(v)&&tm(v.
 const HOLD=new Set(['Shieldbearer','Frost Warden','Rampart','Penitent','Gargoyle','Mortar']);
 const holdsLine=v=>RULES.HOLD&&!!v&&(HOLD.has(v.name)||(RULES.PHALANX_HOLD&&v.kind!=='wall'&&inPhalanx(v)))&&!(v.st&&(v.st.frozen>0))&&!v.statue;
 function engaged(u){const e=RULES.ENGAGE?engagedBy(u):engagedBy(u).filter(holdsLine);if(!e.length)return false;
-  return !(u.mt==='fly'||u.mt==='knight'||hasTrait(u,'swift')||hasTrait(u,'unstoppable')||hasTrait(u,'ambush')||utal(u,'springs'))}
+  return !(u.mt==='fly'||u.mt==='blink'||u.mt==='knight'||hasTrait(u,'swift')||hasTrait(u,'unstoppable')||hasTrait(u,'ambush')||utal(u,'springs'))}
 // Chill (v19): st.chill = how many of its own turns the unit still moves 1 less. chillT sets it to at least n (default 2).
 // src (optional {fac,unit,name}) credits the chill to a passive effect when no acting unit is set; otherwise the current effect gets it.
 // Machines (v21): cold and stuns don't reach their gears. Counted per army as "Cold immunity (machines)".
@@ -1798,6 +1810,9 @@ function endTurn(){
   if(G.over)return;
   const p=P(G.cur);
   p.bank=Math.max(0,Math.min(G.ap,bankOf(p)));tReady(p);G.combo=false;
+  if(RULES.RIFTKIT)for(const v of G.units){if(!v.st)continue;if(v.st.rmark>0&&v.st.rmBy===p.id){v.st.rmark--;if(!v.st.rmark)v.st.rmBy=null}
+    if(v.owner===p.id){if(v.st.anchor>0){v.st.anchor=0;v.st.anchorImm=2}else if(v.st.anchorImm>0)v.st.anchorImm--}}
+  if(RULES.RIFTKIT)stormTick(p);
   if(RULES.PHALANX&&FAC[p.fac].phalanx&&!SIM&&trk()){const n=G.units.filter(u=>u.kind!=='wall'&&u.owner===p.id&&inPhalanx(u)).length;const e=tFx(p.fac,'','Phalanx: turns ended in formation');if(e){e.turns=(e.turns||0)+1;if(n){e.uses++;e.hits+=n}}}
   claimGround(p);
   for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){
@@ -2063,8 +2078,8 @@ function moveOpts(u,ignoreState){
       for(const [dq,dr] of (u.mt==='line'?DIRS:DIAG)){let c=0;for(let s=1;s<=N;s++){const a=u.q+dq*s,b=u.r+dr*s;if(!freeFor(m,u,a,b,true))break;c+=squeezeCost(m,u,a,b);if(c>N)break;add(a,b)}}
     }else if(u.mt==='knight'){
       for(const [dq,dr] of KNIGHT)add(u.q+dq,u.r+dr);
-    }else if(u.mt==='fly'){
-      for(const [q,r] of allCells()){const d=hd(q,r,u.q,u.r);if(d>=1&&d<=N)add(q,r)}
+    }else if(u.mt==='fly'||u.mt==='blink'){
+      for(const [q,r] of allCells()){const d=hd(q,r,u.q,u.r);if(d>=1&&d<=N&&(u.mt==='fly'||(passable(q,r)||(voidWalk(u)&&holeAt(q,r)))))add(q,r)}
     }
   }
   // v48 Pilots: one of this side's machines within walking reach is a move target (the gnome climbs in)
@@ -2359,6 +2374,7 @@ function aimCells(u,k){
     if(A.hits==='foe'&&!foe)continue;if(A.hits==='ally'&&foe)continue;
     if(foe&&hidden(u,v))continue;
     if(A.special==='swap'&&(v.size===2||v===u))continue;
+    if(A.special==='anchor'&&(v.st.anchorImm>0||v.st.anchor>0))continue;
     if(A.special==='turnback'&&(v.summon||v.egg||v.statue||!tbState(u,v)))continue;// v53: only a unit whose state at the start of your previous turn is known
     if(A.special==='quicken'&&(v===u||v.at==='none'||v.egg||v.machine||(hasTrait(v,'tempo')&&tempoRoom(v)<=0)))continue;// v28: the same unit can be Quickened again; a Second Hand only while it has room under its 3-strike cap
     if(A.special==='hook'&&(v.size===2||distUU(u,v)<=1))continue;// Chain Hook drags one-hex enemies that are not already beside the Rampart
@@ -2498,8 +2514,9 @@ const tealBonus=(t,src)=>RULES.GROUND2&&src&&src.kind!=='wall'&&G.players[src.ow
 /* v52 (owner 5 Oct 2026: "thrown on a wall enemies take damage; thrown in a river they also take damage if they are small and can't fly").
    Slam = RULES.SLAM (+1 Riftwalkers). New: a small walking unit thrown into a RIVER takes RULES.RIVER_SLAM more (a flyer stops at the bank, unhurt);
    a Riftwalker throw hits harder the more of the throw was left when it hit: +1 per hex cut short, at most RULES.SLAM_MOM (mom0 = hexes left of a pull). */
-function pushUnit(t,d,n,src,quiet,mom0){
+function pushUnit(t,d,n,src,quiet,mom0,noMark){
   if(!alive(t))return;
+  if(!quiet&&isRiftSrc(src)&&t.kind!=='wall'&&t.st&&t.st.rmark>0&&RULES.RMARK_PUSH){n+=RULES.RMARK_PUSH;if(!SIM&&trk()){const e=tFx('rift','','Rift Mark: thrown 1 further');if(e)e.uses++}}
   if(t.kind==='wall'){// v52: a Crown Wilds monster, the Dragon, the Wanderer or the Throne Beast cannot be moved: like a giant it takes the slam instead
     if(RULES.CREATURE_SLAM&&wildsCreature(t)&&src&&src.kind!=='wall'){hurt(t,slamOf(src)+(facOf(src).slam?RULES.SLAM_MOM:0),'#12d69a');fx(t,'immovable','#d9a45b')}return}if(!quiet&&tealBonus(t,src)){n++;if(!SIM&&trk()){const e=tFx('rift','','Teal ground: pushed 1 further');if(e)e.uses++}}
   const slam=slamOf(src),oq=t.q,or=t.r;
@@ -2508,6 +2525,10 @@ function pushUnit(t,d,n,src,quiet,mom0){
     const q=t.q+DIRS[d][0],r=t.r+DIRS[d][1];
     if(!solid(q,r)&&!(voidWalk(t)&&holeAt(q,r))){fallKill(t,q,r,src);return}
     const o=unitAt(q,r);
+    if(o&&o!==t&&RULES.RIFTKIT&&isRiftSrc(src)&&o.kind!=='wall'&&tm(o.owner)!==tm(src.owner)&&!o.statue){// v54 COLLISION (owner: "I love the collision rule"):
+      // an enemy thrown into another enemy: both take the slam, and the one it hits is knocked 1 hex the same way
+      const sl=slamOf(src);if(!SIM&&trk()){const e=tFx('rift','','Collision (both hurt, the other knocked back)');if(e){e.uses++;e.dmg+=sl}}
+      hurt(t,sl,'#12d69a');if(alive(o)){hurt(o,sl,'#12d69a');if(alive(o))pushUnit(o,d,1,src,true,0)}if(alive(o))rMark(o,src);break}
     if((o&&o!==t)||isBlock(q,r)||isCentreWall(q,r)){const river=!(o&&o!==t)&&featAt(q,r)==='river';
       if(river&&t.mt==='fly'){fx(t,'hovers over the water','#5cc8ff');break}
       const mom=src&&src.kind!=='wall'&&facOf(src).slam?Math.min(RULES.SLAM_MOM,(n-s-1)+(mom0||0)):0,rv=river?RULES.RIVER_SLAM:0;
@@ -2517,9 +2538,10 @@ function pushUnit(t,d,n,src,quiet,mom0){
     setAnim(t);t.q=q;t.r=r;
   }
   if(!quiet&&(t.q!==oq||t.r!==or))tSup('moved',1);
+  if(!noMark&&alive(t))rMark(t,src);
 }
 function pullUnit(t,src,n){
-  const oq=t.q,or=t.r;if(tealBonus(t,src)){n++;if(!SIM&&trk()){const e=tFx('rift','','Teal ground: pulled 1 further');if(e)e.uses++}}
+  const oq=t.q,or=t.r;if(isRiftSrc(src)&&t.kind!=='wall'&&t.st&&t.st.rmark>0&&RULES.RMARK_PUSH){n+=RULES.RMARK_PUSH;if(!SIM&&trk()){const e=tFx('rift','','Rift Mark: pulled 1 further');if(e)e.uses++}}if(tealBonus(t,src)){n++;if(!SIM&&trk()){const e=tFx('rift','','Teal ground: pulled 1 further');if(e)e.uses++}}
   for(let s=0;s<n;s++){
     if(!alive(t)||!alive(src))break;
     if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slamOf(src),'#12d69a');break}
@@ -2529,6 +2551,7 @@ function pullUnit(t,src,n){
     if(alive(t)&&t.q===pq&&t.r===pr)break;// it slammed into something: the drag ends (fixed v52: it used to slam once per remaining hex)
   }
   if(alive(t)&&(t.q!==oq||t.r!==or))tSup('moved',1);
+  if(alive(t))rMark(t,src);
 }
 // Gravity Well: enemies within 2 step 1 hex toward it. Blocked units stay put; over a void or the edge, they fall.
 function wellPull(w,start){// start: called at the start of the owner's turn (the well then has ttl-1 pulls left after this one)
@@ -2539,7 +2562,7 @@ function wellPull(w,start){// start: called at the start of the owner's turn (th
   const old=CUR_SRC,ot=CUR_TAG,on=CUR_NAME;CUR_SRC=src;CUR_TAG='Abil';CUR_NAME=ABIL.well.name;
   for(const v of vs){if(!alive(v))continue;const d=dirTo(v.q,v.r,w.q,w.r),q=v.q+DIRS[d][0],r=v.r+DIRS[d][1];
     if(!solid(q,r)){mv.push([v.q,v.r,q,r]);fallKill(v,q,r,src);continue}
-    if(isBlock(q,r)||isCentreWall(q,r)||occ().get(key(q,r)))continue;mv.push([v.q,v.r,q,r]);setAnim(v);if(v.anim)v.anim.dur=650;v.q=q;v.r=r;tSup('moved',1)}
+    if(isBlock(q,r)||isCentreWall(q,r)||occ().get(key(q,r)))continue;mv.push([v.q,v.r,q,r]);setAnim(v);if(v.anim)v.anim.dur=650;v.q=q;v.r=r;tSup('moved',1);rMark(v,src)}
   CUR_SRC=old;CUR_TAG=ot;CUR_NAME=on;
   // Visual only: a streak for every dragged unit, a log line and a short message on screen (vfx 'well' in vfx.js).
   if(mv.length&&!SIM){const left=start?w.ttl-1:w.ttl,n=mv.length;
@@ -2595,6 +2618,7 @@ function useAbility(u,k,q,r,dest){
     // Void Trap: a temporary void for 3 of the caster's turns.
     case 'sinkhole':if(tgt&&tgt.kind!=='wall'){G.sinks=G.sinks||{};for(const [a,b] of cells(tgt))if(!isHeart(a,b)||true)G.sinks[key(a,b)]={owner:u.owner,by:u.id};fx(tgt,'the ground cracks!','#12d69a');vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[tgt.q,tgt.r],cells:cells(tgt),col:F.color,cam:1});addLog(u.owner,`${u.name} cracks the ground under the ${tgt.name}: it falls at the start of the Riftwalkers’ next turn.`)}break;
     case 'trap':if(passable(q,r)&&!unitAt(q,r)&&!isHeart(q,r)){G.traps=G.traps||{};G.traps[key(q,r)]={owner:u.owner,by:u.id,ttl:3};vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[q,r],cells:[[q,r]],col:F.color})}break;
+    case 'anchor':if(tgt&&tgt.kind!=='wall'){tgt.st.anchor=1;rMark(tgt,u);fx(tgt,'anchored','#12d69a');if(!SIM)vfx({k:'buff',at:[tgt.q,tgt.r],col:'#12d69a',cam:1});tSup('stasisTurns',1)}break;
     case 'turnback':{const t0=tgt,S0=tbState(u,t0);if(!t0||t0.kind==='wall'||!S0)break;const foe=tm(t0.owner)!==tm(u.owner),hp0=t0.hp;
       // the hex: back where it stood, if it is still free; else the nearest free hex next to it; else it stays
       const fits=(q,r)=>{const oq=t0.q,or=t0.r;t0.q=q;t0.r=r;const ok=cells(t0).every(([a,b])=>passable(a,b)&&!G.units.some(w=>w!==t0&&cells(w).some(([c,d])=>c===a&&d===b)));t0.q=oq;t0.r=or;return ok};
@@ -2605,7 +2629,7 @@ function useAbility(u,k,q,r,dest){
         vfx({k:'ab',ab:'timewarp',shape:'single',from:[u.q,u.r],to:[t0.q,t0.r],cells:[[t0.q,t0.r]],col:F.color,cam:1});
         fx(t0,d>0?`time turns back (+${d})`:d<0?`time turns back (${d})`:'time turns back','#c81ca6');addLog(u.owner,`${u.name} turns back time for the ${t0.name}${foe?' (an enemy)':''}: ${d>0?'it is healed '+d+', ':d<0?'it loses '+(-d)+' HP of healing, ':''}${spot?'it returns to where it stood':'it stays where it is (its old hex is taken)'}, and its statuses are as they were.`)}
       break}
-    case 'swap':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b;tSup('moved',2)}break;
+    case 'swap':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b;tSup('moved',2);rMark(tgt,u)}break;
     // Rally: +1 ATK to every other Warband unit within 2 until the start of your next turn (st.rally, cleared in beginTurn).
     case 'rally':{let n=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.summon)continue;v.st.rally=1;n++;fx(v,'+1 ATK','#e8b84e');healUnit(v,1,'#5fd68e');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}addLog(u.owner,`Rally: ${n} comrade${n===1?'':'s'} sharpen their blades.`);break}
     case 'dash':if(tgt){if(distUU(u,tgt)>1){const s=dashSpot(u,tgt);if(s){setAnim(u);u.q=s.q;u.r=s.r;u.dir=s.dir;tSup('moved',1);braceCheck(u)}}if(alive(u))applyHit(u,tgt,A)}break;
@@ -2674,6 +2698,26 @@ function canUlt(pid){const p=G.players[pid];return !!p&&p.alive&&(p.ult||0)>=ult
 function partnerOf(pid){if(!G.teams)return null;const p=G.players[pid];return G.players.find(x=>x.id!==pid&&x.team===p.team&&x.alive)||null}
 // Team Ultimate: when both partners are charged, the one whose turn it is fires both at once.
 function canTeamUlt(pid){const q=partnerOf(pid);return !!q&&canUlt(pid)&&(q.ult||0)>=ultNeed(q)&&G.ap>=RULES.TEAM_ULT_COST}
+// v54 Rift Storm helpers. stormOK: an empty walkable hex (not the Throne) at least 3 from the other picks. stormAuto: the bots' (and fallback) pick.
+function stormOK(picks,q,r){return inR(q,r)&&passable(q,r)&&!unitAt(q,r)&&!(q===0&&r===0)&&!isTrap(q,r)&&picks.every(([a,b])=>hd(a,b,q,r)>=3)}
+function stormRad(p){return RULES.STORM_R+(talent(p,'gravitylord')?1:0)}
+function stormScoreAt(p,q,r){const R=stormRad(p);let s=0;for(const v of G.units){if(v.kind==='wall'||tm(v.owner)===p.team||v.statue||v.egg)continue;const d=hd(v.q,v.r,q,r);if(d<1||d>R)continue;
+  const stuck=(v.st.anchor>0?2.2:1)*(v.st.rmark>0?1.4:1);s+=(v.size===2?1.5:(d===1?3:1.2)*(v.leader?2:1))*stuck}return s}
+function stormAuto(p){const out=[];const cand=new Map();const R=stormRad(p);
+  for(const v of G.units){if(v.kind==='wall'||tm(v.owner)===p.team)continue;for(const [q,r] of allCells())if(hd(q,r,v.q,v.r)<=R&&hd(q,r,v.q,v.r)>=1)cand.set(key(q,r),[q,r])}
+  for(let n=0;n<3;n++){let best=null,bs=0;for(const [q,r] of cand.values()){if(!stormOK(out,q,r))continue;const sc=stormScoreAt(p,q,r);if(sc>bs){bs=sc;best=[q,r]}}if(!best)break;out.push(best)}return out}
+// at the end of the Riftwalkers' turn: each Rift Storm hole that was not opened this turn pulls every enemy within reach 1 hex toward it
+function stormTick(p){if(!G.traps)return;const hs=Object.entries(G.traps).filter(([k,t])=>t.storm&&t.owner===p.id);if(!hs.length)return;
+  const src=G.units.find(u=>u.owner===p.id&&u.leader)||G.units.find(u=>u.owner===p.id&&u.kind!=='wall')||null;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Ult';CUR_NAME='Ultimate: Rift Storm';
+  for(const [k,t] of hs){if(t.fresh){t.fresh=0;continue}const [hq,hr]=k.split(',').map(Number);const R=stormRad(p);
+    if(!SIM)vfx({k:'buff',at:[hq,hr],col:'#12d69a'});
+    const vs=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&!v.statue&&!v.egg&&hd(v.q,v.r,hq,hr)>=1&&hd(v.q,v.r,hq,hr)<=R).sort((a,b)=>hd(a.q,a.r,hq,hr)-hd(b.q,b.r,hq,hr));
+    for(const v of vs){if(!alive(v))continue;if(v.size===2){if(cells(v).some(([a,b])=>hd(a,b,hq,hr)<=1)){hurt(v,RULES.STORM_GIANT,'#12d69a');rMark(v,src)}continue}
+      if(voidWalk(v))continue;const d=dirTo(v.q,v.r,hq,hr),q=v.q+DIRS[d][0],r=v.r+DIRS[d][1];
+      if(!solid(q,r)){fallKill(v,q,r,src);continue}
+      if(isBlock(q,r)||isCentreWall(q,r)||unitAt(q,r))continue;setAnim(v);v.q=q;v.r=r;tSup('moved',1);rMark(v,src)}
+    if(--t.storm<=0){delete G.traps[k];if(!SIM)addLog(p.id,'A Rift Storm hole closes.')}}
+  [CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function ultEffect(p){
   const F=FAC[p.fac],team=p.team;
   const src=G.units.find(u=>u.owner===p.id&&u.leader)||G.units.find(u=>u.owner===p.id&&u.kind!=='wall')||null;CUR_SRC=src;CUR_TAG='Ult';CUR_NAME='Ultimate: '+ULTS[p.fac].name;if(trk()&&!SIM){const e=tFx(p.fac,'',CUR_NAME);e.uses++}if(trk()&&!SIM)trk().ults.push({round:G.round,fac:p.fac,n:(p.ultN||0)+1});
@@ -2694,10 +2738,11 @@ function ultEffect(p){
     case 'arcane':{// v49 Radiance: every unit heals 3; what does not fit burns the nearest enemy within 3
       for(const v of mine()){if(v.egg||v.statue||!alive(v))continue;const room=Math.max(0,v.maxhp-v.hp),blocked=v.st&&v.st.seared>0;healUnit(v,3,'#ffe9a8');if(!SIM)vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'});if(!blocked)overheal(src||v,v,3-room,'Radiance')}break}
     case 'warband':{const ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+2,G.ap+2);tSup('apGranted',G.ap-ap0)}for(const v of mine()){v.st.emp=1;v.acted=false;v.mom=false;fx(v,'+2 ATK','#e8b84e')}break;
-    case 'rift':if(G.map){// v50: no open edges on the Crown Wilds: every enemy within 4 of a hole is pushed toward the nearest one
-        const holes=[...Object.keys(G.traps||{}),...Object.keys(G.voids||{})].map(k=>k.split(',').map(Number));const n=talent(p,'gravitylord')?2:1;
-        for(const v of foes().slice()){if(!alive(v)||v.kind==='wall')continue;let best=null,bd=5;for(const h of holes){const d=hd(v.q,v.r,h[0],h[1]);if(d>0&&d<bd){bd=d;best=h}}if(best)pushUnit(v,dirTo(v.q,v.r,best[0],best[1]),v.leader?1:Math.min(n,bd),src)}break}
-      else{const ts=foes().filter(v=>v.q||v.r).sort((a,b)=>hd(b.q,b.r,0,0)-hd(a.q,a.r,0,0));for(const v of ts)if(alive(v))pushUnit(v,dirTo(0,0,v.q,v.r),v.leader?1:talent(p,'gravitylord')?2:1,src);break}
+    case 'rift':{// v54 Rift Storm: 3 holes (picked by the player, else stormAuto), at least 3 apart, on empty hexes; they pull at the end of the next 2 Riftwalker turns
+      const picks=(G.stormPicks&&G.stormPicks.length?G.stormPicks:stormAuto(p)).slice(0,3);G.stormPicks=null;
+      for(const [q,r] of picks){if(!stormOK(picks.filter(x=>x[0]!==q||x[1]!==r),q,r))continue;G.traps=G.traps||{};G.traps[key(q,r)]={owner:p.id,by:src?src.id:null,ttl:99,storm:2,fresh:1};
+        if(!SIM)vfx({k:'ab',ab:'voidtrap',shape:'void',from:[q,r],to:[q,r],cells:[[q,r]],col:F.color,cam:1})}
+      if(!SIM)addLog(p.id,`Rift Storm: ${picks.length} holes tear open. They will pull at the end of the Riftwalkers' next turn.`);break}
     case 'curse':for(const v of foes()){const dur=RULES.CURSE_TURNS;for(const c of Object.keys(v.st.curses||{}))v.st.curses[c]=Math.max(v.st.curses[c],dur);const had=curseCount(v);applyCurse(src||v,v,'agony');if(had>=2)applyCurse(src||v,v,'rot');if(talent(p,'rites')){applyCurse(src||v,v,'frailty');applyCurse(src||v,v,'feeble')}}break;
     // Arcane Storm: every spellbook of this side comes off cooldown (tracked as cooldown turns removed), then 2 damage ignoring DEF to every enemy within 3 of any mage.
     case 'mage':{const ms=mine().filter(v=>v.book);let cut=0;for(const v of ms){cut+=v.cd||0;v.cd=0;fx(v,'spells ready','#2bff5a')}tSup('cdCut',cut);
@@ -3498,6 +3543,10 @@ function heuristic(u,k,q,r,ctx,dest){
       const near=mine.filter(v=>v!==u&&!v.acted&&distUC(v,u.q,u.r)<=2).length;
       let s2=sim+riftSetup(u,t,ctx,mine)+(t.at!=='melee'&&near>=1?1.5+near*0.5:0);return s2>1?s2+3:0}
     // Riptide: the lookahead, plus the same edge-and-trap setup value for the hex the enemy is dragged to.
+    case 'anchor':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)===team||t.st.anchorImm>0||t.st.anchor>0)return 0;
+      const holes=[...Object.keys(G.traps||{}),...Object.keys(G.voids||{}),...Object.keys(G.sinks||{})].map(x=>x.split(',').map(Number));const nearHole=holes.some(([a,b])=>hd(a,b,t.q,t.r)<=3);
+      const pushers=G.units.filter(w=>w.owner===u.owner&&w.kind!=='wall'&&(w.ability==='repel'||w.ability==='riptide'||w.ability==='phaseswap')&&distUU(w,t)<=4).length;
+      return (nearHole?3+worth(t)*0.25:0.8)+pushers*0.8+(t.leader?1.5:0)}
     case 'turnback':{const t=unitAt(q,r);if(!t||t.kind==='wall'||!tbState(u,t))return 0;const v=simScore(team,()=>useAbility(byId(u.id),k,q,r))-ctx.base;return v>1.5?v:0}
     case 'riptide':{const t=unitAt(q,r);if(!t||t.kind==='wall')return 0;let land=null;const sim=simScore(team,()=>{const tt=byId(t.id);useAbility(byId(u.id),k,q,r);if(tt&&alive(tt))land={q:tt.q,r:tt.r}})-ctx.base;
       return sim+(land&&t.size!==2?riftSetup(land,t,ctx,mine,true):0)}
@@ -3618,7 +3667,11 @@ function heuristic(u,k,q,r,ctx,dest){
   return 0;
 }
 function countTargets(v,m){const set=atkCells(v,m);let n=0;for(const f of G.units){if(f.kind==='wall'||tm(f.owner)===tm(v.owner))continue;if(cells(f).some(([q,r])=>set.has(key(q,r))))n++}return n}
-function moveEval(u,o,ctx){if(G.sinks&&!voidWalk(u)){const here=cells(u).some(([q,r])=>{const k=G.sinks[key(q,r)];return k&&tm(k.owner)!==tm(u.owner)}),there=(()=>{const k=G.sinks[key(o.q,o.r)];return k&&tm(k.owner)!==tm(u.owner)})();if(there)return -50;if(here)return 9+worth(u)*0.5+RULES_J()}// v50: get off cracked ground, never step onto it
+// v54: a unit walks out of a Rift Storm's reach (added on top of the normal move value)
+function stormEsc(u,o){if(!RULES.RIFTKIT||!G.traps||voidWalk(u)||u.size===2)return 0;let sd=0;for(const [k,t] of Object.entries(G.traps)){if(!t.storm||tm(t.owner)===tm(u.owner))continue;const [hq,hr]=k.split(',').map(Number);
+    const R=RULES.STORM_R+(talent(P(t.owner),'gravitylord')?1:0),dn=hd(o.q,o.r,hq,hr),d0=hd(u.q,u.r,hq,hr),w=d=>d===1?8+worth(u)*0.6:d<=R?2.5:0;sd+=w(d0)-w(dn)}return sd}
+function moveEval(u,o,ctx){return moveEval0(u,o,ctx)+stormEsc(u,o)}
+function moveEval0(u,o,ctx){  if(G.sinks&&!voidWalk(u)){const here=cells(u).some(([q,r])=>{const k=G.sinks[key(q,r)];return k&&tm(k.owner)!==tm(u.owner)}),there=(()=>{const k=G.sinks[key(o.q,o.r)];return k&&tm(k.owner)!==tm(u.owner)})();if(there)return -50;if(here)return 9+worth(u)*0.5+RULES_J()}// v50: get off cracked ground, never step onto it
 if(o.pilot!=null){const near=ctx.foes.some(f=>hd(f.q,f.r,o.q,o.r)<=6);return (near?4.5:1.2)+RNG()*0.3}// v48: climb into a machine, mostly when a fight is near
 
   const {foes,m}=ctx;
@@ -3771,6 +3824,7 @@ function botStep(){
     else if(fac==='warband'){const n=G.units.filter(v=>v.owner===pid&&v.kind!=='wall'&&foes.some(f=>distUU(v,f)<=effRng(v)+(v.acted?0:1))).length;s=n>=3?n*4:0}
     // Hallowed Dawn (v27): the lookahead sees the healing (and the enemies' heal); the +1 ATK is worth about 1.2 per priest that can still strike this turn.
     else if(fac==='arcane'){const n=G.units.filter(v=>v.owner===pid&&v.kind!=='wall'&&(!v.acted||v.freeAtk>0)&&v.at!=='none'&&attackTargets(v).length).length;s=simScore(team,()=>useUlt(false))-base-RULES.ULT_COST*APV-4+n*1.2}
+    else if(fac==='rift'&&RULES.RIFTKIT){const pk=stormAuto(P(pid));let v=0;for(const [q,r] of pk)v+=stormScoreAt(P(pid),q,r);s=v*1.6-RULES.ULT_COST*APV-4}
     else s=simScore(team,()=>useUlt(false))-base-RULES.ULT_COST*APV-4;
     consider(s,()=>useUlt(false));
     if(canTeamUlt(pid)){const q=partnerOf(pid);const ts=simScore(team,()=>useUlt(true))-base-RULES.TEAM_ULT_COST*APV-4+(q.fac==='chrono'?12:q.fac==='gnomes'?6:0);consider(ts,()=>useUlt(true))}}
@@ -6020,7 +6074,7 @@ function machinesOf(k){const out=[];for(const d of FAC[k].units)for(const a of [
 const STATUE_D={name:'Gargoyle Statue',icon:'statue',hp:5,atk:0,def:0,mov:0,mt:'walk',at:'none',rng:0,trait:'statue'};
 function pvItems(k){return FAC[k].units.map(d=>({d})).concat(machinesOf(k).map(m=>({m,d:MACHINES[m]}))).concat(FAC[k].units.some(d=>d.trait==='stonesleep')?[{st:1,d:STATUE_D}]:[]).concat(FAC[k].units.some(d=>d.trait==='tempo')?[{wr:1,d:WRAITH}]:[])}
 function moveWords(d){if(!d.mov)return 'never moves';
-  return ({walk:`walks ${d.mov}`,fly:`flies ${d.mov}`,line:`slides up to ${d.mov} in straight lines`,diag:`slides up to ${d.mov} diagonally`,knight:'jumps like a chess knight',march:`marches ${d.mov}, forward or sideways (pawn)`})[d.mt]||`moves ${d.mov}`}
+  return ({walk:`walks ${d.mov}`,fly:`flies ${d.mov}`,blink:`steps through the rift up to ${d.mov} (lands on any empty hex, over units, walls and water)`,line:`slides up to ${d.mov} in straight lines`,diag:`slides up to ${d.mov} diagonally`,knight:'jumps like a chess knight',march:`marches ${d.mov}, forward or sideways (pawn)`})[d.mt]||`moves ${d.mov}`}
 function attackWords(d){const r=d.rng;
   let s=({melee:'melee',none:'no attack',bolt:`shoots up to ${r} in straight lines`,lob:`lobs ${d.rmin||2} to ${r} hexes`,diag:`shoots up to ${r} along the diagonals`,reach:`spear, strikes ${r} away over a friend`,fwd:r>1?`strikes forward up to ${r}`:'strikes forward only'})[d.at]||`${ATTACKS[d.at]?ATTACKS[d.at].label.toLowerCase():d.at} ${r}`;
   if(d.aoe&&AOE[d.aoe])s+=`, ${AOE[d.aoe].name.toLowerCase()}`;return s}
@@ -6445,6 +6499,7 @@ function teamColor(t){return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t)
 /* ---------- highlights ---------- */
 function computePreview(){
   hl.area=new Set();hl.hitIds=new Set();
+  if(G.stormPick){for(const [q,r] of G.stormPick)hl.area.add(key(q,r));const h=G.hover;if(h&&stormOK(G.stormPick,h[0],h[1])){const R=stormRad(P(G.cur));for(const [q,r] of allCells())if(hd(q,r,h[0],h[1])<=R)hl.area.add(key(q,r))}return}
   const u=G.sel!=null?byId(G.sel):null;
   const at=G.aim||G.hover;
   if(!u||!G.amode||!at)return;
@@ -6475,7 +6530,8 @@ function refresh(){
   if(!G.amode||!ABIL[G.amode]||ABIL[G.amode].special!=='blink'||!selU||(G.blinkT!=null&&!byId(G.blinkT)))G.blinkT=null;// Blink's first pick lives only while Blink is being aimed
   hl={moves:new Map(),atk:new Set(),aim:new Set(),range:new Set(),area:new Set(),hitIds:new Set(),ghost:false};
   const focus=G.inspect!=null?byId(G.inspect):selU;
-  if(G.phase==='deploy'){if(selU&&isHumanTurn())hl.moves=deployOpts(selU)}
+  if(G.stormPick&&isHumanTurn()){for(const [q,r] of allCells())if(stormOK(G.stormPick,q,r))hl.aim.add(key(q,r))}
+  else if(G.phase==='deploy'){if(selU&&isHumanTurn())hl.moves=deployOpts(selU)}
   else if(focus&&focus.kind!=='wall'){
     const mine=selU&&focus===selU&&isHumanTurn()&&selU.owner===G.cur;
     if(mine&&G.amode){for(const [q,r] of aimList(selU,G.amode))hl.aim.add(key(q,r))}
@@ -6583,6 +6639,9 @@ function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))retu
   if(s.shield>0)add('shield','🔰','Shield',s.shield+' pt'+(s.shield>1?'s':''),'#d7c9ff',1,'soaks the next '+s.shield+' damage');
   if(u.leader&&G.players.length>=4&&!G.teams)add('guarded','♜','Guarded','always','#cfd3dc',1,'a Leader takes 1 less from attacks and abilities fired from 3 or more hexes away');
   if(u.kind!=='wall'&&RULES.PHALANX&&facOf(u).phalanx&&inPhalanx(u))add('phalanx','▣','Phalanx','','#e8b84e',1,RULES.PHALANX+' or more Warband units standing connected: +1 ATK and +1 DEF each, and an enemy next to any of them can step only 1 hex');
+  if(s.anchor>0)add('anchor','⚓','Anchored',s.anchor,'#12d69a',0,'cannot move on its next turn (it can still attack and use abilities)');
+  if(s.rmark>0)add('rmark','◎','Rift-marked',s.rmark,'#12d69a',0,'moves 1 less, and Riftwalker throws carry it 1 hex further, until the end of the Riftwalkers\u2019 next turn');
+  if(s.anchorImm>0&&!(s.anchor>0))add('anchorImm','⚓','Cannot be Anchored',s.anchorImm,'#8fbfb0',1,'was Anchored recently');
   if(s.bless>0)add('bless','✚','Blessed',s.bless,'#ffd766',1,'+1 ATK, and heals 1 at the start of each of its turns');
   if(s.blessU>0)add('dawn','☀️','Hallowed Dawn',s.blessU,'#ffe9a8',1,'+1 ATK from the priests’ Ultimate');
   if(s.rally)add('rally','⚑','Rallied','until next turn','#eef0f4',1,'+1 ATK');
@@ -7665,6 +7724,12 @@ function clickCell(q,r){
     if(isHumanTurn()&&selU&&hl.moves.has(k)&&(!hit||hit!==selU)){if(deployMove(selU,q,r)){G.sel=null;refresh();netPush();return}}
     if(hit&&isHumanTurn()&&hit.owner===G.cur){G.sel=G.sel===hit.id?null:hit.id;G.inspect=null;G.tile=null}else{G.sel=null;G.tile=[q,r]}
     refresh();return}
+  if(G.stormPick&&isHumanTurn()){// v54 Rift Storm: tap 3 empty hexes at least 3 apart; tap a picked one again to drop it
+    const i=G.stormPick.findIndex(([a,b])=>a===q&&b===r);
+    if(i>=0)G.stormPick.splice(i,1);
+    else if(stormOK(G.stormPick,q,r)){G.stormPick.push([q,r]);if(G.stormPick.length>=3){G.stormPicks=G.stormPick;G.stormPick=null;if(canUlt(G.cur)){useUlt(false)}else G.stormPicks=null;return}}
+    else toast('Pick an empty hex at least 3 hexes from the other holes (press the Ultimate button again to cancel).',3600);
+    toast(`Rift Storm: ${G.stormPick.length} of 3 holes picked.`,2200);refresh();return}
   const k=key(q,r),hit=unitAt(q,r),selU=G.sel!=null?byId(G.sel):null;
   const acting=isHumanTurn()&&selU&&selU.owner===G.cur&&G.inspect==null;
   if(acting&&G.amode){
@@ -7696,11 +7761,11 @@ $('#infoBtn').onclick=()=>{if(document.body.classList.contains('focus'))document
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.body.classList.contains('focus'))setTimeout(()=>layout(),60)});
 document.addEventListener('pointerdown',e=>{if(document.body.classList.contains('drawer')&&!e.target.closest('aside.side')&&!e.target.closest('#abInfo')&&!e.target.closest('#infoBtn')){document.body.classList.remove('drawer');if(lpInsp&&G){lpInsp=false;G.inspect=null;refresh()}}});
 $('#endBtn').onclick=()=>{if(!isHumanTurn())return;if(G.phase==='deploy'){curtain=null;deployReady();refresh();netPush();return}recapSnap(G.cur);endTurn()};
-$('#ultBtn').onclick=()=>{if(!isHumanTurn()||!canUlt(G.cur))return;const p=P(G.cur),U=ULTS[p.fac],o=$('#overlay');const q=canTeamUlt(G.cur)?partnerOf(G.cur):null;
+$('#ultBtn').onclick=()=>{if(G&&G.stormPick){G.stormPick=null;toast('Rift Storm cancelled.',1800);refresh();return}if(!isHumanTurn()||!canUlt(G.cur))return;const p=P(G.cur),U=ULTS[p.fac],o=$('#overlay');const q=canTeamUlt(G.cur)?partnerOf(G.cur):null;
   o.innerHTML=`<div class="modal" style="max-width:460px"><div class="label">Ultimate · ${RULES.ULT_COST} AP · cast #${(p.ultN||0)+1} (next one needs ${ultNeed(p)+RULES.ULT_STEP} charge)</div><h2 style="color:${FAC[p.fac].color}">⚡ ${U.name}</h2><p>${U.text}</p>
     ${q?`<div class="abil" style="border-color:${FAC[q.fac].color}"><b>Team Ultimate available</b> · ${RULES.TEAM_ULT_COST} AP<br>Your partner's <b style="color:${FAC[q.fac].color}">${ULTS[q.fac].name}</b> is charged too. Fire both at once: ${ULTS[q.fac].text} Every unit on both your sides also heals 2. Uses both charges.</div>`:''}
     <div class="row" style="margin-top:14px">${q&&G.ap>=RULES.TEAM_ULT_COST?`<button class="btn primary" id="ultTeam">⚡⚡ Team: ${U.name} + ${ULTS[q.fac].name}</button>`:''}<button class="btn ${q?'':'primary'}" id="ultGo">Unleash ${U.name}</button><button class="btn" id="ultNo">Not yet</button></div></div>`;
-  o.hidden=false;$('#ultGo').onclick=()=>{o.hidden=true;if(canUlt(G.cur))useUlt(false)};$('#ultNo').onclick=()=>{o.hidden=true};
+  o.hidden=false;$('#ultGo').onclick=()=>{o.hidden=true;if(!canUlt(G.cur))return;if(ULTS[p.fac].pick&&RULES.RIFTKIT){G.sel=null;G.amode=null;G.aim=null;G.stormPick=[];toast('Rift Storm: tap 3 empty hexes, at least 3 apart, to open the holes.',5000);refresh();return}useUlt(false)};$('#ultNo').onclick=()=>{o.hidden=true};
   const t=$('#ultTeam');if(t)t.onclick=()=>{o.hidden=true;if(canTeamUlt(G.cur))useUlt(true)}};
 function zoomBtn(f){camUserTook();const u=G&&(G.sel!=null?byId(G.sel):G.inspect!=null?byId(G.inspect):null);
   if(u){const [sx,sy]=screenOf(u.q,u.r);zoomAt(zoom*f,sx,sy)}else{const rc=$('#boardbox').getBoundingClientRect();zoomAt(zoom*f,rc.left+rc.width/2,rc.top+rc.height/2)}}
