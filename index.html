@@ -905,6 +905,7 @@ const TRAITS={
   egg:{name:'Ember Egg',text:'Can\u2019t move or act. Hatches into the Phoenix after 3 turns unless it is broken first.'},
   construct:{name:'Construct',text:'A built machine: it never moves and has no attack button. At the start of its owner’s turn it fires on its own, for free, at what it can reach. Cold and shocks don’t reach its gears: it can’t be chilled, frozen or stunned. It falls apart when its timer runs out, gives no Ultimate charge and no veteran star when destroyed, claims no ground, carries no relics, can’t be possessed and doesn’t keep its side alive.'},
   tesla:{name:'Tesla Coil',text:'Can’t move. At the start of its owner’s turn every enemy within 2 hexes takes 1 damage ignoring DEF, for free. Construct rules apply.'},
+  deepcold:{name:'Deep Cold',text:'The front line of the Frost Hold: every hit it lands leaves 2 frost marks instead of 1 (3 marks freeze), and it deals 1 more damage to frozen enemies.'},
   shatterfall:{name:'Shatterfall',text:'When it kills a frozen enemy, the shards fly: every enemy next to the fallen unit is chilled.'},
   stonesleep:{name:'Stone Sleep',text:'When it dies it turns into a statue on its hex (5 HP, 0 DEF): it blocks the hex, can’t act and can be smashed (no Ultimate charge for it). Every spell a friendly mage casts while standing within 2 of the statue adds that spell’s AP cost to it; at 4 the Gargoyle rises there with half the max HP it had (16, then 8, then 4). A Gargoyle of 4 max HP that dies, or a smashed statue, is gone for good.'},
   statue:{name:'Statue',text:'A sleeping Gargoyle. Can’t move or act. Mages casting spells within 2 of it wake it; smash it first and the Gargoyle is gone.'},
@@ -989,7 +990,7 @@ const FAC={
       {name:'Frostling',icon:'snowflake',n:3,hp:7,atk:2,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'frostbolt'},
       {name:'Frost Warden',icon:'crystal',n:2,hp:10,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'coldfront'},
       {name:'Hailcaller',icon:'hail',n:2,hp:8,atk:2,def:0,mov:3,mt:'walk',at:'lob',rng:3,rmin:2,ab:'icelance'},
-      {name:'Glacier Knight',icon:'shield',n:2,hp:12,atk:3,def:1,mov:3,mt:'line',at:'melee',rng:1,ab:'shatterstrike',trait:'shatterfall'}]},
+      {name:'Glacier Knight',icon:'shield',n:2,hp:14,atk:3,def:1,mov:3,mt:'line',at:'melee',rng:1,ab:'shatterstrike',trait:'deepcold'}]},
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
     theme:'Five walking fortresses. Few in number, impossible to shove around.',
     passive:'Immovable: giants fill two hexes and can’t be pushed, pulled, swapped or knocked off the board; they take the slam damage instead. Squeezing: a one-hex gap between walls costs a giant 2 moves. Swarmed: a giant takes +1 damage from a melee basic attack while 2 or more enemies stand next to it. Last of the Old Ones: when a giant falls, every giant still standing heals 3 HP and gains +1 ATK for the rest of the game.',gateBlock:1,swarmed:1,
@@ -2065,7 +2066,7 @@ function hurt(t,n,col,tick){
   // v50 Frost Hold: a hit on a frozen enemy thaws it (it was shattered for double); any other hit chills it and leaves a frost mark (3 marks freeze)
   {const is=hostile&&!tick&&t.hp>0&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].fac==='ice'&&(CUR_TAG==='Basic'||CUR_TAG==='Abil')&&(t.kind!=='wall'||wildsCreature(t))?CUR_SRC:null;
     if(is){if(RULES.SHATTER&&t.st.frozen>0&&!t.st.stun){t.st.frozen=0;t.st.chill=Math.max(t.st.chill||0,1);fx(t,'shattered','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Shatter (double damage, thawed)');if(e)e.uses++}}
-      else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,1)}}}
+      else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,hasTrait(is,'deepcold')?2:1)}}}// v61: the Glacier Knight's Deep Cold leaves 2 marks
   if(t.hp>0&&rsrc){if(hasRelic(rsrc,'ash')){sear(rsrc,t);relicUse(rsrc,'ash')}}
   if(t.hp<=0)kill(t);
   return n;
@@ -2308,6 +2309,7 @@ function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
   if(u.machine&&onClaimOf(t,'gnomes'))o.push(['Pink ground (enemy on it)',1]);
   if(hasTrait(u,'tempo')&&(u.swings||0)>0)o.push(['Tempo (later strikes)',Math.min(2,u.swings)]);
   if(u.sync)o.push(['Synchrony',1]);
+  if(hasTrait(u,'deepcold')&&t.st&&t.st.frozen>0)o.push(['Deep Cold (frozen target)',1]);
   if((hasTrait(u,'finalsecond')||hasTrait(u,'delaybolt'))&&t.cut===u.owner)o.push(['Final Second',1]);
   // Fervour (Zealot): +1 per point of healing it received this turn, up to +3.
   if(hasTrait(u,'fervour')&&(u.fv||0)>0)o.push(['Fervour (healing received)',Math.min(3,u.fv)]);
@@ -2524,7 +2526,8 @@ function farGuard(u,t){return !!(t&&t.leader&&t.kind!=='wall'&&G.players.length>
 function hitDmg(u,t,A){
   let base=A.useAtk?effAtk(u)+(A.atkBonus||0):(A.dmg||0);
   if(base<=0)return 0;
-  if(coldDouble(t,A)||(!A.noShatter&&iceShatter(u,t)))base*=2;// Ice Lance (chilled or frozen), Shatter Strike (frozen), and since v50 every Frost ability on a frozen enemy
+  if(coldDouble(t,A)||(!A.noShatter&&iceShatter(u,t)))base*=2;
+  if(hasTrait(u,'deepcold')&&t.st&&t.st.frozen>0)base+=1;// v61 Deep Cold: +1 against frozen enemies// Ice Lance (chilled or frozen), Shatter Strike (frozen), and since v50 every Frost ability on a frozen enemy
   if(hasRelic(u,'spellstone'))base+=1;// Spellstone relic (v36)
   if(focused(u,A))base+=1;// Arcane Focus: a mage that has not moved this turn
   if(t.kind!=='wall'&&t.st&&t.st.hex>0)base+=1;// Hexed: 1 more damage from abilities
