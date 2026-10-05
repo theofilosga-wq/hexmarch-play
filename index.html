@@ -625,7 +625,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:0,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -904,7 +904,7 @@ const TRAITS={
   shatterfall:{name:'Shatterfall',text:'When it kills a frozen enemy, the shards fly: every enemy next to the fallen unit is chilled.'},
   stonesleep:{name:'Stone Sleep',text:'When it dies it turns into a statue on its hex (5 HP, 0 DEF): it blocks the hex, can’t act and can be smashed (no Ultimate charge for it). Every spell a friendly mage casts while standing within 2 of the statue adds that spell’s AP cost to it; at 4 the Gargoyle rises there with half the max HP it had (16, then 8, then 4). A Gargoyle of 4 max HP that dies, or a smashed statue, is gone for good.'},
   statue:{name:'Statue',text:'A sleeping Gargoyle. Can’t move or act. Mages casting spells within 2 of it wake it; smash it first and the Gargoyle is gone.'},
-  hellaura:{name:'Burning Aura',text:'The Archdemon rises once per game when the last unit of the Ember Court falls (2 hexes, 18 HP, 4 ATK, 1 DEF, walks 3). Every enemy that starts its turn next to it takes 1 damage, and the ground under it burns.'},
+  hellaura:{name:'Burning Aura',text:'The Archdemon rises once per game when the Ember Court has lost 4 of its units AND killed 4 enemy units, next to the Pit Lord; or at once if the whole Court falls first (2 hexes, 18 HP, 4 ATK, 1 DEF, walks 3). Every enemy that starts its turn next to it takes 1 damage, and the ground under it burns.'},
   wraith:{name:'Time Wraith',text:'Called once per game when both Second Hands have fallen: it appears next to the Chronarch at once. No ability, just a fast, heavy blade: fragile but mobile. It counts as a normal unit (charge, Warlord, staying in the game).'},
   delaybolt:{name:'Delay Bolt',text:'Its basic attack pushes back time on the target: every ability cooldown of the target gets 1 more turn, and a ready ability must wait 1 turn. Its basic attack also deals +1 damage to an enemy that a Second Hand has hit this turn (Final Second).'},
 };
@@ -966,7 +966,7 @@ const P_=(o)=>Object.assign({pawn:1,mt:'march',at:'fwd',rng:1,mov:3,def:0},o);
 const FAC={
   fire:{name:'Ember Court',color:'#ff4a3d',
     theme:'Creatures from hell and beasts that spit fire: they set the board ablaze and fight inside the flames.',
-    passive:'The Archdemon: when the last Ember Court unit falls, an Archdemon (2 hexes, 18 HP, Hellwhip) rises once per game instead of the Court being knocked out. Hellfire: many of their abilities paint the ground red (Kindle and Fireball for 3 turns, Spit Fire for 2). Fireball, Flame Breath and Spit Fire sear: the target can’t be healed until the end of its next turn. Hellspawn: when an Ember Court unit dies it bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.',
+    passive:'The Archdemon: once the Court has lost 4 of its units and killed 4 enemy units, an Archdemon (2 hexes, 18 HP, Hellwhip) rises next to the Pit Lord, once per game (at once if the whole Court falls first). Hellfire: many of their abilities paint the ground red (Kindle and Fireball for 3 turns, Spit Fire for 2). Fireball, Flame Breath and Spit Fire sear: the target can’t be healed until the end of its next turn. Hellspawn: when an Ember Court unit dies it bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.',
     home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage, and Crown Wilds monsters on it burn for 1 each round. An enemy standing on red ground moves 1 less.',homeAtk:1,
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
     units:[
@@ -1464,6 +1464,31 @@ const FORMATIONS={
   flank:{name:'Flank',text:'Fast units split to both wings, ready to take the flank roads and Outposts.'},
 };
 const DEFAULT_FORMATION={2:'line',3:'wedge',4:'turtle',5:'turtle',6:'turtle'};
+/* v56 army presets (owner 6 Oct 2026): placement only, no effects. Targets per unit name: [depth, |lateral|, depth weight, lateral weight] in hex steps
+   from the base centre toward the Throne (depth) and sideways (lateral). On the Crown Wilds each army gets its own preset plus Line and Flank. */
+const ARMY_FORM={
+  warband:{name:'March Order',text:'The block stands connected (a Phalanx from turn 1): shields in front, spears behind them, Berserkers at its sides, the Warlord inside. Only the chargers, two Outriders and the Raider, stand out in front of it, ready to ride ahead.',
+    t:{'Outrider':[3,1,2.5,1],'Raider':[3,0,2.5,1],'Shieldbearer':[1.7,0.8,2,1],'Warlord':[1,0,1.4,2],'Spearman':[1.2,1.3,1,1],'Berserker':[1.6,2.2,1,1]}},
+  mage:{name:'Screen',text:'Gargoyles at the front edge, the mages behind them, the Archmage in the middle; the Drake off to one side on its own.',
+    t:{'Gargoyle':[3,0.7,1.5,1],'Battle Mage':[2.6,1.8,1,1],'Elementalist':[2,1,1,1],'Enchanter':[2,2.2,1,1],'Archmage':[2,0,1,2],'Drake':[0,3,0.5,1.5]}},
+  fire:{name:'Hunt',text:'Hellhounds and the Phoenix at the front corners, the Infernal in front of the Pit Lord, Salamanders beside him, the Imps behind.',
+    t:{'Hellhound':[3,2.6,1,1],'Phoenix':[2.6,3,1,1],'Infernal':[3,0,1,1.5],'Pit Lord':[2,0,1,2],'Salamander':[2.5,1.3,1,1],'Fire Imp':[1.2,2.2,1,1]}},
+  ice:{name:'Ice Line',text:'Frost Wardens in front, Glacier Knights on the edges, Frostlings and the Rime Queen behind them, Hailcallers at the back.',
+    t:{'Frost Warden':[3,0.7,1.4,1],'Glacier Knight':[3,2.6,1,1],'Frostling':[2,1.4,1,1],'Rime Queen':[2,0,1,2],'Hailcaller':[1.2,2.4,1,1]}},
+  giants:{name:'Shoulder to Shoulder',text:'All five giants side by side at the front, the Mountain King in the middle.',
+    t:{'Mountain King':[2.5,0,1,2],'Titan':[2.5,1.5,1,1],'Cliff Breaker':[2.5,1.5,1,1],'Rampart':[2.5,3,1,1],'Boulder Hurler':[2,3,1,1]}},
+  gnomes:{name:'Workshops',text:'Two workshops, one on each side: Tinkers and Flamewrights in pairs; the Gearmaster and the Sparkwright in the middle; Bombardiers behind.',
+    t:{'Tinker':[2.4,2.4,1,1],'Flamewright':[2.4,1.4,1,1],'Gearmaster':[2,0,1,2],'Sparkwright':[2.6,0.4,1,1],'Bombardier':[1,3,1,1]}},
+  arcane:{name:'Sanctum',text:'Seraph Wardens in front, the High Priest behind them with the Clerics, Druids and Lightwardens around, the Zealot ready on a front corner.',
+    t:{'Seraph Warden':[3,0.7,1.4,1],'High Priest':[2,0,1,2],'Cleric':[2,1,1,1],'Druid':[2.4,2,1,1],'Lightwarden':[1.4,2.2,1,1],'Zealot':[3,2.4,1,1]}},
+  curse:{name:'Procession',text:'The two Penitents in front, the Hierophant behind them, the priests around him; the Sorrow Priests and the Censor at the back.',
+    t:{'Penitent':[3,0.7,1.4,1],'Hierophant':[2,0,1,2],'Plague Priest':[2,1.2,1,1],'Bloodletter':[2.5,2,1,1],'Mire Witch':[2.6,1.6,1,1],'Sorrow Priest':[1.3,2.2,1,1],'Censor':[1.3,2.8,1,1]}},
+  chrono:{name:'Strike Teams',text:'Two strike teams, one on each side: a Second Hand with a Tempo Mage and a Rewinder at its side; the third Tempo Mage and the Chronarch in the middle.',
+    t:{'Second Hand':[3,2.6,1,1],'Tempo Mage':[2.3,1.8,1,1],'Rewinder':[2.4,3.2,1,1],'Chronarch':[2,0,1,2]}},
+  rift:{name:'Scattered',text:'Spread thin all round the base: Repulsors and Phase Stalkers at the front, Tidecallers and Voidcallers on the sides, the Gravity Singer and the Rift Sovereign in the middle.',
+    t:{'Repulsor':[3,1.4,1,1],'Phase Stalker':[3,3,1,1],'Tidecaller':[2,2.8,1,1],'Voidcaller':[2,1.2,1,1],'Gravity Singer':[2,0,1,1],'Rift Sovereign':[2.4,0,1,2]}},
+};
+function formsFor(p){if(G&&G.map&&p&&ARMY_FORM[p.fac])return {army:{name:ARMY_FORM[p.fac].name,text:ARMY_FORM[p.fac].text},line:FORMATIONS.line,flank:FORMATIONS.flank};return FORMATIONS}
 function zoneOf(p){
   const h=p.home,out=G.outposts||[];
   const fr=frameOf(p),cost=([q,r])=>{const [d,l]=fr(q,r);return Math.abs(l)*1.15+d*0.8+(d<-0.2?9:0)};
@@ -1485,10 +1510,10 @@ const ROLE_ORDER=['leader','tank','fast','melee','ranged','pawn'];
 function frameOf(p){const [hx,hy]=pix(p.home[0],p.home[1]),hl=Math.hypot(hx,hy)||1;const f=[-hx/hl,-hy/hl],l=[-f[1],f[0]];
   return (q,r)=>{const [x,y]=pix(q,r);const vx=(x-hx)/S3,vy=(y-hy)/S3;return [vx*f[0]+vy*f[1],vx*l[0]+vy*l[1]]}}
 function placeFormation(p,name){
-  name=FORMATIONS[name]?name:(DEFAULT_FORMATION[G.players.length]||'line');p.formation=name;
-  const T=FORM_T[name],fr=frameOf(p),mine=G.units.filter(u=>u.owner===p.id&&u.kind!=='wall');
+  const FS=formsFor(p);name=FS[name]?name:(FS.army?'army':(DEFAULT_FORMATION[G.players.length]||'line'));p.formation=name;
+  const AF=name==='army'?ARMY_FORM[p.fac].t:null,T=FORM_T[name==='army'?'line':name],fr=frameOf(p),mine=G.units.filter(u=>u.owner===p.id&&u.kind!=='wall');
   for(const u of mine){u.q=99;u.r=99}
-  const cost=(u,q,r)=>{const [d,l]=fr(q,r),t=T[roleOf(u)];return t[2]*Math.abs(d-t[0])+t[3]*Math.abs(Math.abs(l)-t[1])};
+  const cost=(u,q,r)=>{const [d,l]=fr(q,r),t=(AF&&AF[u.name])||T[roleOf(u)];return t[2]*Math.abs(d-t[0])+t[3]*Math.abs(Math.abs(l)-t[1])};
   // Alternate wings for units of the same role so formations come out balanced left and right.
   const side={};
   const sorted=mine.slice().sort((a,b)=>ROLE_ORDER.indexOf(roleOf(a))-ROLE_ORDER.indexOf(roleOf(b))||b.maxhp-a.maxhp||a.id-b.id);
@@ -1881,8 +1906,17 @@ function eliminate(p,why){
 }
 // Salvage talent (gnomes): a machine that is destroyed or falls apart hands its builder 1 turn of cooldown back.
 function salvage(t){if(!t.machine||t.builtBy==null||!talent(G.players[t.owner],'salvage'))return;const b=byId(t.builtBy);if(b&&b.owner===t.owner&&b.cd>0){b.cd--;fx(b,'salvage','#ff6ec7');if(trk()&&!SIM){const e=tFx(G.players[t.owner].fac,'','Salvage (talent)');if(e)e.uses++}}}
+/* v56 SOULS (owner 6 Oct 2026: summon the Archdemon "when 4 of your units die and when you kill 4 units"; Claude made it one shared count):
+   every Ember Court unit that falls and every enemy army unit the Ember Court kills is a soul (machines, statues, eggs and monsters do not count).
+   At RULES.DEMON_SOULS (8) the Archdemon rises next to the Pit Lord, or where the last soul fell. If the whole Court falls first it rises then. */
+function soulCount(t){if(!RULES.ARCHDEMON||t.kind==='wall'||t.summon||t.statue||t.egg||t.name==='Archdemon')return;
+  const fp=G.players.filter(p=>p.fac==='fire'&&p.alive&&!p.demon);for(const p of fp){
+    const mine=t.owner===p.id,byMe=CUR_SRC&&CUR_SRC.kind!=='wall'&&CUR_SRC.owner===p.id&&tm(t.owner)!==p.team;if(!mine&&!byMe)continue;
+    p.souls=(p.souls||0)+1;if(mine)p.soulsLost=(p.soulsLost||0)+1;else p.soulsKilled=(p.soulsKilled||0)+1;
+    const ready=RULES.DEMON_SOULS?p.souls>=RULES.DEMON_SOULS:(p.soulsLost||0)>=RULES.DEMON_LOST&&(p.soulsKilled||0)>=RULES.DEMON_KILLS;
+    if(ready){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&u!==t);G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:L?[L.q,L.r]:[t.q,t.r]})}}}
 function kill(t){
-  const i=G.units.indexOf(t);if(i<0)return;
+  const i=G.units.indexOf(t);if(i<0)return;soulCount(t);
   G.units.splice(i,1);
   if(t.beast){beastSlain(t);return}
   if(t.monster){if(!SIM)monsterSlain(t);return}
@@ -1956,6 +1990,8 @@ function kill(t){
   const p=P(t.owner);
   if(G.mode==='warlord'&&t.leader&&!p.leaderless){p.leaderless=true;addLog(t.owner,`${FAC[p.fac].name} has lost its Leader and fights on leaderless.`)}
   if(G.mode==='regicide'&&t.leader)eliminate(p,'lost its Leader');
+  if(G.demonDue&&G.demonDue.length){const due=G.demonDue;G.demonDue=[];for(const d of due)spawnArchdemon(G.players[d.pid],d.at)}
+  if(G.mode==='regicide'&&t.leader){}
   else if(!G.units.some(u=>u.owner===p.id&&u.kind!=='wall'&&(!u.summon||u.egg))){if(!(G.mode==='warlord'&&spawnArchdemon(p,[t.q,t.r])))eliminate(p,'has no units left')}
 }
 /* Time Wraith (Hourglass Order, v28). p.wraithDue is set in kill() when the side's last Second Hand falls; at the start of that side's next turn the Wraith
@@ -3138,7 +3174,8 @@ function genWilds(){
   // camps: the yard is the deployment zone; the wall ring has three gates (Throne road, Vault, Crypt); its look is the army's own (set below)
   // gates are 2 hexes wide so five two-hex giants never jam in their own camp (v38b fix: 1-hex gates trapped a giant behind the others)
   {const r3=rg(B,3),gA=[angTo(B,[0,0]),angTo(B,V),angTo(B,C)],gates=new Set();for(const g of gA)for(const c of r3.slice().sort((x,y)=>ad(ang(x[0],x[1],B[0],B[1]),g)-ad(ang(y[0],y[1],B[0],B[1]),g)).slice(0,2))gates.add(key(c[0],c[1]));for(const [q,r] of disc(B,2))put(q,r,'camp');
-   for(const [q,r] of r3)gates.has(key(q,r))?put(q,r,'gap'):put(q,r,'rock',null,'camp')}
+   if(RULES.SMALL_BASE){for(const [q,r] of r3)put(q,r,'camp')}// v56 (owner: "no walls, we have too many walls"): the camp wall ring is gone
+   else for(const [q,r] of r3)gates.has(key(q,r))?put(q,r,'gap'):put(q,r,'rock',null,'camp')}
   // the Watchtower on a rocky outcrop above the camp road, and the lever
   {const Wt=W.tower;put(Wt[0],Wt[1],'tower');const back=angTo(Wt,[0,0]);for(const [q,r] of rg(Wt,1))if(ad(ang(q,r,Wt[0],Wt[1]),back)<1.1)putE(q,r,'rock','cliff')}
   put(W.lever[0],W.lever[1],'lever');
@@ -3173,7 +3210,9 @@ function genWilds(){
   G.levers={};G.gems={};G.wander=null;G.midUp=false;
   // camps: the inside is the deployment zone and home ground; seats go round the board
   const camps=wildsMirrors(...B);const order=[0,1,3,2].map(i=>camps[i]);
-  G.players.forEach((p,i)=>{const c=order[p.spot%4];p.home=c;p.camp=c;p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2).map(([q,r])=>key(q,r));for(const k of p.zone)G.terr[k]=p.fac;
+  G.players.forEach((p,i)=>{const c=order[p.spot%4];p.home=c;p.camp=c;// v56: the BASE is the 7 hexes at the centre (treasure drop-off); armies deploy OUTSIDE it, 2 to 3 hexes from the centre
+    p.base=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=(RULES.SMALL_BASE?1:2)).map(([q,r])=>key(q,r));
+    p.zone=cellsAll.filter(([q,r])=>{const d=hd(q,r,c[0],c[1]);return RULES.SMALL_BASE?d>=2&&d<=3&&passable(q,r):d<=2}).map(([q,r])=>key(q,r));for(const k of [...p.base,...p.zone])G.terr[k]=p.fac;
     // each army walls its camp in its own material (drawing only); the Ember Court keeps a lava pool in the middle of its yard
     for(const [q,r] of cellsAll)if(hd(q,r,c[0],c[1])===3&&G.wallLook[key(q,r)])G.wallLook[key(q,r)]=CAMP_LOOK[p.fac]||'palisade';if(p.fac==='fire')G.decor[key(c[0],c[1])]='lava'});
 }
@@ -3181,7 +3220,7 @@ function genWilds(){
 // v43 (owner 3 Oct 2026: "wasting 2-3 attacks on a wall that breaks is stupid"): no cracked walls any more; their hexes are open gaps into the room.
 function wildsSetup(){if(!G.map)return}
 const CAMP_LOOK={warband:'palisade',ice:'icespire',fire:'obsidian',giants:'menhir',gnomes:'scrap',arcane:'marble',curse:'gravefence',rift:'crystal',chrono:'clockwall',mage:'bluestone'};
-const inCamp=(p,q,r)=>!!(p&&p.zone&&p.zone.includes(key(q,r)));
+const inCamp=(p,q,r)=>!!(p&&(p.base||p.zone)&&(p.base||p.zone).includes(key(q,r)));// v56: the 7-hex base
 function roomAt(q,r){if(!G.rooms||!G.rooms.length)return null;if(!roomAt.c||roomAt.c.r!==G.rooms){const m=new Map();for(const R of G.rooms){for(const k of R.cells)m.set(k,R);for(const k of R.ways)m.set(k,R)}roomAt.c={r:G.rooms,m}}return roomAt.c.m.get(key(q,r))||null}
 function makeMonster(kind,q,r,room){const M=MONSTERS[kind];return {id:G.nid++,kind:'wall',wall:'monster',monster:kind,owner:-1,name:M.name,icon:M.icon,q,r,dir:0,size:1,hp:M.hp,maxhp:M.hp,atk:M.atk,def:M.def,st:{},moved:true,acted:true,cd:0,room}}
 const roomFree=R=>R.cells.map(k=>k.split(',').map(Number)).filter(([q,r])=>passable(q,r)&&!unitAt(q,r)).sort((a,b)=>hd(a[0],a[1],R.c[0],R.c[1])-hd(b[0],b[1],R.c[0],R.c[1]));
@@ -5167,6 +5206,7 @@ function burst(x,y,rad,col,alpha,fill){ctx.save();ctx.globalAlpha=alpha;ctx.begi
 function sparks(x,y,n,rad,col,t,seed){ctx.save();ctx.fillStyle=col;for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+seed,d=rad*(0.3+t);ctx.globalAlpha=Math.max(0,1-t);ctx.beginPath();ctx.arc(x+Math.cos(a)*d,y+Math.sin(a)*d*0.8-t*rad*0.6,Math.max(1.2,rad*0.07*(1-t)),0,7);ctx.fill()}ctx.restore()}
 function hexFlash(q,r,col,alpha){const U=vUnit();if(VIEW==='3d'){polyPath(hexTop(...world(q,r),0.95,0.02))}else{const [x,y]=px(q,r);hexPath(x,y,SZ*0.95)}ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=col;ctx.fill();ctx.restore()}
 function drawVFX(now){
+  if(typeof baseDraw==='function')baseDraw();
   if(typeof kingZoneDraw==='function')kingZoneDraw(now);
   if(typeof tutDraw==='function')tutDraw(now);
   pumpVFX(now);
@@ -6305,7 +6345,7 @@ function showCurtain(){
     <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary" id="curtainGo">Show my army</button></div></div>`;
   o.hidden=false;$('#curtainGo').onclick=()=>{o.hidden=true;curtain=G.cur;refresh()};
 }
-function botDeploy(){if(!G||G.phase!=='deploy')return;const p=P(G.cur);if(p.ctrl!=='bot')return;placeFormation(p,Object.keys(FORMATIONS)[Math.floor(Math.random()*4)]);deployReady();refresh();netPush()}
+function botDeploy(){if(!G||G.phase!=='deploy')return;const p=P(G.cur);if(p.ctrl!=='bot')return;placeFormation(p,G.map?'army':Object.keys(FORMATIONS)[Math.floor(Math.random()*4)]);deployReady();refresh();netPush()}
 HOOKS.turn=()=>{
   if(G.phase==='deploy'){
     G.sel=null;refresh();netPush();const p=P(G.cur);
@@ -6434,6 +6474,11 @@ function annText(e){
 const ANN_FEED_MS=20000;ANN.feed=[];ANN.fopen=false;
 /* v40 the King's challenge zone: while a King sits on the Throne, the 6 hexes around it wear a faint gold ring (stand there to stop its point);
    a hex with an enemy of the King on it turns red. Drawn from drawVFX in both views. */
+// v56: each army's 7-hex base on the Crown Wilds (the treasure drop-off) is outlined in its colour, in both views
+function baseDraw(){if(!G||!G.map)return;ctx.save();for(const p of G.players){if(!p.alive||!p.base)continue;const col=FAC[p.fac].color;
+  for(const k of p.base){const [q,r]=k.split(',').map(Number);if(VIEW==='3d')polyPath(hexTop(...world(q,r),0.9,0.03));else{const [x,y]=px(q,r);hexPath(x,y,SZ*0.9)}
+    ctx.strokeStyle=col;ctx.globalAlpha=0.85;ctx.lineWidth=Math.max(1.5,vUnit()*0.07);ctx.setLineDash([vUnit()*0.22,vUnit()*0.12]);ctx.stroke();ctx.globalAlpha=0.12;ctx.fillStyle=col;ctx.fill()}}
+  ctx.restore()}
 function kingZoneDraw(now){if(!G||G.mode!=="warlord"||G.phase||RULES.KING_ADJ!==1||oldCentre())return;const K=kingOf();if(!K||!onThrone(K))return;
   const pk=0.5+0.5*Math.sin(now/600);ctx.save();
   for(const [q,r] of DIRS){if(!inR(q,r))continue;const v=unitAt(q,r);if(v===K)continue;const foe=v&&v.kind!=='wall'&&!v.statue&&tm(v.owner)!==tm(K.owner);
@@ -6663,6 +6708,7 @@ function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))retu
   if(s.anchor>0)add('anchor','⚓','Anchored',s.anchor,'#12d69a',0,'cannot move on its next turn (it can still attack and use abilities)');
   if(s.rmark>0)add('rmark','◎','Rift-marked',s.rmark,'#12d69a',0,'moves 1 less, and Riftwalker throws carry it 1 hex further, until the end of the Riftwalkers\u2019 next turn');
   if(s.anchorImm>0&&!(s.anchor>0))add('anchorImm','⚓','Cannot be Anchored',s.anchorImm,'#8fbfb0',1,'was Anchored recently');
+  if(u.leader&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='fire'&&RULES.ARCHDEMON&&!G.players[u.owner].demon){const p=G.players[u.owner];add('souls','🔥','The pit hungers',`${Math.min(p.soulsLost||0,RULES.DEMON_LOST)}+${Math.min(p.soulsKilled||0,RULES.DEMON_KILLS)}`,'#ff4a3d',1,`the Archdemon rises when the Court has lost ${RULES.DEMON_LOST} units (now ${p.soulsLost||0}) and killed ${RULES.DEMON_KILLS} enemy units (now ${p.soulsKilled||0})`)}
   if(s.bless>0)add('bless','✚','Blessed',s.bless,'#ffd766',1,'+1 ATK, and heals 1 at the start of each of its turns');
   if(s.blessU>0)add('dawn','☀️','Hallowed Dawn',s.blessU,'#ffe9a8',1,'+1 ATK from the priests’ Ultimate');
   if(s.rally)add('rally','⚑','Rallied','until next turn','#eef0f4',1,'+1 ATK');
@@ -6694,7 +6740,7 @@ function renderDock(){
     const mineD=human&&(netOnline()||localHumans()<=1||curtain===G.cur);
     if(!mineD){bar.innerHTML=`<div class="ab-sub">Waiting for the other armies to deploy.</div>`;return}
     bar.innerHTML=`<div class="ab-sub"><b>Deployment.</b> ${u?`<b>${u.name}</b> selected: tap a glowing hex to move it, or another of your units to swap.`:'Pick a formation and a Leader talent, adjust units if you like, then press Done deploying.'}</div>
-      <div class="ab-btns">${Object.entries(FORMATIONS).map(([k,f])=>`<button class="abtn ${p.formation===k?'go':''}" data-form="${k}">${f.name}</button>`).join('')}</div>
+      <div class="ab-btns">${Object.entries(formsFor(p)).map(([k,f])=>`<button class="abtn ${p.formation===k?'go':''}" data-form="${k}">${f.name}</button>`).join('')}</div>
       <div class="ab-btns">${TALENTS[p.fac].map(t=>`<button class="abtn ${p.talent===t.k?'go':''}" data-tal="${t.k}">♚ ${t.name}<small>${t.text}</small></button>`).join('')}</div>`;
     bar.querySelectorAll('[data-form]').forEach(b=>b.onclick=()=>{placeFormation(P(G.cur),b.dataset.form);G.sel=null;refresh();netPush()});
     bar.querySelectorAll('[data-tal]').forEach(b=>b.onclick=()=>{P(G.cur).talent=b.dataset.tal;refresh();netPush()});
@@ -6842,8 +6888,8 @@ function deployPanel(){
   const p=P(G.cur),mine=isHumanTurn()&&(netOnline()||localHumans()<=1||curtain===G.cur);
   if(!mine)return `<div class="label">Deployment</div><p class="hint" style="margin:0">${p.ctrl==='bot'?'A bot is deploying.':'Player '+(p.id+1)+' is deploying in secret.'} Armies are revealed together when everyone is ready.</p>`;
   return `<div class="label">Deployment · Player ${p.id+1}</div><p style="margin:0 0 8px">Arrange your army in the glowing zone. Pick a formation, then fine-tune: tap a unit, then a zone hex to move it, or another of your units to swap them.</p>
-    <div class="forms">${Object.entries(FORMATIONS).map(([k,f])=>`<button class="btn sm ${p.formation===k?'primary':''}" data-form="${k}" title="${f.text}">${f.name}</button>`).join('')}</div>
-    <p class="hint" style="margin:6px 0 0">${FORMATIONS[p.formation]?FORMATIONS[p.formation].text:''}</p>
+    <div class="forms">${Object.entries(formsFor(p)).map(([k,f])=>`<button class="btn sm ${p.formation===k?'primary':''}" data-form="${k}" title="${f.text}">${f.name}</button>`).join('')}</div>
+    <p class="hint" style="margin:6px 0 0">${formsFor(p)[p.formation]?formsFor(p)[p.formation].text:''}</p>
     <div class="label" style="margin-top:12px">Leader talent</div>
     <div class="forms">${TALENTS[p.fac].map(t=>`<button class="btn sm ${p.talent===t.k?'primary':''}" data-tal="${t.k}" title="${t.text}">${t.name}</button>`).join('')}</div>
     <p class="hint" style="margin:6px 0 0">${talentInfo(p)?talentInfo(p).text:''}</p>
