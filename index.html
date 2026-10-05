@@ -625,7 +625,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -715,6 +715,8 @@ const ABIL={
   spin:{name:'Fire Frenzy',cost:2,cd:2,aim:'self',shape:'nova',hits:'foe',dmg:2,
     desc:'The Hellhound snaps and burns in every direction: 2 damage minus DEF to every adjacent enemy.'},
   // v25 Salamander: a straight line of 3 hexes from it; every enemy on the line takes 3 minus DEF and is Seared; the line burns red for 2 turns.
+  hellwhip:{name:'Hellwhip',cost:2,cd:4,aim:'dir',shape:'line',size:4,hits:'foe',dmg:3,pull:3,bot:'hellwhip',
+    desc:'The Archdemon lashes its whip in a straight line 4 hexes long: every enemy on it takes 3 damage minus DEF and is dragged toward the Archdemon (up to 3 hexes).'},
   spitfire:{name:'Spit Fire',cost:2,cd:2,aim:'dir',shape:'line',size:3,hits:'foe',dmg:3,paint:'area',paintTtl:2,sear:1,
     desc:'Spit a stream of fire in a straight line 3 hexes long: every enemy on it takes 3 damage minus DEF and is Seared (it can’t be healed until the end of its next turn). The 3 hexes become red ground for 2 turns.'},
   breath:{name:'Flame Breath',cost:2,cd:3,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:2,pierce:1,paint:'area',sear:1,
@@ -902,6 +904,7 @@ const TRAITS={
   shatterfall:{name:'Shatterfall',text:'When it kills a frozen enemy, the shards fly: every enemy next to the fallen unit is chilled.'},
   stonesleep:{name:'Stone Sleep',text:'When it dies it turns into a statue on its hex (5 HP, 0 DEF): it blocks the hex, can’t act and can be smashed (no Ultimate charge for it). Every spell a friendly mage casts while standing within 2 of the statue adds that spell’s AP cost to it; at 4 the Gargoyle rises there with half the max HP it had (16, then 8, then 4). A Gargoyle of 4 max HP that dies, or a smashed statue, is gone for good.'},
   statue:{name:'Statue',text:'A sleeping Gargoyle. Can’t move or act. Mages casting spells within 2 of it wake it; smash it first and the Gargoyle is gone.'},
+  hellaura:{name:'Burning Aura',text:'The Archdemon rises once per game when the last unit of the Ember Court falls (2 hexes, 18 HP, 4 ATK, 1 DEF, walks 3). Every enemy that starts its turn next to it takes 1 damage, and the ground under it burns.'},
   wraith:{name:'Time Wraith',text:'Called once per game when both Second Hands have fallen: it appears next to the Chronarch at once. No ability, just a fast, heavy blade: fragile but mobile. It counts as a normal unit (charge, Warlord, staying in the game).'},
   delaybolt:{name:'Delay Bolt',text:'Its basic attack pushes back time on the target: every ability cooldown of the target gets 1 more turn, and a ready ability must wait 1 turn. Its basic attack also deals +1 damage to an enemy that a Second Hand has hit this turn (Final Second).'},
 };
@@ -963,7 +966,7 @@ const P_=(o)=>Object.assign({pawn:1,mt:'march',at:'fwd',rng:1,mov:3,def:0},o);
 const FAC={
   fire:{name:'Ember Court',color:'#ff4a3d',
     theme:'Creatures from hell and beasts that spit fire: they set the board ablaze and fight inside the flames.',
-    passive:'Hellfire: many of their abilities paint the ground red (Kindle and Fireball for 3 turns, Spit Fire for 2). Fireball, Flame Breath and Spit Fire sear: the target can’t be healed until the end of its next turn. Hellspawn: when an Ember Court unit dies it bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.',
+    passive:'The Archdemon: when the last Ember Court unit falls, an Archdemon (2 hexes, 18 HP, Hellwhip) rises once per game instead of the Court being knocked out. Hellfire: many of their abilities paint the ground red (Kindle and Fireball for 3 turns, Spit Fire for 2). Fireball, Flame Breath and Spit Fire sear: the target can’t be healed until the end of its next turn. Hellspawn: when an Ember Court unit dies it bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.',
     home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage, and Crown Wilds monsters on it burn for 1 each round. An enemy standing on red ground moves 1 less.',homeAtk:1,
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
     units:[
@@ -971,7 +974,7 @@ const FAC={
       {name:'Fire Imp',icon:'fireball',aoe:'splash',n:2,hp:8,atk:3,def:0,mov:2,mt:'diag',at:'lob',rng:3,rmin:2,ab:'fireball'},
       {name:'Hellhound',icon:'paw',n:2,hp:9,atk:4,def:0,mov:4,mt:'walk',at:'melee',rng:1,ab:'spin',trait:'hitrun'},
       {name:'Phoenix',icon:'phoenix',hp:6,atk:3,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'breath',trait:'rebirth'},
-      {name:'Infernal',icon:'volcano',aoe:'cleave',hp:15,atk:3,def:2,mov:2,mt:'line',at:'melee',rng:1,ab:'eruption',trait:'thorns'},
+      {name:'Infernal',icon:'volcano',aoe:'cleave',hp:15,atk:3,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'eruption',trait:'thorns'},
       {name:'Salamander',icon:'lizard',n:2,hp:11,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'spitfire',trait:'fireblood'}]},
   ice:{name:'Frost Hold',color:'#5cc8ff',
     theme:'Cold that builds up: chill the enemy, freeze it in place, then cash it in with lances and shattering blows.',
@@ -1021,7 +1024,7 @@ const FAC={
     units:[
       {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'march',ab2:'rally'},
       {name:'Berserker',icon:'axe',aoe:'cleave',n:2,hp:8,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,rage:1,trait:'rage'},
-      {name:'Shieldbearer',icon:'shield',n:2,hp:12,atk:2,def:2,mov:3,mt:'line',at:'melee',rng:1,trait:'shieldwall'},
+      {name:'Shieldbearer',icon:'shield',n:2,hp:12,atk:2,def:2,mov:3,mt:'walk',at:'melee',rng:1,trait:'shieldwall'},
       {name:'Outrider',icon:'horseshoe',n:2,hp:10,atk:2,def:1,mov:1,mt:'knight',at:'melee',rng:1,ab:'charge',trait:'charge'},
       {name:'Raider',icon:'knives',hp:7,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,trait:'ambush'},
       {name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:7,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
@@ -1045,11 +1048,11 @@ const FAC={
     units:[
       {name:'Hierophant',icon:'crown',leader:1,hp:13,atk:3,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
       {name:'Plague Priest',icon:'skull',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'miasma'},
-      {name:'Sorrow Priest',icon:'candle',n:2,hp:6,atk:2,def:0,mov:2,mt:'diag',at:'lob',rng:4,rmin:2,ab:'wither'},
+      {name:'Sorrow Priest',icon:'candle',n:2,hp:6,atk:2,def:0,mov:2,mt:'walk',at:'lob',rng:4,rmin:2,ab:'wither'},
       {name:'Bloodletter',icon:'drop',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'siphon',trait:'scavenger'},
       {name:'Mire Witch',icon:'hand',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bogring'},
-      {name:'Censor',icon:'bell',hp:7,atk:2,def:0,mov:2,mt:'diag',at:'diag',rng:3,ab:'silence'},
-      {name:'Penitent',icon:'tomb',n:2,hp:18,atk:2,def:2,mov:2,mt:'line',at:'melee',rng:1,ab:'consecrate',trait:'bodyguard'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Sorrow Priest and a second Penitent took their places
+      {name:'Censor',icon:'bell',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'diag',rng:3,ab:'silence'},
+      {name:'Penitent',icon:'tomb',n:2,hp:18,atk:2,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'consecrate',trait:'bodyguard'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Sorrow Priest and a second Penitent took their places
   chrono:{name:'Hourglass Order',color:'#c81ca6',
     theme:'One overpowered combo: save AP, gather the Tempo Mages and a Rewinder around an assassin, Quicken it again and again so its blows land for 4, 5 and 6, and Chase the Clock so every kill gives it a free move to the next victim. Only the Second Hands and the Chronarch deal damage; everyone else is a fragile time mage. Kill the blades or the mages and the clock stops.',
     passive:'Banked Time: up to 2 unspent AP carry over to your next turn. When both Second Hands have fallen, a Time Wraith answers the Chronarch’s call (once per game).',bank:2,
@@ -1057,7 +1060,7 @@ const FAC={
     units:[
       {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'timewarp',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
       {name:'Second Hand',icon:'clock',n:2,hp:11,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'tempo'},// v28: Vanish removed, the retreat comes from Rewind
-      {name:'Tempo Mage',icon:'hourglass',n:3,hp:8,atk:0,def:1,mov:2,mt:'diag',at:'none',rng:0,ab:'quicken'},
+      {name:'Tempo Mage',icon:'hourglass',n:3,hp:8,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'quicken'},
       {name:'Rewinder',icon:'rewind',n:2,hp:8,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'clock'}]},
   // v22 (30 Sep 2026): the 10th army. Mages with spellbooks (book: 2 or 3 spells, one shared cooldown), two Gargoyles that tank and sleep in stone, one Drake.
   mage:{name:'Arcane Conclave',color:'#2bff5a',
@@ -1076,6 +1079,11 @@ const FAC={
 for(const k in FAC)for(const d of FAC[k].units)if(d.book&&!d.ab)d.ab=d.book[0];
 const FKEYS=Object.keys(FAC);
 // Time Wraith (Hourglass Order, v28): summoned once per game when both Second Hands have fallen (spawnWraith). Not in the roster and not a summon: a normal unit.
+/* v55 THE ARCHDEMON (owner 6 Oct 2026: "when all your units die you spawn a huge demon... the player controls him"; 18 HP; ability: "he hurls his whip in
+   a straight line dealing 3 damage and pulls enemies hit toward him"). Once per game, when the Ember Court's last unit falls, the Archdemon rises on the
+   nearest free two-hex spot to where it fell, instead of the Court being knocked out. 2 hexes (like a giant). Burning Aura: an enemy that starts its
+   turn next to it takes 1 damage, and the ground under it burns. */
+const ARCHDEMON={name:'Archdemon',icon:'volcano',hp:18,atk:4,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'hellwhip',trait:'hellaura'};
 const WRAITH={name:'Time Wraith',icon:'wraith',hp:16,atk:5,def:0,mov:4,mt:'walk',at:'melee',rng:1,trait:'wraith'};
 /* ---------- Gnome machines: built by abilities, live ttl of the owner's turns, then fall apart ---------- */
 const MACHINES={
@@ -1708,8 +1716,12 @@ const tbSnap=u=>{const st=Object.assign({},u.st);st.curses=Object.assign({},u.st
 function tbRecord(p){if(!RULES.TURNBACK||!G.units.some(v=>v.owner===p.id&&v.kind!=='wall'&&(v.ability==='turnback'||v.ability2==='turnback')))return;
   for(const v of G.units){if(v.kind==='wall'||v.egg||v.statue)continue;v.tb=v.tb||{};const o=v.tb[p.id];v.tb[p.id]={prev:o?o.cur:null,cur:tbSnap(v)}}}
 const tbState=(u,v)=>v&&v.tb&&v.tb[u.owner]&&v.tb[u.owner].prev||null;
+function hellAura(p){if(!RULES.ARCHDEMON)return;const ds=G.units.filter(d=>d.kind!=='wall'&&hasTrait(d,'hellaura')&&alive(d));if(!ds.length)return;
+  for(const d of ds){if(d.owner===p.id){for(const [a,b] of cells(d))if(!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:3,owner:d.owner};continue}
+    if(tm(d.owner)===p.team)continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=d;CUR_TAG='Dot';CUR_NAME='Burning Aura';
+    for(const v of G.units.slice())if(v.owner===p.id&&v.kind!=='wall'&&!v.statue&&alive(v)&&distUU(v,d)===1)hurt(v,1,'#ff4a3d',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 function beginTurn(){
-  const p=P(G.cur);tbRecord(p);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
+  const p=P(G.cur);tbRecord(p);hellAura(p);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
   for(const u of G.units)if(u.owner===p.id){u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0}}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
@@ -1944,11 +1956,19 @@ function kill(t){
   const p=P(t.owner);
   if(G.mode==='warlord'&&t.leader&&!p.leaderless){p.leaderless=true;addLog(t.owner,`${FAC[p.fac].name} has lost its Leader and fights on leaderless.`)}
   if(G.mode==='regicide'&&t.leader)eliminate(p,'lost its Leader');
-  else if(!G.units.some(u=>u.owner===p.id&&u.kind!=='wall'&&(!u.summon||u.egg)))eliminate(p,'has no units left');
+  else if(!G.units.some(u=>u.owner===p.id&&u.kind!=='wall'&&(!u.summon||u.egg))){if(!(G.mode==='warlord'&&spawnArchdemon(p,[t.q,t.r])))eliminate(p,'has no units left')}
 }
 /* Time Wraith (Hourglass Order, v28). p.wraithDue is set in kill() when the side's last Second Hand falls; at the start of that side's next turn the Wraith
    appears on a free hex next to the Chronarch (the nearest free hex to him if none is next to him; to the army's start point if he is dead too).
    Once per game (p.wraith). A normal unit: it can act at once, gives and takes charge, keeps its side alive. Tracked as 'Time Wraith|Summoned'. */
+function spawnArchdemon(p,at){if(!RULES.ARCHDEMON||!p||p.fac!=='fire'||p.demon)return null;
+  const [aq,ar]=at||p.home;const m=occ();const tmp={size:2,q:0,r:0,dir:0,kind:'unit',mt:'walk',owner:p.id};let spot=null;
+  const cs=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))&&!isTrap(q,r)).sort((a,b)=>hd(a[0],a[1],aq,ar)-hd(b[0],b[1],aq,ar));
+  for(const [q,r] of cs){for(let d=0;d<6;d++){const a=q+DIRS[d][0],b=r+DIRS[d][1];if(passable(a,b)&&!m.get(key(a,b))&&!isTrap(a,b)){spot=[q,r,d];break}}if(spot)break}
+  if(!spot)return null;p.demon=1;const u=makeUnit(p,ARCHDEMON);u.size=2;u.q=spot[0];u.r=spot[1];u.dir=spot[2];G.units.push(u);
+  if(!SIM){tStat(u);const e=tFx('fire','Archdemon','Summoned');if(e)e.uses++;addLog(p.id,`The Ember Court has fallen, and from its ashes rises the Archdemon: ${ARCHDEMON.hp} HP, ${ARCHDEMON.atk} ATK, walks ${ARCHDEMON.mov}.`);
+    fx(u,'ARCHDEMON','#ff4a3d');vfx({k:'buff',at:[u.q,u.r],col:FAC.fire.color,cam:1});announce({k:'demon',fac:p.fac})}
+  return u}
 function spawnWraith(p){
   if(!p||!p.wraithDue||p.wraith||!p.alive)return null;
   const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall');const [aq,ar]=L?[L.q,L.r]:p.home;
@@ -4998,7 +5018,7 @@ const GIANT_BUILD={
 function buildGiant(u,fac){const g=new THREE.Group();g.userData={top:3,bob:[],wings:[],hover:0,giant:1};
   hexBase(g,fac,-S3/2,0);hexBase(g,fac,S3/2,0);// one hex base under each foot
   const body=new THREE.Group();body.position.y=0.15;body.scale.setScalar(GIANT_SC);g.add(body);g.userData.body=body;
-  const f=GIANT_BUILD[u.name]||GIANT_BUILD['Cliff Breaker'];const top=f(body);
+  const f=GIANT_BUILD[u.name==='Archdemon'?'Titan':u.name]||GIANT_BUILD['Cliff Breaker'];const top=f(body);
   if(u.suitHp>0){const A=gMat(FAC[fac].color,{metalness:0.55,roughness:0.4});body.add(gMesh(G3.box(1.3,0.9,0.18),A,0,2.1,0.78));for(const s of [-1,1])body.add(gMesh(G3.ball(0.42,8),A,s*1.15,2.55,0.05));
     if(u.suitItem==='boots')for(const s of [-1,1])body.add(gMesh(G3.box(0.5,0.3,0.6),gMat('#d9b45a',{metalness:0.8}),s*LEG_X,0.15,0.12))}g.userData.top=0.15+top*GIANT_SC;delete g.userData.body;return glCompact(g)}
 
@@ -6398,6 +6418,7 @@ function annText(e){
     case 'note':return {col:e.col||'#ffd766',t:annEsc(e.t||''),s:annEsc(e.s||'')+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Mystery Chest holds ${/^[AEIOU]/.test(e.loot||'')?'an':'a'} ${annEsc(e.loot)}!`:`The Mystery Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Agony and Frailty. The chest is gone.'};
+    case 'demon':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} rises again!`,s:'Its last unit has fallen: the Archdemon climbs out of the ashes (18 HP, its whip drags enemies to it).'};
     case 'wraith':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} calls a Time Wraith!`,s:`Both Second Hands have fallen: the Wraith appears ${e.near?'beside the Chronarch':'at the army’s start'} (${WRAITH.hp} HP, ${WRAITH.atk} ATK, walks ${WRAITH.mov}).`};
     case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`${G.map?'On the Throne.':'In no man’s land around the Heart.'} The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
     case 'beastdown':return {col:FAC[e.fac].color,t:`The Rift Beast is slain by the ${annFac(e.fac)}!${e.pts?` +${e.pts} points`:''}`,s:e.pts&&e.scores?annStanding(e.team,e.scores):`+${RULES.BEAST_CHARGE} Ultimate charge.`};
