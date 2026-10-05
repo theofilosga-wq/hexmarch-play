@@ -625,7 +625,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -696,11 +696,12 @@ const ATTACKS={
 };
 const CURSES={
   rot:{name:'Rot',fx:'no side effect'},
-  agony:{name:'Agony',fx:'no side effect'},
-  frailty:{name:'Frailty',fx:'−1 DEF'},
-  feeble:{name:'Feeble',fx:'−1 ATK'},
-  mire:{name:'Mire',fx:'−1 move'},
-  silence:{name:'Silence',fx:'can’t use abilities'},
+  // v62 (owner 6 Oct 2026: "the 6 curses all rot"): the internal keys stay; names and side effects change
+  agony:{name:'Plague',fx:'spreads: at the start of its turn it passes to one ally of the victim standing next to it'},
+  frailty:{name:'Wither',fx:'−1 DEF'},
+  feeble:{name:'Leech',fx:'each curse tick heals the Bloodletter that cast it 1'},
+  mire:{name:'Grave Mud',fx:'−1 move'},
+  silence:{name:'Decay',fx:'can’t be healed'},
 };
 
 /* ---------- abilities ----------
@@ -708,8 +709,8 @@ const CURSES={
  shape: single | blast | nova | ring | cone | line | arc | aura   (size = radius / length)
  cd: turns the unit must rest after use. bot: heuristic scorer for non-damage abilities. */
 const ABIL={
-  kindle:{name:'Kindle',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'none',paint:'area',bot:'kindle',
-    desc:'Set a 7-hex patch within 3 ablaze for 3 turns. Fire units there get +1 ATK. Enemies that start a turn there take 1 damage.'},
+  kindle:{name:'Kindle',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',dmg:2,pierce:1,paint:'area',bot:'kindle',
+    desc:'Set a 7-hex patch within 3 ablaze for 3 turns: every enemy in it takes 2 damage at once (ignoring DEF). Fire units there get +1 ATK; enemies that start a turn there take 1 damage. An enemy killed by the Kindle or by its burning ground explodes: 2 damage to every unit of its own side within 2 hexes.'},
   fireball:{name:'Fireball',cost:3,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:3,paint:'center',sear:1,
     desc:'Lob a fireball 2 to 4 hexes. Every enemy on the hex or next to it takes 3 damage minus DEF and is Seared: it can’t be healed until the end of its next turn. The centre hex catches fire.'},
   spin:{name:'Fire Frenzy',cost:2,cd:2,aim:'self',shape:'nova',hits:'foe',dmg:2,
@@ -771,8 +772,8 @@ const ABIL={
 
   // Circle of Priests (v19d, key 'arcane' kept in code): heal, shield, holy ground and blessings. Almost no damage of its own; the Zealot hits harder for every point it was healed this turn.
   // v27 (owner, 1 Oct 2026: healing was "through the roof"): Mend 4 -> 3, Sanctuary 3 -> 2, Grace removed; Wall of Light replaced by Bless.
-  sanctuary:{name:'Sanctuary',cost:2,cd:2,aim:'self',shape:'aura',size:2,hits:'ally',heal:2,overheal:1,bot:'sanctuary',// overheal = the most points one heal may turn into damage
-    desc:'The High Priest and every ally within 2 hexes of him heal 2. Overflowing light: for each ally already at full HP, 1 damage (ignoring DEF) hits the enemy nearest to that ally, within 3.'},
+  sanctuary:{name:'Sanctuary',cost:2,cd:4,aim:'self',shape:'aura',size:40,hits:'ally',heal:2,overheal:1,cdCut:2,bot:'sanctuary',// v62 (owner): the whole army, anywhere; every unit healed comes back faster// overheal = the most points one heal may turn into damage
+    desc:'Every unit of your army, wherever it stands, heals 2, and every unit that was healed has its ability rests cut by 2 turns (ready sooner). Overflowing light: for each unit already at full HP, 1 damage (ignoring DEF) hits the enemy nearest to it, within 3.'},
   mend:{name:'Mend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',heal:3,overheal:3,cleanse:1,bot:'mend',
     desc:'Heal one ally within 3 (or the Cleric itself) by 3; healing beyond full HP becomes damage (ignoring DEF) on the enemy nearest to that ally, within 3. Then remove one debuff from it (frozen or stunned first, then a curse, Seared, Hex, Sunder, delay, chill).'},
   aegis:{name:'Aegis',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',shield:3,bot:'shield',
@@ -829,15 +830,15 @@ const ABIL={
   requiem:{name:'Requiem',cost:2,cd:3,aim:'self',special:'requiem',range:5,
     desc:'Every cursed enemy within 5 instantly takes all the curse damage it still has coming, and its curses end.'},
   miasma:{name:'Miasma',cost:2,cd:2,aim:'dir',shape:'cone',size:3,hits:'foe',curse:'agony',
-    desc:'Breathe a cone of plague 3 hexes deep. Every enemy in it gets Agony.'},
+    desc:'Breathe a cone of plague 3 hexes deep. Every enemy in it gets Plague: a rot that spreads to one of its allies standing next to it at the start of each of its turns.'},
   wither:{name:'Wither',cost:1,cd:2,aim:'unit',hits:'foe',los:'lob',range:4,rmin:2,shape:'single',dmg:1,pierce:1,curse:'frailty',
-    desc:'1 damage to an enemy 2 to 4 hexes away, ignoring DEF, and it gets Frailty (−1 DEF).'},
+    desc:'1 damage to an enemy 2 to 4 hexes away, ignoring DEF, and it gets Wither (the flesh rots: −1 DEF).'},
   siphon:{name:'Siphon',cost:2,cd:2,aim:'unit',hits:'foe',los:'bolt',range:3,shape:'single',dmg:1,pierce:1,curse:'feeble',selfHeal:2,
-    desc:'Straight shot up to 3: 1 damage, ignoring DEF, and it gets Feeble (−1 ATK). The Bloodletter heals 2.'},
+    desc:'Straight shot up to 3: 1 damage, ignoring DEF, and it gets Leech: every time its curses tick, this Bloodletter heals 1. The Bloodletter heals 2 at once.'},
   bogring:{name:'Bog Ring',cost:2,cd:3,aim:'self',shape:'ring',size:2,hits:'foe',curse:'mire',
-    desc:'Every enemy exactly 2 hexes away gets Mire (−1 move).'},
-  silence:{name:'Vow of Silence',cost:2,cd:3,aim:'unit',hits:'foe',los:'bolt',range:4,shape:'single',curse:'silence',
-    desc:'Straight shot up to 4: the enemy gets Silence and can’t use its ability.'},
+    desc:'Every enemy exactly 2 hexes away gets Grave Mud (−1 move), and its hex turns pale.'},
+  silence:{name:'Decay',cost:2,cd:3,aim:'unit',hits:'foe',los:'bolt',range:4,shape:'single',curse:'silence',
+    desc:'Straight shot up to 4: the enemy gets Decay: while it rots it can’t be healed by anything.'},
   consecrate:{name:'Consecrate',cost:2,cd:3,aim:'self',shape:'aura',size:1,hits:'ally',heal:2,thaw:1,
     desc:'Heal this unit and every adjacent ally 2 HP, and thaw any Chill or Freeze on them.'},
   // --- signature abilities ---
@@ -938,8 +939,8 @@ const TALENTS={
         {k:'phasestep',name:'Phase Step',text:'Your rift gate works from any hex, not just teal ground.'},
         {k:'gravitylord',name:'Gravity Lord',text:'Rift Storm holes pull from 3 hexes away instead of 2.'}],
   curse:[{k:'plaguewind',name:'Plague Wind',text:'Your curses last 1 turn longer.'},
-         {k:'chorus',name:'Martyr’s Chorus',text:'When one of your units dies, enemies next to it get Agony.'},
-         {k:'rites',name:'Final Rites',text:'Doom also inflicts Frailty and Feeble.'}],
+         {k:'chorus',name:'Martyr’s Chorus',text:'When one of your units dies, enemies next to it get Plague.'},
+         {k:'rites',name:'Final Rites',text:'Doom also inflicts Wither and Leech.'}],
   chrono:[{k:'pockets',name:'Deep Pockets',text:'Up to 4 unspent AP carry over instead of 2.'},
           {k:'echo',name:'Temporal Echo',text:'Quicken and Chase the Clock cost no AP.'},
           {k:'paradox',name:'Paradox',text:'Time Stop costs no AP, and your Ultimate needs 3 less charge.'}],
@@ -961,7 +962,7 @@ const ULTS={
   arcane:{name:'Radiance',text:'Every one of your units heals 3. Overflowing light: healing beyond full HP becomes damage (ignoring DEF) on the enemy nearest to that unit, within 3. A healthy army burns; a wounded one is mended.'},
   warband:{name:'Warhorn',text:'Your side gains 2 AP, and every unit of yours gets +2 ATK this turn and may act again, even if it already acted.'},
   rift:{name:'Rift Storm',text:'Open 3 holes on empty hexes anywhere on the board, at least 3 hexes apart. They stay open for 3 turns. They do not pull on the turn you cast; at the end of each of your next two turns, every enemy within 2 hexes of a hole is pulled 1 hex toward it, and one pulled into a hole falls and dies (a giant takes 6 damage instead). Then the holes close.',pick:3},
-  curse:{name:'Doom',text:'Every enemy on the board gets Agony, and every curse it already carries is renewed to full length. Enemies already carrying 2 or more curses also get Rot.'},
+  curse:{name:'Doom',text:'Every enemy on the board gets Plague, and every curse it already carries is renewed to full length. Enemies already carrying 2 or more curses also get Rot.'},
   chrono:{name:'Time Stop',text:'When you end this turn, you immediately take another one.'},
   mage:{name:'Arcane Storm',text:'Every spellbook of yours comes off cooldown, and every enemy within 3 of any of your mages takes 2 damage ignoring DEF.'},
 };
@@ -1047,8 +1048,8 @@ const FAC={
       {name:'Phase Stalker',icon:'wing',n:2,hp:10,atk:2,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'phaseswap',ab2:'sinkhole'},
       {name:'Gravity Singer',icon:'gravity',hp:9,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:3,ab:'well'}]},
   curse:{name:'Pale Covenant',color:'#e8e23a',
-    theme:'A choir of priests who stack curses. Each different curse on a target makes it rot faster.',
-    passive:'Curses stack: a target takes damage at the start of each of its turns based on how many different curses it carries: 0.5 for one, 2 for two, 3.5 for three, +1.5 for each more (leaders take 1 less, never below 0.5). Every Covenant basic attack inflicts Rot. The Bog Ring leaves pale ground under its victims, where curses bite 1 harder.',onHit:'rot',
+    theme:'A plague choir: everything they touch rots. Six rots, each with its own symptom (Rot, Plague, Wither, Leech, Grave Mud, Decay); the more different rots a victim carries the faster it falls apart, and the Hierophant reaps it all at once.',
+    passive:'The six rots: Rot (basic attacks), Plague (spreads to a neighbour), Wither (−1 DEF), Leech (feeds the Bloodletter), Grave Mud (−1 move), Decay (no healing). Rots stack: a target takes damage at the start of each of its turns based on how many different rots it carries: 0.5 for one, 2 for two, 3.5 for three, +1.5 for each more (leaders take 1 less, never below 0.5). Every Covenant basic attack inflicts Rot. The Bog Ring leaves pale ground under its victims, where curses bite 1 harder.',onHit:'rot',
     home:'Pale ground: curses cast from it last 5 turns instead of 4, and a cursed enemy standing on it takes 1 more from each curse tick. The Bog Ring turns its victims’ hexes pale for 3 turns.',blight:1,
     units:[
       {name:'Hierophant',icon:'crown',leader:1,hp:13,atk:3,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
@@ -1337,7 +1338,7 @@ function covered(t){if(t.kind==='wall'||t.summon||!facOf(t).cover)return false;r
 const kingsGuard=u=>!!RULES.KINGSGUARD&&u.king&&u.kind!=='wall'&&G.players[u.owner]&&G.players[u.owner].fac==='warband'&&G.units.some(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&distUU(u,v)===1)?1:0;
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u)+(u.oldAtk||0));
 }
 function effDef(u){
@@ -1787,8 +1788,9 @@ function beginTurn(){
   const F=FAC[p.fac];
   for(const u of G.units.filter(u=>u.owner===p.id&&u.kind!=='wall')){
     const n=curseCount(u);
-    if(n){CUR_SRC=u.st.curseBy!=null?byId(u.st.curseBy):null;CUR_TAG=null;CUR_NAME='Curse ticks';{const pb=paleBite(u);if(pb&&!SIM&&trk()){const e=tFx('curse','','Pale ground: curse ticks +1');if(e)e.uses++}hurt(u,curseHit(u,n)+pb,'#e8e23a',true)}CUR_SRC=null;CUR_NAME=null;if(!alive(u))continue;for(const c of Object.keys(u.st.curses)){if(--u.st.curses[c]<=0)delete u.st.curses[c]}}
-    if(fireIn&&p.fac!=='fire'&&cells(u).some(([q,r])=>terrAt(q,r)==='fire')){CUR_SRC=null;CUR_NAME='Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;if(!alive(u))continue}
+    if(n){CUR_SRC=u.st.curseBy!=null?byId(u.st.curseBy):null;CUR_TAG=null;CUR_NAME='Curse ticks';{const pb=paleBite(u);if(pb&&!SIM&&trk()){const e=tFx('curse','','Pale ground: curse ticks +1');if(e)e.uses++}hurt(u,curseHit(u,n)+pb,'#e8e23a',true)}CUR_SRC=null;CUR_NAME=null;
+      if(RULES.ROT_CURSES)rotTick(u);if(!alive(u))continue;for(const c of Object.keys(u.st.curses)){if(--u.st.curses[c]<=0)delete u.st.curses[c]}}
+    if(fireIn&&p.fac!=='fire'&&cells(u).some(([q,r])=>terrAt(q,r)==='fire')){const kp=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.kindle);CUR_SRC=kp?(G.units.find(v=>v.owner===kp.owner&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===kp.owner&&v.kind!=='wall')||null):null;CUR_NAME=kp?'Kindle ground':'Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;CUR_SRC=null;if(!alive(u))continue}
     if(oldCentre()&&G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r)))healUnit(u,1,'#ffd766','Heart healing');
     // Shrines are consumable (v22b): the first unit it heals uses it up; the shrine is gone for the next 2 rounds and returns at the start of the round after.
     {const sc=cells(u).find(([q,r])=>shrineOn(q,r));if(sc&&healUnit(u,2,'#9ff0c0','Shrine')){vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'});const back=G.round+RULES.SHRINE_REST+1;(G.shrineOff=G.shrineOff||{})[key(sc[0],sc[1])]=back;
@@ -1882,7 +1884,7 @@ function endTurn(){
   advance();
 }
 // Cooldown meaning: at the end of its owner's turn, an ability that was ready, affordable (its cost within the turn's starting AP) and not used counts one ready-but-unused turn.
-function tReady(p){if(!trk()||SIM)return;for(const u of G.units){if(u.owner!==p.id||u.kind==='wall'||u.st.frozen||hasCurse(u,'silence'))continue;for(const k of abilsOf(u)){if(cdOf(u,k)>0||G.apMax<abilCost(u,k))continue;const s=tStat(u);if(!s)continue;const e=tFx(s.fac,s.name,ABIL[k].name);if(e)e.readyUnused=(e.readyUnused||0)+1}}}
+function tReady(p){if(!trk()||SIM)return;for(const u of G.units){if(u.owner!==p.id||u.kind==='wall'||u.st.frozen||(hasCurse(u,'silence')&&!RULES.ROT_CURSES))continue;for(const k of abilsOf(u)){if(cdOf(u,k)>0||G.apMax<abilCost(u,k))continue;const s=tStat(u);if(!s)continue;const e=tFx(s.fac,s.name,ABIL[k].name);if(e)e.readyUnused=(e.readyUnused||0)+1}}}
 function advance(){
   let i=G.cur;
   for(let k=0;k<G.players.length;k++){
@@ -1920,9 +1922,13 @@ function soulCount(t){if(!RULES.ARCHDEMON||t.kind==='wall'||t.summon||t.statue||
     p.souls=(p.souls||0)+1;if(mine)p.soulsLost=(p.soulsLost||0)+1;else p.soulsKilled=(p.soulsKilled||0)+1;
     const ready=RULES.DEMON_SOULS?p.souls>=RULES.DEMON_SOULS:(p.soulsLost||0)>=RULES.DEMON_LOST&&(p.soulsKilled||0)>=RULES.DEMON_KILLS;
     if(ready){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&u!==t);G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:L?[L.q,L.r]:[t.q,t.r]})}}}
+// v62 (owner): an enemy killed by the Pit Lord's Kindle (the blast or its burning ground) explodes: RULES.KINDLE_BLAST damage to every unit of its own side within 2.
+function kindleBlast(t){if(!RULES.KINDLE_BLAST||t.kind==='wall'||!(CUR_NAME==='Kindle'||CUR_NAME==='Kindle ground'))return;const src=CUR_SRC;if(!src||src.kind==='wall'||tm(src.owner)===tm(t.owner))return;
+  const vs=G.units.filter(v=>v!==t&&v.kind!=='wall'&&!v.statue&&tm(v.owner)===tm(t.owner)&&distUU(v,t)<=2);if(!SIM){vfx({k:'ab',ab:'eruption',shape:'blast',from:[t.q,t.r],to:[t.q,t.r],cells:allCells().filter(([a,b])=>hd(a,b,t.q,t.r)<=2),col:'#ff4a3d',cam:1});addLog(src.owner,`The ${t.name} bursts in hellfire!`)}
+  const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Abil';CUR_NAME='Kindle: hellfire burst';for(const v of vs)if(alive(v))hurt(v,RULES.KINDLE_BLAST,'#ff4a3d');[CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function kill(t){
   const i=G.units.indexOf(t);if(i<0)return;soulCount(t);
-  G.units.splice(i,1);
+  G.units.splice(i,1);if(RULES.KINDLE_BLAST)kindleBlast(t);// v62: an enemy killed by the Kindle bursts
   if(t.beast){beastSlain(t);return}
   if(t.monster){if(!SIM)monsterSlain(t);return}
   if(G.loot&&!SIM)dropLootOf(t);
@@ -2084,6 +2090,7 @@ function overheal(src,t,excess,name){if(!RULES.OVERHEAL||!(excess>0)||!alive(t))
 function healUnit(t,n,col,name,by){
   if(!alive(t)||t.kind==='wall'||!(n>0))return 0;
   if(onClaimOf(t,'arcane')){if(!SIM)fx(t,'no healing here','#9a8cff');if(trk()&&!SIM){const e=tFx('arcane','','Indigo ground: heals denied');if(e)e.uses++}return 0}/* v45 */
+  if(RULES.ROT_CURSES&&t.st&&hasCurse(t,'silence')){if(!SIM)fx(t,'decay: no healing','#c8e83a');return 0}// v62 Decay
   const h=Math.min(n,t.maxhp-t.hp);if(h<=0)return 0;
   // Seared (Ember Court): no healing of any kind until the end of the unit's next turn; the heal it missed is credited to the fire unit that seared it.
   if(t.st&&t.st.seared>0){if(!SIM){fx(t,'seared','#ff9a3d');tFxBy(t.st.searBy,'fire','Seared (heals blocked)','blocked',h)}return 0}
@@ -2501,7 +2508,7 @@ function canAbil(u,k){
   const A=ABIL[k];
   if(u.acted&&!A.free)return false;// a free ability uses neither the move nor the action
   if(A.afterAtk&&!u.atkd)return false;// only after a basic attack this turn
-  if(hasCurse(u,'silence')||u.st.frozen)return false;
+  if((hasCurse(u,'silence')&&!RULES.ROT_CURSES)||u.st.frozen)return false;
   if(truce()&&hostileAbil(A))return false;
   if(G.ap<abilCost(u,k))return false;
   if(A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner))return false;// the workshop is full
@@ -2514,9 +2521,14 @@ function canAbil(u,k){
   if(A.special==='march')return marchMoves(u,-1).length>0;
   return aimCells(u,k).length>0;
 }
+// v62 rot: after a curse tick, Leech heals the Bloodletter that cast it 1 and Plague passes to one ally of the victim standing next to it.
+function rotTick(u){const L=u.st.curses&&u.st.curses.feeble>0&&u.st.leechBy!=null?byId(u.st.leechBy):null;
+  if(L&&alive(L)&&L.kind!=='wall'){const h=healUnit(L,1,'#c8e83a','Leech');if(h&&!SIM&&trk()){const e=tFx('curse',L.name,'Leech (healed by ticks)');if(e){e.uses++;e.heal=(e.heal||0)+h}}}
+  if(alive(u)&&u.st.curses&&u.st.curses.agony>1){const nb=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.statue&&!v.egg&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1&&!(v.st.curses&&v.st.curses.agony>0)).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
+    if(nb){nb.st.curses=nb.st.curses||{};nb.st.curses.agony=u.st.curses.agony-1;nb.st.curseBy=u.st.curseBy;if(!SIM){fx(nb,'Plague spreads','#c8e83a');if(trk()){const e=tFx('curse','','Plague spread');if(e)e.uses++}}}}}
 function applyCurse(src,t,c){
   const F=facOf(src);const dur=RULES.CURSE_TURNS+(F.blight&&onHome(src)?1:0)+(utal(src,'plaguewind')?1:0);
-  t.st.curses[c]=Math.max(t.st.curses[c]||0,dur);t.st.curseBy=src.id;fx(t,CURSES[c].name,'#e8e23a');
+  t.st.curses[c]=Math.max(t.st.curses[c]||0,dur);t.st.curseBy=src.id;if(c==='feeble')t.st.leechBy=src.id;fx(t,CURSES[c].name,'#e8e23a');
   if(c==='mire'&&src&&src.kind!=='wall'&&G.players[src.owner]&&G.players[src.owner].fac==='curse'&&tm(src.owner)!==tm(t.owner))paintUnder(t,'curse',3,src.owner,'Pale ground under an enemy (hexes)');
 }
 // Guarded leaders (28 Sep 2026, v18b): with 4 or more players in free-for-all, attacks and abilities fired from 3 or more hexes away
@@ -2564,7 +2576,7 @@ function applyHit(u,t,A){
   if(A.curse)applyCurse(u,t,A.curse);
   if(A.hex){t.st.hex=Math.max(t.st.hex||0,A.hex);t.st.hexBy=u.id;fx(t,'hexed','#2bff5a')}
   if(A.shield){t.st.shield=Math.max(t.st.shield||0,A.shield);t.st.shieldBy=u.id;t.st.shieldNm=A.name;fx(t,`+${A.shield} shield`,'#d7c9ff')}
-  if(A.heal){const room=t.kind==='wall'?0:Math.max(0,t.maxhp-t.hp),blocked=t.st&&t.st.seared>0;healUnit(t,A.heal,'#5fd68e');if(A.overheal&&!blocked)overheal(u,t,Math.min(A.overheal,A.heal-room),A.name);if(A.thaw){t.st.chill=0;t.st.frozen=0}}
+  if(A.heal){const room=t.kind==='wall'?0:Math.max(0,t.maxhp-t.hp),blocked=t.st&&t.st.seared>0;const hg=healUnit(t,A.heal,'#5fd68e');if(A.cdCut&&hg>0&&t.kind!=='wall'){const c0=(t.cd||0)+(t.cd2||0);t.cd=Math.max(0,(t.cd||0)-A.cdCut);if(t.cd2)t.cd2=Math.max(0,t.cd2-A.cdCut);const cut=c0-(t.cd||0)-(t.cd2||0);if(cut>0){tSup('cdCut',cut);if(!SIM)fx(t,'ready sooner','#ffe9a8')}}if(A.overheal&&!blocked)overheal(u,t,Math.min(A.overheal,A.heal-room),A.name);if(A.thaw){t.st.chill=0;t.st.frozen=0}}
   if(A.cleanse)cleanse(u,t);// Mend: heal first (Seared blocks it), then lift one debuff
 }
 function slamOf(src){return RULES.SLAM+(src&&src.kind!=='wall'&&facOf(src).slam?facOf(src).slam:0)+(src&&utal(src,'horizon')?1:0)}
@@ -2748,7 +2760,7 @@ function useAbility(u,k,q,r,dest){
         for(const t of live){if(!alive(t))continue;const [cq,cr]=nearCell(u,t);pushUnit(t,d!=null?d:dirTo(cq,cr,t.q,t.r),A.push,u)}
       }
       if(A.pull){const live=ts.filter(alive).sort((a,b)=>distUU(u,a)-distUU(u,b));for(const t of live)pullUnit(t,u,A.pull)}
-      if(A.paint){const cs=A.paint==='center'?[[q,r]]:A.paint==='head'?[[u.q,u.r],...DIRS.map(([a,b])=>[u.q+a,u.r+b])]:area;for(const [a,b] of cs)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:A.paintTtl||3,owner:u.owner}}
+      if(A.paint){const cs=A.paint==='center'?[[q,r]]:A.paint==='head'?[[u.q,u.r],...DIRS.map(([a,b])=>[u.q+a,u.r+b])]:area;for(const [a,b] of cs)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:A.paintTtl||3,owner:u.owner,kindle:k==='kindle'?1:0}}
       if(A.selfHeal&&alive(u))healUnit(u,A.selfHeal,'#5fd68e');
       if(k==='mend'&&utal(u,'martyrdom')&&alive(u)&&tgt!==u){const o=CUR_NAME;CUR_NAME='Martyrdom (talent)';healUnit(u,2,'#d7c9ff');CUR_NAME=o}
     }
@@ -3503,8 +3515,8 @@ function evaluate(team){
     const hp=u.hp-pendingDot(u)-burn+(u.st.shield||0)*0.8;
     let v=hp<=0?w*0.15:w*(0.35+0.65*Math.min(1,hp/u.maxhp));
     if(u.st.frozen)v-=Math.min(w,40)*0.2;if(u.st.chill)v-=w*0.03;// a frozen or stunned unit loses its next turn; a chilled one is slower and takes double from Ice Lance
-    if(u.ability&&hasCurse(u,'silence'))v-=w*0.06;
-    if(hasCurse(u,'feeble'))v-=u.atk*0.8;if(hasCurse(u,'frailty'))v-=1.5;if(hasCurse(u,'mire'))v-=1;
+    if(hasCurse(u,'silence'))v-=RULES.ROT_CURSES?(u.maxhp-u.hp)*0.15:w*0.06;
+    if(hasCurse(u,'feeble'))v-=RULES.ROT_CURSES?0.8:u.atk*0.8;if(hasCurse(u,'frailty'))v-=1.5;if(hasCurse(u,'mire'))v-=1;
     // v21 counters: Sunder is like Frailty; Seared hurts a wounded unit (no heals); a delay is worth what it cost (st.dl, more when the ability was almost ready); stealth protects.
     // Defender Barrier (v25): on the acting side, a guarding unit that has not attacked or cast this turn keeps (or earns) its Barrier; worth a little.
     if(G.players[G.cur]&&tm(u.owner)===tm(G.cur)&&!u.fought&&barrierAble(u)&&guarding(u))v+=1.6;
@@ -3690,7 +3702,7 @@ function heuristic(u,k,q,r,ctx,dest){
     case 'dismantle':{const t=unitAt(q,r);if(!t||!t.machine||t.owner!==u.owner)return 0;
       const far=!ctx.foes.some(f=>distUU(f,t)<=5),expiring=t.ttl<=1;if(!far&&!expiring)return 0;
       const full=machineCount(u.owner)>=machineCap(u.owner);
-      const canBuild=b=>b.kind!=='wall'&&b.owner===u.owner&&b.ability&&ABIL[b.ability].special==='build'&&!b.acted&&!b.st.frozen&&!hasCurse(b,'silence')&&G.ap>=abilCost(b,b.ability)&&aimCells(b,b.ability).length>0;
+      const canBuild=b=>b.kind!=='wall'&&b.owner===u.owner&&b.ability&&ABIL[b.ability].special==='build'&&!b.acted&&!b.st.frozen&&!(hasCurse(b,'silence')&&!RULES.ROT_CURSES)&&G.ap>=abilCost(b,b.ability)&&aimCells(b,b.ability).length>0;
       const unlocks=u.cd===1&&canBuild(u);// the rest drops to 0 and this builder builds now
       const freed=full&&G.units.some(b=>b.cd===0&&canBuild(b));// a slot for a builder that is ready now
       if(!unlocks&&!freed)return full&&far&&u.cd>0?0.5:0;
@@ -6127,7 +6139,7 @@ const LOSE_LINES={
   arcane:'Their damage comes from healing units that are already full: keep them wounded and spread out, stay more than 3 hexes from their healthy units, step off the holy ground, and never poke a shielded or blessed priest.',
   warband:'Strong only in formation: kill or drag one warrior out to break the Phalanx below five, hit the block with area damage, and pick off whoever stands alone.',
   rift:'Thin bodies. When you are marked or anchored, get away from holes, walls and river banks before their next turn, and kill the Repulsors and Tidecallers first.',
-  curse:'Fragile casters behind two tough Penitents: rush the priests before the curses stack, and cleanse or heal through the rot.',
+  curse:'Fragile casters behind two tough Penitents: rush the priests before the rots stack, keep your units apart so Plague can’t spread, and cleanse Decay first so you can heal again.',
   chrono:'Everything depends on two Second Hands and their mages: kill either and the combo is gone.',
   mage:'One big turn, then every spellbook rests: bait the spells out, then charge. Smash the Gargoyle statues.',
 };
@@ -6139,7 +6151,7 @@ const WIN_LINES={
   arcane:'Wins by overflowing: its healing mends the wounded, and every point that does not fit burns the nearest enemy. Holy ground heals its own and scorches intruders; Retribution punishes anyone who hits a shielded or blessed priest.',
   warband:'Wins by standing together: five or more warriors standing connected are a Phalanx (tougher, and nobody walks past it), so it plugs a corridor or rings the Throne while its riders hunt whoever strays.',
   rift:'Wins over two turns: it marks and anchors an enemy, opens a hole or finds a wall, gives the enemy one turn to escape, then throws it in. Its own units step through the rift, over anything, and walk across the holes.',
-  curse:'Wins by slow rot: it stacks curse after curse, lets them tick every turn, then the Hierophant cashes them all in at once.',
+  curse:'Wins by rot: six kinds of rot, each with its own symptom (one spreads, one feeds the Bloodletter, one stops all healing...). The more different rots a victim carries the faster it falls apart, and the Hierophant reaps them all at once.',
   chrono:'Wins with combo turns: the Chronarch puts a Second Hand in step, the time mages Quicken it again and again so it strikes for 5, 6 and 7, Chase the Clock gives it a free move after every kill, and Turn Back Time brings it home; kill the blades or the mages and it falls apart.',
   mage:'Wins with the right spell at the right moment: mages pick one spell a turn from their books and blast from where they stand, while Gargoyles take the blows and wake again from stone.',
 };
@@ -6473,7 +6485,7 @@ function annText(e){
     case 'room':return {col:'#b9b3d6',t:`${e.fac?annFac(e.fac):'Someone'} discovers the ${annEsc(e.room)}`,s:`Inside: ${annEsc(e.enc)}${e.loot?', guarding a treasure':''}.`};
     case 'note':return {col:e.col||'#ffd766',t:annEsc(e.t||''),s:annEsc(e.s||'')+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
-    case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Mystery Chest holds ${/^[AEIOU]/.test(e.loot||'')?'an':'a'} ${annEsc(e.loot)}!`:`The Mystery Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Agony and Frailty. The chest is gone.'};
+    case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Mystery Chest holds ${/^[AEIOU]/.test(e.loot||'')?'an':'a'} ${annEsc(e.loot)}!`:`The Mystery Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Plague and Wither. The chest is gone.'};
     case 'demon':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} rises again!`,s:'The pit is fed: the Archdemon climbs out of the ashes (15 HP, its whip drags enemies to it).'};
     case 'wraith':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} calls a Time Wraith!`,s:`Both Second Hands have fallen: the Wraith appears ${e.near?'beside the Chronarch':'at the army’s start'} (${WRAITH.hp} HP, ${WRAITH.atk} ATK, walks ${WRAITH.mov}).`};
     case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`${G.map?'On the Throne.':'In no man’s land around the Heart.'} The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
@@ -7219,7 +7231,7 @@ function showRules(){
   <li>A ⚠ on an enemy's charge bar means their Ultimate is 1–2 charge away. Play around it.</li></ul>
   <ul>${FKEYS.map(k=>`<li><b style="color:${FAC[k].color}">${ULTS[k].name}</b> (${FAC[k].name}): ${ULTS[k].text}</li>`).join('')}</ul>
   <h3>Terrain</h3><ul><li><b>Forest</b>: hidden. A unit inside can only be targeted from 2 hexes or closer. +1 DEF. Straight shots stop at it.</li><li><b>Hill</b>: high ground. A ranged unit on it gets +1 range and +1 damage; melee attacks up the hill from lower ground deal 1 less.</li><li><b>Rock</b>: impassable, blocks shots; flyers and jumpers pass over it.</li><li><b>Shrine</b>: heals the unit on it 2 HP at the start of your turn. One drink only: the first unit it heals uses it up, and the shrine is gone (drawn dark) for the next 2 rounds, then returns.</li><li><b>Home ground</b>: any hex of your army's colour gives its home bonus (white outline). Claim more by standing on it.</li></ul>
-  <h3>Statuses and curses</h3><p><b>Chilled</b> (Frost Hold): 1 less move for 2 of its turns. <b>Frozen</b> (Frost Hold): loses its next turn (no move, attack, ability or strike-back), then is chilled for 1 turn. <b>Stunned</b> (the Mountain King's Earthshaker): loses its next turn, with no chill after. A unit that has just thawed or woken can't be frozen or stunned again on its next turn. Ice Lance deals double to chilled or frozen enemies, Shatter Strike double to frozen ones. Curses (Pale Covenant) deal damage each turn by how many <i>different</i> curses the target carries: 0.5, 2, 3.5, then +1.5 each. Units shoved off the board or into a void die; shoved into something, they take 2 slam damage (3 from Riftwalkers). Giants can't be moved. Leaders take 1 less per turn (never below 0.5).</p>
+  <h3>Statuses and curses</h3><p><b>Chilled</b> (Frost Hold): 1 less move for 2 of its turns. <b>Frozen</b> (Frost Hold): loses its next turn (no move, attack, ability or strike-back), then is chilled for 1 turn. <b>Stunned</b> (the Mountain King's Earthshaker): loses its next turn, with no chill after. A unit that has just thawed or woken can't be frozen or stunned again on its next turn. Ice Lance deals double to chilled or frozen enemies, Shatter Strike double to frozen ones. Rots (Pale Covenant curses) deal damage each turn by how many <i>different</i> rots the target carries: 0.5, 2, 3.5, then +1.5 each. The six rots: Rot, Plague (spreads to an ally next to the victim), Wither (−1 DEF), Leech (each tick heals the Bloodletter), Grave Mud (−1 move), Decay (can't be healed). Units shoved off the board or into a void die; shoved into something, they take 2 slam damage (4 or more from Riftwalkers). Giants can't be moved. Leaders take 1 less per turn (never below 0.5).</p>
   <p><b>Debuffs</b> are every harmful status: curses, chill, frozen, stun, Sunder, Seared, delay and Hex. A Cleric's <b>Mend</b> heals, then removes one debuff from its target (frozen or stunned first, then a curse, then Seared, Hex, Sunder, delay, chill).</p><ul>
   <li><b>Hex</b> (Arcane Conclave: the Enchanter): for 2 of the target's turns it has 2 less ATK and takes 1 more damage from abilities.</li>
   <li><b>Seared</b> (Ember Court: Flame Breath and Fireball): a unit they damage can't be healed until the end of its next turn, from any source: Mend, Sanctuary, Grove, the Heart, shrines, home ground, traits.</li>
