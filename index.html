@@ -625,7 +625,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -933,7 +933,7 @@ const TALENTS={
   warband:[{k:'bloodlust',name:'Bloodlust',text:'Momentum: once per turn, a unit of yours that kills with a basic attack may act again.'},
            {k:'discipline',name:'Shield Discipline',text:'All your units get +1 DEF while next to an ally.'},
            {k:'warchief',name:'Warchief',text:'March costs no AP and rests only 1 turn.'}],
-  rift:[{k:'horizon',name:'Event Horizon',text:'Your shoves slam for 4 damage instead of 3.'},
+  rift:[{k:'horizon',name:'Event Horizon',text:'Your throws slam for 1 more damage (5 instead of 4).'},
         {k:'phasestep',name:'Phase Step',text:'Your rift gate works from any hex, not just teal ground.'},
         {k:'gravitylord',name:'Gravity Lord',text:'Rift Storm holes pull from 3 hexes away instead of 2.'}],
   curse:[{k:'plaguewind',name:'Plague Wind',text:'Your curses last 1 turn longer.'},
@@ -1034,7 +1034,7 @@ const FAC={
       {name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:7,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
   rift:{name:'Riftwalkers',color:'#12d69a',voidWalk:1,
     theme:'Masters of displacement who win in two turns: one turn they mark, anchor and open holes, the enemy gets one turn to escape, the next turn they throw it in. They rarely kill with blows; they step through the rift and never stand and fight.',
-    passive:'Rift Mark: an enemy a Riftwalker moves (or Anchors) is marked until the end of the Riftwalkers\u2019 next turn: it moves 1 less, and their throws carry it 1 hex further. Collision: an enemy thrown into another enemy hurts both, and the one it hits is knocked 1 hex. Rift Step: Riftwalkers appear on any empty hex within their move, over units, walls and water, and are never held next to an enemy. Crushing Pressure: enemies they throw into a wall or a unit take 4 slam damage instead of 2, plus 1 for each hex of the throw that was cut short (up to +2). Giants and Crown Wilds monsters cannot be moved and take the full 6. Any small walking unit thrown into a river takes 2 more (flyers stop at the bank unhurt). Rift Mark (Voidcaller) paints a hex teal, even under an enemy: pushes and pulls throw an enemy on teal 1 hex further. Void-walkers: Riftwalkers walk across holes (voids, Void Traps, Sinkholes) as if they were solid ground and never fall in. Sinkhole (Phase Stalker) opens a hole under an enemy.',slam:2,
+    passive:'Rift Mark: an enemy a Riftwalker moves (or Anchors) is marked until the end of the Riftwalkers\u2019 next turn: it moves 1 less, and their throws carry it 1 hex further. Collision: an enemy thrown into another enemy hurts both, and the one it hits is knocked 1 hex. Rift Step: Riftwalkers appear on any empty hex within their move, over units, walls and water, and are never held next to an enemy. Crushing Pressure: enemies they throw into a wall or a unit take 4 slam damage instead of 2, plus 1 for each hex of the throw that was cut short (up to +2). Giants and Crown Wilds monsters cannot be moved and take the full 6. Any small walking unit thrown into a river takes 2 more (flyers stop at the bank unhurt).  Void-walkers: Riftwalkers walk across holes (voids, Void Traps, Sinkholes) as if they were solid ground and never fall in. Sinkhole (Phase Stalker) opens a hole under an enemy.',slam:2,
     home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move, and a Riftwalker push or pull moves an enemy on teal 1 hex further. ',gate:1,
     units:[
       {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'swap',ab2:'anchor'},
@@ -1058,7 +1058,7 @@ const FAC={
       {name:'Censor',icon:'bell',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'diag',rng:3,ab:'silence'},
       {name:'Penitent',icon:'tomb',n:2,hp:18,atk:2,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'consecrate',trait:'bodyguard'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Sorrow Priest and a second Penitent took their places
   chrono:{name:'Hourglass Order',color:'#c81ca6',
-    theme:'One overpowered combo: save AP, gather the Tempo Mages and a Rewinder around an assassin, Quicken it again and again so its blows land for 4, 5 and 6, and Chase the Clock so every kill gives it a free move to the next victim. Only the Second Hands and the Chronarch deal damage; everyone else is a fragile time mage. Kill the blades or the mages and the clock stops.',
+    theme:'One overpowered combo: gather the Tempo Mages and a Rewinder around an assassin, let the Chronarch put it in step (Synchrony), Quicken it again and again so its blows land for 5, 6 and 7, and Chase the Clock so every kill gives it a free move to the next victim; Turn Back Time brings it home. Only the Second Hands and the Chronarch deal damage; everyone else is a fragile time mage. Kill the blades or the mages and the clock stops.',
     passive:'Banked Time: up to 2 unspent AP carry over to your next turn. When both Second Hands have fallen, a Time Wraith answers the Chronarch’s call (once per game).',bank:2,
     home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',cheap:1,
     units:[
@@ -3106,7 +3106,7 @@ const SUIT_ITEMS={boots:{name:'Boots',text:'+1 move'},club:{name:'Ogre Club',tex
 const LOOT={
   gem:{name:'Crown Shard',text:'a gem for your crown: it powers your King',col:'#f2c75c'},
   suit:{name:'War Suit',text:`a unit that steps on it climbs in: ${8} extra HP that take every hit first, plus its item`,col:'#c9a24a'},
-  captive:{name:'Captive',text:'a prisoner in chains: step on him to free him, then walk him into your camp',col:'#d8b49a'},
+  captive:{name:'Captive',text:'a prisoner in chains: step on him to free him, then walk him into your base',col:'#d8b49a'},
   relic:{name:'Ancient Relic',text:'the unit that brings it home carries a random relic',col:'#b98cff'},
   cursed:{name:'Mystery Chest',text:'a coin flip when picked up: a Crown Shard or an Ancient Relic, both to carry home',col:'#9a6bd0'}};
 const lootName=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].name+' Crown Shard':x.kind==='suit'&&SUIT_ITEMS[x.item]?`War Suit (${SUIT_ITEMS[x.item].name})`:LOOT[x.kind].name;
@@ -3249,7 +3249,7 @@ function revealRoom(R,u){
 }
 // Loot appears in a room (monsters cleared, crate broken, room held), or the Wanderer drops a Crown Shard.
 function dropLoot(R,q,r,quiet){if(!R.loot)return;R.state='loot';G.loot=G.loot||[];const x={id:G.nid++,kind:R.loot,gem:R.gem,item:R.item,room:R.id,q,r,carrier:null};G.loot.push(x);
-  if(!quiet)addLog(null,`The ${ROOM_NAMES[R.type]}'s treasure lies open: ${lootName(x)}. ${x.kind==='suit'?'Step a unit onto it to climb in!':'Carry it home to your camp!'}`);vfx({k:'relic',at:[q,r],col:lootCol(x)})}
+  if(!quiet)addLog(null,`The ${ROOM_NAMES[R.type]}'s treasure lies open: ${lootName(x)}. ${x.kind==='suit'?'Step a unit onto it to climb in!':'Carry it home to your base!'}`);vfx({k:'relic',at:[q,r],col:lootCol(x)})}
 function wildsWin(team){if(G.score[team]>=heartTarget()&&!G.over){G.over={team,how:'heart'};HOOKS.over()}}
 function monsterSlain(t){
   const R=(G.rooms||[]).find(x=>x.id===t.room);
@@ -3286,8 +3286,8 @@ function pickupLoot(){
       if(trk()){const O=tObj();if(O){O.suits=O.suits||[];O.suits.push({pid:p.id,unit:u.name,round:G.round})}}continue}
     if(x.kind==='captive'){if(lootOf(u))continue;const c=DIRS.map(([a,b])=>[x.q+a,x.r+b]).find(([q,r])=>passable(q,r)&&!unitAt(q,r));if(!c)continue;
       G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';const s=makeUnit(p,CAPTIVE);s.size=1;s.q=c[0];s.r=c[1];s.moved=true;s.acted=true;s.captive=1;G.units.push(s);tStat(s);
-      addLog(u.owner,`The ${u.name} frees the Captive! Walk him into your camp and he takes up arms (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`);
-      vfx({k:'buff',at:c,col:F.color,cam:1});announce({k:'note',col:F.color,t:`${F.name} frees the Captive`,s:'Bring him home alive: in camp he takes up armour and a sword and fights for them.'});continue}
+      addLog(u.owner,`The ${u.name} frees the Captive! Walk him into your base and he takes up arms (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`);
+      vfx({k:'buff',at:c,col:F.color,cam:1});announce({k:'note',col:F.color,t:`${F.name} frees the Captive`,s:'Bring him home alive: in your base he takes up armour and a sword and fights for them.'});continue}
     if(lootOf(u))continue;x.carrier=u.id;
     if(x.kind==='cursed'){const good=lootFlip(u,x)<0.5;
       if(good){x.kind='gem';x.gem=(R&&R.gem)||GKEYS[Math.floor(lootFlip(u,Object.assign({},x,{id:x.id+7}))*GKEYS.length)];
@@ -3295,7 +3295,7 @@ function pickupLoot(){
       // v45 (owner: fighting for a chest and then being cursed ruins the fun): the other side of the coin is an Ancient Relic, not a curse
       else{x.kind='relic';addLog(u.owner,`${u.name} opens the Mystery Chest... and it holds an Ancient Relic! Carry it home.`);announce({k:'chest',good:true,fac:p.fac,unit:u.name,loot:lootName(x)})}
       continue}
-    addLog(u.owner,`${u.name} picks up the ${lootName(x)}. Bring it back to camp!`);fx(u,lootName(x),lootCol(x));vfx({k:'buff',at:[u.q,u.r],col:lootCol(x),cam:1})}
+    addLog(u.owner,`${u.name} picks up the ${lootName(x)}. Bring it back to your base!`);fx(u,lootName(x),lootCol(x));vfx({k:'buff',at:[u.q,u.r],col:lootCol(x),cam:1})}
 }
 function dropLootOf(u){const x=lootOf(u);if(!x)return;x.carrier=null;x.q=u.q;x.r=u.r;if(!solid(x.q,x.r)||isBlock(x.q,x.r)){const c=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)).sort((a,b)=>hd(a[0],a[1],u.q,u.r)-hd(b[0],b[1],u.q,u.r))[0];if(c){x.q=c[0];x.r=c[1]}}
   addLog(null,`The ${lootName(x)} falls to the ground.`)}
@@ -3303,8 +3303,8 @@ function dropLootOf(u){const x=lootOf(u);if(!x)return;x.carrier=null;x.q=u.q;x.r
 function deliverLoot(){
   for(const u of G.units)if(u.captive===1&&u.kind!=='wall'&&cells(u).some(([q,r])=>inCamp(G.players[u.owner],q,r))){const F=FAC[G.players[u.owner].fac];
     Object.assign(u,{captive:2,name:FREEDMAN.name,icon:FREEDMAN.icon,hp:FREEDMAN.hp,maxhp:FREEDMAN.hp,atk:FREEDMAN.atk,def:FREEDMAN.def,at:FREEDMAN.at,rng:FREEDMAN.rng});u.glyph=glyphOf(FREEDMAN);
-    addLog(u.owner,`The Captive reaches the ${F.name} camp, takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`);
-    fx(u,'Freedman','#d8b49a');vfx({k:'buff',at:[u.q,u.r],col:F.color,cam:1});announce({k:'note',col:F.color,t:`The Captive reaches the ${F.name} camp`,s:`He takes up armour and a sword: a Freedman joins the army (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`})}
+    addLog(u.owner,`The Captive reaches the ${F.name} base, takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`);
+    fx(u,'Freedman','#d8b49a');vfx({k:'buff',at:[u.q,u.r],col:F.color,cam:1});announce({k:'note',col:F.color,t:`The Captive reaches the ${F.name} base`,s:`He takes up armour and a sword: a Freedman joins the army (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`})}
   if(!G.loot)return;
   for(const x of G.loot.slice()){if(x.carrier==null)continue;const u=byId(x.carrier);if(!u){x.carrier=null;continue}const p=G.players[u.owner];if(!cells(u).some(([q,r])=>inCamp(p,q,r)))continue;
     G.loot.splice(G.loot.indexOf(x),1);const R=(G.rooms||[]).find(r=>r.id===x.room);if(R)R.state='done';
@@ -3464,7 +3464,7 @@ const heartFoes=team=>RULES.KING_ADJ!==2&&G.units.some(v=>v.kind!=='wall'&&!v.st
 // (from a living King too, if the King has left the Throne).
 function kingCrown(){
   if(oldCentre()||!throneOpen()||SIM)return;
-  const u=unitAt(0,0);if(!u||u.kind==='wall'||u.summon||u.statue||u.egg||u.king||u.machine||u.walker||u.name==='Archdemon'||u.name==='Time Wraith')return;// v58 (owner): summoned units (Archdemon, Time Wraith, machines, walkers) are never crowned
+  const u=unitAt(0,0);if(!u||u.kind==='wall'||u.summon||u.statue||u.egg||u.king||u.machine||(u.walker&&!RULES.WALKER_KING)||u.name==='Archdemon'||u.name==='Time Wraith')return;// v58 (owner): summoned units (Archdemon, Time Wraith, machines, walkers) are never crowned
   const old=kingOf();if(old&&G.map)return;
   if(old){old.king=false;addLog(old.owner,`${old.name} loses the crown.`)}
   u.king=true;const F=FAC[G.players[u.owner].fac];
@@ -6123,21 +6123,21 @@ const LOSE_LINES={
   gnomes:'Outside their machines the gnomes cannot fight: break a Walker and the pilot is helpless, wait the turrets out (they fall apart after 6 turns), and keep the Gearmaster away from his machines.',
   arcane:'Their damage comes from healing units that are already full: keep them wounded and spread out, stay more than 3 hexes from their healthy units, step off the holy ground, and never poke a shielded or blessed priest.',
   warband:'Strong only in formation: kill or drag one warrior out to break the Phalanx below five, hit the block with area damage, and pick off whoever stands alone.',
-  rift:'Thin bodies. Step off cracked ground at once, stay away from open holes, walls and river banks, and kill the Repulsors and Phase Stalkers first.',
+  rift:'Thin bodies. When you are marked or anchored, get away from holes, walls and river banks before their next turn, and kill the Repulsors and Tidecallers first.',
   curse:'Fragile casters behind two tough Penitents: rush the priests before the curses stack, and cleanse or heal through the rot.',
   chrono:'Everything depends on two Second Hands and their mages: kill either and the combo is gone.',
   mage:'One big turn, then every spellbook rests: bait the spells out, then charge. Smash the Gargoyle statues.',
 };
 const WIN_LINES={
-  fire:'Wins by dragging the enemy into hell: its demons and fire-spitting beasts set the ground alight and fight inside the flames, where they hit harder and every enemy standing in it burns each turn.',
+  fire:'Wins by dragging the enemy into hell: its demons and fire-spitting beasts set the ground alight and fight inside the flames, where they hit harder and every enemy standing in it burns each turn. When enough souls have fallen, an Archdemon climbs out of the pit.',
   ice:'Wins with cold that builds up: chill the enemy, freeze it in place, then cash it in with Ice Lances and Shatter Strikes that hit frozen targets twice as hard.',
   giants:'Wins by weight: five huge giants that can’t be shoved around crush whatever they reach; ranged armies that keep their distance are their bane.',
   gnomes:'Wins with machines: unarmed gnomes build turrets, mortars and coils that fire for free every turn, or climb inside them and walk them into battle as Walkers; the Gearmaster’s Overclock makes every machine near him fire at once.',
   arcane:'Wins by overflowing: its healing mends the wounded, and every point that does not fit burns the nearest enemy. Holy ground heals its own and scorches intruders; Retribution punishes anyone who hits a shielded or blessed priest.',
   warband:'Wins by standing together: five or more warriors standing connected are a Phalanx (tougher, and nobody walks past it), so it plugs a corridor or rings the Throne while its riders hunt whoever strays.',
-  rift:'Wins by position: it opens holes in the ground (Void Traps, Sinkholes), then pulls, swaps and shoves enemies into them, or throws them hard against walls and into rivers. Its own units walk across the holes as if they were solid.',
+  rift:'Wins over two turns: it marks and anchors an enemy, opens a hole or finds a wall, gives the enemy one turn to escape, then throws it in. Its own units step through the rift, over anything, and walk across the holes.',
   curse:'Wins by slow rot: it stacks curse after curse, lets them tick every turn, then the Hierophant cashes them all in at once.',
-  chrono:'Wins with one big combo turn: save AP, gather the time mages around a Second Hand, Quicken it again and again so it strikes for 4, 5 and 6, and Chase the Clock so every kill gives it a free move to the next victim; kill the blades or the mages and it falls apart.',
+  chrono:'Wins with combo turns: the Chronarch puts a Second Hand in step, the time mages Quicken it again and again so it strikes for 5, 6 and 7, Chase the Clock gives it a free move after every kill, and Turn Back Time brings it home; kill the blades or the mages and it falls apart.',
   mage:'Wins with the right spell at the right moment: mages pick one spell a turn from their books and blast from where they stand, while Gargoyles take the blows and wake again from stone.',
 };
 /* ---------- unit preview (setup screen): the board's own miniature on a small canvas, plus the unit's full sheet ---------- */
@@ -6262,7 +6262,7 @@ function renderSetup(){
     <div class="card" id="setupCard">${roomGuest?netRoomSummary():`
       <div class="label">Play on this device</div>
       <div class="field"><div class="label">Board</div>${seg([['wilds','Crown Wilds'],['random','Random board']],cfg.map==='wilds'?'wilds':'random','map')}
-        <div class="hint">${cfg.map==='wilds'?'A hand-made map for 4 players: safe camps far apart, three roads each, twelve hidden rooms with monsters and treasure you must carry home, rivers, and a Throne Hall whose walls fall in round '+WILDS.open+' to wake the Rift Beast; slay it, sit the Throne and be crowned King. Warlord rules, first to '+WILDS.target+' points. No Collapse.':'A new round board every game, with flags, the Wellspring and the Rift Beast.'}</div></div>
+        <div class="hint">${cfg.map==='wilds'?'A hand-made map for 4 players: bases far apart on the edge, three roads each, twelve hidden rooms with monsters and treasure you must carry home, rivers, and a Throne Hall whose walls fall in round '+WILDS.open+' to wake the Rift Beast; slay it, sit the Throne and be crowned King. Warlord rules, first to '+WILDS.target+' points. No Collapse.':'A new round board every game, with flags, the Wellspring and the Rift Beast.'}</div></div>
       ${inRoom?'':'<button class="btn primary" id="startBtn" style="width:100%;padding:14px;font-size:17px;margin-bottom:16px">▶ Start the game</button>'}
       ${inRoom?`<div class="field"><div class="label">Seats</div><div class="hint">${roomHostLobby?'You are hosting room '+NET.code+'. The seats, their armies and who plays them are set in the Online game box; the settings above apply to the room.':'The online game is in progress; leave the room to set up a game on this device.'}</div></div>`:`<div class="field"><div class="label">Armies and players</div><div class="seats">${seats}</div>
         <div class="hint">Humans share this device and pass it around. Bots play themselves.</div></div>
@@ -6706,7 +6706,7 @@ function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))retu
   if(u.walker)add('walker','⚙','Walker ('+(u.walkerName||'machine')+') '+fmt(u.suitHp)+'/'+u.suitMax,'','#ff6ec7',1,'the machine around it takes every hit first; it attacks with the machine’s weapon and walks 2; when it breaks the gnome hops out unhurt');
   else if(u.suitHp>0)add('suit','🛡','War Suit '+fmt(u.suitHp)+'/'+u.suitMax,'','#c9a24a',1,`takes every hit first; ${SUIT_ITEMS[u.suitItem]?SUIT_ITEMS[u.suitItem].name+': '+SUIT_ITEMS[u.suitItem].text:''}`);
   if(u.forgeAtk||u.forgeDef)add('forge','⚒','Forged','','#ff9a3d',1,u.forgeAtk?'+1 ATK for the rest of the game':'+1 DEF for the rest of the game');
-  if(u.captive===1)add('captive','⛓','Captive','','#d8b49a',0,'no attack; walk him into your camp and he becomes a Freedman');
+  if(u.captive===1)add('captive','⛓','Captive','','#d8b49a',0,'no attack; walk him into your base and he becomes a Freedman');
   if(u.king&&G.gems){const g=G.gems[tm(u.owner)]||{};for(const k of GKEYS)if(g[k])add('gem','◆',GEMS[k].name+(g[k]>1?' ×'+g[k]:''),'',GEMS[k].col,1,GEMS[k].text)}
   if(s.seared>0)add('seared','🔥','Seared',1,'#ff9a3d',0,'can’t be healed until the end of its next turn');
   if(s.sunder>0)add('sunder','⛏','Sunder',s.sunder,'#d9a45b',0,'1 less DEF');
@@ -7081,12 +7081,12 @@ function closeModal(){$('#overlay').hidden=true;if(G&&G.over&&screen==='game')sh
 function rulesTop(){
   const M=MONSTERS,row=(a,b)=>`<tr><td style="padding:4px 12px 4px 0">${a}</td><td style="padding:4px 0;text-align:right"><b>${b}</b></td></tr>`;
   return `
-  <p><b>Hexmarch is a turn-based battle on a board of hexes.</b> Four armies start in their own camps on the <b>Crown Wilds</b>, explore, fight monsters and each other, and race for the crown. <b>First to ${WILDS.target} points wins.</b></p>
+  <p><b>Hexmarch is a turn-based battle on a board of hexes.</b> Four armies start around their own bases on the <b>Crown Wilds</b>, explore, fight monsters and each other, and race for the crown. <b>First to ${WILDS.target} points wins.</b></p>
   <h3>How you score</h3>
   <table style="border-collapse:collapse;width:100%;max-width:520px">
   ${row('Your King sits on the Throne at the start of your turn','1 point, every turn')}
   ${row('You kill the King','${RULES.KING_KILL} point'.replace('${RULES.KING_KILL}',RULES.KING_KILL))}
-  ${row('You carry a Crown Shard home to your camp',WILDS.shardPts+' point')}
+  ${row('You carry a Crown Shard home to your base',WILDS.shardPts+' point')}
   ${row('Your unit lands the killing blow on a Dragon',WILDS.dragonPts+' points')}
   ${row('Your unit lands the killing blow on the Rift Beast',RULES.BEAST_PTS+' points')}
   ${row('You hold all three Standing Stones for two turns',WILDS.stonesPts+' points')}
@@ -7102,6 +7102,7 @@ function rulesTop(){
   <li>Tap one of your units: <b>dots</b> show where it can walk. A <b style="color:#ff6b5b">red dot</b> means an enemy could hit it there next turn; a white dot is out of reach.</li>
   <li>Enemies you can hit right now are marked red, with the damage you will deal. Tap one to attack.</li>
   <li>Tap any unit, also an enemy, to read its card. If a tap does nothing, a message tells you why.</li>
+  <li>Tap a monster, a room, the Forge, a runestone, a lever or your base: a gold box says what to <b>do</b> there and what <b>you get</b>.</li>
   <li><b>Pills on a piece</b> show what holds it and for how many turns: ice block = frozen, star = stunned, snowflake = chilled, 1/3 and 2/3 = frost marks (the third freezes), one skull per curse.</li>
   <li>At the start of your turn a box sums up what happened since your last one.</li></ul>
   <h3>Fighting</h3><ul>
@@ -7114,14 +7115,14 @@ function rulesTop(){
   <li><b>Sinkholes</b> (Riftwalkers): cracked red ground under a unit falls at the start of the Riftwalkers’ next turn. Move off it, or the unit dies (a Leader or giant takes 6). Riftwalkers walk across holes; nobody else can.</li>
   <li><b>Gnome pilots:</b> a gnome that walks onto one of its own machines (pink dot) climbs in and becomes a Walker: it walks 2, attacks with the machine’s weapon, and the machine’s HP take every hit first.</li></ul>
   <h3>The Crown Wilds, in the order a game goes</h3><ul>
-  <li><b>Your camp</b> is walled in your army's material, with three gates. Roads lead to the Throne Hall in the middle, to your Vault and past your Crypt.</li>
+  <li><b>Your base</b> is 7 hexes on the edge of the map, filled in your colour with your banner. You deploy around it (one-tap presets per army, then move units as you like). Roads lead to the Throne Hall in the middle, to your Vault and past your Crypt.</li>
   <li><b>Rooms are hidden</b> (dark, with a ?) until one of your units steps in. Every corner of the map gets the same contents, so the start is fair.
     <ul><li><b>Hill Fort</b> (a ledge with one wide ramp): a <b>Forge</b> (a unit that starts your turn on it gets +1 ATK for good, once per army), a <b>Captive</b> (free him and walk him home: he becomes a Freedman, ${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK) or a <b>Mystery Chest</b> (a Crown Shard or an Ancient Relic).</li>
     <li><b>Crypt</b>: a Stone Guardian (${M.guardian.hp} HP), a Locked Crate (${M.crate.hp} HP) or an empty hall to hold alone for ${WILDS.hold} turns. The prize is a <b>Crown Shard</b>.</li>
     <li><b>Vault</b> (shared with a neighbour): a Vault Golem (${M.golem.hp} HP) guards a <b>War Suit</b>: ${WILDS.suitHp} extra HP that take every hit first, plus Boots, a Club or a Shield.</li></ul></li>
-  <li><b>Treasure must be carried home.</b> Step on it to pick it up and walk into your camp. If the carrier dies, the treasure drops and anyone may take it.</li>
+  <li><b>Treasure must be carried home.</b> The unit that kills a room's monster picks its treasure up at once; walk it into your base. If the carrier dies, the treasure drops and anyone may take it. The <b>War Suit</b> is different: it stays where the monster fell, and you step the unit you want to wear it onto it.</li>
   <li><b>Monsters never move or attack first.</b> At the start of each round a monster hits back at the last unit that struck it. Cold and curses work on them: a frozen monster skips its hit.</li>
-  <li><b>Levers</b> stand near each camp. When two different armies have pulled one, the <b>Wanderer</b> (${M.wanderer.hp} HP) runs out of a trap door and roams; its killing blow drops a Crown Shard.</li>
+  <li><b>Levers</b> stand near each base. When two different armies have pulled one, the <b>Wanderer</b> (${M.wanderer.hp} HP) runs out of a trap door and roams; its killing blow drops a Crown Shard.</li>
   <li><b>Round ${WILDS.midAt}:</b> the <b>Dragons</b> wake in the two lairs (${M.dragon.hp} HP, ${WILDS.dragonPts} points for the killing blow) and the <b>Standing Stones</b> start to glow (hold all three runestones of a circle for two turns: ${WILDS.stonesPts} points).</li>
   <li><b>Round ${WILDS.open}:</b> the walls of the Throne Hall fall and the <b>Rift Beast</b> (${WILDS.beastHp} HP) wakes on the Throne. It never moves; each round it strikes the last unit that hit it. Its killing blow scores ${RULES.BEAST_PTS} points and reveals the Throne.</li>
   <li><b>The King:</b> the first unit to sit on the Throne is crowned: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for life, and 1 point at the start of each of your turns while it sits there. To stop a King you must kill it. When it falls, the next unit to sit is crowned. Your Crown Shards power your King (more ATK, DEF, healing, AP...).</li></ul>
@@ -7139,11 +7140,11 @@ function showRules(){
   <details class="more"><summary>Every detailed rule, and the random board</summary>
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
-  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts in its own camp, walled in its army's own material (a palisade, ice spires, obsidian spikes, standing stones...) with three gates and three roads: to the Throne Hall, to its Vault, and past its Crypt to the Standing Stones. Rivers and rubble block walking; flyers cross them and fly over walls. A unit on a <b>Watchtower</b> gets +1 range if ranged and sees into every hidden room within 4 hexes.
+  <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts around its own open base of 7 hexes on the edge of the map, with three roads: to the Throne Hall, to its Vault, and past its Crypt to the Standing Stones. Rivers and rubble block walking; flyers cross them and fly over walls.
     <br><b>Rooms</b> are hidden (dark, with a ?) until a unit steps into one. Every kind of place has its own shape: the <b>Hill Fort</b> is a raised ledge (high ground) with cliffs all round and one ramp up, 2 hexes wide; the <b>Crypt</b> a graveyard with an iron fence at the front (two gates and a broken gap) and a mausoleum at the back; the <b>Vault</b> a half-moon of ruined arches open toward the two neighbours who share it; the <b>Dragon's Lair</b> a cave in the map edge with one wide mouth; the <b>Standing Stones</b> a clearing in a forest ring with two narrow paths in. Contents are dealt in mirror sets, so every corner of the map gets the same: every <b>Hill Fort</b> holds a Forge, a Captive or a Locked Crate (its Mystery Chest is a coin flip: a Crown Shard or an Ancient Relic, both carried home); every <b>Crypt</b> a Stone Guardian, a Locked Crate or a room to hold alone for ${WILDS.hold} of your turns, guarding a Crown Shard; each <b>Vault</b> (one between two neighbours) a Vault Golem guarding a <b>War Suit</b>. Monsters never leave their rooms and never attack first: at the start of each round they hit back at the last unit that hit them.
-    <br><b>Crown Shards</b> are gems: carry one into your camp and it is set in your army's crown (each gem counts twice at most). Gems do nothing by themselves; they power your side's <b>King</b>: Ruby +1 ATK, Sapphire +1 DEF, Emerald heals the King 1 a turn, Topaz +1 AP a turn, Amethyst +1 charge a turn, Onyx 1 damage to every enemy next to the King at your turn start. A carrier that dies drops its gem for anyone.
+    <br><b>Crown Shards</b> are gems: carry one into your base and it is set in your army's crown (each gem counts twice at most). Gems do nothing by themselves; they power your side's <b>King</b>: Ruby +1 ATK, Sapphire +1 DEF, Emerald heals the King 1 a turn, Topaz +1 AP a turn, Amethyst +1 charge a turn, Onyx 1 damage to every enemy next to the King at your turn start. A carrier that dies drops its gem for anyone.
     <br><b>War Suit:</b> a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first, plus its item (Boots +1 move, Ogre Club +1 ATK or Tower Shield +1 DEF). A giant straps it on as ${WILDS.plateHp} HP of plating with the same item. When the suit breaks the unit steps out unhurt. <b>Forge:</b> a unit that starts your turn on it is tempered for good (+1 ATK, or +1 DEF if it has no attack); once per army, then the Forge rests ${WILDS.forgeRest} rounds. <b>Captive:</b> step on him to free him; he joins you (${CAPTIVE.hp} HP, no attack). Walk him into your camp and he takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).
-    <br><b>Levers:</b> one near each camp. A unit standing on one pulls it for its side; once levers of two different sides are pulled, a trap door opens and the <b>Wanderer</b> runs out (once per game; ${MONSTERS.wanderer.hp} HP, no DEF, roams 3 hexes a round, only hits back). Its killing blow drops a Crown Shard.
+    <br><b>Levers:</b> one near each base. A unit standing on one pulls it for its side; once levers of two different sides are pulled, a trap door opens and the <b>Wanderer</b> runs out (once per game; ${MONSTERS.wanderer.hp} HP, no DEF, roams 3 hexes a round, only hits back). Its killing blow drops a Crown Shard.
     <br><b>Mid game (round ${WILDS.midAt}):</b> the <b>Dragons</b> wake in the two lairs on the north and south edges (${MONSTERS.dragon.hp} HP, no DEF; at each round start it breathes fire on the last unit that hit it): the killing blow wins ${WILDS.dragonPts} points. The <b>Standing Stones</b> on the east and west edges glow: if your units stand on all three runestones of a circle at the start of two of your turns in a row, you score ${WILDS.stonesPts} points and the circle sleeps ${WILDS.stonesDark} rounds; an enemy on any stone stops it.
     <br><b>The Throne:</b> in round ${WILDS.open} the walls of the Throne Hall fall and the Rift Beast (${WILDS.beastHp} HP) wakes on the Throne; its killing blow (+${RULES.BEAST_PTS} points) reveals the Throne. The first unit to sit on it is crowned <b>King</b>: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives; it scores 1 point at the start of its side's turn while it sits on the Throne, always, and whoever kills it scores ${RULES.KING_KILL}. A living King can't be unseated: kill it. While the Beast lives, at each round start it strikes the last unit that hit it for 1 damage plus 1 for every hit it took that round. When the King falls, the next unit to sit on the Throne is crowned. Points come from the King, killing the King, the Dragons, the Standing Stones, the Rift Beast, Crown Shards carried home (+${WILDS.shardPts} each) and Leader takedowns; first to ${WILDS.target} wins. No Collapse, no flags.</li>
   <li><b>Act 1, expand.</b> The centre is walled: a single ring of stone wall stands right around the Heart until round ${RULES.CENTRE_FROM} (the outer grey ring stays open ground). Spread out and take the flags on the flanks; from round ${RULES.FLAG_FROM} the side owning the most flags scores (in a 2-player duel flags give Ultimate charge only). In round ${RULES.SPRING_AT} a <b>Wellspring</b> rises on the outer ring (announced a round before).</li>
