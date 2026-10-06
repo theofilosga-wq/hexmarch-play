@@ -628,7 +628,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={LIVING_FLAME:1,SHAMANS:1,FORTRESS:1,GHOULS:2,HEAVY:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:1,GHOULS:2,HEAVY:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -851,10 +851,15 @@ const ABIL={
     desc:'Pick an enemy within 4, then the direction: it is blown 4 hexes that way.'},
   convergence:{name:'Convergence',cost:2,cd:3,aim:'hex',range:4,shape:'blast',size:1,special:'convergence',spell:1,
     desc:'All four elements at once on a 7-hex area within 4: enemies take 3 (ignoring DEF), can’t move on their next turn and are blown 1 hex outward; your units there heal 3.'},
+  /* v71 THE PHALANX (owner 6 Oct 2026): the block moves as one and strikes together. */
+  blockmove:{name:'Move Phalanx',cost:2,cd:0,aim:'dir',special:'blockmove',free:1,aux:1,bot:'blockmove',
+    desc:'An order, not an action: every member of this phalanx that has not moved yet steps together in the chosen direction, up to half the move of its slowest member (at least 1). Members that are blocked stay and drop out. They all count as moved and can still attack.'},
+  holdline:{name:'Hold the Line!',cost:2,cd:4,aim:'self',special:'holdline',bot:'holdline',
+    desc:'Until your next turn your whole army counts as one big Phalanx, wherever it stands: +1 DEF, enemies next to any of you can only step 1 hex, and every Warband unit in range of a target joins each strike for 1.'},
   deploy:{name:'Set Down',cost:1,cd:0,aim:'empty',range:1,special:'deploy',free:1,aux:1,bot:'deploy',
     desc:'Set the carried weapon down on an empty hex next to this gnome. It fires on its own at the start of each of your turns, for free, at full strength. The gnome walks freely again and can still act this turn. Any empty-handed gnome can pick it up again by stepping onto it.'},
-  overclock:{name:'Overclock',cost:2,cd:3,aim:'self',range:3,special:'overclock',bot:'overclock',
-    desc:'Every machine and Walker of yours within 3 hexes of the Gearmaster repairs 2 HP and fires once, at full strength, at a random enemy in its range (a Tesla Coil zaps everyone within 2).'},
+  overclock:{name:'Overclock',cost:2,cd:4,aim:'self',range:3,special:'overclock',bot:'overclock',
+    desc:'Every set-down weapon and Mech of yours within 3 hexes of the Inventor repairs 2 HP and fires once more, right now, at full strength, at a random enemy in its range.'},
   dismantle:{name:'Dismantle',cost:0,cd:0,aim:'unit',hits:'ally',range:4,special:'dismantle',free:1,aux:1,bot:'dismantle',
     desc:'Remove one of your machines within 4 hexes for free; this unit’s build rests 1 turn less. No AP, no line of sight needed, and it uses neither the move nor the action; once per turn. The machine is gone at once and gives nobody Ultimate charge.'},
   bomb:{name:'Gizmo Bomb',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'all',dmg:2,pierce:1,
@@ -1107,7 +1112,7 @@ const FAC={
     home:'Pink ground: +1 move for gnomes (machines get nothing). An enemy standing on pink ground takes 1 more from machine attacks.',homeMov:1,
     units:[
       // v67 Gnome Fortress (owner 6 Oct 2026). bare = the gnome's stats after it sets its weapon down.
-      {name:'Inventor',icon:'crown',leader:1,hp:13,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:3,ab:'tuneup',wpn:'proto',bare:{atk:2,at:'melee',rng:1,mov:3}},
+      {name:'Inventor',icon:'crown',leader:1,hp:13,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:3,ab:'tuneup',ab2:'overclock',wpn:'proto',bare:{atk:2,at:'melee',rng:1,mov:3}},
       {name:'Engineer',icon:'gear',n:2,hp:10,atk:1,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'shieldwall'},
       {name:'Gunner',icon:'turret',n:2,hp:10,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:4,ab:'pierceround',wpn:'nest',bare:{atk:1,at:'melee',rng:1,mov:4}},
       {name:'Grenadier',icon:'mortar',n:2,hp:10,atk:2,def:0,mov:2,mt:'walk',at:'lob',rng:4,rmin:2,ab:'volley',wpn:'launcher',bare:{atk:1,at:'melee',rng:1,mov:3}},
@@ -1126,10 +1131,10 @@ const FAC={
       {name:'Zealot',icon:'hammer',hp:9,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'fervour'}]},
   warband:{name:'Iron Warband',color:'#eef0f4',
     theme:'The phalanx: swords, spears and shields that move as one block. Shields in front soak the arrows, spears strike over the shields from the second rank, every warrior hits harder with a comrade at his shoulder, and the Warlord marches the whole block forward and rallies it before the clash. Two riders and a raider hunt whoever strays. No spells, no area damage: you learn the game by learning where to stand.',
-    passive:'Formation (one rule, two steps): a Warband unit standing next to a comrade has +1 ATK (not the Warlord himself); when 5 or more Warband units stand connected (each touching another of the group, any shape) they are a Phalanx: +2 ATK in all, +1 DEF, and an enemy next to any of them can only step 1 hex. Walls and summons do not count. King’s Guard: a Warband King with a comrade beside it has +1 ATK and +1 DEF. Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged attacks and abilities. Hold the Line: an enemy next to a Shieldbearer can only step 1 hex.',line:1,phalanx:1,
+    passive:'The Phalanx: two or more Warband units standing next to each other are a Phalanx, and each of them has +1 ATK (not the Warlord himself). Move Phalanx (2 AP, not an action): every member that has not moved yet steps together in one direction, up to half the move of its slowest member; any member may instead move on its own and leave the block (it rejoins by standing next to it again). Strike together: when a member attacks, every other member that could reach the same target adds 1 damage (ignoring DEF), once per turn each. A big Phalanx (5 or more) has +1 DEF and holds the line: an enemy next to it can only step 1 hex. King’s Guard: a Warband King with a comrade beside it has +1 ATK and +1 DEF. Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged attacks and abilities. Hold the Line: an enemy next to a Shieldbearer can only step 1 hex.',line:1,phalanx:1,
     home:'Bone ground: +1 ATK. An enemy standing on bone ground takes 1 more from Warband basic attacks.',homeAtk:1,
     units:[
-      {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'march',ab2:'rally'},
+      {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'holdline',ab2:'rally'},
       {name:'Berserker',icon:'axe',aoe:'cleave',n:2,hp:9,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,rage:1,trait:'rage'},
       {name:'Shieldbearer',icon:'shield',n:2,hp:12,atk:2,def:2,mov:3,mt:'walk',at:'melee',rng:1,trait:'shieldwall'},
       {name:'Outrider',icon:'horseshoe',n:2,hp:10,atk:2,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'charge',trait:'charge'},
@@ -1512,7 +1517,11 @@ function lineBonus(u){if(u.kind==='wall'||u.leader)return 0;const F=facOf(u);if(
    with half the team that will serve as the combo of this team"). RULES.PHALANX (5) or more Warband units standing CONNECTED (each touching
    another of the group; any shape: a line across a corridor, a ring round the Throne) are a Phalanx: every unit in it has +RULES.PHALANX_DEF DEF
    (+RULES.PHALANX_ATK ATK) and holds the line like a Shieldbearer (RULES.PHALANX_HOLD). Walls, machines and summons do not count. */
-function phalanxSize(u){if(!RULES.PHALANX||!u||u.kind==='wall'||u.summon||!facOf(u).phalanx)return 0;
+// v71: the members of u's phalanx (Warband units connected to it), [] when it stands alone; Hold the Line! makes the whole army one phalanx.
+function phalanxGroup(u){if(!RULES.PHALANX2||!u||u.kind==='wall'||u.summon||u.owner<0||!facOf(u).phalanx)return [];const p=G.players[u.owner];
+  const cs=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg);if(p&&p.hold)return cs.length?[u,...cs]:[];
+  const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen.length>=2?seen:[]}
+function phalanxSize(u){if(RULES.PHALANX2&&u&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].hold&&facOf(u).phalanx&&!u.summon&&u.kind!=='wall')return 99;if(!RULES.PHALANX||!u||u.kind==='wall'||u.summon||!facOf(u).phalanx)return 0;
   const cs=G.units.filter(v=>v.id!==u.id&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg);if(cs.length<RULES.PHALANX-1)return 1;
   const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen.length}
 const inPhalanx=u=>RULES.PHALANX&&phalanxSize(u)>=RULES.PHALANX?1:0;
@@ -1654,9 +1663,9 @@ function makeUnit(p,d){
 }
 // Units may carry a second ability (the Warlord: March and Rally). Cooldowns: u.cd for the first, u.cd2 for the second.
 // Spellbooks (Arcane Conclave, v22): u.book lists 2 or 3 spells that share ONE cooldown, u.cd: casting any of them rests them all.
-function abilsOf(u){if(u.book)return u.ability2&&ABIL[u.ability2]&&!u.book.includes(u.ability2)?u.book.concat([u.ability2]):u.book.slice();if(RULES.FORTRESS&&u.walker==='suit')return ['mechflame'];const o=[];if(u.ability&&!(ABIL[u.ability].carried&&!u.wpn))o.push(u.ability);if(u.ability2&&!(ABIL[u.ability2].carried&&!u.wpn))o.push(u.ability2);if(RULES.HEAVY&&u.wpn&&!u.machine)o.push('deploy');return o}
-function cdOf(u,k){if(k==='deploy')return 0;if(u.book&&k&&k===u.ability2&&!u.book.includes(k))return u.cd2||0;if(k==='mechflame')return u.cd2||0;if(u.book)return u.cd||0;return k&&k===u.ability2?(u.cd2||0):(u.cd||0)}
-function setCd(u,k,n){if(k==='deploy')return;if(u.book&&k&&k===u.ability2&&!u.book.includes(k)){u.cd2=n;return}if(k==='mechflame'){u.cd2=n;return}if(u.book){u.cd=n;return}if(k&&k===u.ability2)u.cd2=n;else u.cd=n}
+function abilsOf(u){if(u.book)return u.ability2&&ABIL[u.ability2]&&!u.book.includes(u.ability2)?u.book.concat([u.ability2]):u.book.slice();if(RULES.FORTRESS&&u.walker==='suit')return ['mechflame'];const o=[];if(u.ability&&!(ABIL[u.ability].carried&&!u.wpn))o.push(u.ability);if(u.ability2&&!(ABIL[u.ability2].carried&&!u.wpn))o.push(u.ability2);if(RULES.HEAVY&&u.wpn&&!u.machine)o.push('deploy');if(RULES.PHALANX2&&!u.moved&&u.owner>=0&&facOf(u).phalanx&&phalanxGroup(u).filter(v=>!v.moved).length>=2)o.push('blockmove');return o}
+function cdOf(u,k){if(k==='deploy'||k==='blockmove')return 0;if(u.book&&k&&k===u.ability2&&!u.book.includes(k))return u.cd2||0;if(k==='mechflame')return u.cd2||0;if(u.book)return u.cd||0;return k&&k===u.ability2?(u.cd2||0):(u.cd||0)}
+function setCd(u,k,n){if(k==='deploy'||k==='blockmove')return;if(u.book&&k&&k===u.ability2&&!u.book.includes(k)){u.cd2=n;return}if(k==='mechflame'){u.cd2=n;return}if(u.book){u.cd=n;return}if(k&&k===u.ability2)u.cd2=n;else u.cd=n}
 // Draconic Pact (talent): the Drake has +4 HP. Applied when the game starts (after deployment, where the talent can still change).
 function talentStats(){for(const u of G.units){if(u.kind==='wall'||u.name!=='Drake'||G.players[u.owner].fac!=='mage')continue;const d=FAC.mage.units.find(x=>x.name==='Drake');const hp=d.hp+(utal(u,'draconic')?4:0);u.hp=u.maxhp=hp}}
 /* ---------- deployment ----------
@@ -1960,6 +1969,7 @@ function beginTurn(){
   // Gnome machines fire on their own before the timers run, so a machine on its last turn still gets its last shot (tracked per machine as 'Auto-fire').
   if(RULES.FORTRESS)for(const u of G.units)if(u.owner===p.id&&u.wpnBack>0&&--u.wpnBack<=0){u.wpnBack=0;if(!u.wpn&&u.wpnHome){u.wpn=u.wpnHome;u.wpnHp=null;u.wpnOwner=u.id;gearOn(u);if(!SIM){fx(u,'new '+MACHINES[u.wpn].name,'#ff6ec7');addLog(p.id,`The ${u.name} has built a new ${MACHINES[u.wpn].name}.`)}}}
   if(RULES.FORTRESS&&p.salvAP>0){G.ap=Math.min(RULES.AP_CAP+3,G.ap+p.salvAP);if(!SIM&&trk()){const e=tFx('gnomes','','Salvage (talent)');if(e){e.uses++;e.apGranted=(e.apGranted||0)+p.salvAP}}p.salvAP=0}
+  if(p.hold)p.hold=0;
   machineFire(p,'Auto-fire','Basic');ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
   // Act 1: units standing on a flag or the Wellspring at the start of their side's turn capture it (before charge, AP and points are counted).
   captureObjectives(p.id);wildsTick(true);kingCrown();kingScore(p);if(G.over)return;
@@ -2631,6 +2641,7 @@ function attack(u,t){
   // Hex (Enchanter): the ATK it takes away is credited to the Hex row as damage blocked.
   const hexd=u.st&&u.st.hex>0&&!SIM&&trk()&&t.kind!=='wall'?(()=>{const s=u.st.hex;u.st.hex=0;try{return basicDmg(u,t)}finally{u.st.hex=s}})():null;
   const bar0=hasBarrier(t);hurt(t,dmg);creditSunder(t,dmg+cov,d0s,hp0);const barBroke=bar0&&!t.bar;
+  if(RULES.PHALANX2&&alive(t)&&(t.kind!=='wall'||t.monster||t.beast)&&tm(t.owner)!==tm(u.owner)){const grp=phalanxGroup(u);let n=0;for(const v of grp){if(v===u||v.jointT===G.tok||(v.st&&v.st.frozen)||!alive(t))continue;const set=atkCells(v);if(!cells(t).some(([a,b])=>set.has(key(a,b))))continue;v.jointT=G.tok;const o=[CUR_SRC,CUR_NAME];CUR_SRC=v;CUR_NAME='Phalanx strike';hurt(t,1,'#eef0f4');[CUR_SRC,CUR_NAME]=o;n++}if(n&&!SIM)addLog(u.owner,`The phalanx strikes together: ${n} more blow${n>1?'s':''}.`)}// v71
   if(RULES.FORTRESS&&u.name==='Gunner'&&u.wpn&&fortSecret(u)){const dd=dirTo(u.q,u.r,t.q,t.r);const b=unitAt(t.q+DIRS[dd][0],t.r+DIRS[dd][1]);if(b&&b.kind!=='wall'&&tm(b.owner)!==tm(u.owner)){const o=CUR_NAME;CUR_NAME='Secret Weapon (pierce)';hurt(b,Math.max(1,effAtk(u)-effDef(b)),F.color);CUR_NAME=o}}// v67
   if(hexd!=null&&hexd>dmg+cov)tFxBy(u.st.hexBy,'mage','Hex','blocked',hexd-dmg-cov);
   if(guarded)tFxBy(t.id,'mage','Guard','blocked',Math.min(dmg,Math.max(0,hp0)),true);
@@ -2754,6 +2765,8 @@ function canAbil(u,k){
   if(G.ap<abilCost(u,k))return false;
   if(A.special==='build'&&!RULES.FORTRESS&&machineCount(u.owner)>=machineCap(u.owner))return false;// the workshop is full
   if(A.special==='deploy'&&!u.wpn)return false;
+  if(A.special==='blockmove')return !u.moved&&phalanxGroup(u).filter(v=>!v.moved).length>=2;
+  if(A.special==='holdline'&&G.players[u.owner].hold)return false;
   if(A.aim==='self'){
     if(A.special==='requiem'||(A.hits==='foe'&&!(RULES.SHAMANS&&A.el)))return abilityTargets(u,k,u.q,u.r).length>0;// v68: a shaman may cast Flare with nobody next to it, to feed its bar
     if(A.special==='rally')return abilityTargets(u,k,u.q,u.r).some(v=>v!==u);
@@ -3023,6 +3036,13 @@ function useAbility(u,k,q,r,dest){
     case 'spiritwalk':if(tgt&&tgt!==u&&tgt.kind!=='wall'&&tgt.size!==2&&u.size!==2){const a=[u.q,u.r];if(!SIM){setAnim(u);setAnim(tgt)}u.q=tgt.q;u.r=tgt.r;tgt.q=a[0];tgt.r=a[1];fx(tgt,'spirit walk','#d8eef2');tSup('moved',2)}break;
     case 'convergence':{const area=shapeCells(u,k,q,r);if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:'#2bff5a',cam:1});const m=occ();const seen=new Set();
       for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v)||v.kind==='wall')continue;seen.add(v);if(tm(v.owner)===tm(u.owner))healUnit(v,3,'#3fa8ff');else{hurt(v,3,'#2bff5a');if(alive(v)){if(v.size!==2)v.st.anchor=1;if(!(v.q===q&&v.r===r))pushUnit(v,dirTo(q,r,v.q,v.r),1,u)}}}break}
+    // ---- v71 the Phalanx ----
+    case 'blockmove':{const d=aimDir(u,q,r);if(d<0)break;const grp=phalanxGroup(u).filter(v=>!v.moved);const mover=grp.filter(v=>!v.st.frozen&&v.size!==2&&effMov(v)>0);
+      const steps=Math.max(1,Math.floor(Math.min(...mover.map(v=>effMov(v)))/2));const [dq,dr]=DIRS[d],[px,py]=pix(dq,dr);let live=mover.slice(),moved=new Set();
+      for(let st=0;st<steps&&live.length;st++){live.sort((a,b)=>{const [ax,ay]=pix(a.q,a.r),[bx,by]=pix(b.q,b.r);return (bx*px+by*py)-(ax*px+ay*py)});const m=occ();const keep=[];
+        for(const v of live){const a=v.q+dq,b=v.r+dr;if(!passable(a,b)||m.get(key(a,b))||isTrap(a,b)||(G.voids&&G.voids[key(a,b)]))continue;if(!moved.has(v)&&!SIM)setAnim(v);m.delete(key(v.q,v.r));v.q=a;v.r=b;v.dir=d;m.set(key(a,b),v);moved.add(v);keep.push(v)}live=keep}
+      for(const v of grp)v.moved=true;tSup('moved',moved.size);if(!SIM){addLog(u.owner,`The phalanx moves as one: ${moved.size} unit${moved.size===1?'':'s'} advance ${steps} hex${steps===1?'':'es'}.`);for(const v of moved)braceCheck(v)}break}
+    case 'holdline':{G.players[u.owner].hold=1;if(!SIM){addLog(u.owner,'Hold the Line! The whole army stands as one phalanx until its next turn.');announce({k:'note',col:FAC.warband.color,t:'Hold the Line!',s:'The whole Warband stands as one phalanx until its next turn.'});for(const v of G.units)if(v.owner===u.owner&&v.kind!=='wall')fx(v,'hold!','#eef0f4')}break}
     case 'guard':u.st.guard=1;fx(u,'guard','#cfd3dc');vfx({k:'buff',at:[u.q,u.r],col:'#cfd3dc'});break;
     // Lightning (Elementalist): 3 minus DEF to the target, then arcDmg minus DEF to the nearest other enemy within arc hexes of it.
     case 'lightning':if(tgt){const tq=tgt.q,tr=tgt.r;applyHit(u,tgt,A);
@@ -3978,6 +3998,12 @@ function heuristic(u,k,q,r,ctx,dest){
       return 2+near.length+shooters*1.2+ok.length*0.5}
     case 'tuneup':{const t=unitAt(q,r);if(!t)return 0;let h=0;if(t.kind==='wall'&&t.wall==='shield'&&tm(t.creator)===team)h=Math.min(3,t.maxhp-t.hp);else if(t.machine&&t.owner===u.owner)h=Math.min(3,t.maxhp-t.hp);else if(t.walker&&t.owner===u.owner)h=Math.min(3,(t.suitMax||0)-(t.suitHp||0));return h*1.3}
     case 'buildsuit':{if(u.walker||u.suitHp>0)return 0;if(G.units.some(v=>v.machine==='suit'&&v.owner===u.owner&&distUU(v,u)<=3))return 0;const near=ctx.foes.some(f=>f.owner>=0&&distUC(f,q,r)<=8);return near?8:3}
+    // v71 Move Phalanx: worth what every member gains from the step (its own move judgement at the hex it would reach), only if at least 3 can follow.
+    case 'blockmove':{const d=aimDir(u,q,r);if(d<0)return 0;const grp=phalanxGroup(u).filter(v=>!v.moved&&!v.st.frozen&&v.size!==2&&effMov(v)>0);if(grp.length<3)return 0;if(grp.some(v=>ctx.foes.some(f=>f.owner>=0&&distUU(f,v)<=4)))return 0;// approach only: in a fight the members move on their own
+      const steps=Math.max(1,Math.floor(Math.min(...grp.map(v=>effMov(v)))/2));const [dq,dr]=DIRS[d];let s=0,n=0;
+      for(const v of grp){let a=v.q,b=v.r;for(let i=0;i<steps;i++){const x=a+dq,y=b+dr;if(!passable(x,y)||(ctx.m.get(key(x,y))&&!grp.includes(ctx.m.get(key(x,y)))))break;a=x;b=y}if(a===v.q&&b===v.r)continue;n++;s+=Math.max(-1,moveEval(v,{q:a,r:b,dir:d},ctx)+1.2)}
+      return n>=3?s:0}
+    case 'holdline':{if(G.players[u.owner].hold)return 0;const ws=mine.filter(v=>!v.summon&&v.kind!=='wall');let n=0;for(const f of ctx.foes)if(f.owner>=0&&ws.some(v=>distUU(v,f)<=3))n++;return n>=2?2+n*1.3:0}
     case 'deploy':{if(!u.wpn)return 0;if(RULES.FORTRESS&&u.wpnHome!=='proto'&&u.hp*2>u.maxhp)return 0;// v67: Gunners and Grenadiers drop their weapon only to run when hurtif(RULES.HEAVY&&!u.acted&&G.ap>=atkCost(u)+1&&attackTargets(u).length)return 0;// strike with the weapon in hand first; Set Down is free afterwards
       const M=MACHINES[u.wpn];const reach=(M.rng||1)+(RULES.HEAVY?1:2);const inReach=ctx.foes.filter(f=>f.owner>=0&&distUC(f,q,r)<=reach&&distUC(f,q,r)>=(M.rmin||1));if(!inReach.length)return 0;const key={mortar:'mortar',turret:'turret',flame:'flameturret',coil:'coil',proto:'turret',nest:'turret',launcher:'mortar'}[u.wpn];return Math.max(2,heuristic(u,key,q,r,ctx))+inReach.length}// v65: value a Set Down like the old build of that machine
     case 'mortar':{let s=0,n=0;for(const f of ctx.foes){const d=distUC(f,q,r);if(d>=2&&d<=4){n++;s+=2+(f.leader?1.5:0)}else if(d===1)s-=2}const poi=buildSpot(q,r,ctx);if(!n)return poi;return 3+Math.min(s,8)+poi}
@@ -6452,7 +6478,7 @@ const PASSIVE_SHORT={
   giants:'Five two-hex giants that can’t be pushed or pulled. When one falls the others heal 3 and get +1 ATK.',
   gnomes:'A fortress: Engineers raise shield walls, Gunners fire through the slits, Grenadiers lob over, the Inventor’s turret fires on its own, Mechanics climb into suits.',
   arcane:'Healing beyond full HP burns the nearest enemy. Holy ground heals allies and burns enemies. Hitting a shielded or blessed priest costs 2.',
-  warband:'Formation: +1 ATK next to a comrade; five or more standing connected are a Phalanx (+2 ATK in all, +1 DEF, enemies beside it step only 1).',
+  warband:'The Phalanx: touching warriors have +1 ATK, move as one block and strike together (every member in range adds 1); five or more also hold the line.',
   rift:'Enemies they move are marked (move 1 less, thrown 1 further). Throws into walls, units, rivers and holes hurt or kill. They step through the rift over anything.',
   curse:'Six rots (Rot, Plague, Wither, Leech, Grave Mud, Decay): the more different rots a victim carries, the more it takes each turn. The Hierophant reaps them all. Cursed enemies that die rise as Ghouls that hunt on their own.',
   chrono:'Time mages Quicken a Second Hand for extra strikes (5, 6, 7 with Synchrony) and free moves after kills. Unspent AP carries over. A Time Wraith answers when both blades fall.',
@@ -7360,7 +7386,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.rage&&u.hp*2<=u.maxhp)tags.push('<span class="tag good">Raging: +2 ATK</span>');
   if(u.kind!=='wall'&&facOf(u).line&&!u.leader){const lb=lineBonus(u);tags.push(lb?`<span class="tag good">Formation +${lb} ATK${lb===2?' (next to the Warlord)':''}</span>`:'Battle Line: no comrade at its shoulder, no bonus')}
   if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx&&RULES.PHALANX){const z=phalanxSize(u);tags.push(z>=RULES.PHALANX?`<span class="tag good">Phalanx: ${z} standing connected, +1 ATK, +1 DEF, enemies next to it step 1 hex only</span>`:`Phalanx: ${z} of ${RULES.PHALANX} connected, no bonus yet`)}
-  if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx){const n=comradesAdj(u);tags.push(n>=1?`<span class="tag good">Formation: ${n} comrade${n===1?'':'s'} adjacent, +1 ATK</span>`:`Battle Line: no comrade adjacent, no bonus`);
+  if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx){const n=comradesAdj(u);{const g=phalanxGroup(u).length;tags.push(g>=2?`<span class="tag good">Phalanx of ${g}${g>=5?': +1 DEF, holds the line':''}</span>`:`Alone: no phalanx`)}
     if(!hasTrait(u,'shieldwall'))tags.push(G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&hasTrait(w,'shieldwall')&&distUU(w,u)===1)?'<span class="tag good">Shield Wall: 1 less from ranged attacks and abilities</span>':'No Shieldbearer beside it')}
   if(u.st.rally)tags.push('<span class="tag good">Rallied: +1 ATK until the start of its next turn</span>');
   if(u.st.shield)tags.push(`<span class="tag good">Shield ${u.st.shield}</span>`);
@@ -7552,7 +7578,7 @@ function showRules(){
   <li><b>Void Traps</b> (Riftwalkers). A Voidcaller tears open an empty hex for 3 of its side's turns (a black hex with a pulsing teal ring and the turns left). While open it is a void: nothing can step on it, and any unit shoved, pulled, dragged or thrown into it falls in and dies. Giants can't be moved, so they only take the slam.</li>
   <li><b>Free actions</b> (Hourglass Order). Quicken gives a unit one extra basic attack this turn that costs no AP, even after it has acted; several Tempo Mages can Quicken the same unit in one turn. Chase the Clock (Rewinder) marks an ally for this turn: every enemy it kills gives it a free move at once (no AP, even after it has moved or attacked). A Second Hand strikes at most ${RULES.TEMPO_CAP} times a turn, each strike 1 harder than the last (4, 5, 6 before DEF), so a Leader or a giant survives one full combo. <b>Banked Time</b>: up to 2 unspent AP carry over to the next Hourglass turn (4 with Deep Pockets). <b>Time Wraith</b>: when both Second Hands have fallen, a Time Wraith appears at once next to the Chronarch (at the army's start if he is dead too), once per game: ${WRAITH.hp} HP, ${WRAITH.atk} ATK, ${WRAITH.def} DEF, walks ${WRAITH.mov}, melee, no ability; a normal unit.</li>
   <li><b>Machines</b> (Gnome Tinkers). Set-down weapons (Prototype Turret, Gun Nest, Grenade Launcher) and empty Mech Suits are machines: they <b>never move</b>, have no attack button and <b>fire on their own for free</b> at the start of each gnome turn at full strength (a suit never fires: a gnome must climb in). A machine finishes a kill if it can, otherwise it shoots the enemy Leader, otherwise the weakest enemy in reach. Gnome shots pass through gnome machines and shield walls.</li>
-  <li><b>Formation</b> (Iron Warband): a Warband unit next to a comrade has +1 ATK (not the Warlord himself). Five or more standing connected are a <b>Phalanx</b>: +2 ATK in all, +1 DEF, and an enemy next to any of them can only step 1 hex.</li>
+  <li><b>The Phalanx</b> (Iron Warband): two or more Warband units standing next to each other are a phalanx, and each of them has +1 ATK (not the Warlord). <b>Move Phalanx</b> (2 AP, not an action): every member that has not moved yet steps together in one direction, up to half the move of its slowest member; any member may instead move on its own and leave the block. <b>Strike together</b>: when a member attacks, every other member that could reach the same target adds 1 damage (ignoring DEF), once per turn each. A <b>big phalanx</b> (5 or more) has +1 DEF and holds the line. The Warlord’s <b>Hold the Line!</b> makes the whole army one phalanx until its next turn.</li>
   <li><b>Rally</b> (Warlord, 1 AP): every other Warband unit within 2 of him gets +1 ATK until the start of the Warband's next turn, strike-backs included.</li>
   <li><b>Holy ground</b> (Circle of Priests). A Druid's Grove turns a hex and its 6 neighbours into holy ground for 3 turns (indigo, never the Heart): at the start of its owner's turn every ally standing on it heals 1 and every enemy standing on it takes 1 damage. <b>Overflowing light:</b> Mend, Sanctuary and the Ultimate Radiance turn healing beyond full HP into damage (ignoring DEF) on the enemy nearest to the healed unit, within 3. <b>Bless</b> (Lightwarden, 2 AP, rests 3 turns, range 3): an ally (or the Lightwarden) gets +1 ATK and heals 1 at the start of each of its next 3 turns; the chip on its card counts the turns down. <b>Mend</b> heals 3 and <b>Sanctuary</b> 2. <b>Fervour</b> (Zealot): its basic attack deals extra damage equal to the healing it received this turn, up to +3: mend it first, then strike. <b>Hallowed Dawn</b> (the Ultimate): every priest heals 2 and gets +1 ATK for this turn and the next; every enemy unit heals 1.</li>
   <li><b>Ascension</b> (Force of the Elements). Every shaman has two spells of its element (a 1-AP and a 2-AP one) and casts one per turn; casting either rests both for 1 turn. Each spell adds 1 to its element’s bar, <b>2 when the shaman stands on a hex of its own element</b> (one 3-hex patch of each element lies on the Shamans’ side of the board). When a bar fills (the first needs 2, then 3, 4 and 5), both shamans of that element <b>ascend into Elementals</b> for good, back to full HP, with stronger, longer spells and a passive. Elementals’ spells don’t count. The Elder Shaman has one 1-AP spell of each element, every turn, and its casts always count 1. When all four elements have ascended the <b>Elemental Lord</b> (2 hexes) appears beside the Elder. The Shamans have no Ultimate button: ascension is their Ultimate.</li>
@@ -7608,7 +7634,7 @@ function showQuick(){
   ${row('Moving','Walk away from anyone except a guard (Hold the Line: Shieldbearer, Frost Warden, Rampart, Penitent, Gargoyle, Mortar: 1 step) · red ground: Ember enemies −1 move · chilled: no free moves · melee +1 move (not giants) · Pursuit: +1 more toward the enemy you hit last turn · Crown Wilds: everyone +1, Leaders +2')}
   ${row('Surround','Target touches 2+ of yours: +'+RULES.SURROUND+' damage')}
   ${row('Giants','2 hexes, can’t be moved · +1 damage from melee while 2+ enemies touch it · squeezing through a one-hex gap costs 2 moves')}
-  ${row('Formation','Warband: +1 ATK next to a comrade (not the Warlord) · 5+ connected = Phalanx: +2 ATK in all, +1 DEF, holds the line')}
+  ${row('Phalanx','Warband: 2+ touching = a phalanx, +1 ATK each (not the Warlord) · Move Phalanx 2 AP, half the slowest move · members in range add 1 to each strike · 5+ = +1 DEF, holds the line · Hold the Line! = the whole army is one phalanx')}
   ${row('Phalanx','Warband: Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged attacks and abilities · Spear strikes 2 away over a friend · March moves the block 1 hex · Rally +1 ATK within 2')}
   ${row('Guards','Bodyguard: basic attacks on an adjacent friendly Leader hit the guard instead; abilities are not redirected')}
   ${row('Free actions','Hourglass: Quicken = 1 extra basic attack for 0 AP, stacks on the same unit · Chase the Clock = every kill this turn gives the marked unit a free move · Second Hand: 3 strikes a turn at most (4, 5, 6) · up to 2 unspent AP carry over · both blades dead = a Time Wraith once')}
