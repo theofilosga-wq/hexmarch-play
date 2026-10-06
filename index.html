@@ -628,7 +628,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={SHAMANS:1,FORTRESS:1,GHOULS:5,HEAVY:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={LIVING_FLAME:1,SHAMANS:1,FORTRESS:1,GHOULS:2,HEAVY:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:10,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:1,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -791,7 +791,7 @@ const ABIL={
   shieldwall:{name:'Shield Wall',cost:2,cd:3,aim:'dir',shape:'line',size:3,hits:'none',special:'gnomewall',bot:'gnomewall',
     desc:'Raise a 3-hex wall in a straight line, starting next to the Engineer, in the direction you choose. Each piece has 6 HP and lasts 3 turns. It blocks enemy movement and enemy straight shots; gnome shots pass through its firing slits.'},
   buildsuit:{name:'Build Suit',cost:2,cd:3,aim:'empty',range:1,special:'build',machine:'suit',bot:'buildsuit',
-    desc:'Build an empty Mech Suit on an empty hex next to the Mechanic. Step onto it to climb in: the Mechanic becomes a Mech (12 HP of armour that takes hits first, 4 ATK, 1 DEF, walks 2, Flamethrower). When the armour breaks the gnome tumbles out unhurt.'},
+    desc:'Build an empty Mech Suit on an empty hex next to the Mechanic. Step onto it to climb in: the Mechanic becomes a Mech (15 HP of armour that takes hits first, 4 ATK, 1 DEF, walks 2, Flamethrower). When the armour breaks the gnome tumbles out unhurt.'},
   mechflame:{name:'Flamethrower',cost:2,cd:2,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:2,
     desc:'The Mech’s flamethrower: a cone of fire 2 hexes deep, 2 damage minus DEF to every enemy in it.'},
   bombrun:{name:'Bomb Run',cost:2,cd:2,aim:'empty',range:4,lineOnly:1,special:'bombrun',
@@ -817,8 +817,8 @@ const ABIL={
   // the Elemental forms: same AP, stronger and longer
   e_flare:{name:'Flare',cost:1,cd:1,aim:'self',shape:'nova',hits:'foe',dmg:3,pierce:1,sear:1,el:'fire',spell:1,
     desc:'3 damage (ignoring DEF) to every enemy next to the Fire Elemental; they can’t be healed on their next turn.'},
-  e_flamelash:{name:'Flame Lash',cost:2,cd:1,aim:'unit',range:4,hits:'foe',special:'lash',dmg:5,behind:3,el:'fire',spell:1,
-    desc:'5 damage minus DEF to an enemy within 4, and 3 minus DEF to the enemy right behind it.'},
+  e_flamelash:{name:'Flame Lash',cost:2,cd:1,aim:'unit',range:4,hits:'foe',special:'lash',dmg:4,behind:3,el:'fire',spell:1,
+    desc:'4 damage minus DEF to an enemy within 4, and 3 minus DEF to the enemy right behind it.'},
   e_cleanwave:{name:'Cleansing Wave',cost:1,cd:1,aim:'self',special:'cleanwave',size:4,heal:2,el:'water',spell:1,
     desc:'Every ally within 4 loses one debuff and heals 2.'},
   e_healtide:{name:'Healing Tide',cost:2,cd:1,aim:'unit',range:5,hits:'ally',special:'tide',heal:6,splash:2,el:'water',spell:1,
@@ -1002,7 +1002,7 @@ const TRAITS={
   statue:{name:'Statue',text:'A sleeping Gargoyle. Can’t move or act. Mages casting spells within 2 of it wake it; smash it first and the Gargoyle is gone.'},
   splits:{name:'Shatters apart',text:'When it dies it breaks into smaller ice: a Frost Colossus (2 hexes, 14 HP, 4 ATK) becomes 2 Ice Brutes (7 HP, 4 ATK each); each Ice Brute becomes 1 Ice Shard (4 HP, 3 ATK). The pieces appear where it stood and act from your next turn.'},
   emptysuit:{name:'Empty suit',text:'A Mech Suit waiting for its pilot: it never fires. A Mechanic (any gnome with Field Workshop) steps onto it to climb in.'},
-  livingflame:{name:'Living Flame',text:'Every enemy that starts its turn next to this Fire Elemental takes 2 (ignoring DEF).'},
+  livingflame:{name:'Living Flame',text:'Every enemy that starts its turn next to this Fire Elemental takes 1 (ignoring DEF).'},
   spring:{name:'Spring',text:'At the start of your turn every ally within 2 of this Water Elemental heals 1.'},
   bedrock:{name:'Bedrock',text:'Holds the line: enemies next to this Earth Elemental can’t walk past it.'},
   windwalk:{name:'Windwalk',text:'After casting a spell, this Air Elemental gets a free move (once per turn).'},
@@ -1043,7 +1043,7 @@ const TALENTS={
           {k:'echo',name:'Temporal Echo',text:'Quicken and Chase the Clock cost no AP.'},
           {k:'paradox',name:'Paradox',text:'Time Stop costs no AP, and your Ultimate needs 3 less charge.'}],
   mage:[{k:'pactofash',name:'Pact of Ash',text:'When a shaman (not an Elemental) dies, its element’s bar gains 1. Their deaths feed the ascension.'},
-        {k:'ascension',name:'Ascension Surge',text:'When a pair ascends, each new Elemental’s next 2-AP spell costs no AP: a burst on arrival.'},
+        {k:'ascension',name:'Ascension Surge',text:'When a pair ascends, each new Elemental releases its element around itself at once: fire 2 damage to enemies within 2, water heals allies within 2 for 3, earth stops the enemies next to it from moving on their next turn, air blows enemies within 2 one hex away.'},
         {k:'wellspring',name:'Wellspring',text:'An Elemental standing on a hex of its own element casts its 1-AP spell for free.'}],
 };
 function talent(p,k){if(typeof p==='number')p=G.players[p];return !!p&&!!p.talent&&p.talent===k}
@@ -1096,11 +1096,11 @@ const FAC={
     passive:'Immovable: giants fill two hexes and can’t be pushed, pulled, swapped or knocked off the board; they take the slam damage instead. Squeezing: a one-hex gap between walls costs a giant 2 moves. Swarmed: a giant takes +1 damage from a melee basic attack while 2 or more enemies stand next to it. Last of the Old Ones: when a giant falls, every giant still standing heals 3 HP and gains +1 ATK for the rest of the game.',gateBlock:1,swarmed:1,
     home:'Stone ground: giants can’t be chilled, frozen or mired there. The Mountain King’s Earthshaker paints stone ground for 3 turns.',stoneFoot:1,
     units:[
-      {name:'Mountain King',icon:'crown',leader:1,hp:18,atk:3,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'stomp'},
-      {name:'Boulder Hurler',icon:'boulder',hp:16,atk:2,def:1,mov:2,mt:'diag',at:'lob',rng:3,rmin:2,ab:'boulder'},
-      {name:'Rampart',icon:'tower',hp:22,atk:2,def:3,mov:2,mt:'line',at:'melee',rng:1,ab:'chainhook',trait:'bodyguard'},
-      {name:'Cliff Breaker',icon:'hammer',aoe:'cleave',hp:17,atk:4,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'smash'},
-      {name:'Titan',icon:'fist',hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'crush',trait:'unstoppable'}]},
+      {name:'Mountain King',icon:'crown',leader:1,hp:16,atk:3,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'stomp'},
+      {name:'Boulder Hurler',icon:'boulder',hp:14,atk:2,def:1,mov:2,mt:'diag',at:'lob',rng:3,rmin:2,ab:'boulder'},
+      {name:'Rampart',icon:'tower',hp:20,atk:2,def:3,mov:2,mt:'line',at:'melee',rng:1,ab:'chainhook',trait:'bodyguard'},
+      {name:'Cliff Breaker',icon:'hammer',aoe:'cleave',hp:15,atk:4,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'smash'},
+      {name:'Titan',icon:'fist',hp:14,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'crush',trait:'unstoppable'}]},
   gnomes:{name:'Gnome Tinkers',color:'#ff6ec7',
     theme:'A gnome fortress: Engineers raise shield walls, Gunners fire through them, Grenadiers lob over them, the Inventor sets down his Prototype Turret behind them, Mechanics build suits and climb in to guard the ends, and a Bombardier flies out to harass. The machines do the work; the team works together.',
     passive:'Firing slits: gnome shots pass through gnome shield walls and gnome machines; enemy shots do not. Drop and run: the Inventor, Gunners and Grenadiers can Set Down their weapon (1 AP, not an action): it becomes a machine next to them that fires on its own at the start of each of your turns, and the gnome walks 1 further but fights with its bare hands and can’t use its weapon ability. Only a gnome of the same kind picks a weapon up again by stepping onto it. A wrecked weapon is rebuilt by its gnome 3 turns later.',
@@ -1108,9 +1108,9 @@ const FAC={
     units:[
       // v67 Gnome Fortress (owner 6 Oct 2026). bare = the gnome's stats after it sets its weapon down.
       {name:'Inventor',icon:'crown',leader:1,hp:13,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:3,ab:'tuneup',wpn:'proto',bare:{atk:2,at:'melee',rng:1,mov:3}},
-      {name:'Engineer',icon:'gear',n:2,hp:9,atk:1,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'shieldwall'},
-      {name:'Gunner',icon:'turret',n:2,hp:9,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:4,ab:'pierceround',wpn:'nest',bare:{atk:1,at:'melee',rng:1,mov:4}},
-      {name:'Grenadier',icon:'mortar',n:2,hp:9,atk:2,def:0,mov:2,mt:'walk',at:'lob',rng:4,rmin:2,ab:'volley',wpn:'launcher',bare:{atk:1,at:'melee',rng:1,mov:3}},
+      {name:'Engineer',icon:'gear',n:2,hp:10,atk:1,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'shieldwall'},
+      {name:'Gunner',icon:'turret',n:2,hp:10,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:4,ab:'pierceround',wpn:'nest',bare:{atk:1,at:'melee',rng:1,mov:4}},
+      {name:'Grenadier',icon:'mortar',n:2,hp:10,atk:2,def:0,mov:2,mt:'walk',at:'lob',rng:4,rmin:2,ab:'volley',wpn:'launcher',bare:{atk:1,at:'melee',rng:1,mov:3}},
       {name:'Mechanic',icon:'spark',n:2,hp:10,atk:1,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'buildsuit'},
       {name:'Bombardier',icon:'bomb',hp:8,atk:1,def:0,mov:4,mt:'fly',at:'lob',rng:3,rmin:2,ab:'bombrun',trait:'explosive'}]},
   arcane:{name:'Circle of Priests',color:'#8f5cff',
@@ -1130,11 +1130,11 @@ const FAC={
     home:'Bone ground: +1 ATK. An enemy standing on bone ground takes 1 more from Warband basic attacks.',homeAtk:1,
     units:[
       {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'march',ab2:'rally'},
-      {name:'Berserker',icon:'axe',aoe:'cleave',n:2,hp:8,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,rage:1,trait:'rage'},
+      {name:'Berserker',icon:'axe',aoe:'cleave',n:2,hp:9,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,rage:1,trait:'rage'},
       {name:'Shieldbearer',icon:'shield',n:2,hp:12,atk:2,def:2,mov:3,mt:'walk',at:'melee',rng:1,trait:'shieldwall'},
       {name:'Outrider',icon:'horseshoe',n:2,hp:10,atk:2,def:1,mov:1,mt:'knight',at:'melee',rng:1,ab:'charge',trait:'charge'},
-      {name:'Raider',icon:'knives',hp:7,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,trait:'ambush'},
-      {name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:7,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
+      {name:'Raider',icon:'knives',hp:8,atk:3,def:0,mov:4,mt:'walk',at:'melee',rng:1,trait:'ambush'},
+      {name:'Spearman',icon:'spear',aoe:'pierce',n:2,hp:8,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
   rift:{name:'Riftwalkers',color:'#12d69a',voidWalk:1,
     theme:'Masters of displacement who win in two turns: one turn they mark, anchor and open holes, the enemy gets one turn to escape, the next turn they throw it in. They rarely kill with blows; they step through the rift and never stand and fight.',
     passive:'Rift Mark: an enemy a Riftwalker moves (or Anchors) is marked until the end of the Riftwalkers\u2019 next turn: it moves 1 less, and their throws carry it 1 hex further. Collision: an enemy thrown into another enemy hurts both, and the one it hits is knocked 1 hex. Rift Step: Riftwalkers appear on any empty hex within their move, over units, walls and water, and are never held next to an enemy. Crushing Pressure: enemies they throw into a wall or a unit take 4 slam damage instead of 2, plus 1 for each hex of the throw that was cut short (up to +2). Giants and Crown Wilds monsters cannot be moved and take the full 6. Any small walking unit thrown into a river takes 2 more (flyers stop at the bank unhurt).  Void-walkers: Riftwalkers walk across holes (voids, Void Traps, Sinkholes) as if they were solid ground and never fall in. Sinkhole (Phase Stalker) opens a hole under an enemy.',slam:2,
@@ -1143,14 +1143,14 @@ const FAC={
       {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'swap',ab2:'anchor'},
       // v54 (owner 6 Oct 2026: "they should be able to move freely... make the pattern in which they move better"; "give some HP to the units but not the leader"):
       // Rift Step (mt 'blink'): appear on any empty hex within reach, over units, walls and water, and never held next to an enemy. +2 HP each.
-      {name:'Repulsor',icon:'burst',n:2,hp:11,atk:2,def:1,mov:2,mt:'blink',at:'melee',rng:1,ab:'repel'},
-      {name:'Voidcaller',icon:'void',n:2,hp:9,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:2,ab:'voidtrap'},
-      {name:'Tidecaller',icon:'wave',n:2,hp:9,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:3,ab:'riptide'},
-      {name:'Phase Stalker',icon:'wing',n:2,hp:10,atk:2,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'phaseswap',ab2:'sinkhole'},
-      {name:'Gravity Singer',icon:'gravity',hp:9,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:3,ab:'well'}]},
+      {name:'Repulsor',icon:'burst',n:2,hp:13,atk:2,def:1,mov:2,mt:'blink',at:'melee',rng:1,ab:'repel'},
+      {name:'Voidcaller',icon:'void',n:2,hp:11,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:2,ab:'voidtrap'},
+      {name:'Tidecaller',icon:'wave',n:2,hp:11,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:3,ab:'riptide'},
+      {name:'Phase Stalker',icon:'wing',n:2,hp:12,atk:2,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'phaseswap',ab2:'sinkhole'},
+      {name:'Gravity Singer',icon:'gravity',hp:11,atk:2,def:0,mov:2,mt:'blink',at:'bolt',rng:3,ab:'well'}]},
   curse:{name:'Pale Covenant',color:'#e8e23a',
     theme:'A plague choir: everything they touch rots. Six rots, each with its own symptom (Rot, Plague, Wither, Leech, Grave Mud, Decay); the more different rots a victim carries the faster it falls apart, and the Hierophant reaps it all at once.',
-    passive:'The six rots: Rot (basic attacks), Plague (spreads to a neighbour), Wither (−1 DEF), Leech (feeds the Bloodletter), Grave Mud (−1 move), Decay (no healing). Rots stack: a target takes damage at the start of each of its turns based on how many different rots it carries: 0.5 for one, 2 for two, 3.5 for three, +1.5 for each more (leaders take 1 less, never below 0.5). Every Covenant basic attack inflicts Rot. The Bog Ring leaves pale ground under its victims, where curses bite 1 harder. GHOULS: an enemy that dies while cursed (whoever killed it) rises as a Ghoul for the Covenant at the start of its next turn (3 HP, 2 ATK); Ghouls obey no one, walk up to 2 toward the closest enemy and bite, leaving Rot (at most 5 on the board).',onHit:'rot',
+    passive:'The six rots: Rot (basic attacks), Plague (spreads to a neighbour), Wither (−1 DEF), Leech (feeds the Bloodletter), Grave Mud (−1 move), Decay (no healing). Rots stack: a target takes damage at the start of each of its turns based on how many different rots it carries: 0.5 for one, 2 for two, 3.5 for three, +1.5 for each more (leaders take 1 less, never below 0.5). Every Covenant basic attack inflicts Rot. The Bog Ring leaves pale ground under its victims, where curses bite 1 harder. GHOULS: an enemy that dies while cursed (whoever killed it) rises as a Ghoul for the Covenant at the start of its next turn (3 HP, 2 ATK); Ghouls obey no one, walk up to 2 toward the closest enemy and bite, leaving Rot (at most 2 on the board).',onHit:'rot',
     home:'Pale ground: curses cast from it last 5 turns instead of 4, and a cursed enemy standing on it takes 1 more from each curse tick. The Bog Ring turns its victims’ hexes pale for 3 turns.',blight:1,
     units:[
       {name:'Hierophant',icon:'crown',leader:1,hp:13,atk:3,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
@@ -1166,7 +1166,7 @@ const FAC={
     home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',cheap:1,
     units:[
       {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'synchrony',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
-      {name:'Second Hand',icon:'clock',n:2,hp:11,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'tempo'},// v28: Vanish removed, the retreat comes from Rewind
+      {name:'Second Hand',icon:'clock',n:2,hp:15,atk:4,def:0,mov:3,mt:'walk',at:'melee',rng:1,trait:'tempo'},// v28: Vanish removed, the retreat comes from Rewind
       {name:'Tempo Mage',icon:'hourglass',n:3,hp:8,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'quicken'},
       {name:'Rewinder',icon:'rewind',n:2,hp:8,atk:0,def:1,mov:3,mt:'walk',at:'none',rng:0,ab:'clock'}]},
   // v22 (30 Sep 2026): the 10th army. Mages with spellbooks (book: 2 or 3 spells, one shared cooldown), two Gargoyles that tank and sleep in stone, one Drake.
@@ -1209,7 +1209,7 @@ const ELEMENTALS={fire:{name:'Fire Elemental',icon:'flame',hp:11,atk:2,def:0,mov
   water:{name:'Water Elemental',icon:'wave',hp:12,atk:1,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_cleanwave','e_healtide'],trait:'spring'},
   earth:{name:'Earth Elemental',icon:'boulder',hp:14,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,book:['e_stoneskin','e_stonegrip'],trait:'bedrock'},
   air:{name:'Air Elemental',icon:'wing',hp:9,atk:2,def:0,mov:4,mt:'fly',at:'bolt',rng:2,book:['e_tailwind','e_gust'],trait:'windwalk'}};
-const ELEMENTAL_LORD={name:'Elemental Lord',icon:'crystal',hp:14,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,book:['inferno','greattide','mountaingrip','tempest'],ab2:'convergence',trait:'lord'};
+const ELEMENTAL_LORD={name:'Elemental Lord',icon:'crystal',hp:12,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,book:['inferno','greattide','mountaingrip','tempest'],ab2:'convergence',trait:'lord'};
 const elNeed=p=>EL_NEED[Math.min(3,p.evoN||0)];
 const elHexOf=(q,r)=>G.elHex?G.elHex[key(q,r)]:null;
 const onElHex=(u,el)=>{const h=elHexOf(u.q,u.r);return !!h&&h.owner===u.owner&&h.el===el};
@@ -1226,9 +1226,16 @@ function shamanCast(u,A){if(!RULES.SHAMANS||!A.el||u.kind==='wall'||u.owner<0)re
   if(p.evo&&p.evo[A.el])return;const add=(!u.leader&&onElHex(u,A.el))?2:1;p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);p.el[A.el]+=add;
   if(!SIM&&trk()){const e=tFx('mage',u.name,'Bar filled ('+EL_NAME[A.el]+')');if(e)e.uses+=add}
   if(p.el[A.el]>=elNeed(p))ascend(p,A.el)}
+// v68b Ascension Surge (owner: automatic): each new Elemental releases its element once, around itself.
+function surgeOf(u,el){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=u;CUR_TAG='Abil';CUR_NAME='Ascension Surge';const foes=G.units.filter(v=>v.kind!=='wall'&&!v.statue&&tm(v.owner)!==tm(u.owner));const mine=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)===tm(u.owner));
+  if(el==='fire')for(const v of foes.filter(v=>distUU(v,u)<=2))if(alive(v))hurt(v,2,'#ff6a2a');
+  if(el==='water')for(const v of mine.filter(v=>distUU(v,u)<=2))healUnit(v,3,'#3fa8ff');
+  if(el==='earth')for(const v of foes.filter(v=>distUU(v,u)===1))if(v.size!==2){v.st.anchor=1;fx(v,'gripped','#8a6a3a')}
+  if(el==='air')for(const v of foes.filter(v=>distUU(v,u)<=2).sort((a,b)=>distUU(a,u)-distUU(b,u)))if(alive(v)){const [cq,cr]=nearCell(u,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,u)}
+  if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[u.q,u.r],cells:ringCells().filter(([a,b])=>hd(a,b,u.q,u.r)<=2),col:EL_COL[el]});[CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function ascend(p,el){if(p.evo&&p.evo[el])return;p.evo=Object.assign({},p.evo,{[el]:1});p.evoN=(p.evoN||0)+1;const D=ELEMENTALS[el];let n=0;
   for(const u of G.units){if(u.owner!==p.id||u.el!==el||u.elemental||u.kind==='wall')continue;Object.assign(u,{name:D.name,icon:D.icon,hp:D.hp,maxhp:D.hp,atk:D.atk,def:D.def,mov:D.mov,mt:D.mt,at:D.at,rng:D.rng,rmin:1,book:D.book.slice(),ability:D.book[0],trait:D.trait,elemental:1,cd:0});
-    if(talent(p,'ascension'))u.st.surgeFree=1;n++;if(!SIM){fx(u,D.name+'!',EL_COL[el]);vfx({k:'buff',at:[u.q,u.r],col:EL_COL[el],cam:1})}}
+    if(talent(p,'ascension'))surgeOf(u,el);n++;if(!SIM){fx(u,D.name+'!',EL_COL[el]);vfx({k:'buff',at:[u.q,u.r],col:EL_COL[el],cam:1})}}
   if(!SIM){addLog(p.id,n?`The ${EL_NAME[el]} Shamans ascend: ${n} ${D.name}${n>1?'s':''} walk${n>1?'':'s'} the board.`:`The ${EL_NAME[el].toLowerCase()} is mastered, but no ${EL_NAME[el]} Shaman lives to ascend.`);
     announce({k:'note',col:EL_COL[el],t:`${EL_NAME[el]} ascends!`,s:n?`The ${EL_NAME[el]} Shamans become ${D.name}s.`:'No shaman of that element lives to ascend.'});if(trk()){const e=tFx('mage','',EL_NAME[el]+' ascends');if(e){e.uses++;e.round=G.round}}}
   if(EL_KEYS.every(k=>p.evo[k]))spawnLord(p)}
@@ -1241,7 +1248,7 @@ function spawnLord(p){if(p.lord)return;const L=G.units.find(u=>u.owner===p.id&&u
 // Elemental passives at the start of a side's turn: Living Flame burns enemies of the Fire Elementals that start next to one; Spring heals allies near a Water Elemental.
 function elementalTurn(p){if(!RULES.SHAMANS)return;
   for(const u of G.units.filter(u=>u.owner===p.id&&u.kind!=='wall')){const fl=G.units.filter(e=>e.trait==='livingflame'&&e.kind!=='wall'&&tm(e.owner)!==tm(u.owner)&&distUU(e,u)===1);
-    for(const e of fl){if(!alive(u))break;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=e;CUR_TAG='Abil';CUR_NAME='Living Flame';hurt(u,2,'#ff6a2a',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
+    for(const e of fl){if(!alive(u))break;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=e;CUR_TAG='Abil';CUR_NAME='Living Flame';hurt(u,RULES.LIVING_FLAME,'#ff6a2a',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
   for(const w of G.units.filter(w=>w.owner===p.id&&w.trait==='spring')){const o=CUR_NAME;CUR_NAME='Spring';for(const v of G.units)if(v.kind!=='wall'&&tm(v.owner)===tm(w.owner)&&distUU(v,w)<=2&&v.hp<v.maxhp){const sv=CUR_SRC;CUR_SRC=w;healUnit(v,1,'#3fa8ff');CUR_SRC=sv}CUR_NAME=o}
   for(const v of G.units)if(v.st&&v.st.skinBy===p.id){v.st.skin=0;v.st.skinBy=null}
   for(const v of G.units)if(v.st&&v.st.wardBy===p.id){v.st.ward=0;v.st.wardBy=null}}
@@ -1258,9 +1265,9 @@ const MACHINES={
   coil:{name:'Tesla Coil',icon:'coil',glyph:'●',hp:6,atk:0,def:1,mov:0,mt:'walk',at:'none',rng:0,ttl:6,trait:'tesla'},
   // v67 Gnome Fortress: set-down weapons and the empty Mech Suit
   proto:{name:'Prototype Turret',icon:'turret',glyph:'●',hp:10,atk:4,def:2,mov:0,mt:'walk',at:'bolt',rng:4,ttl:9999,trait:'construct'},
-  nest:{name:'Gun Nest',icon:'turret',glyph:'●',hp:6,atk:2,def:1,mov:0,mt:'walk',at:'bolt',rng:4,ttl:9999,trait:'construct'},
+  nest:{name:'Gun Nest',icon:'turret',glyph:'●',hp:6,atk:3,def:1,mov:0,mt:'walk',at:'bolt',rng:4,ttl:9999,trait:'construct'},
   launcher:{name:'Grenade Launcher',icon:'mortar',glyph:'●',hp:6,atk:2,def:1,mov:0,mt:'walk',at:'lob',rng:4,rmin:2,ttl:9999,trait:'construct'},
-  suit:{name:'Mech Suit',icon:'gear',glyph:'●',hp:12,atk:4,def:1,mov:0,mt:'walk',at:'none',rng:0,ttl:9999,trait:'emptysuit',inert:1},
+  suit:{name:'Mech Suit',icon:'gear',glyph:'●',hp:15,atk:4,def:1,mov:0,mt:'walk',at:'none',rng:0,ttl:9999,trait:'emptysuit',inert:1},
 };
 // v67: a weapon-carrier's stats with the weapon in hand (the unit data) and without it (bare). gearOff when it sets the weapon down, gearOn when it has it again.
 function gearData(u){const p=G.players[u.owner];return p?FAC[p.fac].units.find(d=>d.name===u.name):null}
@@ -7466,7 +7473,7 @@ function rulesTop(){
   <li>On the Crown Wilds every unit moves 1 hex further than its card says, and Leaders 2.</li>
   <li>Two-hex <b>giants</b> squeeze through one-hex gaps at the cost of 2 moves.</li>
   <li><b>Sinkholes</b> (Riftwalkers): cracked red ground under a unit falls at the start of the Riftwalkers’ next turn. Move off it, or the unit dies (a Leader or giant takes 6). Riftwalkers walk across holes; nobody else can.</li>
-  <li><b>Gnome Fortress:</b> Engineers raise <b>shield walls</b> (3 hexes, 6 HP a piece, 3 turns) that block enemy movement and straight shots, but <b>gnome shots pass through</b> (firing slits). The Inventor, Gunners and Grenadiers can <b>Set Down</b> their weapon (1 AP, not an action): it fires on its own at the start of each gnome turn (Prototype Turret 4, Gun Nest 2, Grenade Launcher 2) and the gnome runs 1 hex further with bare hands; only a gnome of the same kind picks it up again; a wrecked weapon is rebuilt 3 turns later. Mechanics <b>build a Mech Suit</b> and step in: 12 armour, 4 ATK, 1 DEF, a flamethrower; when the armour breaks the gnome tumbles out. The Bombardier’s <b>Bomb Run</b> bombs every enemy it flies over.</li></ul>
+  <li><b>Gnome Fortress:</b> Engineers raise <b>shield walls</b> (3 hexes, 6 HP a piece, 3 turns) that block enemy movement and straight shots, but <b>gnome shots pass through</b> (firing slits). The Inventor, Gunners and Grenadiers can <b>Set Down</b> their weapon (1 AP, not an action): it fires on its own at the start of each gnome turn (Prototype Turret 4, Gun Nest 3, Grenade Launcher 2) and the gnome runs 1 hex further with bare hands; only a gnome of the same kind picks it up again; a wrecked weapon is rebuilt 3 turns later. Mechanics <b>build a Mech Suit</b> and step in: 15 armour, 4 ATK, 1 DEF, a flamethrower; when the armour breaks the gnome tumbles out. The Bombardier’s <b>Bomb Run</b> bombs every enemy it flies over.</li></ul>
   <h3>The Crown Wilds, in the order a game goes</h3><ul>
   <li><b>Your base</b> is 7 hexes on the edge of the map, filled in your colour with your banner. You deploy around it (one-tap presets per army, then move units as you like). Roads lead to the Throne Hall in the middle, to your Vault and past your Crypt.</li>
   <li><b>Rooms are hidden</b> (dark, with a ?) until one of your units steps in. Every corner of the map gets the same contents, so the start is fair.
@@ -7569,7 +7576,7 @@ function showRules(){
   <li>A ⚠ on an enemy's charge bar means their Ultimate is 1–2 charge away. Play around it.</li></ul>
   <ul>${FKEYS.map(k=>`<li><b style="color:${FAC[k].color}">${ULTS[k].name}</b> (${FAC[k].name}): ${ULTS[k].text}</li>`).join('')}</ul>
   <h3>Terrain</h3><ul><li><b>Forest</b>: hidden. A unit inside can only be targeted from 2 hexes or closer. +1 DEF. Straight shots stop at it.</li><li><b>Hill</b>: high ground. A ranged unit on it gets +1 range and +1 damage; melee attacks up the hill from lower ground deal 1 less.</li><li><b>Rock</b>: impassable, blocks shots; flyers and jumpers pass over it.</li><li><b>Shrine</b>: heals the unit on it 2 HP at the start of your turn. One drink only: the first unit it heals uses it up, and the shrine is gone (drawn dark) for the next 2 rounds, then returns.</li><li><b>Home ground</b>: any hex of your army's colour gives its home bonus (white outline). Claim more by standing on it.</li></ul>
-  <h3>Statuses and curses</h3><p><b>Chilled</b> (Frost Hold): 1 less move for 2 of its turns. <b>Frozen</b> (Frost Hold): loses its next turn (no move, attack, ability or strike-back) and stays frozen until the end of the Frost Hold's next turn, so Frost can shatter it; then it thaws, chilled for 1 turn, and can't be frozen again during its next turn. <b>Stunned</b> (the Mountain King's Earthshaker): loses its next turn, with no chill after. A unit that has just thawed or woken can't be frozen or stunned again on its next turn. Ice Lance deals double to chilled or frozen enemies, Shatter Strike double to frozen ones. Rots (Pale Covenant curses) deal damage each turn by how many <i>different</i> rots the target carries: 0.5, 2, 3.5, then +1.5 each. The six rots: Rot, Plague (spreads to an ally next to the victim), Wither (−1 DEF), Leech (each tick heals the Bloodletter), Grave Mud (−1 move), Decay (can't be healed). Units shoved off the board or into a void die; shoved into something, they take 2 slam damage (4 or more from Riftwalkers). Giants can't be moved. Leaders take 1 less per turn (never below 0.5).</p><p><b>Ghouls</b> (Pale Covenant): an enemy that dies while carrying any rot, whoever killed it, rises as a Ghoul for the Covenant at the start of the Covenant's next turn (3 HP, 2 ATK, at most 5 on the board). Ghouls obey no one: each Covenant turn they walk up to 2 hexes toward the closest enemy and bite it, leaving Rot. They are never crowned and vanish if the Covenant is knocked out.</p>
+  <h3>Statuses and curses</h3><p><b>Chilled</b> (Frost Hold): 1 less move for 2 of its turns. <b>Frozen</b> (Frost Hold): loses its next turn (no move, attack, ability or strike-back) and stays frozen until the end of the Frost Hold's next turn, so Frost can shatter it; then it thaws, chilled for 1 turn, and can't be frozen again during its next turn. <b>Stunned</b> (the Mountain King's Earthshaker): loses its next turn, with no chill after. A unit that has just thawed or woken can't be frozen or stunned again on its next turn. Ice Lance deals double to chilled or frozen enemies, Shatter Strike double to frozen ones. Rots (Pale Covenant curses) deal damage each turn by how many <i>different</i> rots the target carries: 0.5, 2, 3.5, then +1.5 each. The six rots: Rot, Plague (spreads to an ally next to the victim), Wither (−1 DEF), Leech (each tick heals the Bloodletter), Grave Mud (−1 move), Decay (can't be healed). Units shoved off the board or into a void die; shoved into something, they take 2 slam damage (4 or more from Riftwalkers). Giants can't be moved. Leaders take 1 less per turn (never below 0.5).</p><p><b>Ghouls</b> (Pale Covenant): an enemy that dies while carrying any rot, whoever killed it, rises as a Ghoul for the Covenant at the start of the Covenant's next turn (3 HP, 2 ATK, at most 2 on the board). Ghouls obey no one: each Covenant turn they walk up to 2 hexes toward the closest enemy and bite it, leaving Rot. They are never crowned and vanish if the Covenant is knocked out.</p>
   <p><b>Debuffs</b> are every harmful status: curses, chill, frozen, stun, Sunder, Seared, delay and Hex. A Cleric's <b>Mend</b> heals, then removes one debuff from its target (frozen or stunned first, then a curse, then Seared, Hex, Sunder, delay, chill).</p><ul>
   <li><b>Hex</b> (Arcane Conclave: the Enchanter): for 2 of the target's turns it has 2 less ATK and takes 1 more damage from abilities.</li>
   <li><b>Seared</b> (Ember Court: Flame Breath and Fireball): a unit they damage can't be healed until the end of its next turn, from any source: Mend, Sanctuary, Grove, the Heart, shrines, home ground, traits.</li>
@@ -7594,7 +7601,7 @@ function showQuick(){
   ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls and the Rift Beast breaks out beside the Heart · then the Collapse closes the board, slower as it goes`)}
   ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive (+${RULES.LEADERLESS_AP} without) · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free for 1 damage, and may attack at full strength once for 2 AP')}
-  ${row('Machines','Set-down weapons fire on their own at the start of the gnome turn (Prototype Turret 4 · Gun Nest 2 · Grenade Launcher 2) · never move · only a gnome of the same kind picks a weapon up · wrecked weapons are rebuilt 3 turns later · shield walls: 3 hexes, 6 HP each, 3 turns, gnome shots pass through · Mech Suit: 12 armour, 4 ATK, 1 DEF · can’t be chilled or frozen')}
+  ${row('Machines','Set-down weapons fire on their own at the start of the gnome turn (Prototype Turret 4 · Gun Nest 3 · Grenade Launcher 2) · never move · only a gnome of the same kind picks a weapon up · wrecked weapons are rebuilt 3 turns later · shield walls: 3 hexes, 6 HP each, 3 turns, gnome shots pass through · Mech Suit: 15 armour, 4 ATK, 1 DEF · can’t be chilled or frozen')}
   ${row('Per unit','Move once + one action (attack <b>or</b> ability)')}
   ${row('Damage','ATK − DEF, armour counts in full, minimum 1 (4 ATK on 3 DEF = 1). Pierce ignores DEF')}
   ${row('Riposte','Only Shieldbearer, Glacier Knight, Frost Warden, Infernal, Rampart, Penitent hit back (½) when struck in melee; not if surrounded/frozen')}
