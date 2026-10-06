@@ -1534,6 +1534,8 @@ const loneGiant=u=>RULES.LONE_GIANTS&&u.size===2&&u.kind!=='wall'&&u.owner>=0&&G
 function phalanxGroup(u){if(!RULES.PHALANX2||!u||u.kind==='wall'||u.summon||u.owner<0||!facOf(u).phalanx)return [];const p=G.players[u.owner];
   const cs=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg);if(p&&p.hold)return cs.length?[u,...cs]:[];
   const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen.length>=2?seen:[]}
+// v73b readability: how many phalanx comrades would join u's strike on t right now (+1 each)
+function phalanxJoin(u,t){if(!RULES.PHALANX2||!u||!t)return 0;let n=0;for(const v of phalanxGroup(u)){if(v===u||v.jointT===G.tok||(v.st&&v.st.frozen))continue;const set=atkCells(v);if(cells(t).some(([a,b])=>set.has(key(a,b))))n++}return n}
 function phalanxSize(u){if(RULES.PHALANX2&&u&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].hold&&facOf(u).phalanx&&!u.summon&&u.kind!=='wall')return 99;if(!RULES.PHALANX||!u||u.kind==='wall'||u.summon||!facOf(u).phalanx)return 0;
   const cs=G.units.filter(v=>v.id!==u.id&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg);if(cs.length<RULES.PHALANX-1)return 1;
   const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen.length}
@@ -5633,6 +5635,7 @@ function drawVFX(now){
   if(typeof baseDraw==='function')baseDraw();
   if(typeof elHexDraw==='function')elHexDraw();
   if(typeof stonesDraw==='function')stonesDraw();
+  if(typeof phalanxDraw==='function')phalanxDraw();
   if(typeof kingZoneDraw==='function')kingZoneDraw(now);
   if(typeof tutDraw==='function')tutDraw(now);
   pumpVFX(now);
@@ -6915,6 +6918,15 @@ const ANN_FEED_MS=20000;ANN.feed=[];ANN.fopen=false;
 // v56: each army's 7-hex base on the Crown Wilds (the treasure drop-off) is outlined in its colour, in both views
 // v68: the Shamans' element hexes (fire, water, earth, air), a soft fill in the element's colour with a small glyph.
 // v72 (owner: "the 3 pillars serve nothing"): the Standing Stones say what they are: asleep with the waking round, then a glowing ring and "hold all 3".
+// v73b: the phalanx made visible: thick light links between touching members of the side to move (and of a selected Warband unit)
+function phalanxDraw(){if(!G||typeof phalanxGroup!=='function'||!RULES.PHALANX2)return;const ctr=(q,r)=>{if(VIEW==='3d'){const t=hexTop(...world(q,r),0.9,0.03);return [t.reduce((a,b)=>a+b[0],0)/t.length,t.reduce((a,b)=>a+b[1],0)/t.length]}return px(q,r)};
+  const sel=G.sel!=null?byId(G.sel):null;const seen=new Set();ctx.save();ctx.lineCap='round';
+  for(const u of G.units){if(u.kind==='wall'||u.summon||!facOf(u).phalanx||seen.has(u.id))continue;if(u.owner!==G.cur&&!(sel&&sel.owner===u.owner))continue;const g=phalanxGroup(u);if(g.length<2){seen.add(u.id);continue}
+    for(const v of g)seen.add(v.id);const big=g.length>=5;
+    for(let i=0;i<g.length;i++)for(let k=i+1;k<g.length;k++){if(distUU(g[i],g[k])!==1)continue;const [x1,y1]=ctr(g[i].q,g[i].r),[x2,y2]=ctr(g[k].q,g[k].r);
+      ctx.globalAlpha=0.8;ctx.strokeStyle='rgba(20,20,26,.7)';ctx.lineWidth=Math.max(4,vUnit()*0.32);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      ctx.strokeStyle=big?'#ffd766':'#eef0f4';ctx.lineWidth=Math.max(2,vUnit()*0.16);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}}
+  ctx.restore()}
 function stonesDraw(){if(!G||!G.map||!G.circles)return;ctx.save();const t=performance.now()/600;
   for(const c of G.circles){const awake=G.midUp&&G.round>=c.dark;for(const [q,r] of c.stones){let x,y;if(VIEW==='3d'){const tt=hexTop(...world(q,r),0.9,0.03);polyPath(tt);x=tt.reduce((a,b)=>a+b[0],0)/tt.length;y=tt.reduce((a,b)=>a+b[1],0)/tt.length}else{[x,y]=px(q,r);hexPath(x,y,SZ*0.9)}
       ctx.globalAlpha=awake?0.35+0.2*Math.sin(t+q):0.18;ctx.fillStyle='#b48cff';ctx.fill();ctx.globalAlpha=awake?0.95:0.5;ctx.strokeStyle='#c8b6ff';ctx.lineWidth=Math.max(1.5,vUnit()*(awake?0.12:0.06));ctx.stroke()}
@@ -7249,7 +7261,7 @@ function renderDock(){
       abilsOf(u).map((k,i)=>abilBtn(k,i?'abAbil'+(i+1):'abAbil')).join('')+
       abBtn('next','abNext','▸','Next unit',`${readyUnits().length} can still act`,'<b>Next unit</b>: jumps to the next of your units that can still move, attack or use its ability.');
     def=A?abDesc:atkDesc;
-    if(tg.length)list=`<div class="tgts" aria-label="Attack targets">${tg.map(t=>{const d=basicDmg(u,t),r=retaliation(u,t);return `<button class="tgt" data-atk="${t.id}">${uIcon(t,40)}<span>${t.name} · ${fmt(t.hp)} HP<br><b>⚔ hit for ${d}</b>${d>=t.hp?' <b>KILL</b>':''}${r&&d<t.hp?` · Riposte: you take ${r} back`:''}</span></button>`}).join('')}</div>`;
+    if(tg.length)list=`<div class="tgts" aria-label="Attack targets">${tg.map(t=>{const j=phalanxJoin(u,t),d=basicDmg(u,t)+j,r=retaliation(u,t);return `<button class="tgt" data-atk="${t.id}">${uIcon(t,40)}<span>${t.name} · ${fmt(t.hp)} HP<br><b>⚔ hit for ${d}</b>${j?` (${d-j} + ${j} from the phalanx)`:''}${d>=t.hp?' <b>KILL</b>':''}${r&&d<t.hp?` · Riposte: you take ${r} back`:''}</span></button>`}).join('')}</div>`;
   }
   // v26: the target chips sit right under the unit's name, above the buttons, so they are always in view while attacking or aiming
   bar.innerHTML=head+list+`<div class="ab-btns">${btns}</div><div class="ab-desc" id="abDesc" data-def="${DOCK_DESC.push(def)-1}">${def}</div>`;wireDock();
@@ -7443,7 +7455,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.rage&&u.hp*2<=u.maxhp)tags.push('<span class="tag good">Raging: +2 ATK</span>');
   if(u.kind!=='wall'&&facOf(u).line&&!u.leader){const lb=lineBonus(u);tags.push(lb?`<span class="tag good">Formation +${lb} ATK${lb===2?' (next to the Warlord)':''}</span>`:'Battle Line: no comrade at its shoulder, no bonus')}
   if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx&&RULES.PHALANX){const z=phalanxSize(u);tags.push(z>=RULES.PHALANX?`<span class="tag good">Phalanx: ${z} standing connected, +1 ATK, +1 DEF, enemies next to it step 1 hex only</span>`:`Phalanx: ${z} of ${RULES.PHALANX} connected, no bonus yet`)}
-  if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx){const n=comradesAdj(u);{const g=phalanxGroup(u).length;tags.push(g>=2?`<span class="tag good">Phalanx of ${g}${g>=5?': +1 DEF, holds the line':''}</span>`:`Alone: no phalanx`)}
+  if(u.kind!=='wall'&&!u.summon&&facOf(u).phalanx){const n=comradesAdj(u);{const g=phalanxGroup(u).length;tags.push(g>=2?`<span class="tag good">Phalanx of ${g}: +1 ATK; when it attacks, every comrade who can also reach the target adds 1 (shown on the red damage tag); Move Phalanx moves the whole block${g>=5?'; 5 or more: +1 DEF and holds the line':''}</span>`:`Alone: no phalanx (stand next to a comrade for +1 ATK and joined strikes)`)}
     if(!hasTrait(u,'shieldwall'))tags.push(G.units.some(w=>w!==u&&w.kind!=='wall'&&w.owner===u.owner&&hasTrait(w,'shieldwall')&&distUU(w,u)===1)?'<span class="tag good">Shield Wall: 1 less from ranged attacks and abilities</span>':'No Shieldbearer beside it')}
   if(u.st.rally)tags.push('<span class="tag good">Rallied: +1 ATK until the start of its next turn</span>');
   if(u.st.shield)tags.push(`<span class="tag good">Shield ${u.st.shield}</span>`);
@@ -7777,9 +7789,9 @@ const FIG_K=()=>WIDE()?1.15:1.1,TOKEN_K=()=>0.56;// v44: smaller tokens, more he
 // How far from a piece a tap still counts as that piece, in px.
 function tapTol(){const S=VIEW==='3d'?CAM.S:SZ;return Math.max(window.innerWidth<1000?46:34,S*1.3)}
 // The damage a basic attack would deal, as a red tag beside each piece you can attack now.
-function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTurn()||u.owner!==G.cur)return;let d;try{d=basicDmg(u,t)}catch(e){return}if(!(d>0))return;
+function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTurn()||u.owner!==G.cur)return;let d,jn=0;try{jn=phalanxJoin(u,t);d=basicDmg(u,t)+jn}catch(e){return}if(!(d>0))return;
   let rb=0;try{rb=d>=t.hp?0:retaliation(u,t)}catch(e){}// v40: a Riposte target shows what it hits back
-  const tx=(d>=t.hp?'KILL ':'')+'-'+fmt(d)+(rb?`  ↩ ${fmt(rb)}`:'');ctx.font=`900 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(tx).width+fs*0.7,h=fs*1.3;
+  const tx=(d>=t.hp?'KILL ':'')+'-'+fmt(d)+(jn?` (+${jn} ⚔⚔)`:'')+(rb?`  ↩ ${fmt(rb)}`:'');ctx.font=`900 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(tx).width+fs*0.7,h=fs*1.3;
   ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-h/2,w,h,h/2);else ctx.rect(x-w/2,y-h/2,w,h);ctx.fillStyle=d>=t.hp?'#ff3b3b':'#b3141f';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
   ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tx,x,y+0.5)}
 // Zoomed in, the canvas gets an empty margin of about a third of the box on every side, so pieces at the board's edge can still be scrolled
