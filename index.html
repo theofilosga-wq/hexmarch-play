@@ -5577,7 +5577,7 @@ function tokenPath(fac,x,y,r){
    camera) keeps working on top, while the ground, terrain and miniatures become real 3D. If three.js is missing or WebGL fails, or the player
    switches it off (☰ menu, hexmarch.gl), the old 2D tabletop drawing is used unchanged.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up (same as world() in view3d.js). */
-const GL={pref:'on',ok:null,cv:null,R:null,scene:null,cam:null,sig:'',terrSig:'',tick:0,figs:new Map(),statics:null,terrDeco:null,tiles:null,tileIdx:null,water:[],glow:[],sun:null,last:0};
+const GL={pref:'on',ok:null,cv:null,R:null,scene:null,cam:null,sig:'',terrSig:'',tick:0,figs:new Map(),statics:null,terrDeco:null,tileSets:null,tileIdx:null,occ:null,occNow:null,occSig:'',water:[],glow:[],sun:null,last:0};
 try{GL.pref=localStorage.getItem('hexmarch.gl')||'on'}catch(e){}
 function glActive(){return VIEW==='3d'&&GL.pref!=='off'&&GL.ok!==false&&typeof THREE!=='undefined'&&!!G&&screen==='game'}
 function glSetPref(on){GL.pref=on?'on':'off';try{localStorage.setItem('hexmarch.gl',GL.pref)}catch(e){}if(GL.cv)GL.cv.hidden=!glActive()}
@@ -5629,15 +5629,42 @@ function glTileColor(q,r,k){
   const tf=terrAt(q,r);if(tf){const fc=new T.Color(FAC[tf].color);col.lerp(fc,G.paint[k]?0.72:0.3)}
   if(isDoomed(q,r))col.lerp(new T.Color('#ff3c28'),0.35);
   return col}
+/* v78c TEXTURED TILES (owner's tile art, 17 Oct 2026: ten ChatGPT hex renders, their top faces warped into top-down textures by
+   tests/net/tilewarp.html, saved as models/tiles/<kind>.jpg). One InstancedMesh per kind (meadow, dry, waste, lava, heart, river), every
+   cell assigned to a kind by glTileKind and tinted by instanceColor (army claims, roads, doomed hexes, hidden rooms). A hex under a
+   real-model figure takes its army's kind (Ember: lava) instead of a base under the piece. Without the textures (offline) the kinds
+   render as plain colours. */
+const TILE_TEX={meadow:'models/tiles/meadow.jpg',dry:'models/tiles/dry.jpg',waste:'models/tiles/waste.jpg',lava:'models/tiles/lava.jpg',heart:'models/tiles/heart.jpg',river:'models/tiles/river.jpg'};
+const TILE_COL={meadow:'#5b6150',dry:'#8a7f5a',waste:'#6a6560',lava:'#6a2a1e',heart:'#8a6f34',river:'#2f6c9e'};
+const ARMY_TILE={fire:'lava'};// armies whose ground has its own tile art; the rest tint the ground in their colour
+const TILE_SIDE='#2a2d33';
+function glTileMat(kind){const T=THREE;const k='tile|'+kind;if(GLC.mat[k])return GLC.mat[k];
+  const top=new T.MeshStandardMaterial({color:TILE_COL[kind]||'#555',roughness:0.95,metalness:0});
+  if(TILE_TEX[kind])new T.TextureLoader().load(TILE_TEX[kind],tex=>{tex.anisotropy=GL.R?GL.R.capabilities.getMaxAnisotropy():1;top.map=tex;top.color.set('#ffffff');top.needsUpdate=true;GL.dirty=true});
+  const side=gMat(TILE_SIDE,{roughness:0.95});return GLC.mat[k]=[side,top,side]}
 function glBuildTiles(){
-  const T=THREE;if(GL.tiles){GL.scene.remove(GL.tiles)}
-  const cells0=ringCells().filter(([q,r])=>!G.voids[key(q,r)]);
+  const T=THREE;if(GL.tileSets)for(const s of Object.values(GL.tileSets))GL.scene.remove(s);
+  const cells0=ringCells().filter(([q,r])=>!G.voids[key(q,r)]);GL.tileIdx=cells0;
   const geo=gGeo('tile',()=>{const g=new T.CylinderGeometry(0.972,0.99,0.5,6);g.translate(0,-0.25,0);return g});
-  const m=new T.InstancedMesh(geo,new T.MeshStandardMaterial({roughness:0.95,metalness:0,flatShading:true}),cells0.length);
-  m.receiveShadow=true;const o=new T.Object3D();GL.tileIdx=[];
-  cells0.forEach(([q,r],i)=>{const [x,z]=world(q,r);const lift=featAt(q,r)==='river'?-0.12:(hexRand(q,r)-0.5)*0.06;o.position.set(x,lift,z);o.updateMatrix();m.setMatrixAt(i,o.matrix);m.setColorAt(i,new T.Color('#555'));GL.tileIdx.push([q,r])});
-  GL.tiles=m;GL.scene.add(m);glPaintTiles()}
-function glPaintTiles(){if(!GL.tiles)return;GL.tileIdx.forEach(([q,r],i)=>GL.tiles.setColorAt(i,glTileColor(q,r,key(q,r))));GL.tiles.instanceColor.needsUpdate=true}
+  GL.tileSets={};for(const kind of Object.keys(TILE_COL)){const m=new T.InstancedMesh(geo,glTileMat(kind),Math.max(1,cells0.length));m.setColorAt(0,new T.Color('#ffffff'));/* allocate instanceColor on every set: the shared side material is compiled for instance colours */m.receiveShadow=true;m.count=0;m.frustumCulled=false;GL.tileSets[kind]=m;GL.scene.add(m)}
+  glPaintTiles()}
+function glTileKind(q,r,k){const T=THREE;const tint=new T.Color('#ffffff');let kind='meadow';
+  const f=featAt(q,r);
+  if(G.realm){let bd=1e9,bi=0;for(const p of G.players){if(!p.camp)continue;const d=hd(q,r,p.camp[0],p.camp[1]);if(d<bd){bd=d;bi=p.id}}const fade=Math.min(1,Math.max(0,(bd-3)/18));
+    kind=fade<0.45?'meadow':fade<0.8?'dry':'waste';if(fade<0.2&&G.players[bi])tint.lerp(new T.Color(FAC[G.players[bi].fac].color),0.18)}
+  else{if(isNoMans(q,r)&&!G.map)tint.lerp(new T.Color(GROUND.nomans),0.5);if(G.map&&isRoad(q,r))kind='dry'}
+  if(f==='hill')kind='dry';
+  if(f==='river')kind='river';
+  if(isHeart(q,r)){kind='heart';if(isCentreWall(q,r))tint.multiplyScalar(0.55)}
+  if(G.map){const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){tint.set(GROUND.hidden).multiplyScalar(1.2);return {kind,tint}}}
+  const tf=terrAt(q,r);if(tf&&kind!=='heart'&&kind!=='river'){if(ARMY_TILE[tf])kind=ARMY_TILE[tf];else tint.lerp(new T.Color(FAC[tf].color),G.paint[k]?0.6:0.3)}
+  const of=GL.occ&&GL.occ.get(k);if(of&&kind!=='heart'){if(ARMY_TILE[of])kind=ARMY_TILE[of];else tint.lerp(new T.Color(FAC[of].color),0.55)}
+  if(isDoomed(q,r))tint.lerp(new T.Color('#ff3c28'),0.4);
+  return {kind,tint}}
+function glPaintTiles(){if(!GL.tileSets||!GL.tileIdx)return;const o=new THREE.Object3D();const n={};for(const kind of Object.keys(GL.tileSets))n[kind]=0;
+  for(const [q,r] of GL.tileIdx){const k=key(q,r);const {kind,tint}=glTileKind(q,r,k);const m=GL.tileSets[kind]||GL.tileSets.meadow;const i=n[kind]++;
+    const [x,z]=world(q,r);const lift=featAt(q,r)==='river'?-0.12:(hexRand(q,r)-0.5)*0.06;o.position.set(x,lift,z);o.updateMatrix();m.setMatrixAt(i,o.matrix);m.setColorAt(i,tint)}
+  for(const kind of Object.keys(GL.tileSets)){const m=GL.tileSets[kind];m.count=n[kind];m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true}GL.dirty=true}
 
 /* ---------- static terrain: mountains (or castle walls on the Crown Wilds), fairytale forests, hills, shrines, rivers, the centre wall ---------- */
 function glInst(list,geo,mat,shadow){if(!list.length)return null;const m=new THREE.InstancedMesh(geo,mat,list.length);const o=new THREE.Object3D();
@@ -5850,7 +5877,7 @@ function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(t
   new THREE.GLTFLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map){mt.map.encoding=THREE.LinearEncoding;mt.emissive=new THREE.Color('#ffffff');mt.emissiveMap=mt.map;mt.emissiveIntensity=0.3}mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.3,1.3,1.3);mt.needsUpdate=true}/* the scene's lights are dim and tuned for flat bright colours: lift the textured model (no metal: black without an environment map) */}});
     const b=new THREE.Box3().setFromObject(o);o.userData.bb={h:b.max.y-b.min.y,y0:b.min.y,cx:(b.max.x+b.min.x)/2,cz:(b.max.z+b.min.z)/2};res(o)},undefined,e=>rej(e))}))}
 function glSwapModel(g,MD){glModel(MD.file).then(src=>{if(!g.parent&&!g.userData.pv)return;const o=src.clone();const bb=src.userData.bb;const s=MD.h*FIG3D_K/bb.h;o.scale.setScalar(s);o.position.set(-bb.cx*s,0.17-bb.y0*s,-bb.cz*s);if(MD.rot)o.rotation.y=MD.rot;
-  for(const ch of g.children.slice())if(!ch.userData.base)g.remove(ch);g.add(o);g.userData.top=0.17+bb.h*s;g.userData.bob=[];g.userData.wings=[];g.userData.spin=null;g.userData.model=1;glNoCull(g);if(typeof GL!=='undefined')GL.dirty=true}).catch(()=>{})}
+  for(const ch of g.children.slice())g.remove(ch);/* v78c (owner): no base under a real model, the hex itself takes the army's ground */o.position.y=0.03-bb.y0*s;o.traverse(m=>{if(m.isMesh&&m.material)m.material=m.material.clone()});g.add(o);g.userData.top=0.03+bb.h*s;if(g.userData.spent){g.userData.spent=undefined;glSpent(g,true)}g.userData.bob=[];g.userData.wings=[];g.userData.spin=null;g.userData.model=1;glNoCull(g);if(typeof GL!=='undefined')GL.dirty=true}).catch(()=>{})}
 function buildFigure(u,fac){
   const g0=buildFigure0(u,fac);const MD=MODELS[u.name];if(MD&&u.size!==2&&!(u.suitHp>0))glSwapModel(g0,MD);return g0}
 function buildFigure0(u,fac){
@@ -6030,7 +6057,8 @@ function buildGiant(u,fac){const g=new THREE.Group();g.userData={top:3,bob:[],wi
 const GHOST=new Map();
 function ghostOf(m){let g=GHOST.get(m);if(!g){g=m.clone();g.transparent=true;g.opacity=0.32;g.depthWrite=false;GHOST.set(m,g)}return g}
 function glSetGhost(fig,on){if(fig.userData.ghost===on)return;fig.userData.ghost=on;fig.traverse(o=>{if(!o.isMesh)return;if(on){o.userData.mat0=o.material;o.material=ghostOf(o.material);o.castShadow=false}else if(o.userData.mat0){o.material=o.userData.mat0;o.castShadow=true}})}
-function glSpent(fig,on){if(fig.userData.spent===on)return;fig.userData.spent=on;fig.traverse(o=>{if(o.userData&&o.userData.rim){o.userData.rimMat=o.userData.rimMat||o.material;o.material=on?gMat('#3a3a3a'):o.userData.rimMat}})}
+function glSpent(fig,on){if(fig.userData.spent===on)return;fig.userData.spent=on;fig.traverse(o=>{if(o.userData&&o.userData.rim){o.userData.rimMat=o.userData.rimMat||o.material;o.material=on?gMat('#3a3a3a'):o.userData.rimMat}
+  else if(fig.userData.model&&o.isMesh&&o.material&&o.material.color){if(!o.userData.col0)o.userData.col0=o.material.color.clone();o.material.color.copy(o.userData.col0).multiplyScalar(on?0.5:1);if(o.material.emissiveIntensity!=null){if(o.userData.em0==null)o.userData.em0=o.material.emissiveIntensity;o.material.emissiveIntensity=on?o.userData.em0*0.4:o.userData.em0}}})}// v78c: a spent real model darkens (it has no rim)
 function glStaticSig(){let n=G.midUp?1000:0,f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
 function glTerrSig(){let h=0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
 function glPlinth(){if(GL.plinth)GL.scene.remove(GL.plinth);const Rw=(G.Rv||G.R)*S3+1.05;
@@ -6045,7 +6073,7 @@ function glFrame(){
     const t=glTerrSig();if(t!==GL.terrSig){GL.terrSig=t;glPaintTiles();glBuildTerrDeco();glNoCull(GL.terrDeco)}}
   if(GL.throne)GL.throne.visible=!unitAt(0,0);
   if(GL.tick%6===0)glTrees();
-  GL.seen=new Set();return true}
+  GL.seen=new Set();GL.occNow=new Map();return true}
 // place (and if needed build) one unit's miniature; returns the world height of its head top
 function glUnit(u,pts,x,z,now,spent){
   const fac=u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:u.monster?'monster':'warband';
@@ -6064,10 +6092,12 @@ function glUnit(u,pts,x,z,now,spent){
   for(const w of ud.wings){w.rotation.y=w.userData.flap*(0.5+0.25*Math.sin(t*(ud.hover?7:2.5)))}
   if(ud.spin)ud.spin.rotation.y=t*18;
   glSpent(fig,!!spent);glSetGhost(fig,!!(u.st&&u.st.stealth));
+  if(ud.model&&GL.occNow&&u.owner>=0&&G.players[u.owner])for(const [q,r] of cells(u))GL.occNow.set(key(q,r),G.players[u.owner].fac);// v78c: the hex under a real model takes the army's ground
   return ud.top+lift}
 // after the units: drop the miniatures of units that are gone, then draw
 function glRender(){
   for(const [k,f] of GL.figs)if(!GL.seen.has(k)){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose());GL.figs.delete(k)}
+  {const sig=GL.occNow?[...GL.occNow.entries()].map(e=>e[0]+':'+e[1]).sort().join(';'):'';if(sig!==GL.occSig){GL.occSig=sig;GL.occ=GL.occNow;glPaintTiles()}}
   const t=performance.now()/1000;
   for(const m of GL.glow)m.material.emissiveIntensity=1.4+0.6*Math.sin(t*2.4);
   for(const w of GL.water)w.position.y=-0.06+0.015*Math.sin(t*1.5);
