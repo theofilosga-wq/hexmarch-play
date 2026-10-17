@@ -716,23 +716,23 @@ const CURSES={
  cd: turns the unit must rest after use. bot: heuristic scorer for non-damage abilities. */
 const ABIL={
   kindle:{name:'Kindle',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',dmg:2,pierce:1,paint:'area',bot:'kindle',
-    desc:'Set a 7-hex patch within 3 ablaze for 3 turns: every enemy in it takes 2 damage at once (ignoring DEF). Fire units there get +1 ATK; enemies that start a turn there take 1 damage. An enemy killed by the Kindle or by its burning ground explodes: 2 damage to every unit of its own side within 2 hexes.'},
+    desc:'Set a 7-hex patch within 3 ablaze for 3 turns: every enemy in it takes 2 damage at once (ignoring DEF). An enemy killed by the Kindle or by its burning ground explodes: 2 damage to every unit of its own side within 2 hexes.'},
   fireball:{name:'Fireball',cost:3,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:3,paint:'center',sear:1,
     desc:'Lob a fireball 2 to 4 hexes. Every enemy on the hex or next to it takes 3 damage minus DEF and is Seared: it can’t be healed until the end of its next turn. The centre hex catches fire.'},
   // v75 Imp: self-detonate for 3 ignoring DEF around it; the Imp dies (a soul). REALM.sacStack=1 lets the Hellspawn burst go off on top (tested by simulation).
-  sacrifice:{name:'Sacrifice',cost:1,cd:0,aim:'self',shape:'nova',hits:'foe',dmg:3,pierce:1,special:'sacrifice',bot:'sacrifice',
-    desc:'The Imp detonates: 3 damage ignoring DEF to every adjacent enemy. The Imp dies, and its soul goes to the Archdemon.'},
-  spin:{name:'Fire Frenzy',cost:2,cd:2,aim:'self',shape:'nova',hits:'foe',dmg:2,
-    desc:'The Hellhound snaps and burns in every direction: 2 damage minus DEF to every adjacent enemy.'},
+  sacrifice:{name:'Sacrifice',cost:1,cd:0,aim:'self',shape:'nova',hits:'foe',dmg:4,pierce:1,special:'sacrifice',bot:'sacrifice',
+    desc:'The Imp detonates: 4 damage ignoring DEF to every adjacent enemy. The Imp dies, and its soul goes to the Archdemon.'},// v77 (owner): 3 -> 4
+  spin:{name:'Fire Frenzy',cost:2,cd:3,aim:'dir',shape:'line',size:3,hits:'foe',dmg:4,special:'frenzy',bot:'frenzy',
+    desc:'The Hellhound charges up to 3 hexes in a straight line (it stops before anything in its way), then rakes the 3 hexes in front of it with flaming claws: 4 damage minus DEF to each enemy there. Its hex and the 3 clawed hexes burn red for 2 turns.'},// v77 (owner): a charge and a claw instead of the spin
   // v25 Salamander: a straight line of 3 hexes from it; every enemy on the line takes 3 minus DEF and is Seared; the line burns red for 2 turns.
   hellwhip:{name:'Hellwhip',cost:2,cd:4,aim:'dir',shape:'line',size:3,hits:'foe',dmg:2,pull:2,bot:'hellwhip',
     desc:'The Archdemon lashes its whip in a straight line 3 hexes long: every enemy on it takes 2 damage minus DEF and is dragged toward the Archdemon.'},
   spitfire:{name:'Spit Fire',cost:2,cd:2,aim:'dir',shape:'line',size:3,hits:'foe',dmg:3,paint:'area',paintTtl:2,sear:1,
     desc:'Spit a stream of fire in a straight line 3 hexes long: every enemy on it takes 3 damage minus DEF and is Seared (it can’t be healed until the end of its next turn). The 3 hexes become red ground for 2 turns.'},
-  hellbreath:{name:'Fire Breath',cost:2,cd:3,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:3,paint:'area',sear:1,
-    desc:'The Hell Drake breathes a cone 2 hexes deep: 3 damage minus DEF to each enemy in it, Seared (no healing until the end of its next turn). The cone catches fire.'},
-  breath:{name:'Flame Breath',cost:2,cd:3,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:2,pierce:1,paint:'area',sear:1,
-    desc:'Breathe a cone 2 hexes deep: 2 damage to each enemy in it, ignoring DEF, and it is Seared: it can’t be healed until the end of its next turn. The cone catches fire.'},
+  drakeball:{name:'Fireball',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:3,centre:1,paint:'area',paintTtl:3,sear:1,bot:'fireball',
+    desc:'The Hell Drake lobs a fireball 2 to 4 hexes away; it detonates on the target hex and the 6 around it: 3 damage minus DEF to every enemy there (4 on the centre hex), Seared (no healing until the end of its next turn). All 7 hexes burn red for 3 turns.'},// v77 (owner): a bomb, not another breath
+  breath:{name:'Flame Breath',cost:2,cd:3,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:3,pierce:1,paint:'area',sear:1,
+    desc:'Breathe a cone 2 hexes deep: 3 damage to each enemy in it, ignoring DEF, and it is Seared: it can’t be healed until the end of its next turn. The cone catches fire (the hexes burn red).'},// v77 (owner): 2 -> 3
   eruption:{name:'Eruption',cost:2,cd:3,aim:'self',shape:'ring',size:2,hits:'foe',dmg:2,
     desc:'Lava bursts up in a ring exactly 2 hexes out: 2 damage minus DEF to enemies in the ring. Adjacent enemies are safe.'},
 
@@ -805,8 +805,8 @@ const ABIL={
     desc:'Three bombs on a hex 2 to 4 away: every enemy on it or next to it takes 3 damage minus DEF.'},
   knockback:{name:'Knockback',cost:1,cd:2,aim:'unit',hits:'foe',los:'lob',range:1,shape:'single',dmg:2,push:2,
     desc:'A piston blow: 2 damage minus DEF to an adjacent enemy and it is knocked 2 hexes away.'},
-  overload:{name:'Overload',cost:2,cd:3,aim:'self',shape:'nova',hits:'foe',dmg:2,pierce:1,
-    desc:'The coils discharge: 2 damage ignoring DEF to every adjacent enemy.'},
+  overload:{name:'Overload',cost:2,cd:3,aim:'self',shape:'nova',hits:'foe',dmg:2,pierce:1,special:'overload',
+    desc:'The coils discharge: 2 damage ignoring DEF to every adjacent enemy; then the spark jumps from each of them to one more enemy next to it (never the same unit twice) for 1 damage ignoring DEF.'},// v77 (owner): the spark chains
   emerge:{name:'Emerge',cost:2,cd:4,aim:'self',special:'emerge',bot:'emerge',
     desc:'The Drill Mole bursts up: every adjacent enemy is stunned (loses its next turn).'},
   repair:{name:'Repair',cost:1,cd:1,aim:'unit',hits:'ally',los:'lob',range:1,shape:'single',special:'repair',amount:4,bot:'repair',
@@ -822,7 +822,7 @@ const ABIL={
   tuneup:{name:'Tune-Up',cost:1,cd:1,aim:'hex',range:2,special:'tuneup',bot:'tuneup',
     desc:'Repair 3 HP of one of your machines, Mech suits or shield walls within 2 hexes.'},
   shieldwall:{name:'Shield Wall',cost:2,cd:3,aim:'dir',shape:'line',size:3,hits:'none',special:'gnomewall',bot:'gnomewall',
-    desc:'Raise a 3-hex wall in a straight line, starting next to the Engineer, in the direction you choose. Each piece has 6 HP and lasts 3 turns. It blocks enemy movement and enemy straight shots; gnome shots pass through its firing slits.'},
+    desc:'Raise a 3-hex wall in a straight line, starting next to the Engineer, in the direction you choose. Each piece has 3 HP and lasts 3 turns. It blocks enemy movement and enemy straight shots; gnome shots pass through its firing slits.'},// v77 (owner): 6 -> 3 HP
   buildsuit:{name:'Build Suit',cost:2,cd:3,aim:'empty',range:1,special:'build',machine:'suit',bot:'buildsuit',
     desc:'Build an empty Mech Suit on an empty hex next to the Mechanic. Step onto it to climb in: the Mechanic becomes a Mech (15 HP of armour that takes hits first, 4 ATK, 1 DEF, walks 2, Flamethrower). When the armour breaks the gnome tumbles out unhurt.'},
   mechflame:{name:'Flamethrower',cost:2,cd:2,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:2,
@@ -892,7 +892,9 @@ const ABIL={
   howl:{name:'Howl of Dread',cost:2,cd:3,aim:'self',special:'howl',size:2,bot:'howl',
     desc:'A scream from the pit: every enemy within 2 is Terrified. It flees 1 hex away from the Fiend at once and, until the end of its next turn, can’t attack the Fiend or aim anything at it.'},
   possession:{name:'Possession',cost:2,cd:3,aim:'unit',hits:'foe',range:2,special:'possess',wounded:1,bot:'possess',
-    desc:'A demon slips into a wounded enemy within 2 (not a Leader, not a two-hex giant, at half its HP or less): you control it for the rest of this turn with a fresh move and action, and can turn it on its own army. It comes back to its side at the end of your turn.'},
+    desc:'The Possessor slips INTO a wounded enemy within 2 (not a Leader, not a two-hex giant, at half its HP or less) and vanishes from the board. You control the host every turn (move, attack, ability) with a fresh move and action right away; it takes 1 damage ignoring DEF at the start of each of your turns. It stays yours until the host dies or you choose Step Out (free): the Possessor then reappears next to it and rests 4 turns. While inside, the Possessor cannot be hit.'},// v77 (owner): the demon rides the victim until it leaves
+  stepout:{name:'Step Out',cost:0,cd:0,free:1,aim:'self',special:'stepout',bot:'stepout',
+    desc:'The Possessor leaves this host: the host returns to its own side (spent for this turn) and the Possessor appears on a free hex next to it, spent, and Possession rests 4 turns.'},
   devour:{name:'Devour',cost:2,cd:3,aim:'unit',hits:'foe',range:1,special:'devour',bot:'devour',
     desc:'Swallow the soul of an enemy next to it that has 4 HP or less: it dies at once. Not a Leader, not a two-hex giant.'},
   mountainfall:{name:'Mountain’s Fall',cost:2,cd:4,aim:'empty',range:3,special:'mountainfall',dmg:3,bot:'mountainfall',
@@ -916,6 +918,8 @@ const ABIL={
     desc:'Heal an adjacent ally 4. Healing beyond full HP burns the nearest enemy within 3.'},
   tend:{name:'Tend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:2,shape:'single',heal:3,overheal:3,special:'tend',bot:'mend',
     desc:'Heal an ally within 2 by 3 (overflow burns the nearest enemy), and the Hospitaller strikes with +1 ATK until your next turn.'},
+  surgery:{name:'Field Surgery',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:3,heal:3,special:'surgery',bot:'surgery',
+    desc:'Walk in (its normal move), then in one action: strike an adjacent enemy for 3 minus DEF and heal the most wounded other ally next to the Hospitaller by 3 (healing beyond full HP burns the nearest enemy). Every point healed is Faith.'},// v77 (owner): the priest who fights for the healers
   aegis:{name:'Aegis',aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',shield:3,bot:'shield',
     desc:'A shield of 3 on an ally within 3 (or the Seraph Warden itself): it soaks the next 3 damage that unit would take.'},
   grove:{name:'Grove',cost:2,cd:3,aim:'hex',range:2,shape:'blast',size:1,hits:'none',special:'grove',bot:'grove',
@@ -927,6 +931,8 @@ const ABIL={
   // Iron Warband (v19c, the phalanx): the Warlord carries two abilities. March moves the block, Rally sharpens it.
   march:{name:'March',cost:1,cd:2,aim:'dir',special:'march',free:1,bot:'march',
     desc:'An order, not an action: the Warlord and every Warband unit within 2 hexes of him step 1 hex in the chosen direction, for free, keeping formation. Units in front go first; a unit whose hex ahead is blocked, or that is frozen, stays. The step uses nobody’s move or action (the Warlord may still attack or Rally), and works while engaged.'},
+  forward:{name:'Forward!',cost:1,cd:3,aim:'dir',shape:'line',size:1,hits:'none',special:'forward',bot:'forward',
+    desc:'Pick a direction: the whole connected block around the Captain steps 1 hex that way for free, keeping its shape (a member that cannot step stays). Every member that ends next to an enemy strikes it for 1.'},// v77 (owner): the Captain makes the block a moving wall
   rally:{name:'Rally',cost:1,cd:3,aim:'self',shape:'aura',size:2,hits:'ally',special:'rally',bot:'rally',
     desc:'Every other Warband unit within 2 hexes of the Warlord heals 1 and gets +1 ATK until the start of your next turn.'},
   charge:{name:'Charge',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:4,special:'dash',dmg:5,
@@ -1047,6 +1053,9 @@ const TRAITS={
   veteran:{name:'Veteran',text:'Levels up from kills (an enemy unit 2 XP, a camp monster 1; phalanx comrades touching the killer get half). Each level alternates +1 ATK and +2 max HP (healing 2). No cap.'},
   bodyguard:{name:'Bodyguard',text:'Basic attacks aimed at an adjacent friendly Leader hit this unit instead.'},
   hitrun:{name:'Hit and Run',text:'After a basic attack it may move again, even if it already moved.'},
+  parry:{name:'Parry',text:'The first basic attack against it in each enemy turn deals 1 less (never below 1), and if that attacker stands next to it the Swordsman answers with 2 damage minus DEF.'},// v77 (owner)
+  bloodbond:{name:'Blood Bond',text:'Whenever the Grave Knight takes damage, the Lich King heals half of it (rounded down), wherever he stands.'},// v77 (owner)
+
   charge:{name:'Charge',text:'+2 damage on a basic attack after moving 3 or more hexes this turn.'},
   thorns:{name:'Thorns',text:'Anything that hits it with a melee basic attack takes 1 damage.'},
   explosive:{name:'Explosive',text:'When it dies, it bursts: every adjacent enemy takes 2 damage minus DEF.'},
@@ -1064,7 +1073,7 @@ const TRAITS={
   regen:{name:'Regenerate',text:'Heals 1 HP at the start of your turn.'},
   scavenger:{name:'Scavenger',text:'Heals 3 HP whenever it kills a unit.'},
   unstoppable:{name:'Unstoppable',text:'Never held by Hold the Line, and can’t be chilled, frozen or mired.'},
-  rebirth:{name:'Rebirth',text:'The first time it dies it leaves an ember egg (4 HP). If the egg survives 3 turns, it hatches with half HP. Enemies can break it.'},
+  rebirth:{name:'Rebirth',text:'Every time it dies it leaves an ember egg (4 HP, 0 DEF). If the egg survives 2 turns, the Phoenix hatches at full HP. Enemies can break it. A death that leaves an egg gives no soul.'},// v77 (owner)
   egg:{name:'Ember Egg',text:'Can\u2019t move or act. Hatches into the Phoenix after 3 turns unless it is broken first.'},
   construct:{name:'Construct',text:'A built machine: it never moves and has no attack button. At the start of its owner’s turn it fires on its own, for free, at what it can reach. Cold and shocks don’t reach its gears: it can’t be chilled, frozen or stunned. It falls apart when its timer runs out, gives no Ultimate charge and no veteran star when destroyed, claims no ground, carries no relics, can’t be possessed and doesn’t keep its side alive.'},
   tesla:{name:'Tesla Coil',text:'Can’t move. At the start of its owner’s turn every enemy within 2 hexes takes 1 damage ignoring DEF, for free. Construct rules apply.'},
@@ -1086,19 +1095,19 @@ const TRAITS={
   wraith:{name:'Time Wraith',text:'Called once per game when both Second Hands have fallen: it appears next to the Chronarch at once. No ability, just a fast, heavy blade: fragile but mobile. It counts as a normal unit (charge, Warlord, staying in the game).'},
   delaybolt:{name:'Delay Bolt',text:'Its basic attack pushes back time on the target: every ability cooldown of the target gets 1 more turn, and a ready ability must wait 1 turn. Its basic attack also deals +1 damage to an enemy that a Second Hand has hit this turn (Final Second).'},
 };
-const hasTrait=(u,t)=>u&&u.trait===t;
+const hasTrait=(u,t)=>!!u&&(u.trait===t||u.trait2===t);// v77: a unit may carry a second trait (trait2)
 /* ---------- Leader talents: pick one of three per army at the start ---------- */
 const TALENTS={
-  fire:[{k:'scorch',name:'Scorched Earth',text:'Your basic attacks set the target’s hex ablaze until your next turn.'},
-        {k:'fury',name:'Pit Lord’s Fury',text:'Your Leader gets +2 ATK and +1 move.'},
-        {k:'tithe',name:'Ember Tithe',text:'+1 Ultimate charge at the start of each of your turns.'}],
-  ice:[{k:'glacial',name:'Glacial Armour',text:'Your Leader starts each of your turns with a 3-point ice shield (and can’t be pushed, pulled or thrown).'},
+  fire:[{k:'scorch',name:'Scorched Earth',text:'Your basic attacks set the target’s hex ablaze until your next turn (it feeds Wildfire).'},
+        {k:'soultithe',name:'Soul Tithe',text:'Every enemy your units kill counts as 2 souls: the Archdemon comes sooner.'},
+        {k:'hellsgate',name:'Hell’s Gate',text:'The Archdemon rises next to the unit that gathered the tenth soul, and it may move and act at once.'}],// v77 (owner): talents must change how you play
+  ice:[{k:'frozenheart',name:'Frozen Heart',text:'Your Ice Statues keep the ATK of the unit they were (instead of 2).'},
        {k:'grip',name:'Winter’s Grip',text:'Enemies that start their turn next to any of your units are chilled.'},
-       {k:'frostthrone',name:'Frozen Throne',text:'Blizzard freezes every enemy, not just those near your units.'}],
+       {k:'permafrost',name:'Permafrost',text:'The first Frost hit on a frozen enemy makes it stay frozen one turn longer (once per freeze).'}],// v77 (owner)
   giants:[{k:'avalanche',name:'Avalanche',text:'Earthquake reaches 4 hexes from each giant and deals 3 damage minus DEF.'},
           {k:'oldmountain',name:'Old Mountain',text:'Every giant standing on stone ground heals 1 HP at the start of your turn.'},
           {k:'hunters',name:'Monster Hunters',text:'Your giants’ basic attacks deal +2 damage to room monsters, Dragons, the Wanderer and the Rift Beast.'}],
-  gnomes:[{k:'bastion',name:'Bastion',text:'Your shield walls stay until destroyed, but each Engineer keeps only one wall: raising a new one tears down its old one. Build a fortress and hold it.'},
+  gnomes:[{k:'hotswap',name:'Hot Swap',text:'A gnome thrown from its wreck climbs at once into a machine of yours standing next to it, and a machine with 2 gnomes inside attacks twice a turn.'},// v77 (owner)
           {k:'workshop',name:'Spare Parts',text:'Every wrecked machine of yours leaves 2 scrap instead of 1.'},
           {k:'salvage',name:'Quick Hands',text:'Your machines are built without the still turn: Build, and you climb in at the start of your next turn.'}],
   arcane:[{k:'martyrdom',name:'Martyrdom',text:'A Cleric\u2019s Mend also heals the Cleric itself by 2.'},
@@ -1108,7 +1117,7 @@ const TALENTS={
            {k:'discipline',name:'Shield Discipline',text:'All your units get +1 DEF while next to an ally.'},
            {k:'warchief',name:'Drillmaster',text:'Move as One carries the block 1 hex further.'}],
   rift:[{k:'horizon',name:'Event Horizon',text:'Your throws slam for 1 more damage (5 instead of 4).'},
-        {k:'phasestep',name:'Phase Step',text:'Your rift gate works from any hex, not just teal ground.'},
+        {k:'aftershock',name:'Aftershock',text:'When one of your holes closes, every enemy next to it takes 2 damage ignoring DEF.'},// v77 (owner)
         {k:'gravitylord',name:'Gravity Lord',text:'Rift Storm holes pull from 3 hexes away instead of 2.'}],
   curse:[{k:'plaguewind',name:'Plague Wind',text:'Your curses last 1 turn longer.'},
          {k:'chorus',name:'Martyr’s Chorus',text:'When one of your units dies, enemies next to it get Plague.'},
@@ -1127,7 +1136,7 @@ function bankOf(p){return talent(p,'pockets')?4:(FAC[p.fac].bank||0)}
 
 /* ---------- Ultimates: one per army, once per game ---------- */
 const ULTS={
-  fire:{name:'Wildfire',text:'Every enemy takes 1 damage, ignoring DEF, or 2 if it is standing on red ground. Then the hex under every enemy bursts into flame for 3 turns.'},
+  fire:{name:'Wildfire',text:'Every burning hex on the board erupts: the unit standing on it takes 3 damage ignoring DEF (your own fire units are immune). Then the fire spreads to every hex next to a burning hex for 2 turns. Where nothing burns, nothing happens: Kindle, breaths, the Fireball, Fire Frenzy, Hellspawn and Scorched Earth feed it.'},// v77 (owner): the old flat 1 to everyone was 'questionable'
   ice:{name:'Blizzard',text:'Every enemy takes 1 damage and is chilled. Enemies within 2 of any Frost Hold unit are frozen for their next turn.'},
   giants:{name:'Earthquake',text:'Every enemy within 3 of a giant takes 2 damage minus DEF and is shoved 1 hex away from the nearest giant.'},
   gnomes:{name:'Overdrive',text:'Every machine of yours is fully repaired, and every machine and the Behemoth may move and act again this turn.'},
@@ -1144,9 +1153,10 @@ const ULTS={
 const P_=(o)=>Object.assign({pawn:1,mt:'march',at:'fwd',rng:1,mov:3,def:0},o);
 const FAC={
   fire:{name:'Ember Court',color:'#ff4a3d',
-    theme:'Demons and fire. Imps that detonate, hounds and a Phoenix that comes back, a fiend that spreads fear, a Possessor that turns your enemies, a Devourer that eats the dying, a Hell Drake. All of it feeds the Archdemon.',
-    passive:'Souls: every Ember unit that falls and every enemy the Court kills is a soul (an Imp’s Sacrifice 2, every death next to the Soul Devourer 2); at 10 souls the Archdemon rises next to the Pit Lord (2 hexes, 18 HP, 4 ATK, Hellwhip), or at once if the whole Court falls. The Archdemon FEEDS: whenever a unit it has wounded dies, it gains +1 ATK and heals 2, with no limit. Hellspawn: a dying Ember unit bursts for 2 ignoring DEF on every adjacent enemy and its hex burns red. Seared targets can’t be healed until the end of their next turn.',
+    theme:'Demons and fire. Rogue demons that do not buff each other or work as a team: each one uses fire to kill and torment, and every death, theirs or their enemies’, is a soul. In the end they are sacrificed to summon the Archdemon: the Court’s carry and its only sure way to victory.',// owner's words, 17 Oct 2026
+    passive:'Souls: every Ember unit that falls and every enemy the Court kills is a soul (a Sacrificed Imp and a death next to the Soul Devourer count 2; a Phoenix that leaves an egg counts 0). At 10 souls the Archdemon rises next to the Pit Lord (2 hexes, 18 HP, 4 ATK, Hellwhip), or at once if the whole Court falls. The Archdemon FEEDS: whenever a unit it has wounded dies, it gains +1 ATK and heals 2, with no limit. Hellspawn: a dying Ember unit bursts for 2 ignoring DEF on every adjacent enemy and its hex burns red. Seared targets can’t be healed until the end of their next turn.',
     home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage, and Crown Wilds monsters on it burn for 1 each round. An enemy standing on red ground moves 1 less.',homeAtk:1,
+    homeRealm:'Burning ground: there is no home ground on the Realm, only the fire you make. Hexes set alight by Kindle, the breaths, the Fireball, Fire Frenzy, Hellspawn or Scorched Earth are red while they burn: fire units on them get +1 ATK, any other unit that starts its turn on one takes 1 damage, and enemies on them move 1 less.',
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
     units:[
       // v75 (brief): demons only. Expendable Imps and Soul Wisps feed the Archdemon; Hellhounds, the Hellknight and the Magma Wyrm are the core kept beside it.
@@ -1158,11 +1168,12 @@ const FAC={
       {name:'Dread Fiend',icon:'wraith',aoe:'cleave',hp:15,atk:3,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'howl',trait:'dread',guard:1},
       {name:'Possessor',icon:'ghost',hp:9,atk:2,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'possession'},
       {name:'Soul Devourer',icon:'skull',hp:11,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'devour',trait:'devourer'},
-      {name:'Hell Drake',icon:'drake',hp:12,atk:3,def:0,mov:3,mt:'fly',at:'lob',rng:3,rmin:2,ab:'hellbreath'}]},
+      {name:'Hell Drake',icon:'drake',hp:12,atk:3,def:0,mov:3,mt:'fly',at:'lob',rng:3,rmin:2,ab:'drakeball'}]},
   ice:{name:'Frost Hold',color:'#5cc8ff',
     theme:'Marks, then freeze, then shatter: move as a group and cast on the same target. The dead you froze rise as Ice Statues.',
     passive:'Frostbite: every Frost hit chills and leaves a frost mark; at 4 marks the enemy freezes and loses its next turn. A frozen enemy stays frozen until the end of the Frost Hold’s next turn and does not thaw when hit: every Frost hit on it deals +2 (Ice Lance and Shatter Strike still double). Ice Statues: an enemy unit that dies frozen becomes an Ice Statue on your side (6 HP, 2 ATK, 1 DEF, walks 1, every hit leaves a mark), at most 3; they never melt. The Rime Mammoth marks every enemy it walks past or stands beside at your turn start.',
-    home:'Blue ground: any enemy that starts its turn on blue ground is chilled. Chilling or freezing an enemy turns its hex blue for 2 turns.',homeChill:1,
+    home:'Blue ground: any enemy that starts its turn on blue ground is chilled. Chilling or freezing an enemy turns its hex blue for 2 turns.',
+    homeRealm:'Frost ground: chilling or freezing an enemy turns its hex blue for 2 turns; an enemy that starts its turn on blue ground is chilled. No home ground on the Realm.',homeChill:1,
     units:[
       {name:'Ice Queen',icon:'crown',leader:1,hp:15,atk:2,def:2,mov:2,mt:'walk',at:'bolt',rng:3,ab:'blizzardburst',ab2:'deepwinter'},
       // v64 (owner 6 Oct 2026): the Frostlings leave; a splitting Frost Colossus and a third Hailcaller take their places
@@ -1173,9 +1184,9 @@ const FAC={
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
     theme:'Five walking fortresses that start strong: they stride over mountains and rivers and leave stones for their kin.',
     passive:'Giants fill two hexes, move 3 and walk over mountains and rivers (never through the Heart’s wall). Pushes and pulls move them half as far; they fall only into two holes in a row. Giant Remains: a fallen giant leaves 2 stones on its hexes; a giant of its army that steps on one heals 6 and gains +2 max HP; an enemy standing on it crushes it. Lone Giants: a giant with no other giant of yours within 3 has +1 ATK and +1 DEF. Last of the Old Ones: when a giant falls, every giant still standing heals 3 and gains +1 ATK. Swarmed: +1 damage taken from melee while 2 or more enemies stand next to it.',gateBlock:1,swarmed:1,
-    home:'Stone ground: giants can’t be chilled, frozen or mired there.',stoneFoot:1,
+    home:'Stone ground: giants can’t be chilled, frozen or mired there.',homeRealm:'No home ground on the Realm.',stoneFoot:1,
     units:[
-      {name:'Mountain King',icon:'crown',leader:1,hp:16,atk:3,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'mountainfall'},
+      {name:'Mountain King',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'mountainfall'},
       {name:'Boulder Hurler',icon:'boulder',hp:14,atk:2,def:1,mov:2,mt:'diag',at:'lob',rng:3,rmin:2,ab:'boulder'},
       {name:'Rampart',icon:'tower',hp:20,atk:2,def:3,mov:2,mt:'line',at:'melee',rng:1,ab:'chainhook',trait:'bodyguard'},
       {name:'Cliff Breaker',icon:'hammer',aoe:'cleave',hp:15,atk:4,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'smash'},
@@ -1183,7 +1194,7 @@ const FAC={
   gnomes:{name:'Gnome Tinkers',color:'#ff6ec7',
     theme:'Pilots: every gnome builds and climbs into its own machine. On foot it is weak; inside it is strong and has one extra trick. Wrecks become scrap, and scrap builds a Behemoth.',
     passive:'Build: use Build (you may move first), stand still through your next turn, and you climb in for free at the start of the turn after. Inside, the machine’s HP take every hit; when they are gone the pilot is thrown clear, alive, and the wreck stays as scrap on its hex. Any gnome that walks onto scrap collects it; an enemy standing on it crushes it. Behemoth: 3 scrap raise a 2-hex Behemoth (30 HP, 6 ATK, shoots 4) that fires with 1 gnome on foot inside and moves with 3; one at a time, rebuildable. Overdrive (Ultimate): every machine is repaired and acts again.',
-    home:'Pink ground: +1 move for gnomes (machines get nothing). An enemy standing on pink ground takes 1 more from machine attacks.',homeMov:1,
+    home:'Pink ground: +1 move for gnomes (machines get nothing). An enemy standing on pink ground takes 1 more from machine attacks.',homeRealm:'No home ground on the Realm.',homeMov:1,
     units:[
       // v67 Gnome Fortress (owner 6 Oct 2026). bare = the gnome's stats after it sets its weapon down.
       // v75 (brief): PILOTS. Every gnome has its own machine (mach): on foot a weak version of its role, inside it stronger with one extra ability.
@@ -1200,29 +1211,30 @@ const FAC={
   arcane:{name:'Circle of Priests',color:'#8f5cff',
     theme:'Healers only, no shields: expose a priest, mend it, and the light that overflows burns the nearest enemy. Faith brings the dead back.',
     passive:'Overflowing light: every heal beyond full HP becomes damage on the nearest enemy within 3. Faith: every point of healing a priest lands on a priest unit is 1 Faith; at 16 the unit that died last rises where it fell at full HP (then 22, then 28, +6 each time). Holy ground heals allies and burns enemies; Bless gives +1 ATK and healing over time; Mend lifts a debuff; whoever hits a blessed priest takes 2 back. No tank and low HP: a priest alone dies in a turn or two.',
-    home:'Indigo ground: your units standing on it heal 1 at the start of your turn. An enemy standing on indigo ground can’t be healed.',homeHeal:1,
+    home:'Indigo ground: your units standing on it heal 1 at the start of your turn. An enemy standing on indigo ground can’t be healed.',
+    homeRealm:'Holy ground: the Druids’ Groves are the only ground you make: your units on a Grove heal 1 at the start of your turn and enemies on it burn for 1. No home ground on the Realm.',homeHeal:1,
     units:[
       {name:'High Priest',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'sanctuary'},
       {name:'Cleric',icon:'hand',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'mend'},
       {name:'Seraph',icon:'wing',n:2,hp:10,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'layhands'},// v76 (owner): no shields in this army, only heals: the Seraph heals by touch
       {name:'Druid',icon:'staff',n:2,hp:8,atk:1,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'grove'},
       {name:'Lightwarden',icon:'sun',n:2,hp:9,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bless'},
-      {name:'Hospitaller',icon:'hammer',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'tend'}]},// v76 (owner): the fighter who heals and strikes
+      {name:'Hospitaller',icon:'hammer',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'surgery'}]},// v76 (owner): the fighter who heals and strikes
   warband:{name:'Iron Warband',color:'#eef0f4',
     theme:'A pure army that moves as one: shields in front, spears behind, swords on the flanks, the Warlord and the Captain inside. No spells, just formation.',
     passive:'The Phalanx: touching Warband units have +1 ATK (not the Warlord) and strike together (every member in reach adds 1 to a comrade’s blow); five or more also have +1 DEF and hold the line. Move as One: the whole connected block moves in one direction as far as its slowest member minus 1, plus 1 if the Warlord or the Captain is in it; any unit may leave the block and move on its own at full speed. Veterans: kills give XP (an enemy unit 2, a camp monster 1; phalanx comrades touching the killer get half) and each level alternates +1 ATK and +2 max HP, with no cap. Shield Wall: a Shieldbearer and everyone next to it take 1 less from ranged hits.',line:1,phalanx:1,
-    home:'Bone ground: +1 ATK. An enemy standing on bone ground takes 1 more from Warband basic attacks.',homeAtk:1,
+    home:'Bone ground: +1 ATK. An enemy standing on bone ground takes 1 more from Warband basic attacks.',homeRealm:'No home ground on the Realm: the Phalanx is the Warband’s ground.',homeAtk:1,
     units:[
       // v75 (brief): a pure army that moves as one. Warlord, Captain (second in command), 3 shields, 3 spears, 2 swords. Berserker, Outrider and Raider are off the roster.
       {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'holdline',ab2:'rally'},
-      {name:'Captain',icon:'helm',hp:14,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'rally',trait:'captain'},
+      {name:'Captain',icon:'helm',hp:14,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'forward',trait:'captain'},
       {name:'Shieldbearer',icon:'shield',n:3,hp:12,atk:2,def:2,mov:3,mt:'walk',at:'melee',rng:1,trait:'shieldwall'},
       {name:'Spearman',icon:'spear',aoe:'pierce',n:3,hp:8,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'},
-      {name:'Swordsman',icon:'axe',aoe:'cleave',n:2,hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
+      {name:'Swordsman',icon:'axe',aoe:'cleave',n:2,hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,trait:'parry'}]},// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
   rift:{name:'Riftwalkers',color:'#12d69a',voidWalk:1,
     theme:'Aliens of advanced technology. They never fight: they crack the ground, pull, push and swap, and throw you in. Every ability grows with use.',
     passive:'Levels: each Riftwalker ability levels up from its own uses (after 2, 6 and 12): Repel throws 3, 4, 5 hexes; Riptide drags from 4, 5, 6 (at level 3 it also tugs 2 more enemies); the Gravity Well grows wider, then pulls 2 hexes. Cracks: holes show as cracks and open at the start of the Riftwalkers’ next turn, then last 4 turns. Black Hole (Sovereign): when it opens it pulls every enemy within 2 one hex toward it. Phase Link: instead of moving, swap places with any Riftwalker of yours. Rift Step: Riftwalkers appear on any empty hex within their move. Collision: an enemy thrown into another hurts both. Anchored or marked enemies move 1 less and fly 1 further.',slam:2,
-    home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move, and a Riftwalker push or pull moves an enemy on teal 1 hex further. ',gate:1,
+    home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move, and a Riftwalker push or pull moves an enemy on teal 1 hex further. ',homeRealm:'No home ground on the Realm: Riftwalkers shape the board with cracks and holes instead.',gate:1,
     units:[
       // v75 (brief): displacement and traps only. Every ability levels up from its own uses (2, then 4 more, then 6 more); Phase Link swaps places with any teammate instead of moving.
       {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'blackhole',ab2:'anchor'},
@@ -1235,7 +1247,8 @@ const FAC={
   curse:{name:'Pale Covenant',color:'#e8e23a',
     theme:'A plague choir of the undead: cast your rots and run. Different rots on one target are the point, and the cursed dead rise as Ghouls.',
     passive:'The six rots: Rot (basic attacks), Plague (spreads to a neighbour), Frailty (−1 ATK, and it stacks), Leech (feeds the Grave Leech), Grave Mud (−1 move), Decay (no healing). A target takes damage at the start of each of its turns by how many different rots it carries: 0.5 for one, 2 for two, 3.5 for three, +1.5 for each more. The Lich King’s Requiem reaps it all at once. Ghouls: an enemy that dies cursed rises as a Ghoul for the Covenant (3 HP, 2 ATK); Ghouls obey no one and bite the nearest enemy. Cap 2, +1 every 5 rounds and +1 per Requiem.',onHit:'rot',
-    home:'Pale ground: curses cast from it last 5 turns instead of 4, and a cursed enemy standing on it takes 1 more from each curse tick. The Bog Ring turns its victims’ hexes pale for 3 turns.',blight:1,
+    home:'Pale ground: curses cast from it last 5 turns instead of 4, and a cursed enemy standing on it takes 1 more from each curse tick. The Bog Ring turns its victims’ hexes pale for 3 turns.',
+    homeRealm:'Bog: the Bog Ring turns its victims’ hexes pale for 3 turns: curses cast from pale ground last 5 turns instead of 4, and a cursed enemy on it takes 1 more from each tick. No home ground on the Realm.',blight:1,
     units:[
       {name:'Lich King',icon:'crown',leader:1,hp:13,atk:3,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
       {name:'Plague Bearer',icon:'skull',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'miasma'},
@@ -1243,11 +1256,11 @@ const FAC={
       {name:'Grave Leech',icon:'drop',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'siphon',trait:'scavenger'},
       {name:'Bog Hag',icon:'hand',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bogring'},
       {name:'Bell Wraith',icon:'bell',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'diag',rng:3,ab:'silence'},
-      {name:'Grave Knight',icon:'tomb',n:2,hp:18,atk:2,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'consecrate',trait:'bodyguard'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Banshee and a second Grave Knight took their places
+      {name:'Grave Knight',icon:'tomb',n:2,hp:18,atk:2,def:2,mov:2,mt:'walk',at:'melee',rng:1,trait:'bodyguard',trait2:'bloodbond'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Banshee and a second Grave Knight took their places
   chrono:{name:'Hourglass Order',color:'#c81ca6',
     theme:'One assassin, six helpers. Alone the Second Hand strikes once for 3; every supporter adds a piece (another strike, a sharpened blow, an echo, a free step, a rewound clock), and every kill makes the pieces they give hit harder.',
     passive:'The combo is a synergy. Quicken (Tempo Mage): one more strike. Synchrony (Chronarch): +1 on every strike this turn. Hourglass Sand (Sand Weaver): the next strike ignores DEF and deals +2. Echo (Echo Knight): the next strike lands on a second adjacent enemy too. Chase the Clock (Rewinder): a free move after every kill. Overwind (Tick): an ally’s abilities are ready again and it may act again. Rewind Wounds: an ally’s HP back to the start of your previous turn. Tempo stacks: every kill by a Second Hand is a stack on that blade, with no cap; each stack adds +1 to every strike a supporter granted it (never to its own single blow). Stealth: a blade that killed this turn can only be targeted from 2 hexes or closer.',bank:2,
-    home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',cheap:1,
+    home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',homeRealm:'No home ground on the Realm.',cheap:1,
     units:[
       {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:4,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'synchrony',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
       // v76 (owner 18 Oct 2026): the combo is a SYNERGY. Alone the assassin strikes once for 3; every supporter adds a piece; the Tempo stacks (kills) only grow the pieces the supporters give.
@@ -1261,7 +1274,7 @@ const FAC={
   mage:{name:'Force of the Elements',color:'#2bff5a',
     theme:'The hardest army to play: shamans seek their element shrines, ascend into Elementals, and finally the Elemental Lord walks, growing with every Elemental spell.',
     passive:'Ascension (instead of an Ultimate): every shaman spell adds 1 to its element’s bar (fire, water, earth, air), 2 when cast from that element’s shrine; a shaman standing on its own shrine also adds 1 at the start of your turn. The first bar needs 3, then 4, 5 and 6. A full bar turns both shamans of that element into Elementals for good. When all four have ascended the Elemental Lord (2 hexes) appears next to the Elder Shaman; from then on every spell an Elemental casts powers up the Lord’s spell of that element (+1 damage, healing or push per 2 spells). The Lord’s Great Tide starts small (2 to allies, 1 to itself) and grows. Element shrines stand at random spots in the fading land, one per element.',
-    home:'Element hexes: on your side of the board lie one patch of fire, water, earth and air ground (3 hexes each). A shaman casting from a hex of its own element fills its bar twice as fast.',
+    home:'Element hexes: on your side of the board lie one patch of fire, water, earth and air ground (3 hexes each). A shaman casting from a hex of its own element fills its bar twice as fast.',homeRealm:'Element shrines: one shrine of fire, water, earth and air stands in the fading land; a shaman casting from its own element’s shrine fills its bar twice as fast. No home ground on the Realm.',
     units:[
       {name:'Elder Shaman',icon:'crown',leader:1,hp:14,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:2,book:['spiritflame','renewal','ancestralward','spiritwalk']},
       {name:'Flame Shaman',icon:'fireball',n:2,hp:8,atk:2,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['flare','flamelash'],el:'fire'},
@@ -1293,11 +1306,11 @@ function splitUnit(t){const S=SPLITS[t.name];if(!RULES.SPLITTERS||!S||t.kind==='
 /* v68 Ascension. p.el = bars, p.evo = elements already ascended, p.evoN = how many. Units carry u.el (their element). */
 const EL_KEYS=['fire','water','earth','air'];const EL_NAME={fire:'Fire',water:'Water',earth:'Earth',air:'Air'};const EL_COL={fire:'#ff6a2a',water:'#3fa8ff',earth:'#8a6a3a',air:'#d8eef2'};
 const EL_NEED=[2,3,4,5];
-const ELEMENTALS={fire:{name:'Fire Elemental',icon:'flame',hp:14,atk:2,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_flare','e_flamelash'],trait:'livingflame'},
+const ELEMENTALS={fire:{name:'Fire Elemental',icon:'flame',hp:14,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_flare','e_flamelash'],trait:'livingflame'},
   water:{name:'Water Elemental',icon:'wave',hp:15,atk:1,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_cleanwave','e_healtide'],trait:'spring'},
   earth:{name:'Earth Elemental',icon:'boulder',hp:17,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,book:['e_stoneskin','e_stonegrip'],trait:'bedrock'},
   air:{name:'Air Elemental',icon:'wing',hp:12,atk:2,def:0,mov:4,mt:'fly',at:'bolt',rng:2,book:['e_tailwind','e_gust'],trait:'windwalk'}};
-const ELEMENTAL_LORD={name:'Elemental Lord',icon:'crystal',hp:18,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,book:['inferno','greattide','mountaingrip','tempest'],ab2:'convergence',trait:'lord'};
+const ELEMENTAL_LORD={name:'Elemental Lord',icon:'crystal',hp:18,atk:4,def:1,mov:3,mt:'walk',at:'melee',rng:1,book:['inferno','greattide','mountaingrip','tempest'],ab2:'convergence',trait:'lord'};
 const elNeed=p=>(G&&G.realm?[3,4,5,6]:EL_NEED)[Math.min(3,p.evoN||0)];// v75 (brief): 3, 4, 5, 6 on the Realm
 const lordPow=(u,el)=>{const p=G.players[u.owner];return p&&p.lordPow?Math.floor((p.lordPow[el]||0)/2):0};// v75: +1 per 2 Elemental spells of that element
 const elHexOf=(q,r)=>G.elHex?G.elHex[key(q,r)]:null;
@@ -1370,7 +1383,7 @@ function gearOn(u){const d=gearData(u);if(!d||!d.bare)return;Object.assign(u,{at
 /* v75 PILOTS (brief). A gnome's machine is in its unit data (mach). walkerIn2 puts the gnome inside: the machine's HP are its armour (suitHp), its stats
    and abilities replace the gnome's until the armour is gone. Scrap (loot kind 'scrap') is collected by walking onto it; enemies standing on it crush it.
    The Behemoth is a 2-hex summon crewed by gnomes on foot (b.crew); it fires with 1 and moves with 3. */
-const BEHEMOTH={name:'Behemoth',icon:'gear',size:2,hp:30,atk:6,def:2,mov:2,mt:'walk',at:'bolt',rng:4,aoe:'splash',ab:'disembark',trait:'behemoth'};
+const BEHEMOTH={name:'Behemoth',icon:'gear',size:2,hp:25,atk:6,def:2,mov:2,mt:'walk',at:'bolt',rng:4,aoe:'splash',ab:'disembark',trait:'behemoth'};
 const isGnome=u=>!!(RULES.PILOTS2&&u&&u.kind!=='wall'&&!u.summon&&!u.behemoth&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='gnomes'&&u.mach);
 function gnomeAbils(u){if(u.walker==='pilot'){const o=[];if(u.ability)o.push(u.ability);if(u.ability2)o.push(u.ability2);o.push('eject');return o}
   const o=[];if(!u.build)o.push('build2');if(u.name==='Mechanic')o.push('repair');const p=G.players[u.owner];if((p.scrap||0)>=3&&!G.units.some(b=>b.behemoth&&b.owner===u.owner))o.push('buildbehemoth');return o}
@@ -1379,9 +1392,34 @@ function walkerIn2(u){const M=u.mach;if(!M||u.walker)return;u.pre={at:u.at,atk:u
   u.suitHp=u.suitMax=Math.round(M.hp*(G.realm?REALM.hpMul:1));u.suitItem='walker';u.walker='pilot';u.walkerName=M.name;u.build=null;
   if(!SIM){addLog(u.owner,`The ${u.name} climbs into its ${M.name} (${u.suitHp} HP of machine).`);fx(u,M.name+'!','#ff6ec7');vfx({k:'buff',at:[u.q,u.r],col:'#ff6ec7',cam:1});if(trk()){const e=tFx('gnomes',u.name,'Machines built');if(e)e.uses++}}}
 function scrapAt(q,r,owner){if(SIM||!solid(q,r)||!passable(q,r))return;G.loot=G.loot||[];G.loot.push({id:G.nid++,kind:'scrap',owner,q,r,carrier:null})}
-function pilotOut(u){const p=u.pre||{};Object.assign(u,{at:p.at,atk:p.atk,rng:p.rng,rmin:p.rmin,aoe:p.aoe,mov:p.mov,mt:p.mt,def:p.def,ability:p.ability,ability2:p.ability2,trait:p.trait,cd:0,cd2:0,burrow:0});
+function pilotOut(u){crewOut(u);u.wreckAt=[u.q,u.r];const p=u.pre||{};Object.assign(u,{at:p.at,atk:p.atk,rng:p.rng,rmin:p.rmin,aoe:p.aoe,mov:p.mov,mt:p.mt,def:p.def,ability:p.ability,ability2:p.ability2,trait:p.trait,cd:0,cd2:0,burrow:0});
   const wq=u.q,wr=u.r;const m=occ();const c=DIRS.map(([a,b])=>[u.q+a,u.r+b]).filter(([q,r])=>passable(q,r)&&!m.get(key(q,r)));if(c.length){u.q=c[0][0];u.r=c[0][1];scrapAt(wq,wr,u.owner);if(utal(u,'workshop')&&c[1])scrapAt(c[1][0],c[1][1],u.owner)}else{const c2=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))).sort((a,b)=>hd(a[0],a[1],wq,wr)-hd(b[0],b[1],wq,wr))[0];if(c2)scrapAt(c2[0],c2[1],u.owner)}
   u.walker=null;u.walkerName=null;u.pre=null;u.suitItem=null;u.suitHp=0;u.suitMax=0}
+/* v77 Hot Swap (gnome talent, owner 17 Oct 2026): a pilot thrown from its wreck climbs at once into one of its side's piloted machines standing
+   next to it (u.crew2 = the second gnome, off the board); a machine with a second gnome inside attacks twice a turn (u.dbl in attack()). When that
+   machine is wrecked both gnomes are thrown clear. */
+function hotSwap(u){if(!utal(u,'hotswap')||!alive(u)||u.walker)return;const w=G.units.find(v=>v!==u&&v.owner===u.owner&&v.walker==='pilot'&&!v.crew2&&alive(v)&&(distUU(u,v)===1||(u.wreckAt&&distUC(v,u.wreckAt[0],u.wreckAt[1])===1)));if(!w)return;
+  const i=G.units.indexOf(u);if(i>=0)G.units.splice(i,1);w.crew2=u;u.inside=w.id;u.moved=true;u.acted=true;
+  if(!SIM){addLog(u.owner,`Hot Swap: the ${u.name} climbs into the ${w.walkerName}. Two gnomes inside: it fires twice.`);fx(w,'2 gnomes','#ff6ec7');if(trk()){const e=tFx('gnomes','','Hot Swap (talent): swaps');if(e)e.uses++}}}
+function crewOut(w){const c=w.crew2;if(!c)return;w.crew2=null;c.inside=null;const m=occ();const spot=DIRS.map(([a,b])=>[w.q+a,w.r+b]).filter(([q,r])=>passable(q,r)&&!m.get(key(q,r)))[0]||allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))).sort((a,b)=>hd(a[0],a[1],w.q,w.r)-hd(b[0],b[1],w.q,w.r))[0];
+  if(!spot)return;c.q=spot[0];c.r=spot[1];c.moved=true;c.acted=true;G.units.push(c);if(!SIM)addLog(c.owner,`The second gnome, the ${c.name}, is thrown clear too.`)}
+/* v77 POSSESSION (owner 17 Oct 2026): the Possessor vanishes into its host (host.poss.host) and rides it until the host dies or the player chooses
+   Step Out (the host's temporary second ability). possTick: 1 damage ignoring DEF to every host at the start of the Ember turn. possEnd: the host
+   goes back to its side, spent; the Possessor reappears on a free hex next to it (or where it fell), spent, and Possession rests 4 turns. In the bot
+   lookahead (SIM) the stored Possessor is cloned before it is touched, because cloneU is shallow. */
+function possEnd(host,dead){const P0=host.poss;if(!P0)return;host.owner=P0.owner;host.home=P0.home;host.ability2=P0.ab2||null;host.cd2=P0.cd2||0;delete host.poss;host.moved=true;host.acted=true;
+  let d=P0.host;if(!d)return;if(SIM)d=cloneU(d);d.inside=null;const p=G.players[d.owner];if(!p||!p.alive)return;
+  const m=occ();const near=DIRS.map(([a,b])=>[host.q+a,host.r+b]);if(dead)near.unshift([host.q,host.r]);
+  const spot=near.filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))&&!isTrap(q,r)&&!holeAt(q,r))[0]||allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))&&!isTrap(q,r)).sort((a,b)=>hd(a[0],a[1],host.q,host.r)-hd(b[0],b[1],host.q,host.r))[0];
+  if(!spot)return;d.q=spot[0];d.r=spot[1];d.moved=true;d.acted=true;setCd(d,'possession',5);G.units.push(d);
+  if(!SIM){addLog(d.owner,dead?`${host.name} dies and the Possessor crawls out of the corpse.`:`The Possessor steps out of ${host.name}; ${host.name} returns to its side, dazed.`);fx(d,'steps out','#e8e23a');vfx({k:'buff',at:[d.q,d.r],col:'#e8e23a'});if(trk()){const e=tFx('fire','Possessor',dead?'Possession: host died':'Possession: stepped out');if(e)e.uses++}}}
+function possTick(p){for(const u of G.units.slice()){if(!u.poss||u.owner!==p.id||!alive(u))continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Abil';CUR_NAME='Possession (host burns)';if(!SIM)vfx({k:'buff',at:[u.q,u.r],col:'#e8e23a'});hurt(u,1,'#e8e23a',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
+// v77 Forward! (Captain): the connected block of army units around u (touching, one-hex, not frozen)
+function blockOf(u){const cs=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg&&v.size!==2&&!(v.st&&v.st.frozen>0)&&alive(v));const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen}
+// v77 Aftershock (Riftwalker talent): a hole of p's that closes at k shakes every enemy next to it for 2, ignoring DEF
+function aftershock(p,k){if(!talent(p,'aftershock'))return;const [q,r]=k.split(',').map(Number);const vs=G.units.filter(v=>v.kind!=='wall'&&alive(v)&&!v.statue&&!v.egg&&tm(v.owner)!==p.team&&distUC(v,q,r)===1);if(!vs.length)return;
+  const src=G.units.find(v=>v.owner===p.id&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===p.id&&v.kind!=='wall')||null;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Abil';CUR_NAME='Aftershock (talent)';
+  if(!SIM)vfx({k:'buff',at:[q,r],col:FAC.rift.color});for(const v of vs)hurt(v,2,FAC.rift.color);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM)addLog(p.id,`Aftershock: the closing hole shakes ${vs.length} enem${vs.length===1?'y':'ies'} for 2.`)}
 function behemothDown(t){const p=G.players[t.owner];const m=occ();for(const c of (t.crew||[])){const spot=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))).sort((a,b)=>distUC(t,a[0],a[1])-distUC(t,b[0],b[1]))[0];if(!spot)continue;c.q=spot[0];c.r=spot[1];c.moved=true;c.acted=true;G.units.push(c);m.set(key(spot[0],spot[1]),c)}
   for(const [q,r] of cells(t))scrapAt(q,r,t.owner);t.crew=[];if(!SIM&&p)addLog(p.id,`The Behemoth is wrecked: its crew climbs out, and 2 scrap lie where it stood.`)}
 const fortSecret=u=>!!RULES.FORTRESS&&u&&u.owner>=0&&!!G.players[u.owner]&&!!G.players[u.owner].secret;
@@ -1655,7 +1693,7 @@ function covered(t){if(RULES.HEAVY)return false;if(t.kind==='wall'||t.summon||!f
 const kingsGuard=u=>!!RULES.KINGSGUARD&&u.king&&u.kind!=='wall'&&G.players[u.owner]&&G.players[u.owner].fac==='warband'&&G.units.some(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&distUU(u,v)===1)?1:0;
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine&&MACHINES[u.wpn]?MACHINES[u.wpn].atk:0)+(RULES.FORTRESS&&u.name==='Grenadier'&&u.wpn&&fortSecret(u)?1:0)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.fed||0)+loneGiant(u)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.leader&&utal(u,'fury')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine&&MACHINES[u.wpn]?MACHINES[u.wpn].atk:0)+(RULES.FORTRESS&&u.name==='Grenadier'&&u.wpn&&fortSecret(u)?1:0)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.fed||0)+loneGiant(u)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u)+(u.oldAtk||0)-(hasCurse(u,'frailty')?Math.max(1,u.st.frailN||0):0));// v75 Frailty: −1 ATK per stack
 }
 function effDef(u){
@@ -1725,7 +1763,7 @@ function movBase(u){if(G&&G.realm&&RULES.WILDS_MOV)return u.size===2&&u.kind!=='
 const isRiftSrc=src=>!!RULES.RIFTKIT&&!!src&&src.kind!=='wall'&&!!G.players[src.owner]&&G.players[src.owner].fac==='rift';
 function rMark(t,src){if(!RULES.RIFTKIT||!t||t.kind==='wall'||!alive(t)||!isRiftSrc(src)||tm(t.owner)===tm(src.owner))return;const fresh=!(t.st.rmark>0);t.st.rmark=2;t.st.rmBy=src.owner;
   if(fresh&&!SIM){fx(t,'rift-marked','#12d69a');if(trk()){const e=tFx('rift','','Rift Mark (enemies marked)');if(e)e.uses++}}}
-function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.leader&&utal(u,'fury')?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine?1:0)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
+function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine?1:0)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
 const isRoad=(q,r)=>G.map?!!(G.roads&&G.roads[key(q,r)]):hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
@@ -1760,7 +1798,7 @@ function frostMark(src,t,n){if(!t||(t.kind==='wall'&&!wildsCreature(t))||!alive(
   if(t.st.fb>=need){if(freezeT(t,false)){t.st.fb=0;t.st.fbT=0;if(trk()&&!SIM){const e=tFx('ice','','Frostbite (freezes)');if(e)e.uses++}}else t.st.fb=need-1}
   else fx(t,'frostbite '+t.st.fb+'/'+need,'#bfefff')}
 function freezeT(t,stun){if((t.kind==='wall'&&!wildsCreature(t))||machineShrug(t))return false;if(t.st.fimm>0||(!stun&&(hasTrait(t,'unstoppable')||(facOf(t).stoneFoot&&onHome(t))))){fx(t,'resists',stun?'#d9a45b':'#5cc8ff');return false}
-  if(!(t.st.frozen>0))tSup('stasisTurns',1);t.st.frozen=Math.max(t.st.frozen||0,1);if(!stun&&RULES.FREEZE_HOLD){const by=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC.owner:G.cur;if(by!==t.owner){t.st.frzBy=by;t.st.frzLost=0}}if(stun)t.st.stun=1;else{t.st.stun=0;frostPaint(t,null)}fx(t,stun?'stunned':'frozen',stun?'#d9a45b':'#5cc8ff');return true}
+  if(!(t.st.frozen>0))tSup('stasisTurns',1);t.st.frozen=Math.max(t.st.frozen||0,1);if(!stun&&RULES.FREEZE_HOLD){const by=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC.owner:G.cur;if(by!==t.owner){t.st.frzBy=by;t.st.frzLost=0;t.st.pf=0}}if(stun)t.st.stun=1;else{t.st.stun=0;frostPaint(t,null)}fx(t,stun?'stunned':'frozen',stun?'#d9a45b':'#5cc8ff');return true}
 const isOutpost=(q,r)=>!!(G.outposts&&G.outposts.some(o=>o[0]===q&&o[1]===r&&solid(q,r)));
 // Ultimates recharge: each cast raises the next one's cost (8, 11, 14, ...).
 function ultNeed(p){return RULES.ULT+RULES.ULT_STEP*(p.ultN||0)-(talent(p,'paradox')?3:0)-(RULES.HEAVY&&!RULES.FORTRESS&&talent(p,'surge')?3:0)}
@@ -1774,7 +1812,7 @@ function makeUnit(p,d){
   const F=FAC[p.fac];
   const u={id:G.nid++,owner:p.id,leader:!!d.leader,pawn:!!d.pawn,name:d.name,icon:d.icon,glyph:glyphOf(d),hp:d.hp,maxhp:d.hp,atk:d.atk,def:d.def,
     mov:d.mov,mt:d.mt,at:d.at,aoe:d.aoe||null,rng:d.rng,rmin:d.rmin||(d.at==='lob'?2:1),size:d.size||F.size||1,dir:0,q:0,r:0,moved:false,acted:false,cd:0,mom:false,rage:!!d.rage,
-    stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:d.ab||null,ability2:d.book?null:(d.ab2||null),cd2:0,book:d.book?d.book.slice():null,trait:d.trait||null,home:p.home,wpn:d.wpn||null,wpnHome:d.wpn||null,el:d.el||null,mach:d.mach||null};
+    stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:d.ab||null,ability2:d.book?null:(d.ab2||null),cd2:0,book:d.book?d.book.slice():null,trait:d.trait||null,trait2:d.trait2||null,home:p.home,wpn:d.wpn||null,wpnHome:d.wpn||null,el:d.el||null,mach:d.mach||null};
   if(G&&G.realm)u.hp=u.maxhp=Math.round(u.hp*(REALM.hpBy[p.fac]||REALM.hpMul));// v74 the Realm: every unit has twice the HP (no AP: every unit acts every turn)
   return u;
 }
@@ -2087,7 +2125,7 @@ function hellAura(p){if(!RULES.ARCHDEMON)return;const ds=G.units.filter(d=>d.kin
     for(const v of G.units.slice())if(v.owner===p.id&&v.kind!=='wall'&&!v.statue&&alive(v)&&distUU(v,d)===1)hurt(v,1,'#ff4a3d',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 function beginTurn(){
   const p=P(G.cur);tbRecord(p);hellAura(p);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
-  for(const u of G.units)if(u.owner===p.id){if(G.realm){u.hpPrev2=u.hpPrev1;u.hpPrev1=u.hp}u.sync=0;u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0}}}// Rally (+1 ATK) and Guard last until the start of your next turn
+  for(const u of G.units)if(u.owner===p.id){if(G.realm){u.hpPrev2=u.hpPrev1;u.hpPrev1=u.hp}u.sync=0;u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.dbl=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0;if(!(u.st.frozen>0))u.st.chill=0}/* v77 (owner): a quiet turn clears the marks and the chill */}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
     for(const w of G.units){if(w.owner!==p.id||w.kind==='wall'||w.at==='none'||w.egg||distUU(w,s)<=2)continue;const set=atkCells(w,m);if(cells(s).some(([q,r])=>set.has(key(q,r))))n++}
@@ -2097,7 +2135,7 @@ function beginTurn(){
   if(RULES.FORTRESS&&p.salvAP>0){G.ap=Math.min(RULES.AP_CAP+3,G.ap+p.salvAP);if(!SIM&&trk()){const e=tFx('gnomes','','Salvage (talent)');if(e){e.uses++;e.apGranted=(e.apGranted||0)+p.salvAP}}p.salvAP=0}
   if(p.hold)p.hold=0;
   if(G.realm){p.sumDone=false;if(p.ctrl!=='human'){const s=realmSites(p).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0))[0];if(!(s&&realmSummon(p,realmBotPick(p),true,s)))realmSummon(p,realmBotPick(p),true)}}// v74 the Realm: bots call their unit at once; people pick in the dock
-  dreadTurn(p);mammothTurn(p);
+  dreadTurn(p);mammothTurn(p);possTick(p);
   if(RULES.SHAMANS&&G.realm&&p.fac==='mage')for(const u of G.units.filter(u=>u.owner===p.id&&u.el&&!u.elemental&&u.kind!=='wall')){if(!onElHex(u,u.el)||(p.evo&&p.evo[u.el]))continue;p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);p.el[u.el]+=1;if(!SIM){fx(u,'shrine +1','#2bff5a');if(trk()){const e=tFx('mage',u.name,'Shrine (bar +1)');if(e)e.uses++}}if(p.el[u.el]>=elNeed(p))ascend(p,u.el)}// v75: a shaman on its own shrine
   if(RULES.PILOTS2)for(const u of G.units.filter(u=>u.owner===p.id&&isGnome(u))){if(u.build==='done')walkerIn2(u);else if(u.build==='started'){u.build='still';u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'stand still','#ff6ec7')}}
   machineFire(p,'Auto-fire','Basic');ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
@@ -2107,7 +2145,7 @@ function beginTurn(){
   if(FAC[p.fac].gateBlock&&trk()&&!SIM){const m=occ();for(const u of G.units){if(u.owner!==p.id||u.size!==2)continue;let n=0;for(const [q,r] of cells(u))for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;if(passable(a,b)&&!m.get(key(a,b))&&gated(m,a,b))n++}if(n){const e=tFx(p.fac,u.name,'Gated by walls');if(e){e.blocked+=n;e.uses++}}}}
   for(const u of G.units)if(u.cut===p.id)delete u.cut;// Final Second stamps from this side's previous turn
   for(const t of G.units.filter(t=>t.summon&&!t.statue&&t.owner===p.id)){if(--t.ttl>0)continue;/* statues have no timer */G.units.splice(G.units.indexOf(t),1);
-    if(t.egg){const u=t.hatch;u.q=t.q;u.r=t.r;u.hp=Math.ceil(u.maxhp/2);u.reborn=true;u.bar=false;u.fought=false;u.cd=0;u.moved=false;u.acted=false;u.st={chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}};
+    if(t.egg){const u=t.hatch;u.q=t.q;u.r=t.r;u.hp=u.maxhp;/* v77 (owner): hatches at full HP */u.reborn=true;u.bar=false;u.fought=false;u.cd=0;u.moved=false;u.acted=false;u.st={chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}};
       G.units.push(u);addLog(p.id,`${u.name} rises from the ashes!`);fx(u,'reborn','#ffb03d');vfx({k:'buff',at:[u.q,u.r],col:'#ffb03d'})}
     else{addLog(p.id,`${t.name} falls apart.`);vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:FAC[p.fac].color});if(trk()&&!SIM){const d=tStat(t);if(d){d.died=G.round;d.diedBy='expired'}}salvage(t)}}
   if(G.eggs)for(const e of G.eggs.filter(e=>e.owner===p.id)){if(--e.ttl>0)continue;G.eggs.splice(G.eggs.indexOf(e),1);
@@ -2115,7 +2153,7 @@ function beginTurn(){
     if(!spot)continue;const u=e.u;u.q=spot[0];u.r=spot[1];u.hp=Math.ceil(u.maxhp/2);u.reborn=true;u.bar=false;u.fought=false;u.cd=0;u.moved=false;u.acted=false;u.st={chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}};
     G.units.push(u);addLog(p.id,`${u.name} rises from the ashes!`);fx(u,'reborn','#ffb03d');vfx({k:'buff',at:[u.q,u.r],col:'#ffb03d'})}
   if(G.wells){for(const w of G.wells.filter(w=>w.owner===p.id)){wellPull(w,true);if(--w.ttl<=0)G.wells.splice(G.wells.indexOf(w),1)}}
-  if(G.traps)for(const k of Object.keys(G.traps)){const t=G.traps[k];if(t.owner===p.id&&--t.ttl<=0){delete G.traps[k];addLog(p.id,'A Void Trap closes.')}}
+  if(G.traps)for(const k of Object.keys(G.traps)){const t=G.traps[k];if(t.owner===p.id&&--t.ttl<=0){delete G.traps[k];aftershock(p,k);addLog(p.id,'A Void Trap closes.')}}
   if(G.sinks)for(const k of Object.keys(G.sinks)){const sk=G.sinks[k];if(sk.owner!==p.id)continue;delete G.sinks[k];const [q,r]=k.split(',').map(Number);const v=unitAt(q,r),by=byId(sk.by);
     if(v&&v.kind!=='wall'&&!voidWalk(v)&&(v.leader||v.size===2)){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=by;CUR_TAG='Abil';CUR_NAME=ABIL.sinkhole.name;addLog(p.id,`The ground gives way under the ${v.name}: ${RULES.SINK_DMG} damage, but it climbs out.`);if(!SIM)vfx({k:'fall',at:[q,r],to:[q,r]});hurt(v,RULES.SINK_DMG,'#12d69a');[CUR_SRC,CUR_TAG,CUR_NAME]=o;continue}
     if(v&&v.kind==='wall')continue;// a wall piece or a monster holds the ground
@@ -2147,7 +2185,7 @@ function beginTurn(){
     // Bless (Lightwarden, v27): heals 1 at the start of each of the owner's turns while it lasts (Seared blocks it like any heal).
     if(u.st.bless>0&&healUnit(u,1,'#ffe9a8','Bless',u.st.blessBy))vfx({k:'buff',at:[u.q,u.r],col:'#ffd766'});
     if(u.size===2&&talent(p,'oldmountain')&&onHome(u))healUnit(u,1,'#5fd68e','Old Mountain (talent)');
-    if(u.leader&&talent(p,'glacial')&&!(u.st.shield>0)){u.st.shield=3;u.st.shieldBy=-2;fx(u,'ice shield','#bfefff')}
+
     if(G.units.some(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&utal(v,'grip')&&distUU(u,v)===1))chillT(u,2,{fac:'ice',name:'Winter’s Grip (talent)'});
     // Frost Hold's cold: blue ground under you chills you at the start of your turn.
     if(coldIn&&cells(u).some(([q,r])=>terrAt(q,r)==='ice')&&chillT(u,2,{fac:'ice',name:'Blue ground cold'}))fx(u,'chilled','#5cc8ff');
@@ -2155,8 +2193,7 @@ function beginTurn(){
   }
   // Ultimate charge: +1 per flag (Outpost) this side owns (v23: owned, no unit needed), +1 for the Throne.
   {let c=0;const held=[];const nf=G.realm?0:flagsOf(p.id);if(nf){c+=nf;held.push(nf)}for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&!u.statue)for(const [q,r] of cells(u)){if(q===0&&r===0&&G.round>=RULES.CENTRE_FROM&&oldCentre())c+=THRONE.charge}
-   if(territoryLeader()===p.id)c+=1;
-   if(talent(p,'tithe'))c+=1;
+   if(!G.realm&&territoryLeader()===p.id)c+=1;
    for(const x of G.relics||[])if(x.kind==='idol'&&x.carrier!=null){const cu=byId(x.carrier);if(cu&&cu.owner===p.id)c+=1}
    if(c&&(p.ult||0)<ultNeed(p)){addCharge(p.id,c);if(held.length)addLog(p.id,`${held[0]} flag${held[0]>1?'s':''} owned: Ultimate charge ${p.ult}/${ultNeed(p)}.`)}}
   const gemAP=wildsGems(p);// v76 (owner): the Time Wraith is gone
@@ -2205,7 +2242,7 @@ function endTurn(){
   if(RULES.RIFTKIT)stormTick(p);
   if(RULES.FREEZE_HOLD)for(const v of G.units){if(!v.st||!(v.st.frozen>0)||v.st.frzBy!==p.id||!v.st.frzLost)continue;v.st.frozen=0;v.st.frzBy=null;v.st.frzLost=0;v.st.fimm=1;if(!v.st.stun)v.st.chill=Math.max(v.st.chill||0,1);v.st.stun=0;if(!SIM)fx(v,'thaws','#bfefff')}
   if(RULES.PHALANX&&FAC[p.fac].phalanx&&!SIM&&trk()){const n=G.units.filter(u=>u.kind!=='wall'&&u.owner===p.id&&inPhalanx(u)).length;const e=tFx(p.fac,'','Phalanx: turns ended in formation');if(e){e.turns=(e.turns||0)+1;if(n){e.uses++;e.hits+=n}}}
-  claimGround(p);
+  if(!G.realm)claimGround(p);// v77 (owner): no home ground on the Realm, only ground that abilities paint
   if(RULES.PILOTS2)for(const u of G.units)if(u.owner===p.id&&isGnome(u)&&u.build==='still'){if(!u.moved&&key(u.q,u.r)===u.buildPos)u.build='done';else{u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'build delayed','#ff6ec7')}}
   for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){
     // Defender Barrier (v25): a unit that made no basic attack and used no ability this turn has a Barrier until an enemy hit breaks it.
@@ -2228,7 +2265,7 @@ function endTurn(){
   // Seared lasts through the whole turn and ends here.
   for(const u of G.units)if(u.owner===p.id&&u.st&&u.st.seared>0)u.st.seared=0;
   for(const u of G.units)if(u.cut===p.id)delete u.cut;
-  for(const u of G.units)if(u.poss&&u.owner===p.id){u.owner=u.poss.owner;u.home=u.poss.home;delete u.poss;u.moved=true;u.acted=true;addLog(u.owner,`${u.name}’s soul returns.`)}
+  // v77: a possessed host stays possessed across turns (see possEnd / possTick)
   if(p.extraTurn){p.extraTurn=false;addLog(p.id,'Time Stop: another turn!');beginTurn();return}
   advance();
 }
@@ -2255,7 +2292,7 @@ function checkVictory(){
 }
 function eliminate(p,why){
   if(!p.alive)return;
-  p.alive=false;for(const u of G.units)if(u.owner===p.id){const x=relicOf(u);if(x)dropRelic(x,u);if(G.loot&&!SIM)dropLootOf(u)}G.units=G.units.filter(u=>u.owner!==p.id);if(G.eggs)G.eggs=G.eggs.filter(e=>e.owner!==p.id);if(G.wells)G.wells=G.wells.filter(w=>w.owner!==p.id);if(G.traps)for(const k of Object.keys(G.traps))if(G.traps[k].owner===p.id)delete G.traps[k];
+  p.alive=false;for(const u of G.units.slice())if(u.poss&&u.owner===p.id)possEnd(u,true);/* v77: hosts go home when the Court falls */for(const u of G.units)if(u.owner===p.id){const x=relicOf(u);if(x)dropRelic(x,u);if(G.loot&&!SIM)dropLootOf(u)}G.units=G.units.filter(u=>u.owner!==p.id);if(G.eggs)G.eggs=G.eggs.filter(e=>e.owner!==p.id);if(G.wells)G.wells=G.wells.filter(w=>w.owner!==p.id);if(G.traps)for(const k of Object.keys(G.traps))if(G.traps[k].owner===p.id)delete G.traps[k];
   for(const k of Object.keys(G.flagOwner||{}))if(G.flagOwner[k]===p.id)delete G.flagOwner[k];if(G.spring&&G.spring.owner===p.id)G.spring.owner=null;// its flags and the Wellspring turn neutral
   addLog(p.id,`${FAC[p.fac].name} ${why} and is out.`);
   announce({k:'out',fac:p.fac,pid:p.id,why,left:G.players.filter(x=>x.alive).length});
@@ -2269,9 +2306,9 @@ function soulCount(t){if(!RULES.ARCHDEMON||t.kind==='wall'||t.summon||t.statue||
   const fp=G.players.filter(p=>p.fac==='fire'&&p.alive&&!p.demon);for(const p of fp){
     const mine=t.owner===p.id,byMe=CUR_SRC&&CUR_SRC.kind!=='wall'&&CUR_SRC.owner===p.id&&tm(t.owner)!==p.team;if(!mine&&!byMe)continue;
     if(!mine&&G.realm&&REALM.soulMode==='own')continue;// v75 test switch: souls only from the Court's own dead
-    const ns=hasTrait(t,'wisp')?2:(t.sacrificed&&G.realm?REALM.sacSouls:1);p.souls=(p.souls||0)+ns;if(mine)p.soulsLost=(p.soulsLost||0)+ns;else p.soulsKilled=(p.soulsKilled||0)+ns;
+    let ns=hasTrait(t,'wisp')?2:(t.sacrificed&&G.realm?REALM.sacSouls:1);if(!mine&&talent(p,'soultithe'))ns=Math.max(ns,2);/* v77 Soul Tithe */if(mine&&hasTrait(t,'rebirth')&&!t.fell&&solid(t.q,t.r))continue;/* v77: a Phoenix that will leave an egg is no soul */p.souls=(p.souls||0)+ns;if(mine)p.soulsLost=(p.soulsLost||0)+ns;else p.soulsKilled=(p.soulsKilled||0)+ns;
     const need=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;const ready=need?p.souls>=need:(p.soulsLost||0)>=RULES.DEMON_LOST&&(p.soulsKilled||0)>=RULES.DEMON_KILLS;
-    if(ready){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&u!==t);G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:L?[L.q,L.r]:[t.q,t.r]})}}}
+    if(ready){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&u!==t);const gate=talent(p,'hellsgate')&&byMe?[CUR_SRC.q,CUR_SRC.r]:null;G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:gate||(L?[L.q,L.r]:[t.q,t.r])})}}}
 // v62 (owner): an enemy killed by the Pit Lord's Kindle (the blast or its burning ground) explodes: RULES.KINDLE_BLAST damage to every unit of its own side within 2.
 function kindleBlast(t){if(!RULES.KINDLE_BLAST||t.kind==='wall'||!(CUR_NAME==='Kindle'||CUR_NAME==='Kindle ground'))return;const src=CUR_SRC;if(!src||src.kind==='wall'||tm(src.owner)===tm(t.owner))return;
   const vs=G.units.filter(v=>v!==t&&v.kind!=='wall'&&!v.statue&&tm(v.owner)===tm(t.owner)&&distUU(v,t)<=2);if(!SIM){vfx({k:'ab',ab:'eruption',shape:'blast',from:[t.q,t.r],to:[t.q,t.r],cells:allCells().filter(([a,b])=>hd(a,b,t.q,t.r)<=2),col:'#ff4a3d',cam:1});addLog(src.owner,`The ${t.name} bursts in hellfire!`)}
@@ -2285,7 +2322,7 @@ function kill(t){
   if(t.monster){if(!SIM)monsterSlain(t);return}
   if(G.loot&&!SIM)dropLootOf(t);
   if(t.kind==='wall'){if(RULES.FORTRESS&&t.wall==='shield'&&t.creator!=null&&G.players[t.creator]&&talent(G.players[t.creator],'salvage'))G.players[t.creator].salvAP=(G.players[t.creator].salvAP||0)+1;addLog(null,`A ${t.wall} wall shatters.`);return}
-  if(t.poss){t.owner=t.poss.owner;t.home=t.poss.home;delete t.poss}
+  if(t.poss)possEnd(t,true);// v77: the host died, the Possessor steps out
   if(RULES.GHOULS)ghoulMark(t);iceStatue(t);
   if(G.realm&&!SIM&&t.size===2&&t.kind!=='wall'&&G.players[t.owner]&&G.players[t.owner].fac==='giants'&&t.name!=='Archdemon'){G.loot=G.loot||[];for(const [q,r] of cells(t))if(solid(q,r)&&passable(q,r))G.loot.push({id:G.nid++,kind:'remains',owner:t.owner,q,r,carrier:null});if(!SIM)addLog(t.owner,`The ${t.name}'s remains lie on the ground: a giant that steps on them heals 6 and grows.`)}// v75 Giant Remains
   if(t.demonHit!=null&&t.kind!=='wall'){const dm=G.units.find(v=>v.name==='Archdemon'&&v.owner===t.demonHit&&alive(v));if(dm){dm.oldAtk=(dm.oldAtk||0)+1;healUnit(dm,2,'#ff4a3d','Archdemon feeds');if(!SIM){fx(dm,`feeds: +1 ATK (${dm.oldAtk})`,'#ff4a3d');addLog(dm.owner,`The Archdemon feeds on the ${t.name}: +1 ATK and heals 2.`);if(trk()){const e=tFx('fire','Archdemon','Feeds (grows)');if(e)e.uses++}}}}
@@ -2360,7 +2397,7 @@ function kill(t){
   if(hasTrait(t,'martyr'))for(const v of near)if(alive(v)&&tm(v.owner)===tm(t.owner))healUnit(v,3,'#5fd68e','Martyr (trait)');
   // Last Rites (Circle of Priests talent): when one of your units dies, your units next to it heal 3.
   if(utal(t,'lastrites'))for(const v of near)if(alive(v)&&v.owner===t.owner)healUnit(v,3,'#d7c9ff','Last Rites (talent)');
-  if(hasTrait(t,'rebirth')&&!t.reborn&&solid(t.q,t.r)&&!unitAt(t.q,t.r)){G.units.push({id:G.nid++,owner:t.owner,leader:false,pawn:false,summon:true,egg:true,hatch:cloneU(t),ttl:3,name:'Ember Egg',icon:'egg',glyph:'●',hp:4,maxhp:4,atk:0,def:0,mov:0,mt:'walk',at:'none',aoe:null,rng:0,rmin:1,size:1,dir:0,q:t.q,r:t.r,moved:true,acted:true,cd:0,mom:false,rage:false,stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:null,trait:'egg',home:t.home});addLog(t.owner,`${t.name} collapses into an ember egg. Break it before it hatches!`)}
+  if(hasTrait(t,'rebirth')&&!t.fell&&solid(t.q,t.r)&&!unitAt(t.q,t.r)){G.units.push({id:G.nid++,owner:t.owner,leader:false,pawn:false,summon:true,egg:true,hatch:cloneU(t),ttl:2,name:'Ember Egg',icon:'egg',glyph:'●',hp:4,maxhp:4,atk:0,def:0,mov:0,mt:'walk',at:'none',aoe:null,rng:0,rmin:1,size:1,dir:0,q:t.q,r:t.r,moved:true,acted:true,cd:0,mom:false,rage:false,stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:null,trait:'egg',home:t.home});addLog(t.owner,`${t.name} collapses into an ember egg. Break it before it hatches!`)}
   // Stone Sleep (Gargoyle): it turns into a statue on its hex unless it had only 4 max HP left, fell off the board or into a void.
   if(hasTrait(t,'stonesleep')&&!t.fell&&Math.floor(t.maxhp/2)>=4&&solid(t.q,t.r)&&!unitAt(t.q,t.r))makeStatue(t);
   if(t.statue&&trk()&&!SIM){const e=tFx(G.players[t.owner].fac,'Gargoyle','Stone Sleep: statue smashed');if(e)e.uses++;addLog(t.owner,'The Gargoyle statue is smashed: that Gargoyle is gone for good.')}
@@ -2390,7 +2427,7 @@ function spawnArchdemon(p,at){if(!RULES.ARCHDEMON||!p||p.fac!=='fire'||p.demon)r
   const [aq,ar]=at||p.home;const m=occ();const tmp={size:2,q:0,r:0,dir:0,kind:'unit',mt:'walk',owner:p.id};let spot=null;
   const cs=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))&&!isTrap(q,r)).sort((a,b)=>hd(a[0],a[1],aq,ar)-hd(b[0],b[1],aq,ar));
   for(const [q,r] of cs){for(let d=0;d<6;d++){const a=q+DIRS[d][0],b=r+DIRS[d][1];if(passable(a,b)&&!m.get(key(a,b))&&!isTrap(a,b)){spot=[q,r,d];break}}if(spot)break}
-  if(!spot)return null;p.demon=1;const u=makeUnit(p,ARCHDEMON);u.size=2;u.q=spot[0];u.r=spot[1];u.dir=spot[2];G.units.push(u);
+  if(!spot)return null;p.demon=1;const u=makeUnit(p,ARCHDEMON);u.size=2;u.q=spot[0];u.r=spot[1];u.dir=spot[2];if(!talent(p,'hellsgate')){u.moved=true;u.acted=true}/* v77: it acts next turn, unless Hell's Gate */G.units.push(u);
   if(!SIM){tStat(u);const e=tFx('fire','Archdemon','Summoned');if(e)e.uses++;addLog(p.id,`The Ember Court has fallen, and from its ashes rises the Archdemon: ${ARCHDEMON.hp} HP, ${ARCHDEMON.atk} ATK, walks ${ARCHDEMON.mov}.`);
     fx(u,'ARCHDEMON','#ff4a3d');vfx({k:'buff',at:[u.q,u.r],col:FAC.fire.color,cam:1});announce({k:'demon',fac:p.fac})}
   return u}
@@ -2402,12 +2439,12 @@ const ICE_STATUE={name:'Ice Statue',icon:'crystal',hp:6,atk:2,def:1,mov:1,mt:'wa
 // v75 Frost Hold engine: an enemy army unit that dies frozen becomes an Ice Statue for the side that froze it (cap RULES.ICE_STATUES; camp monsters never).
 function iceStatue(t){if(!G.realm||!t||t.kind==='wall'||t.summon||t.statue||t.egg||t.owner<0||!t.st||!(t.st.frozen>0)||t.st.stun)return;const by=t.st.frzBy;const p=by!=null?G.players[by]:null;if(!p||!p.alive||p.fac!=='ice'||tm(p.id)===tm(t.owner))return;
   if(G.units.filter(v=>v.owner===p.id&&v.trait==='icestatue').length>=RULES.ICE_STATUES)return;const c=cells(t).find(([q,r])=>passable(q,r)&&!unitAt(q,r));if(!c)return;
-  const s=makeUnit(p,ICE_STATUE);s.summon=true;s.ttl=99999;s.q=c[0];s.r=c[1];s.moved=true;s.acted=true;G.units.push(s);
+  const s=makeUnit(p,ICE_STATUE);if(talent(p,'frozenheart'))s.atk=Math.max(s.atk,t.atk);/* v77 Frozen Heart */s.summon=true;s.ttl=99999;s.q=c[0];s.r=c[1];s.moved=true;s.acted=true;G.units.push(s);
   if(!SIM){tStat(s);addLog(p.id,`The frozen ${t.name} shatters into an Ice Statue that fights for the Frost Hold.`);fx(s,'Ice Statue','#bfefff');vfx({k:'buff',at:c,col:'#bfefff',cam:1});if(trk()){const e=tFx('ice','','Ice Statues raised');if(e)e.uses++}}}
 function mammothMarks(u,cellsBefore){if(!hasTrait(u,'mammoth')||!alive(u))return;const near=new Set();for(const [q,r] of [...cells(u),...(cellsBefore||[])])for(const v of G.units)if(v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&!v.statue&&distUC(v,q,r)===1)near.add(v);
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=u;CUR_TAG='Abil';CUR_NAME='Rime Mammoth (marks)';for(const v of near)frostMark(u,v,1);[CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function mammothTurn(p){for(const u of G.units)if(u.owner===p.id&&hasTrait(u,'mammoth'))mammothMarks(u)}
-const GHOUL={name:'Ghoul',icon:'skull',hp:5,atk:3,def:0,mov:2,mt:'walk',at:'melee',rng:1,trait:'ghoul'};
+const GHOUL={name:'Ghoul',icon:'skull',hp:5,atk:2,def:0,mov:2,mt:'walk',at:'melee',rng:1,trait:'ghoul'};
 function ghoulMark(t){if(!RULES.GHOULS||t.summon||t.monster||t.beast||t.kind==='wall'||t.owner==null||t.owner<0)return;
   if(!t.st||!t.st.curses||!Object.values(t.st.curses).some(x=>x>0))return;
   const by=t.st.curseBy!=null?byId(t.st.curseBy):null;let p=by&&by.owner>=0?G.players[by.owner]:null;
@@ -2479,21 +2516,24 @@ function hurt(t,n,col,tick){
   if(t.st&&t.st.shield>0){const a=Math.min(t.st.shield,n);t.st.shield-=a;n-=a;fx(t,'blocked','#d7c9ff');
     if(hostile){const by=t.st.shieldBy;if(by!=null&&by>=0)tSupBy(by,null,t.st.shieldNm||ABIL.aegis.name,'blocked',a);else if(by===-2)tSupBy(-1,G.players[t.owner].fac,'Glacial Armour (talent)','blocked',a)}
     if(n<=0)return 0}
-  if(t.suitHp>0&&t.kind!=='wall'){const a=Math.min(t.suitHp,n);t.suitHp-=a;n-=a;fx(t,'suit −'+a,'#c9a24a');if(t.suitHp<=0){t.suitHp=0;if(t.walker==='pilot'){const nm=t.walkerName;pilotOut(t);if(!SIM){addLog(t.owner,`The ${nm} is wrecked: the ${t.name} is thrown clear.`);fx(t,'thrown clear','#ff6ec7');vfx({k:'crack',at:[t.q,t.r],col:'#ff6ec7'});if(trk()){const e=tFx('gnomes',t.name,'Machines wrecked');if(e)e.uses++}}return 0}if(t.walker){walkerOut(t);return 0}/* the hit that breaks a Walker stops at the machine */suitBreak(t)}if(n<=0)return 0}
+  if(t.suitHp>0&&t.kind!=='wall'){const a=Math.min(t.suitHp,n);t.suitHp-=a;n-=a;fx(t,'suit −'+a,'#c9a24a');if(t.suitHp<=0){t.suitHp=0;if(t.walker==='pilot'){const nm=t.walkerName;pilotOut(t);hotSwap(t);if(!SIM){addLog(t.owner,`The ${nm} is wrecked: the ${t.name} is thrown clear.`);fx(t,'thrown clear','#ff6ec7');vfx({k:'crack',at:[t.q,t.r],col:'#ff6ec7'});if(trk()){const e=tFx('gnomes',t.name,'Machines wrecked');if(e)e.uses++}}return 0}if(t.walker){walkerOut(t);return 0}/* the hit that breaks a Walker stops at the machine */suitBreak(t)}if(n<=0)return 0}
   if(t.monster&&!tick&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner])t.lastBy=CUR_SRC.id;// v36: room monsters answer the last unit that hit them, at the next round start
   if(t.kind==='wall'&&t.by!=null&&hostile)tSupBy(t.by,null,t.abil,'blocked',Math.min(n,Math.max(0,t.hp)));
   if(trk()&&!SIM&&t.kind!=='wall'){const d=tStat(t),sc=tStat(CUR_SRC),eff=Math.min(n,Math.max(0,t.hp));d.taken+=eff;
     if(sc&&CUR_SRC!==t&&tm(CUR_SRC.owner)!==tm(t.owner)){sc.dmg+=eff;sc['dmg'+(tick?'Dot':CUR_TAG||'Other')]+=eff;const e=srcFx();if(e){e.dmg+=eff;e.hits++}planDmg(sc.fac,CUR_SRC,t,eff,tick)}
     else if(!sc&&CUR_NAME==='Burning ground'){const e=tFx('fire','','Burning ground');e.dmg+=eff;e.hits++;planDmg('fire',null,t,eff,true)}
+    else if(!sc&&CUR_NAME==='Possession (host burns)'){const e=tFx('fire','Possessor','Possession (host burns)');e.dmg+=eff;e.hits++}
     else if(!sc&&CUR_NAME==='Curse ticks')planDmg('curse',null,t,eff,true);
     if(hostile&&G.players[t.owner].fac==='arcane')tPlan('arcane',0,eff)}// priests' plan check: healing (healUnit) per damage taken
   const hpB=t.hp;
   if(t.beast)beastHurt(t,n,tick,hpB);
   t.hp=r2(t.hp-n);fx(t,'−'+n,col||'#ff6161');
+  if(hostile&&t.kind!=='wall'&&hasTrait(t,'bloodbond')&&G.players[t.owner]){const eff=Math.min(n,Math.max(0,hpB));const L=G.units.find(v=>v.owner===t.owner&&v.leader&&v.kind!=='wall'&&v!==t&&alive(v));if(L&&eff>=2){const h=Math.floor(eff/2);const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=t;CUR_TAG='Abil';CUR_NAME='Blood Bond (trait)';healUnit(L,h,'#e8e23a','Blood Bond (trait)',t.id);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[L.q,L.r]],col:'#e8e23a'})}}// v77 (owner): the Knight's pain feeds the Lich King
   if(hostile&&CUR_SRC&&CUR_SRC.kind!=='wall'&&CUR_SRC.name==='Archdemon'&&t.kind!=='wall')t.demonHit=CUR_SRC.owner;// v75: the Archdemon remembers whom it wounded
   // v50 Frost Hold: a hit on a frozen enemy thaws it (it was shattered for double); any other hit chills it and leaves a frost mark (3 marks freeze)
   {const is=hostile&&!tick&&t.hp>0&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].fac==='ice'&&(CUR_TAG==='Basic'||CUR_TAG==='Abil')&&(t.kind!=='wall'||wildsCreature(t))?CUR_SRC:null;
-    if(is){if(G.realm&&t.st.frozen>0&&!t.st.stun){if(!SIM&&trk()){const e=tFx('ice','','Deep freeze (+2 per hit, stays frozen)');if(e)e.uses++}}else if(RULES.SHATTER&&t.st.frozen>0&&!t.st.stun){t.st.frozen=0;t.st.frzBy=null;t.st.frzLost=0;t.st.fimm=1;t.st.chill=Math.max(t.st.chill||0,1);fx(t,'shattered','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Shatter (double damage, thawed)');if(e)e.uses++}}
+    if(is){if(G.realm&&t.st.frozen>0&&!t.st.stun){if(!SIM&&trk()){const e=tFx('ice','','Deep freeze (+2 per hit, stays frozen)');if(e)e.uses++}
+      if(utal(is,'permafrost')&&!t.st.pf&&t.st.frzLost){t.st.pf=1;t.st.frzLost=0;fx(t,'permafrost','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Permafrost (talent): frozen 1 turn longer');if(e)e.uses++}}}/* v77: the first Frost hit on a frozen enemy keeps it frozen through one more of its turns */else if(RULES.SHATTER&&t.st.frozen>0&&!t.st.stun){t.st.frozen=0;t.st.frzBy=null;t.st.frzLost=0;t.st.fimm=1;t.st.chill=Math.max(t.st.chill||0,1);fx(t,'shattered','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Shatter (double damage, thawed)');if(e)e.uses++}}
       else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,hasTrait(is,'deepcold')?2:1)}}}// v61: the Glacier Knight's Deep Cold leaves 2 marks
   if(t.hp>0&&rsrc){if(hasRelic(rsrc,'ash')){sear(rsrc,t);relicUse(rsrc,'ash')}}
   if(t.hp<=0)kill(t);
@@ -2583,7 +2623,7 @@ function moveOpts(u,ignoreState){
     else{const dist=new Map([[key(u.q,u.r),0]]);let fr=[[u.q,u.r]];for(let st=1;st<N;st++){const nx=[];for(const [q,r] of fr)for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(dist.has(k)||!freeFor(m,u,a,b))continue;dist.set(k,st);nx.push([a,b])}fr=nx}
       for(const x of ms)if(DIRS.some(([dq,dr])=>dist.has(key(x.q+dq,x.r+dr))))out.set(key(x.q,x.r),{q:x.q,r:x.r,dir:u.dir||0,pilot:x.id})}}}
   const F=facOf(u);
-  if(canMove&&F.gate&&(onHome(u)||utal(u,'phasestep'))&&!G.gateUsed){const f=G.players[u.owner].fac;for(const [q,r] of allCells())if(terrAt(q,r)===f)add(q,r,true)}
+  if(canMove&&F.gate&&onHome(u)&&!G.gateUsed){const f=G.players[u.owner].fac;for(const [q,r] of allCells())if(terrAt(q,r)===f)add(q,r,true)}
   return out;
 }
 function doMove(u,o){
@@ -2827,6 +2867,7 @@ function attack(u,t){
   if(hasTrait(u,'tempo'))u.swings=(u.swings||0)+1;// Tempo: later strikes this turn hit harder
   // Hex (Enchanter): the ATK it takes away is credited to the Hex row as damage blocked.
   const hexd=u.st&&u.st.hex>0&&!SIM&&trk()&&t.kind!=='wall'?(()=>{const s=u.st.hex;u.st.hex=0;try{return basicDmg(u,t)}finally{u.st.hex=s}})():null;
+  let parry=0;if(hasTrait(t,'parry')&&t.kind!=='wall'&&tm(u.owner)!==tm(t.owner)&&!(t.st.frozen>0)&&t.parryT!==G.tok){t.parryT=G.tok;parry=1;if(dmg>1){dmg-=1;fx(t,'parry','#eef0f4');tSupBy(t.id,null,'Parry (trait)','blocked',Math.min(1,Math.max(0,hp0-dmg)))}}// v77 (owner): the first blow of each enemy turn is parried
   const bar0=hasBarrier(t);hurt(t,dmg);creditSunder(t,dmg+cov,d0s,hp0);const barBroke=bar0&&!t.bar;
   if(u.st&&u.st.sand){u.st.sand=0;tSupBy(-1,'chrono','Hourglass Sand','uses',1)}
   if(u.st&&u.st.echo&&t.kind!=='wall'){u.st.echo=0;const v2=G.units.filter(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&!v.statue&&alive(v)&&distUU(u,v)===1).sort((a,b)=>a.hp-b.hp)[0];if(v2){const o=CUR_NAME;CUR_NAME='Echo';if(!SIM)vfx({k:'slash',from:nearCell(u,v2),to:[v2.q,v2.r],col:F.color});addLog(u.owner,`Echo: the blow lands on ${v2.name} too.`);hurt(v2,dmg,F.color);CUR_NAME=o}}
@@ -2850,9 +2891,11 @@ function attack(u,t){
   if(utal(u,'bloodlust')&&!alive(t)&&t.kind!=='wall'&&!u.mom){u.acted=false;u.mom=true;addLog(u.owner,`Momentum: ${u.name} can act again.`)}
   if(adj&&alive(t)&&alive(u)){
     if(hasTrait(t,'thorns')&&meleeAt(u.at)){CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Thorns';hurt(u,1,facOf(t).color)}
+    if(parry&&alive(t)&&alive(u)){const pd=Math.max(1,2-effDef(u));CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Parry';addLog(t.owner,`${t.name} parries and answers for ${pd}.`);vfx({k:'slash',from:[t.q,t.r],to:[u.q,u.r],col:facOf(t).color});hurt(u,pd,facOf(t).color)}// v77 Parry: the riposte
     const rd=barBroke?0:retaliation(u,t);if(rd>0&&alive(u)){CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Strike-back';addLog(t.owner,`${t.name} strikes back for ${rd}.`);vfx({k:'slash',from:[t.q,t.r],to:[u.q,u.r],col:facOf(t).color});hurt(u,rd)}
   }
   if(alive(u)&&hasTrait(u,'hitrun')&&u.moved&&!u.hr&&!(RULES.CHILL_FREE&&u.st.chill>0)){u.moved=false;u.hr=true;fx(u,'hit and run','#9ff0c0')}
+  if(alive(u)&&u.crew2&&u.walker==='pilot'&&!u.dbl&&!freeHit){u.dbl=true;u.acted=false;fx(u,'second gunner','#ff6ec7');if(!SIM&&trk()){const e=tFx('gnomes','','Hot Swap (talent): second shots');if(e)e.uses++}}// v77 Hot Swap: two gnomes inside, two shots
   CUR_SRC=null;CUR_TAG=null;CUR_NAME=null;
   afterAction();
 }
@@ -3055,7 +3098,7 @@ function pushUnit(t,d,n,src,quiet,mom0,noMark){
     if(RULES.CREATURE_SLAM&&wildsCreature(t)&&src&&src.kind!=='wall'){hurt(t,slamOf(src)+(facOf(src).slam?RULES.SLAM_MOM:0),'#12d69a');fx(t,'immovable','#d9a45b')}return}if(!quiet&&tealBonus(t,src)){n++;if(!SIM&&trk()){const e=tFx('rift','','Teal ground: pushed 1 further');if(e)e.uses++}}
   const slam=slamOf(src),oq=t.q,or=t.r;
   if(G.realm&&t.size===2&&t.kind!=='wall'&&!quiet){n=Math.floor(n/2);if(n<=0){fx(t,'too heavy to move far','#d9a45b');return}}// v75: giants are pushed half the hexes
-  if((t.size===2&&!G.realm)||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slam+(!quiet&&src&&src.kind!=='wall'&&facOf(src).slam?RULES.SLAM_MOM:0),'#12d69a');fx(t,'immovable','#d9a45b');return}
+  if((t.size===2&&!G.realm)||hasRelic(t,'aegis')){hurt(t,slam+(!quiet&&src&&src.kind!=='wall'&&facOf(src).slam?RULES.SLAM_MOM:0),'#12d69a');fx(t,'immovable','#d9a45b');return}
   for(let s=0;s<n;s++){
     const q=t.q+DIRS[d][0],r=t.r+DIRS[d][1];
     if(!solid(q,r)&&!(voidWalk(t)&&holeAt(q,r))){if(G.realm&&t.size===2&&t.kind!=='wall'){const q2=q+DIRS[d][0],r2=r+DIRS[d][1];if(solid(q2,r2)&&passable(q2,r2)&&!unitAt(q2,r2)&&s+1<n){setAnim(t);t.q=q2;t.r=r2;s++;continue}}// v75: a giant falls only into two holes in a row
@@ -3085,7 +3128,7 @@ function pullUnit(t,src,n){
   if(G.realm&&t.size===2&&t.kind!=='wall'){n=Math.floor(n/2);if(n<=0){fx(t,'too heavy to move far','#d9a45b');return}}// v75: giants are pulled half the hexes
   for(let s=0;s<n;s++){
     if(!alive(t)||!alive(src))break;
-    if((t.size===2&&!G.realm)||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial'))){hurt(t,slamOf(src),'#12d69a');break}
+    if((t.size===2&&!G.realm)||hasRelic(t,'aegis')){hurt(t,slamOf(src),'#12d69a');break}
     if(distUU(src,t)<=1)break;
     const [cq,cr]=nearCell(src,t);const pq=t.q,pr=t.r;
     pushUnit(t,dirTo(t.q,t.r,cq,cr),1,src,true,n-s-1);
@@ -3151,7 +3194,7 @@ function useAbility(u,k,q,r,dest){
     case 'burst':{const area=shapeCells(u,k,q,r);vfx({k:'ab',ab:k,shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:F.color});
       for(const t of areaUnits(u,A,area)){const d=t.st.frozen>0?3:t.st.chill>0?2:1,hp0=t.hp;hurt(t,d,F.color);if(d>1)tBonus(u,'Blizzard Burst (cold bonus)',d-1,hp0);if(alive(t))chillT(t,2)}break}
     // Chain Hook: drag a one-hex enemy to the free hex beside the Rampart nearest to it, then 2 damage ignoring DEF.
-    case 'hook':if(tgt){const fixed=tgt.size===2||hasRelic(tgt,'aegis')||(tgt.leader&&utal(tgt,'glacial'));if(!fixed){const m=occ();let best=null,bd=99;for(const [a,b] of cells(u))for(const [dq,dr] of DIRS){const x=a+dq,y=b+dr;if(!passable(x,y)||m.get(key(x,y)))continue;const dd=hd(x,y,tgt.q,tgt.r);if(dd<bd){bd=dd;best=[x,y]}}
+    case 'hook':if(tgt){const fixed=tgt.size===2||hasRelic(tgt,'aegis');if(!fixed){const m=occ();let best=null,bd=99;for(const [a,b] of cells(u))for(const [dq,dr] of DIRS){const x=a+dq,y=b+dr;if(!passable(x,y)||m.get(key(x,y)))continue;const dd=hd(x,y,tgt.q,tgt.r);if(dd<bd){bd=dd;best=[x,y]}}
       if(best){vfx({k:'chain',pts:[[u.q,u.r],[tgt.q,tgt.r]],col:F.color});setAnim(tgt);tgt.q=best[0];tgt.r=best[1];tSup('moved',1);fx(tgt,'hooked','#d9a45b');braceCheck(tgt)}}
       if(alive(tgt))applyHit(u,tgt,A)}break;
     // March: the block (Warlord + Warband units within 2) steps 1 hex in the chosen direction, front units first; blocked units stay.
@@ -3231,7 +3274,7 @@ function useAbility(u,k,q,r,dest){
     case 'bless':if(tgt&&tgt.kind!=='wall'&&tm(tgt.owner)===tm(u.owner)){tgt.st.bless=3;tgt.st.blessBy=u.id;tgt.st.blessNew=tgt.owner===G.cur?1:0;fx(tgt,'blessed +1 ATK','#ffe9a8');vfx({k:'buff',at:[tgt.q,tgt.r],col:'#ffd766'});addLog(u.owner,`${tgt.name} is blessed: +1 ATK and 1 HP a turn for 3 turns.`);if(trk()&&!SIM){const e=srcFx();if(e)e.hits++}}break;
     // v67 Shield Wall (Engineer): 3 wall pieces in a line from the hex next to it; with Bastion they stay until destroyed but each Engineer keeps one wall.
     case 'gnomewall':{const p=G.players[u.owner];const bast=talent(p,'bastion');if(bast)for(const w of G.units.filter(w=>w.kind==='wall'&&w.wall==='shield'&&w.by===u.id))G.units.splice(G.units.indexOf(w),1);
-      const m=occ();let n=0;for(const [a,b] of shapeCells(u,k,q,r)){if(!passable(a,b)||m.get(key(a,b))||isTrap(a,b)||(G.voids&&G.voids[key(a,b)])||(a===0&&b===0))continue;const hp=6+(p.secret?3:0);
+      const m=occ();let n=0;for(const [a,b] of shapeCells(u,k,q,r)){if(!passable(a,b)||m.get(key(a,b))||isTrap(a,b)||(G.voids&&G.voids[key(a,b)])||(a===0&&b===0))continue;const hp=3+(p.secret?3:0);// v77 (owner): wall pieces 3 HP
         G.units.push({id:G.nid++,kind:'wall',wall:'shield',owner:-1,creator:u.owner,by:u.id,abil:A.name,q:a,r:b,dir:0,size:1,hp,maxhp:hp,def:0,ttl:bast?9999:3,st:{},name:'Shield Wall'});n++}
       if(!SIM){addLog(u.owner,`The ${u.name} raises ${n} piece${n===1?'':'s'} of shield wall.`);if(trk()){const e=tFx('gnomes',u.name,'Wall pieces raised');if(e)e.uses+=n}}break}
     // v67 Tune-Up (Inventor): 3 HP back to one of your machines, a Mech's armour or one of your shield-wall pieces.
@@ -3292,11 +3335,32 @@ function useAbility(u,k,q,r,dest){
     // Lightning (Elementalist): 3 minus DEF to the target, then arcDmg minus DEF to the nearest other enemy within arc hexes of it.
     case 'lightning':if(tgt){const tq=tgt.q,tr=tgt.r;applyHit(u,tgt,A);
       const nx=G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&!inert(v)&&tm(v.owner)!==tm(u.owner)&&distUC(v,tq,tr)<=A.arc).sort((a,b)=>distUC(a,tq,tr)-distUC(b,tq,tr)||a.hp-b.hp||a.id-b.id)[0];
-      if(nx){vfx({k:'chain',pts:[[tq,tr],[nx.q,nx.r]],col:F.color});applyHit(u,nx,Object.assign({},A,{dmg:A.arcDmg,special:null}))}}break;    case 'possess':if(tgt&&possessable(tgt,A)){tgt.poss={owner:tgt.owner,home:tgt.home};tgt.owner=u.owner;tgt.home=u.home;tgt.moved=false;tgt.acted=false;tgt.st.frozen=0;fx(tgt,'possessed','#e8e23a');addLog(u.owner,`${tgt.name} is possessed!`)}break;
+      if(nx){vfx({k:'chain',pts:[[tq,tr],[nx.q,nx.r]],col:F.color});applyHit(u,nx,Object.assign({},A,{dmg:A.arcDmg,special:null}))}}break;    case 'possess':if(tgt&&possessable(tgt,A)){tgt.poss={owner:tgt.owner,home:tgt.home,host:u,ab2:tgt.ability2||null,cd2:tgt.cd2||0};tgt.owner=u.owner;tgt.home=u.home;tgt.moved=false;tgt.acted=false;tgt.st.frozen=0;tgt.ability2='stepout';tgt.cd2=0;
+      {const i=G.units.indexOf(u);if(i>=0)G.units.splice(i,1)}u.inside=tgt.id;fx(tgt,'possessed','#e8e23a');if(!SIM)vfx({k:'buff',at:[tgt.q,tgt.r],col:'#e8e23a',cam:1});addLog(u.owner,`The Possessor slips into ${tgt.name}: it is yours until it dies or the demon steps out.`)}break;// v77 (owner): the demon rides the host
+    case 'stepout':if(u.poss)possEnd(u,false);break;
+    case 'frenzy':{const d=aimDir(u,q,r);if(d<0)break;const m=occ();const [dq,dr]=DIRS[d];let steps=0;const c0=[u.q,u.r];
+      for(let i=0;i<3;i++){const a=u.q+dq,b=u.r+dr;if(!passable(a,b)||m.get(key(a,b))||isTrap(a,b)||holeAt(a,b)||(G.realm&&a===0&&b===0))break;m.delete(key(u.q,u.r));setAnim(u);u.q=a;u.r=b;m.set(key(a,b),u);steps++}
+      u.dir=d;const claw=[[u.q+dq,u.r+dr],[u.q+DIRS[(d+5)%6][0],u.r+DIRS[(d+5)%6][1]],[u.q+DIRS[(d+1)%6][0],u.r+DIRS[(d+1)%6][1]]].filter(([a,b])=>inR(a,b));
+      if(!SIM)vfx({k:'ab',ab:'spin',shape:'cone',from:c0,to:[u.q,u.r],cells:claw,col:F.color});{const s=tStat(u);if(s)s.hexes+=steps}
+      const vs=[];for(const [a,b] of claw){const v=m.get(key(a,b));if(v&&v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&!vs.includes(v))vs.push(v)}
+      for(const v of vs)applyHit(u,v,A);
+      for(const [a,b] of [[u.q,u.r],...claw])if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:u.owner};
+      addLog(u.owner,`Fire Frenzy: the Hellhound charges ${steps} and rakes ${vs.length} enem${vs.length===1?'y':'ies'}.`);break}// v77 (owner): charge up to 3, claw the 3 hexes in front for 4
+    case 'forward':{const d=aimDir(u,q,r);if(d<0)break;const blk=blockOf(u);const m=occ();const [dq,dr]=DIRS[d];const mv=new Set();let n=0,hits=0,changed=true;
+      while(changed){changed=false;for(const v of blk){if(mv.has(v))continue;const a=v.q+dq,b=v.r+dr;if(!passable(a,b)||isTrap(a,b)||holeAt(a,b)||(G.realm&&a===0&&b===0))continue;const o=m.get(key(a,b));if(o&&o!==v)continue;m.delete(key(v.q,v.r));setAnim(v);v.q=a;v.r=b;v.dir=d;m.set(key(a,b),v);mv.add(v);changed=true;n++;{const s=tStat(v);if(s)s.hexes+=1}}}
+      for(const v of blk){braceCheck(v);const foe=G.units.filter(e=>e.kind!=='wall'&&tm(e.owner)!==tm(u.owner)&&alive(e)&&!e.statue&&!e.egg&&distUU(v,e)===1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
+        if(foe){const o=[CUR_SRC,CUR_NAME];CUR_SRC=v;CUR_NAME='Forward!';if(!SIM)vfx({k:'slash',from:[v.q,v.r],to:[foe.q,foe.r],col:F.color});hurt(foe,1,F.color);[CUR_SRC,CUR_NAME]=o;hits++}}
+      tSup('moved',n);addLog(u.owner,`Forward! ${n} comrade${n===1?'':'s'} step as one${hits?` and ${hits} strike`:''}.`);break}// v77 (owner): the Captain's block is a moving wall
+    case 'surgery':{if(tgt&&tgt.kind!=='wall'&&tm(tgt.owner)!==tm(u.owner))applyHit(u,tgt,Object.assign({},A,{heal:0,overheal:0}));
+      const ally=G.units.filter(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&!v.statue&&!v.egg&&!v.summon&&alive(v)&&distUU(u,v)===1).sort((a,b)=>(a.hp/a.maxhp)-(b.hp/b.maxhp)||a.id-b.id)[0];
+      if(ally){const h=healUnit(ally,A.heal,'#ffe9a8','Field Surgery',u.id);const ex=A.heal-h;if(ex>0)overheal(u,ally,ex,'Field Surgery')}break}// v77 (owner): strike one, mend one
+    case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
+      for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
+        if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
-      for(const t of ts)applyHit(u,t,A);
+      for(const t of ts)applyHit(u,t,A.centre&&cells(t).some(([a,b])=>a===q&&b===r)?Object.assign({},A,{dmg:A.dmg+A.centre}):A);// v77: the Hell Drake's Fireball hits the centre hex harder
       // Smash breaks walls: every wall in the sweep takes the spell damage times wallDmg.
       if(A.wallDmg){const m=occ(),seen=new Set();for(const [a,b] of area){const w=m.get(key(a,b));if(w&&w.kind==='wall'&&!w.beast&&!seen.has(w)){seen.add(w);hurt(w,(A.dmg||0)*A.wallDmg,F.color)}}}
       if(A.push){
@@ -3344,7 +3408,7 @@ function stormTick(p){if(!G.traps)return;const hs=Object.entries(G.traps).filter
       if(voidWalk(v))continue;const d=dirTo(v.q,v.r,hq,hr),q=v.q+DIRS[d][0],r=v.r+DIRS[d][1];
       if(!solid(q,r)){fallKill(v,q,r,src);continue}
       if(isBlock(q,r)||isCentreWall(q,r)||unitAt(q,r))continue;setAnim(v);v.q=q;v.r=r;tSup('moved',1);rMark(v,src)}
-    if(--t.storm<=0){delete G.traps[k];if(!SIM)addLog(p.id,'A Rift Storm hole closes.')}}
+    if(--t.storm<=0){delete G.traps[k];aftershock(p,k);if(!SIM)addLog(p.id,'A Rift Storm hole closes.')}}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function ultEffect(p){
   const F=FAC[p.fac],team=p.team;
@@ -3352,9 +3416,12 @@ function ultEffect(p){
   const foes=()=>G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==team);
   const mine=()=>G.units.filter(v=>v.kind!=='wall'&&v.owner===p.id);
   switch(p.fac){
-    case 'fire':{const hit=foes();for(const v of hit){const onRed=cells(v).some(([q,r])=>terrAt(q,r)==='fire');hurt(v,onRed?2:1,F.color)}
-      for(const v of hit)if(alive(v))paintUnder(v,'fire',3,p.id,'Wildfire: ground set ablaze (hexes)');break}// v50: the hex under every enemy burns for 3 turns
-    case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,2);if(talent(p,'frostthrone')||ice.some(i=>distUU(i,v)<=2))freezeT(v,false)}break}
+    case 'fire':{const burning=Object.keys(G.paint).filter(k=>G.paint[k].fac==='fire');const m=occ();let hit=0;
+      for(const k of burning){const v=m.get(k);if(v&&v.kind!=='wall'&&alive(v)&&tm(v.owner)!==p.team&&!v.statue&&!v.egg){hurt(v,3,F.color);hit++}}
+      const spread=new Set();for(const k of burning){const [q,r]=k.split(',').map(Number);for(const [a,b] of DIRS){const kk=key(q+a,r+b);if(solid(q+a,r+b)&&!isHeart(q+a,r+b)&&!G.paint[kk])spread.add(kk)}}
+      for(const kk of spread)G.paint[kk]={fac:'fire',ttl:2,owner:p.id};
+      if(!SIM&&trk()){const e=tFx('fire','','Wildfire: ground set ablaze (hexes)');if(e)e.uses+=spread.size}addLog(p.id,`Wildfire: ${burning.length} burning hex${burning.length===1?'':'es'} erupt (${hit} hit) and the fire spreads to ${spread.size} more.`);break}// v77 (owner): the fire you made erupts and spreads; nothing burns, nothing happens
+    case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,2);if(ice.some(i=>distUU(i,v)<=2))freezeT(v,false)}break}
     case 'giants':{const gs=mine();for(const v of foes()){const g=gs.filter(x=>alive(x)).sort((a,b)=>distUU(a,v)-distUU(b,v))[0];const aval=talent(p,'avalanche');if(!g||distUU(g,v)>(aval?4:3))continue;hurt(v,afterDef(aval?3:2,effDef(v)),F.color);
       if(alive(v)){const [cq,cr]=nearCell(g,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,g)}}break}
     // Clockwork Rush: AP, every gnome may move again, and every machine (they never move) is repaired to full, gets +1 ATK this turn and fires again at once (timers do not reset). The volley is tracked under the Ultimate.
@@ -4074,14 +4141,14 @@ function kingScore(p){
    Points: last hits (an enemy unit 1, a Leader 3, camps by tier) and the King on the Throne (1 a turn); first to REALM.target wins.
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
-const REALM={HW:28,HH:25,VR:7,open:7,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:0,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:24,suitHp:12,
+const REALM={HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:0,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:24,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,camp:1,steps:[5,11,18,26,35,45,56,68]},armies:['fire','ice','gnomes','warband']};
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:0},
   warden:{name:'Spring Warden',icon:'golem',hp:28,atk:4,def:0,tier:2,pts:0},
   ogre:{name:'Ogre Warlord',icon:'golem',hp:34,atk:5,def:1,tier:2,pts:0},
-  drake:{name:'Elder Drake',icon:'drake',hp:56,atk:6,def:1,tier:3,pts:3},
+  drake:{name:'Elder Drake',icon:'drake',hp:45,atk:6,def:1,tier:3,pts:3},
   chest:{name:'Ruin Chest',icon:'chest',hp:10,atk:0,def:0,tier:0,pts:0}};
 Object.assign(MONSTERS,REALM_MON);
 Object.assign(ROOM_NAMES,{t1:'Valley Camp',heal:'Healing Spring',ogre:'Ogre Lair',t3:'Drake Lair',ruin:'Ancient Ruin'});
@@ -4290,7 +4357,7 @@ function evaluate(team){
 }
 // Riftwalker combos, for the lookahead: an enemy that one of our ready pushers (Repel) can still throw onto a lethal hex this turn is worth part of a kill.
 // A push goes straight away from the pusher's hex; the pusher must already stand on the spot behind the enemy or be able to walk there.
-function pushLethal(t,d,n,m){if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial')))return false;let q=t.q,r=t.r;m=m||occ();
+function pushLethal(t,d,n,m){if(t.size===2||hasRelic(t,'aegis'))return false;let q=t.q,r=t.r;m=m||occ();
   for(let i=0;i<n;i++){q+=DIRS[d][0];r+=DIRS[d][1];if(!solid(q,r))return true;const o=m.get(key(q,r));if((o&&o!==t)||isBlock(q,r)||isCentreWall(q,r))return false}return false}
 function throwSetups(team){
   const ps=G.units.filter(p=>p.kind!=='wall'&&p.owner===G.cur&&p.ability&&ABIL[p.ability].push&&ABIL[p.ability].range===1&&p.cd<=0&&!p.acted&&!p.st.frozen);if(!ps.length)return 0;
@@ -4313,7 +4380,7 @@ function simScore(team,fn){
 }
 // Riftwalker setup value (v21 bots): an enemy left on a hex beside the edge, a void or a Void Trap, with a ready Repulsor that can reach it this turn
 // (AP counted after the displacement) and friends ready to pile on. For a swap the swapper lands where the enemy stood: a Leader must not land in a crowd.
-function riftSetup(u,t,ctx,mine,isSpot){const spot=isSpot?u:{q:u.q,r:u.r};if(t.size===2||hasRelic(t,'aegis')||(t.leader&&utal(t,'glacial')))return 0;
+function riftSetup(u,t,ctx,mine,isSpot){const spot=isSpot?u:{q:u.q,r:u.r};if(t.size===2||hasRelic(t,'aegis'))return 0;
   const lethal=DIRS.filter(([dq,dr])=>!solid(spot.q+dq,spot.r+dr));let s=0;
   const cost=isSpot?ABIL.riptide.cost:2,left=G.ap-cost;
   if(lethal.length){s+=3.5+(t.leader?3:0);
@@ -4489,6 +4556,15 @@ function heuristic(u,k,q,r,ctx,dest){
     case 'overwind':{const t=unitAt(q,r);if(!t||t===u||t.kind==='wall'||t.owner!==u.owner)return 0;const n=(t.cd||0)+(t.cd2||0);if(!n)return 0;return n*1.3+(t.ability==='quicken'&&ctx.foes.some(f=>G.units.some(b=>b.owner===u.owner&&hasTrait(b,'tempo')&&distUU(b,f)<=1))?3:0)}
     case 'rewindwounds':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)!==team)return 0;const back=t.hpPrev2!=null?t.hpPrev2:t.hpPrev1;if(back==null||back<=t.hp)return 0;const g=Math.min(back,t.maxhp)-t.hp;return g*(hasTrait(t,'tempo')?1.3:0.8)+(t.leader?1:0)}
     case 'sacrifice':{const foes=ctx.foes.filter(f=>distUU(f,u)===1);if(!foes.length)return 0;let s=0;for(const f of foes){s+=Math.min(3,f.hp)*0.9+(f.hp<=3?worth(f)*0.6:0)}const p=G.players[u.owner];s+=p.demon?0:1.5+(G.realm?2.5:0);s-=u.hp>u.maxhp*0.6&&foes.length<2?1.5:0;return s-1}
+    case 'stepout':return 0;// bots ride the host to the end
+    case 'frenzy':{const d=aimDir(u,q,r);if(d<0)return 0;const [dq,dr]=DIRS[d];const m=ctx.m;let a=u.q,b=u.r;for(let i=0;i<3;i++){const x=a+dq,y=b+dr;if(!passable(x,y)||m.get(key(x,y))||isTrap(x,y)||holeAt(x,y))break;a=x;b=y}
+      const claw=[[a+dq,b+dr],[a+DIRS[(d+5)%6][0],b+DIRS[(d+5)%6][1]],[a+DIRS[(d+1)%6][0],b+DIRS[(d+1)%6][1]]];let s=0;for(const [x,y] of claw){const v=m.get(key(x,y));if(v&&v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg){const dd=Math.min(v.hp,Math.max(1,A.dmg-effDef(v)));s+=dd*(v.hp<=dd?1.6:1)*(v.leader?1.3:1)}}
+      return s>=3?s:0}
+    case 'forward':{const d=aimDir(u,q,r);if(d<0)return 0;const blk=blockOf(u);if(blk.length<3)return 0;const [dq,dr]=DIRS[d];const nf=(x,y)=>{let b=99;for(const f of ctx.foes)b=Math.min(b,distUC(f,x,y));return b};let s=0;
+      for(const v of blk){const x=v.q+dq,y=v.r+dr;if(!passable(x,y)||isTrap(x,y)||holeAt(x,y))continue;const o=ctx.m.get(key(x,y));if(o&&!blk.includes(o))continue;const b0=nf(v.q,v.r),b1=nf(x,y);if(b1<b0)s+=1;if(b1===1)s+=2.5}
+      return s>=4?s:0}
+    case 'surgery':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)===tm(u.owner))return 0;const dd=Math.min(t.hp,Math.max(1,A.dmg-effDef(t)));let s=dd*(t.hp<=dd?1.8:1.1);
+      const ally=G.units.filter(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&!v.statue&&!v.egg&&!v.summon&&alive(v)&&distUU(u,v)===1).sort((a,b)=>(a.hp/a.maxhp)-(b.hp/b.maxhp))[0];if(ally)s+=Math.min(A.heal,ally.maxhp-ally.hp)*0.9;return s}
     case 'possess':{const t=unitAt(q,r);if(!t||!possessable(t,A))return 0;const reach=effMov(t)+effRng(t);const n=G.units.filter(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)===tm(t.owner)&&distUU(v,t)<=reach).length;return n?7+Math.min(n,3)*1.5+(t.stars||0)*2:0}
     // Rewind: a free extra walk. Worth it for a striker that has moved and still has a strike (its action or a free Quicken attack) but nothing in reach,
     // for a striker that needs two walks to reach a target, and to pull a spent blade or the Leader out of a crowd.
@@ -6956,10 +7032,12 @@ for(const k of FKEYS){
 }
 function teamsAllowed(){return cfg.n===4||cfg.n===6}
 function seatTeam(i){return i%(cfg.n/2)}
-const UNIT_LINES={"Possessor": "A whisper from the pit that slips into wounded enemies and turns them on their friends for a turn.", "Soul Devourer": "Eats the souls of the dying: every death beside it makes it stronger, and it swallows the weak whole.", "Dread Fiend": "A horror from the pit: whoever wakes up next to it runs. It howls and the bravest flee.", "Pit Lord": "The lord of the pit: sets the ground alight and rules from the flames.", "Fire Imp": "A cackling imp that lobs fire over the front line; whatever it burns can't be healed next turn. Keep it behind someone.", "Hellhound": "Bites, then bounds away in a burst of sparks; in a crowd it snaps at everyone around it.", "Phoenix": "Dies once, comes back angry. Its breath sears: no healing for a turn.", "Infernal": "A hulk of living lava: hitting it burns, and the ground erupts around it.", "Salamander": "Spits a stream of fire three hexes long and leaves the line burning; on red ground it bites harder.", "Ice Queen": "Bursts a storm of ice over a crowd; the colder they already are, the more it hurts.", "Glacier Knight": "Slides in straight lines and shatters whatever is frozen in front of it; the shards chill everyone around the fallen.", "Hailcaller": "The damage dealer: an Ice Lance for 4, or 8 on anyone already shivering. On a frozen target the lance freezes the enemy behind it too.", "Mountain King": "Walks two hexes and stomps the ground: everything within two hexes is hurt and stunned.", "Boulder Hurler": "Throws rocks from five hexes away; the only giant who can hurt what he cannot reach.", "Rampart": "A walking castle wall that hooks enemies out of the back line and drags them to the giants.", "Cliff Breaker": "Sweeps three hexes, knocks them all back and cracks their armour (1 less DEF for 2 turns). Breaks walls.", "Titan": "Two fists, one blow: 7 damage to whatever stands next to it.", "Elder Shaman": "The oldest of the circle: one small spell of every element, every turn, to keep the young shamans alive until they ascend.", "Flame Shaman": "Burnt black by the fire it serves; lashes enemies with flame.", "Tide Shaman": "Wrinkled by the water, plants growing on its skin; heals and cleanses.", "Stone Shaman": "Caked in dirt, moss growing on it; grips enemies in stone and hardens allies.", "Wind Shaman": "Wind-scoured and sun-bleached, robes always blowing; moves friends and blows enemies away.", "Fire Elemental": "Living flame: everything next to it burns.", "Water Elemental": "A walking spring: allies near it heal every turn.", "Earth Elemental": "A wall of rock that no one walks past.", "Air Elemental": "A flying gale that casts and moves again.", "Elemental Lord": "Fire, water, earth and air in one colossal body.", "Inventor": "A genius with a turret on his back: weak while he carries it, the strongest gun on the board once he sets it down.", "Engineer": "Raises a wall of riveted plates in a heartbeat. Nobody walks through; gnome bullets do.", "Gunner": "Fires in straight lines, through the wall, all day. Drops the gun on a tripod and runs when it must.", "Grenadier": "A bazooka bigger than he is: lobs grenades over walls and blows enemies apart.", "Mechanic": "Builds a mech suit, climbs in and becomes the biggest thing on the field.", "Gearmaster": "A foreman, not a fighter: carries no weapon at all, sets up a Mortar and lets it do the shooting.", "Bombardier": "The only gnome who fights by hand. Bombs hit everyone. Everyone.", "Tinker": "Three of them, three turret lanes. Unarmed and fragile, so keep the tin in front.", "Sparkwright": "Unarmed: plants a coil that zaps everything near it, turn after turn.", "Turret": "Built, not born. Never moves; shoots four hexes down a line on its own every turn, and hits for its full 4 ATK when you aim it for 2 AP. Cold can't touch it.", "Tesla Coil": "Nobody wants to stand near it.", "High Priest": "One prayer and the whole circle breathes again: 2 HP for everyone around him.", "Cleric": "Mends the one who needs it most for 3 and lifts a curse, a freeze or a burn off it.", "Seraph": "A winged guardian of light: it wraps whoever is next in line in a shield of light. It guards; it does not hit hard.", "Druid": "Grows holy ground; stand on it and heal.", "Lightwarden": "Blesses a friend for three turns: +1 ATK and a little healing at the start of every turn.", "Hospitaller": "Heal him first, bless him, then let him swing.", "Warlord": "The heart of the block. March moves the whole block; Rally sharpens every blade around him.", "Berserker": "Gets stronger the more it bleeds.", "Shieldbearer": "The shield wall: it and everyone beside it take 1 less from arrows and spells.", "Raider": "Finds the enemy standing alone and hits for 5.", "Outrider": "The charger: rides in first and lives through a hit or two, so the Berserkers can follow with the cleave.", "Spearman": "Second rank: strikes 2 hexes away, over the shield in front. Plants the spear when it stands still.", "Rift Sovereign": "Trades places with anyone, friend or foe: the piece that sets up every throw.", "Tidecaller": "Drags one enemy three hexes toward it, over any hole in between.", "Repulsor": "One shove, three hexes. Put an enemy between it and the edge.", "Gravity Singer": "Opens a well that pulls enemies in, turn after turn.", "Phase Stalker": "Flies to the edge, then trades places with an enemy.", "Lich King": "Makes every curse pay out at once.", "Plague Bearer": "Breathes a cone of plague.", "Banshee": "Weakens armour from far away.", "Grave Leech": "Drains strength and heals itself.", "Bog Hag": "Sinks everyone around her into the bog.", "Bell Wraith": "Silences the one ability you were counting on.", "Grave Knight": "A walking tomb that guards the Lich King.", "Soul Thief": "Steals an enemy for a turn and turns it on its friends.", "Acolyte": "Dies so the others may live.", "Chronarch": "Stays back and bends time for 3 more AP. Its bolt pushes every cooldown of the target one turn back and finishes what the blades opened; a stopgap, not a killer.", "Second Hand": "The assassin. Quickened again and again it strikes 4, then 5, then 6 in one turn (3 strikes at most), then a Rewinder walks it home. After a kill it fades into stealth. Feed it.", "Tempo Mage": "Carries no weapon. Hands an ally a free extra strike; two or three of them on the same blade make the combo.", "Rewinder": "Carries no weapon. Chases the clock: the ally it marks gets a free move after every kill this turn, so the blade cuts from one victim to the next.", "Time Wraith": "When both blades are gone, the Chronarch calls it once: a heavy, fast blade with no tricks. Fragile, but it hunts.", "Frostling": "Small, quick and cold: every bolt slows the target for two turns.", "Frost Warden": "Plants its feet and freezes the three hexes in front of it solid.", "Flamewright": "Unarmed: builds a Flame Turret right where the enemy wants to walk.", "Mortar": "Never moves. Lobs a shell up to five hexes over the front line every turn, and a full-strength one when you aim it for 2 AP.", "Flame Turret": "Never moves. Anyone who steps up to it gets sprayed, and so do their neighbours; pay 2 AP and it sprays at full strength.", "Voidcaller": "Tears a hole in the board for three turns. Whatever is pushed in never comes back.", "Archmage": "Three spells, one book: a Fireball over the crowd, a Blink to save a friend, or an Arcane Missile through any armour.", "Elementalist": "Frost Shard slows the target; Lightning jumps on to the enemy beside it.", "Battle Mage": "Shields a friend, or stands in the crowd and blasts every enemy around it.", "Enchanter": "Hexes the biggest blade in the room, or wakes a resting spellbook with Arcane Surge.", "Gargoyle": "Stands at the mages' shoulder and takes their blows. When it falls it sleeps in stone until the spells wake it.", "Drake": "The only real bite in the circle: flies in and breathes fire two hexes deep.", "Gargoyle Statue": "A Gargoyle asleep in stone. Cast spells around it to wake it; smash it to end it.", "Imp": "A small demon that fights with sparks of fire and, when it is time, detonates for the Archdemon.", "Soul Wisp": "A floating fragment of hellfire: barely a fighter, worth two souls when it goes out.", "Hellknight": "The Court’s armoured wall: it cleaves, holds the line and stands in front of the Pit Lord.", "Magma Wyrm": "A lava serpent that spits a line of fire and leaves the ground burning.", "Rime Mammoth": "The Frost Hold’s front line: every enemy it passes is marked by the cold.", "Ice Statue": "What is left of an enemy that died frozen: slow, cold, and fighting for the Frost Hold now.", "Captain": "Second in command: a block that marches with him moves a step further.", "Swordsman": "Steady steel on the flanks of the block: a cleaving blow and a comrade’s strength.", "Bulwark": "Slow behind its shield on foot; inside the Shield Walker it shelters everyone beside it and raises walls.", "Brawler": "Fists on foot; inside the Piston Crusher one blow and a knockback.", "Aviator": "Fast and frail on foot; in the Gyrocopter it flies over everything and bombs a path.", "Sparker": "A shock on foot; the Tesla Walker’s lightning jumps between enemies and overloads around it.", "Sapper": "A shovel on foot; the Drill Mole travels under mountains and walls and bursts up to stun.", "Mechanic": "Repairs on foot; the Repair Spider mends machines from afar and salvages scrap.", "Gunner": "A pistol on foot; the Cannon Walker fires one big shot from 5 hexes, through the first target.", "Grenadier": "Grenades on foot; the Mortar Crawler lobs bursts from 2 to 4 and a three-bomb Barrage.", "Inventor": "A small gun on foot; the Command Rig overclocks the machine beside it to act again.", "Behemoth": "Built from scrap and crewed by gnomes: it fires with one inside and walks with three.", "Lich King": "The choir master: Requiem reaps every rot on its victims at once.", "Plague Bearer": "Breathes Plague over a cone; it spreads from neighbour to neighbour.", "Banshee": "Her wail is Frailty: −1 ATK, and a second wail makes it −2.", "Grave Leech": "Leech curses feed it; it heals on every tick and on every kill.", "Bog Hag": "Grave Mud in a ring: slow feet and pale ground that bites harder.", "Bell Wraith": "Tolls Decay: no healing for whoever hears it.", "Grave Knight": "The Covenant’s armoured bodyguard: it consecrates its neighbours and takes the blows meant for the Lich King.", "Second Hand": "The assassin: strikes for 3, strikes again when Quickened, and every kill adds a strike to its combo for good.", "Rewinder": "Rewind Wounds: sets an ally’s HP back to the start of your previous turn.", "Hell Drake": "A small demonic dragon: it flies, lobs fire from afar and breathes a burning cone.", "Seraph": "A winged healer who mends by touch and stands in front.", "Hospitaller": "The fighter who heals: Tend an ally and strike harder for it.", "Sand Weaver": "Sharpens the next blow: it ignores armour and cuts 2 deeper.", "Echo Knight": "Makes the next blow land twice: on the target and on a second enemy beside it.", "Tick": "Winds the clock back for an ally: every ability ready again, and it may act again."};
+const UNIT_LINES={"Possessor": "A whisper from the pit that climbs into a wounded enemy and rides it until the host dies or the demon steps out.", "Soul Devourer": "Eats the souls of the dying: every death beside it makes it stronger, and it swallows the weak whole.", "Dread Fiend": "A horror from the pit: whoever wakes up next to it runs. It howls and the bravest flee.", "Pit Lord": "The lord of the pit: sets the ground alight and rules from the flames.", "Fire Imp": "A cackling imp that lobs fire over the front line; whatever it burns can't be healed next turn. Keep it behind someone.", "Hellhound": "A two-headed charge: three hexes at a run, then flaming claws across the three hexes in front.", "Phoenix": "Every death leaves an egg; break it in two turns or it comes back whole. Its breath sears: no healing for a turn.", "Infernal": "A hulk of living lava: hitting it burns, and the ground erupts around it.", "Salamander": "Spits a stream of fire three hexes long and leaves the line burning; on red ground it bites harder.", "Ice Queen": "Bursts a storm of ice over a crowd; the colder they already are, the more it hurts.", "Glacier Knight": "Slides in straight lines and shatters whatever is frozen in front of it; the shards chill everyone around the fallen.", "Hailcaller": "The damage dealer: an Ice Lance for 4, or 8 on anyone already shivering. On a frozen target the lance freezes the enemy behind it too.", "Mountain King": "Walks two hexes and stomps the ground: everything within two hexes is hurt and stunned.", "Boulder Hurler": "Throws rocks from five hexes away; the only giant who can hurt what he cannot reach.", "Rampart": "A walking castle wall that hooks enemies out of the back line and drags them to the giants.", "Cliff Breaker": "Sweeps three hexes, knocks them all back and cracks their armour (1 less DEF for 2 turns). Breaks walls.", "Titan": "Two fists, one blow: 7 damage to whatever stands next to it.", "Elder Shaman": "The oldest of the circle: one small spell of every element, every turn, to keep the young shamans alive until they ascend.", "Flame Shaman": "Burnt black by the fire it serves; lashes enemies with flame.", "Tide Shaman": "Wrinkled by the water, plants growing on its skin; heals and cleanses.", "Stone Shaman": "Caked in dirt, moss growing on it; grips enemies in stone and hardens allies.", "Wind Shaman": "Wind-scoured and sun-bleached, robes always blowing; moves friends and blows enemies away.", "Fire Elemental": "Living flame: everything next to it burns.", "Water Elemental": "A walking spring: allies near it heal every turn.", "Earth Elemental": "A wall of rock that no one walks past.", "Air Elemental": "A flying gale that casts and moves again.", "Elemental Lord": "Fire, water, earth and air in one colossal body.", "Inventor": "A genius with a turret on his back: weak while he carries it, the strongest gun on the board once he sets it down.", "Engineer": "Raises a wall of riveted plates in a heartbeat. Nobody walks through; gnome bullets do.", "Gunner": "Fires in straight lines, through the wall, all day. Drops the gun on a tripod and runs when it must.", "Grenadier": "A bazooka bigger than he is: lobs grenades over walls and blows enemies apart.", "Mechanic": "Builds a mech suit, climbs in and becomes the biggest thing on the field.", "Gearmaster": "A foreman, not a fighter: carries no weapon at all, sets up a Mortar and lets it do the shooting.", "Bombardier": "The only gnome who fights by hand. Bombs hit everyone. Everyone.", "Tinker": "Three of them, three turret lanes. Unarmed and fragile, so keep the tin in front.", "Sparkwright": "Unarmed: plants a coil that zaps everything near it, turn after turn.", "Turret": "Built, not born. Never moves; shoots four hexes down a line on its own every turn, and hits for its full 4 ATK when you aim it for 2 AP. Cold can't touch it.", "Tesla Coil": "Nobody wants to stand near it.", "High Priest": "One prayer and the whole circle breathes again: 2 HP for everyone around him.", "Cleric": "Mends the one who needs it most for 3 and lifts a curse, a freeze or a burn off it.", "Seraph": "A winged guardian of light: it wraps whoever is next in line in a shield of light. It guards; it does not hit hard.", "Druid": "Grows holy ground; stand on it and heal.", "Lightwarden": "Blesses a friend for three turns: +1 ATK and a little healing at the start of every turn.", "Hospitaller": "Walks in, strikes one, mends one: the priest who fights for the healers.", "Warlord": "The heart of the block. March moves the whole block; Rally sharpens every blade around him.", "Berserker": "Gets stronger the more it bleeds.", "Shieldbearer": "The shield wall: it and everyone beside it take 1 less from arrows and spells.", "Raider": "Finds the enemy standing alone and hits for 5.", "Outrider": "The charger: rides in first and lives through a hit or two, so the Berserkers can follow with the cleave.", "Spearman": "Second rank: strikes 2 hexes away, over the shield in front. Plants the spear when it stands still.", "Rift Sovereign": "Trades places with anyone, friend or foe: the piece that sets up every throw.", "Tidecaller": "Drags one enemy three hexes toward it, over any hole in between.", "Repulsor": "One shove, three hexes. Put an enemy between it and the edge.", "Gravity Singer": "Opens a well that pulls enemies in, turn after turn.", "Phase Stalker": "Flies to the edge, then trades places with an enemy.", "Lich King": "Makes every curse pay out at once.", "Plague Bearer": "Breathes a cone of plague.", "Banshee": "Weakens armour from far away.", "Grave Leech": "Drains strength and heals itself.", "Bog Hag": "Sinks everyone around her into the bog.", "Bell Wraith": "Silences the one ability you were counting on.", "Grave Knight": "A walking tomb that guards the Lich King and feeds him with its own pain.", "Soul Thief": "Steals an enemy for a turn and turns it on its friends.", "Acolyte": "Dies so the others may live.", "Chronarch": "Stays back and bends time for 3 more AP. Its bolt pushes every cooldown of the target one turn back and finishes what the blades opened; a stopgap, not a killer.", "Second Hand": "The assassin. Quickened again and again it strikes 4, then 5, then 6 in one turn (3 strikes at most), then a Rewinder walks it home. After a kill it fades into stealth. Feed it.", "Tempo Mage": "Carries no weapon. Hands an ally a free extra strike; two or three of them on the same blade make the combo.", "Rewinder": "Carries no weapon. Chases the clock: the ally it marks gets a free move after every kill this turn, so the blade cuts from one victim to the next.", "Time Wraith": "When both blades are gone, the Chronarch calls it once: a heavy, fast blade with no tricks. Fragile, but it hunts.", "Frostling": "Small, quick and cold: every bolt slows the target for two turns.", "Frost Warden": "Plants its feet and freezes the three hexes in front of it solid.", "Flamewright": "Unarmed: builds a Flame Turret right where the enemy wants to walk.", "Mortar": "Never moves. Lobs a shell up to five hexes over the front line every turn, and a full-strength one when you aim it for 2 AP.", "Flame Turret": "Never moves. Anyone who steps up to it gets sprayed, and so do their neighbours; pay 2 AP and it sprays at full strength.", "Voidcaller": "Tears a hole in the board for three turns. Whatever is pushed in never comes back.", "Archmage": "Three spells, one book: a Fireball over the crowd, a Blink to save a friend, or an Arcane Missile through any armour.", "Elementalist": "Frost Shard slows the target; Lightning jumps on to the enemy beside it.", "Battle Mage": "Shields a friend, or stands in the crowd and blasts every enemy around it.", "Enchanter": "Hexes the biggest blade in the room, or wakes a resting spellbook with Arcane Surge.", "Gargoyle": "Stands at the mages' shoulder and takes their blows. When it falls it sleeps in stone until the spells wake it.", "Drake": "The only real bite in the circle: flies in and breathes fire two hexes deep.", "Gargoyle Statue": "A Gargoyle asleep in stone. Cast spells around it to wake it; smash it to end it.", "Imp": "A small demon that fights with sparks of fire and, when it is time, detonates for the Archdemon.", "Soul Wisp": "A floating fragment of hellfire: barely a fighter, worth two souls when it goes out.", "Hellknight": "The Court’s armoured wall: it cleaves, holds the line and stands in front of the Pit Lord.", "Magma Wyrm": "A lava serpent that spits a line of fire and leaves the ground burning.", "Rime Mammoth": "The Frost Hold’s front line: every enemy it passes is marked by the cold.", "Ice Statue": "What is left of an enemy that died frozen: slow, cold, and fighting for the Frost Hold now.", "Captain": "Forward! The block steps as one and every warrior who lands beside an enemy strikes it.", "Swordsman": "A duelist on the flanks of the block: it parries the first blow of every turn and answers it.", "Bulwark": "Slow behind its shield on foot; inside the Shield Walker it shelters everyone beside it and raises walls.", "Brawler": "Fists on foot; inside the Piston Crusher one blow and a knockback.", "Aviator": "Fast and frail on foot; in the Gyrocopter it flies over everything and bombs a path.", "Sparker": "A shock on foot; the Tesla Walker’s lightning jumps between enemies and overloads around it.", "Sapper": "A shovel on foot; the Drill Mole travels under mountains and walls and bursts up to stun.", "Mechanic": "Repairs on foot; the Repair Spider mends machines from afar and salvages scrap.", "Gunner": "A pistol on foot; the Cannon Walker fires one big shot from 5 hexes, through the first target.", "Grenadier": "Grenades on foot; the Mortar Crawler lobs bursts from 2 to 4 and a three-bomb Barrage.", "Inventor": "A small gun on foot; the Command Rig overclocks the machine beside it to act again.", "Behemoth": "Built from scrap and crewed by gnomes: it fires with one inside and walks with three.", "Lich King": "The choir master: Requiem reaps every rot on its victims at once.", "Plague Bearer": "Breathes Plague over a cone; it spreads from neighbour to neighbour.", "Banshee": "Her wail is Frailty: −1 ATK, and a second wail makes it −2.", "Grave Leech": "Leech curses feed it; it heals on every tick and on every kill.", "Bog Hag": "Grave Mud in a ring: slow feet and pale ground that bites harder.", "Bell Wraith": "Tolls Decay: no healing for whoever hears it.", "Grave Knight": "The Covenant’s armoured bodyguard: it takes the blows meant for the Lich King, and half of what it suffers heals him.", "Second Hand": "The assassin: strikes for 3, strikes again when Quickened, and every kill adds a strike to its combo for good.", "Rewinder": "Rewind Wounds: sets an ally’s HP back to the start of your previous turn.", "Hell Drake": "A small demonic dragon: it flies and lobs a fireball that detonates across seven hexes.", "Seraph": "A winged healer who mends by touch and stands in front.", "Hospitaller": "Field Surgery: a blow and a bandage in the same breath.", "Sand Weaver": "Sharpens the next blow: it ignores armour and cuts 2 deeper.", "Echo Knight": "Makes the next blow land twice: on the target and on a second enemy beside it.", "Tick": "Winds the clock back for an ally: every ability ready again, and it may act again."};
 /* v64 (owner 6 Oct 2026: "the info for each team is too much and overwhelming"): the home cards show only the passive, the Ultimate,
    the coloured ground, the army's stats and each unit's HP, ATK, DEF, attack and ability names; the full passive folds open; tap a unit to see it. */
 const HOME_COMPACT=true;
+// v77: on the Realm there is no claimed home ground; each army's homeRealm text says what ground it still makes
+function homeText(F){return ((G&&G.realm)||(!G&&cfg.map==='realm'))&&F.homeRealm?F.homeRealm:F.home}
 const PASSIVE_SHORT={
   fire:'Souls: your dead and your kills feed the Archdemon (10 souls); it then grows without limit with every unit it wounds that dies. Dying demons burst in flame; Imps can detonate.',
   ice:'Every Frost hit leaves a frost mark; 4 marks freeze. A frozen enemy stays frozen and takes +2 from every Frost hit. Enemies that die frozen rise as Ice Statues (up to 3).',
@@ -7024,8 +7102,8 @@ function pvAbil(A,key){if(!A)return '';
   const M=A.machine&&MACHINES[A.machine];
   return `<div class="pv-ab"><div class="pv-abh"><b>${A.name}</b>${pills.map(p=>`<span class="pill">${p}</span>`).join('')}</div>
     ${aim?`<div class="hint">${aim}</div>`:''}<p>${A.desc||''}</p>${M?`<button class="linkbtn" data-pvm="${A.machine}">Builds: ${M.name} ›</button>`:''}</div>`}
-function pvTrait(t){const T=TRAITS[t];return T?`<div class="pv-tr"><b>✦ ${T.name}.</b> ${T.text}</div>`:''}
-function pvBody(k,it){const F=FAC[k],d=it.d;const traits=[].concat(d.trait||[]);
+function pvTrait(t,t2){return [t,t2].filter(x=>x&&TRAITS[x]).map(x=>`<div class="pv-tr"><b>✦ ${TRAITS[x].name}.</b> ${TRAITS[x].text}</div>`).join('')}
+function pvBody(k,it){const F=FAC[k],d=it.d;const traits=[d.trait,d.trait2].filter(Boolean);
   let html=`<div class="pv-top"><div class="pv-army"><span class="dot" style="background:${F.color}"></span>${F.name}</div>
     <button class="btn sm pv-x" id="pvClose" aria-label="Close preview">✕</button></div>
     <div class="pv-stage"><canvas id="pvCv" width="240" height="200" aria-label="${d.name} miniature" role="img"></canvas></div>
@@ -7040,7 +7118,7 @@ function pvBody(k,it){const F=FAC[k],d=it.d;const traits=[].concat(d.trait||[]);
   else if(it.wr){const g=F.units.findIndex(u=>u.leader);html+=`<div class="pv-ab"><div class="hint">Called once per game when both Second Hands have fallen, next to the</div><button class="linkbtn" data-pvu="${g}">${F.units[g].name} ›</button></div><div class="pv-ab hint">No ability.</div>`}
   else if(d.book)html+=`<div class="pv-ab hint"><b>Spellbook:</b> ${d.book.length} spells, one shared rest. Casting any of them rests all of them for that spell's cooldown.</div>`+d.book.map(x=>pvAbil(ABIL[x],x)).join('');
   else html+=d.ab?pvAbil(ABIL[d.ab],d.ab)+(d.ab2?pvAbil(ABIL[d.ab2],d.ab2):''):'<div class="pv-ab hint">No ability.</div>';
-  html+=traits.map(pvTrait).join('');
+  html+=traits.map(t=>pvTrait(t)).join('');
   if(d.leader&&TALENTS[k])html+=`<div class="pv-ab"><div class="hint">Leader talents (pick one before the game)</div><ul class="pv-tal">${TALENTS[k].map(t=>`<li><b>${t.name}.</b> ${t.text}</li>`).join('')}</ul></div>`;
   return html}
 function pvRoot(){let r=document.getElementById('uprev');
@@ -7114,7 +7192,7 @@ function renderSetup(){
     const bar=(lab,v,m,txt,cls)=>`<span>${lab}</span><div class="m"><i class="${cls||''}" style="width:${Math.max(4,v/m*100)}%"></i></div><b>${txt}</b>`;
     return `<div class="fac"><h3><span class="dot" style="width:14px;height:14px;background:${F.color}"></span>${F.name}</h3>
     ${HOME_COMPACT?`<p><b>Passive.</b> ${PASSIVE_SHORT[k]||F.passive} <details class="more"><summary>Full rules</summary>${F.passive}</details></p>`:`${WIN_LINES[k]?`<p class="winline" style="--fc:${F.color}">${WIN_LINES[k]}</p>`:''}${LOSE_LINES[k]?`<p><b>How to beat it.</b> ${LOSE_LINES[k]}</p>`:''}<p><b>Passive.</b> ${F.passive}</p>`}<p><b>Ultimate: ${ULTS[k].name}.</b> ${ULTS[k].text}</p>
-    <div class="homeline"><span class="sw" style="background:${hexA(F.color,.55)}"></span><span>${F.home}</span></div>
+    <div class="homeline"><span class="sw" style="background:${hexA(F.color,.55)}"></span><span>${homeText(F)}</span></div>
     <div class="profile" aria-label="Army profile">${bar('HP',Pp.hp,mx('hp'),Pp.hp)}${bar('ATK',Pp.atk,mx('atk'),Pp.atk)}${bar('DEF',Pp.def,mx('def'),Pp.def.toFixed(1))}${bar('Speed',Pp.mob,mx('mob'),Pp.mob.toFixed(1))}${bar('Range',Pp.rng,mx('rng'),Pp.rng.toFixed(1))}</div>
     ${HOME_COMPACT?'':`<div class="hint">${Pp.n} unit${Pp.n>1?'s':''}${Pp.slots!==Pp.n?` (${Pp.slots} slots)`:''} · ${Pp.ab} with abilities · ${Pp.pawns?Pp.pawns+' pawn'+(Pp.pawns>1?'s':''):'no pawns'}</div>`}
     <div class="roster">${F.units.map((d,i)=>unitRow(F,d,k,i)).join('')}${F.units.some(d=>d.trait==='tempo')?`<div class="mrow">When both Second Hands fall: <button class="linkbtn" data-wraith="1" data-fac="${k}">${WRAITH.name}</button> (${WRAITH.hp} HP, ${WRAITH.atk} ATK, ${WRAITH.def} DEF, walks ${WRAITH.mov}, melee, no ability)</div>`:''}${machinesOf(k).length?`<div class="mrow">Builds: ${machinesOf(k).map(m=>`<button class="linkbtn" data-mach="${m}" data-fac="${k}">${MACHINES[m].name}</button>`).join(' · ')}</div>`:''}</div></div>`}).join('');
@@ -7533,7 +7611,7 @@ function refresh(){
   const TERR=territory(),tl=territoryLeader();
   const sides=G.players.map(p=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;${p.alive?'':'opacity:.35;text-decoration:line-through'}" title="${talentInfo(p)?talentInfo(p).name+': '+talentInfo(p).text:''}"><span class="dot" style="background:${FAC[p.fac].color}"></span>P${p.id+1}${G.teams?' '+'ABC'[p.team]:''} <span class="hint">⬢${TERR[p.fac]||0}${tl===p.id?' ★':''}</span>${p.leaderless&&p.alive?' <span class="hint">(no leader)</span>':''}${p.bank?` <span class="hint">+${p.bank} AP banked</span>`:''}</span>`).join(' ');
   const ults='<div class="ults"><div class="label" style="margin:0 0 4px">Ultimates <span class="hint" style="text-transform:none;letter-spacing:0">(recharge; each cast raises the next cost by '+RULES.ULT_STEP+')</span></div>'+G.players.filter(p=>p.alive).map(p=>{const U=ULTS[p.fac],ch=p.ult||0,need=ultNeed(p),foe=tm(p.id)!==tm(G.cur)||!isHumanTurn(),near=ch<need&&ch>=need-2,full=ch>=need;return `<div class="srow ${full?'full':near?'near':''}" title="${U.text}"><span style="color:${FAC[p.fac].color}">P${p.id+1} ${U.name}${p.ultN?' <span class="hint">×'+p.ultN+'</span>':''}</span><div class="bar"><i style="width:${Math.min(1,ch/need)*100}%;background:${FAC[p.fac].color}"></i></div><b>${full?'⚡':near?'⚠ '+ch+'/'+need:ch+'/'+need}</b></div>`}).join('')+'</div>'+relicList();
-  const legend=[...new Set(G.players.map(p=>p.fac))].map(f=>`<div class="homeline"><span class="sw" style="background:${hexA(FAC[f].color,.55)}"></span><span><b style="color:${FAC[f].color}">${FAC[f].name}</b>. ${FAC[f].home}</span></div>`).join('');
+  const legend=[...new Set(G.players.map(p=>p.fac))].map(f=>`<div class="homeline"><span class="sw" style="background:${hexA(FAC[f].color,.55)}"></span><span><b style="color:${FAC[f].color}">${FAC[f].name}</b>. ${homeText(FAC[f])}</span></div>`).join('');
   $('#heartCard').innerHTML=`<div class="label">${MODES[G.mode].name} · Round ${G.round}</div>
     <div class="heart"><svg width="22" height="22" viewBox="-11 -11 22 22" aria-hidden="true" style="flex:none"><polygon points="${hexPts(0,0,10)}" fill="#e8b84e"/></svg><div>The Heart is ${hs}.${Object.keys(G.heartCount||{}).length?`<div class="hint">On the Heart now: ${Object.entries(G.heartCount).map(([t,c])=>`<b style="color:${teamColor(+t)}">${c}</b>`).join(' vs ')}</div>`:''}<div class="hint">${G.mode==='conquest'?`A side holds it when it is the only one with units on its ${G.heartR===2?19:7} gold hexes: +1 ATK and +1 DEF on every unit, and your units on it heal 1 HP per turn, and 1 point per turn.`:`The ground around the Throne (${1+3*G.heartR*(G.heartR+1)} gold hexes). The King on the Throne scores every turn; ${G.map?'kill it':'kill it or take its seat'} to stop it (killing it scores ${RULES.KING_KILL}).`}</div></div></div>
     <div class="heart" style="margin-top:8px"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 17L4.5 7.5 9 12 12 5 15 12 19.5 7.5 21 17Z" fill="#ffd766"/><rect x="3" y="18.5" width="18" height="2.6" fill="#ffd766"/></svg><div>${G.mode==='conquest'?`The Throne (centre hex): ${(()=>{const t=G.units.find(u=>onThrone(u));return t?`<b style="color:${FAC[P(t.owner).fac].color}">${t.name}</b>`:'empty'})()}.<div class="hint">The unit on it gets +2 ATK, +1 range if ranged and double-speed cooldowns; from round ${RULES.CENTRE_FROM} its side also gets +1 AP and +1 Ultimate charge per turn.</div>`:(()=>{const K=kingOf();const head=K?`♛ King: <b style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name} ${K.name}</b>${onThrone(K)?(kingChallenged(K)?' on the Throne, <b>challenged</b>':' on the Throne'):' (off the Throne)'}`:throneOpen()?'The Throne is free: sit on it to be crowned King.':G.map?'The Throne is hidden under the Rift Beast until it is slain.':`The Throne opens in round ${RULES.CENTRE_FROM}.`;return `${head}<div class="hint">The King: ${kingText()}</div>`})()}</div></div>
@@ -7861,7 +7939,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     if(isCentreWall(q,r)){el.innerHTML=`<div class="label">Hex</div><h3>${isHeart(q,r)?(q===0&&r===0?'The Throne (sealed)':'The Heart (sealed)'):'The wall around the Heart'}</h3><p class="hint" style="margin:6px 0 0">Until round ${RULES.CENTRE_FROM} a stone wall rings the Heart. No unit can enter or cross it, flyers and jumpers included, and nothing can be pushed, pulled, teleported or swapped into it. Straight shots stop at it; lobbed shots fly over. It falls at the start of round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (next round)':''}; then the Heart and the Throne start to count.</p>`;return}
     el.innerHTML=`<div class="label">Hex</div><h3>${G.traps&&G.traps[key(q,r)]?'Void Trap':f?FEATURES[f].name:q===0&&r===0?'The Throne':isHeart(q,r)?'The Heart':isNoMans(q,r)?'No man\u2019s land':t?FAC[t].name+' ground':'Open ground'}</h3>
       ${({lever:goalBox('stand a unit on it to pull it for your side.','when levers of two different sides are pulled, the Wanderer bursts out (it carries a Crown Shard).'),runestone:goalBox(`from round ${WILDS.midAt}, hold all three Standing Stones at the start of two of your turns in a row (no enemy on any stone).`,`${WILDS.stonesPts} Warlord points.`),forge:goalBox('start your turn with a unit standing on the Forge.','that unit is tempered for good: +1 ATK (+1 DEF if it has no attack). Once per army; then the Forge rests '+WILDS.forgeRest+' rounds.'),shrine:goalBox('end your move on it.','the unit heals 2 at the start of your turn (then the shrine rests 2 rounds).')})[f]||''}
-      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?(G.mode==='conquest'?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round '+RULES.CENTRE_FROM+' its side also gets +1 AP and +1 Ultimate charge each turn.':'Sit here to be crowned King: '+kingText()):isHeart(q,r)?(G.mode==='conquest'?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':'The ground around the Throne. It gives nothing by itself; it is where the fight for the Throne happens.'):t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${FAC[t].home}</p>`:''}${road}${wellP}`;return}
+      <p class="hint" style="margin:6px 0 0">${f?FEATURES[f].text+(f==='shrine'&&shrineBack(q,r)?` <b>Spent: it returns in round ${shrineBack(q,r)}.</b>`:''):q===0&&r===0?(G.mode==='conquest'?'The unit standing here gets +2 ATK, +1 range if ranged and double-speed cooldowns. From round '+RULES.CENTRE_FROM+' its side also gets +1 AP and +1 Ultimate charge each turn.':'Sit here to be crowned King: '+kingText()):isHeart(q,r)?(G.mode==='conquest'?'Hold the Heart by being the only side with units on it: +1 ATK and +1 DEF for your whole army, and units on it heal 1 HP each turn.':'The ground around the Throne. It gives nothing by itself; it is where the fight for the Throne happens.'):t?FAC[t].home:'Nothing special here.'}</p>${f&&t?`<p class="hint" style="margin:6px 0 0">Also ${FAC[t].name} ground: ${homeText(FAC[t])}</p>`:''}${road}${wellP}`;return}
   if(!u){
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
@@ -7879,7 +7957,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.mt==='fly'&&u.kind!=='wall')tags.push(perched(u)?'<span class="tag bad">Perched on rock: −1 range, walkers can\u2019t hit it in melee</span>':'<span class="tag">Flies: passes over units and rocks, can perch on rocks</span>');
   {const rl=relicOf(u);if(rl)tags.unshift(`<span class="tag" style="background:${hexA(RELICS[rl.kind].col,.25)};color:${RELICS[rl.kind].col}">◆ ${RELICS[rl.kind].name}: ${RELICS[rl.kind].text} (−1 move)</span>`)}
   if(u.leader&&talentInfo(p))tags.unshift(`<span class="tag" style="background:#3a2f12;color:#ffd766">♚ Talent · ${talentInfo(p).name}: ${talentInfo(p).text}</span>`);
-  if(u.trait)tags.unshift(`<span class="tag trait">✦ ${TRAITS[u.trait].name}: ${TRAITS[u.trait].text}</span>`);
+  for(const tr of [u.trait2,u.trait])if(tr&&TRAITS[tr])tags.unshift(`<span class="tag trait">✦ ${TRAITS[tr].name}: ${TRAITS[tr].text}</span>`);// v77: a unit may carry two traits
   if(u.statue)tags.push(`<span class="tag" style="color:#cfd3dc">Stone Sleep: ${u.stone||0} of ${statueNeed(u)} AP of spells poured in. Every spell a friendly mage casts within 2 hexes adds its AP cost; at ${statueNeed(u)} the Gargoyle rises here with ${Math.floor((u.hatch?u.hatch.maxhp:16)/2)} HP. Smash the statue and it is gone for good (no Ultimate charge for it).</span>`);
   else if(u.summon)tags.push(`<span class="tag">Built: falls apart in ${u.ttl} turn${u.ttl>1?'s':''}${u.machine?' · never moves · fires on its own for free at the start of the gnome turn'+(u.at==='none'?'':' · its free shot deals 1 damage; a commanded attack costs 2 AP')+' · no charge or star for killing it':''}</span>`);
   if(u.machine&&u.owner===G.cur)tags.push(`<span class="tag">Workshop: ${machineCount(u.owner)} of ${machineCap(u.owner)} machines out</span>`);
@@ -8000,7 +8078,8 @@ function realmRules(){return `<h3>The Realm (test board)</h3><ul>
   <li><b>Points.</b> Only four things score: the King on the Throne (1 a turn), an Elder Drake (${REALM_MON.drake.pts}), the Wanderer (${REALM.wanderPts}) and the Rift Beast (${RULES.BEAST_PTS}), each for the killing blow. First to <b>${REALM.target}</b> wins. Killing an enemy Leader gives +${REALM.leaderCharge} Ultimate charge; camps give charge too (tier 1 +${REALM.charge[1]}, tier 2 +${REALM.charge[2]}, tier 3 +${REALM.charge[3]}).</li>
   <li><b>Light and fast, heavy and slow.</b> Units with no armour move 1 more, units with 2+ DEF move 1 less. Blows struck from next to the target deal 1 more; shots from afar (and abilities from 3+ hexes) deal 1 less.</li>
   <li><b>Monsters never move.</b> At each round start a monster strikes the last unit that hit it (if it is still close); tier 2 and 3 also strike everything next to them. You can always walk away.</li>
-  <li>Units have twice their usual HP on this board.</li></ul>`}
+  <li><b>No home ground.</b> Nobody claims ground by standing on it here; only the ground abilities make counts (burning hexes, frost, bog, holy groves).</li>
+  <li>Units have more HP on this board (about one and a half times).</li></ul>`}
 function rulesTop0(){
   const M=MONSTERS,row=(a,b)=>`<tr><td style="padding:4px 12px 4px 0">${a}</td><td style="padding:4px 0;text-align:right"><b>${b}</b></td></tr>`;
   return `
