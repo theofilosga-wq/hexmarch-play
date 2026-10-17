@@ -226,6 +226,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:12px 0}
 .uchip .st{display:flex;gap:3px;font-size:10px;line-height:1;align-items:center;height:12px}
 .uchip .st .dot{width:7px;height:7px;border-radius:50%;background:#5fd68e;display:inline-block}
 .uchip .st .dot.off{background:#3a4152}
+.uchip .st .mk{font-size:11px;line-height:1;color:#5fd68e;font-weight:700}
+.uchip .st .mk.act{color:#ff8a7a}
+.uchip .st .mk.used{color:#3a4152;text-decoration:line-through}
 .uchip .ab{font-family:var(--display);font-size:10px;padding:0 3px;border-radius:3px;background:#2d3444;color:#aeb4c2}
 .uchip .ab.rdy{background:#ffd766;color:#1a1206}
 .uchip .ldr{position:absolute;top:2px;left:4px;font-size:10px;color:var(--gold)}
@@ -6171,11 +6174,13 @@ function statusBadges(u){const s=u&&u.st;if(!s||(u.kind==='wall'&&!(typeof wilds
   for(const k of Object.keys(s.curses||{}))if(s.curses[k]>0)o.push(['curse',s.curses[k],'#7d6914','#fff4b0']);
   if(s.sunder>0)o.push(['sunder',s.sunder,'#8a5a22','#ffe3bf']);
   if(s.hex>0)o.push(['hex',s.hex,'#6b2fa8','#f0dcff']);
+  if(G&&!G.phase&&u.kind!=='wall'&&u.owner===G.cur&&G.players[G.cur]&&G.players[G.cur].ctrl==='human'&&u.moved&&u.acted&&!(u.freeAtk>0)&&!(u.freeMove>0))o.push(['done',0,'#3a4152','#c9ced8','done']);// v75c: this unit is spent for the turn
   return o}
 // the small signs inside the pills, drawn as shapes so they look the same on every phone and browser
 function badgeIcon(c,k,x,y,r,col){c.save();c.translate(x,y);c.strokeStyle=col;c.fillStyle=col;c.lineCap='round';c.lineJoin='round';c.lineWidth=Math.max(1.2,r*0.2);
   if(k==='chill'){for(let i=0;i<3;i++){const a=i*Math.PI/3;c.beginPath();c.moveTo(-Math.cos(a)*r,-Math.sin(a)*r);c.lineTo(Math.cos(a)*r,Math.sin(a)*r);c.stroke()}
     c.lineWidth=Math.max(1,r*0.14);for(let i=0;i<6;i++){const a=i*Math.PI/3,ex=Math.cos(a)*r*0.62,ey=Math.sin(a)*r*0.62,b1=a+2.4,b2=a-2.4;c.beginPath();c.moveTo(ex+Math.cos(b1)*r*0.3,ey+Math.sin(b1)*r*0.3);c.lineTo(ex,ey);c.lineTo(ex+Math.cos(b2)*r*0.3,ey+Math.sin(b2)*r*0.3);c.stroke()}}
+  else if(k==='done'){c.lineWidth=Math.max(1.4,r*0.26);c.beginPath();c.moveTo(-r*0.75,r*0.05);c.lineTo(-r*0.2,r*0.65);c.lineTo(r*0.8,-r*0.6);c.stroke()}
   else if(k==='frozen'){c.lineWidth=Math.max(1.1,r*0.16);c.strokeRect(-r*0.9,-r*0.9,r*1.8,r*1.8);c.fillRect(-r*0.45,-r*0.5,r*0.3,r);c.fillRect(r*0.15,-r*0.5,r*0.3,r)}
   else if(k==='stun'){c.beginPath();for(let i=0;i<10;i++){const rad=i%2?r*0.42:r;const a=i*Math.PI/5-Math.PI/2;c.lineTo(Math.cos(a)*rad,Math.sin(a)*rad)}c.closePath();c.fill()}
   else if(k==='curse'){c.beginPath();c.arc(0,-r*0.15,r*0.78,Math.PI*0.85,Math.PI*2.15);c.lineTo(r*0.45,r*0.85);c.lineTo(-r*0.45,r*0.85);c.closePath();c.fill();
@@ -7607,7 +7612,7 @@ function renderDock(){
   const own=G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&visibleUnit(u)).sort((a,b)=>(b.leader?1:0)-(a.leader?1:0)||(a.moved&&a.acted?1:0)-(b.moved&&b.acted?1:0));
   strip.innerHTML=human?own.map(u=>{const pct=Math.max(0,u.hp/u.maxhp),ab=abState(u),done=!G.phase&&u.moved&&u.acted;
     return `<button class="uchip ${G.sel===u.id?'sel':''} ${done?'done':''}" data-uid="${u.id}" title="${u.name}">${u.leader?'<span class="ldr">♚</span>':''}${uIcon(u,34)}<span class="hpn">${fmt(u.hp)}/${u.maxhp}</span><span class="hp"><i style="width:${pct*100}%;background:${hpCol(pct)}"></i></span>
-      <span class="st">${G.phase?'':`<span class="dot ${u.moved?'off':''}" title="move"></span><span class="dot ${u.acted?'off':''}" title="action" style="background:${u.acted?'':'#ff8a7a'}"></span>`}${ab?`<span class="ab ${ab.ready?'rdy':''}">${ab.ready?'⚡':ab.cd}</span>`:''}</span></button>`}).join(''):'';
+      <span class="st">${G.phase?'':`<span class="mk ${u.moved&&!(u.freeMove>0)?'used':''}" title="${u.moved?'moved':'can move'}">➤</span><span class="mk act ${u.acted&&!(u.freeAtk>0)?'used':''}" title="${u.acted?'acted':'can act'}">⚔</span>`}${ab?`<span class="ab ${ab.ready?'rdy':''}">${ab.ready?'⚡':ab.cd}</span>`:''}</span></button>`}).join(''):'';
   strip.hidden=!human;
   strip.querySelectorAll('[data-uid]').forEach(b=>b.onclick=()=>selectUnit(byId(+b.dataset.uid)));
   const sel=G.sel!=null?byId(G.sel):null,insp=G.inspect!=null?byId(G.inspect):null;
