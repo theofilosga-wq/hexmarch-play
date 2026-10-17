@@ -5844,7 +5844,7 @@ function wings3d(g,kind,y,s,mat){if(!kind)return;const col={hell:'#3a1714',imp:'
    gltf-transform to about 20k triangles and 512-px textures, 1-2 MB). buildFigure first builds the usual code figure as a placeholder, then loads
    the model once per file (glModel), clones it per piece, scales it to h (scene units, before FIG3D_K) on top of the hex base and swaps it in.
    Without THREE.GLTFLoader (offline, CDN blocked) or if the file fails, the code figure stays. */
-const MODELS={'Pit Lord':{file:'models/fire_pit-lord.glb',h:1.75},'Imp':{file:'models/fire_imp.glb',h:1.25}};
+const MODELS={'Pit Lord':{file:'models/fire_pit-lord.glb',h:3.0},'Imp':{file:'models/fire_imp.glb',h:2.2}};// v78b (owner: 'too small, I want to see the detail'): real models stand about 1.7x taller than the drawn pieces
 const GLM={};
 function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
   new THREE.GLTFLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map){mt.map.encoding=THREE.LinearEncoding;mt.emissive=new THREE.Color('#ffffff');mt.emissiveMap=mt.map;mt.emissiveIntensity=0.3}mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.3,1.3,1.3);mt.needsUpdate=true}/* the scene's lights are dim and tuned for flat bright colours: lift the textured model (no metal: black without an environment map) */}});
@@ -6093,7 +6093,7 @@ function pvGL(){if(PV3.R!==undefined)return PV3.R;
 function glPreview(holder,d,fac,big){const R=pvGL();if(!R||!holder)return false;const T=THREE;
   const old=holder.querySelector('canvas');if(old&&old!==R.domElement)old.replaceWith(R.domElement);else if(!old)holder.appendChild(R.domElement);
   R.domElement.setAttribute('aria-label',d.name+' miniature');
-  const W=240,H=200;R.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R.setSize(W,H);
+  const W=Math.min(Math.max(260,(window.innerWidth||360)-48),440),H=Math.round(W*0.85);R.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R.setSize(W,H);PV3.cam.aspect=W/H;PV3.cam.updateProjectionMatrix();// v78b: the turntable fills a phone's width
   const turn=PV3.turn;while(turn.children.length){const o=turn.children[0];turn.remove(o);(o.userData.own||[]).forEach(g=>g.dispose())}
   const fig=buildFigure({name:d.name,size:big?2:1},fac);turn.add(fig);PV3.fig=fig;
   // a little island of hexes under the piece, tinted with the army colour (a giant's two hexes sit either side of the centre)
@@ -7169,6 +7169,7 @@ function openPreview(k,sel){const items=pvItems(k);
   document.querySelectorAll('.urow.on').forEach(r=>r.classList.remove('on'));if(!it.m){const row=document.querySelector(`.urow[data-fac="${k}"][data-u="${idx}"]`);if(row)row.classList.add('on')}
   try{$('#pvClose').focus({preventScroll:true})}catch(e){}
 }
+document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('#lookBtn');if(b)openPreview(b.dataset.fac,{u:+b.dataset.u})});// v78b: the in-game unit card opens the big turntable
 function pvStep(dir){if(!PV.open)return;const n=pvItems(PV.fac).length;const it=pvItems(PV.fac)[(PV.idx+dir+n)%n];openPreview(PV.fac,it.m?{m:it.m}:{u:(PV.idx+dir+n)%n})}
 function closePreview(){if(!PV.open)return;PV.open=false;document.querySelectorAll('.urow.on').forEach(r=>r.classList.remove('on'));cancelAnimationFrame(PV.raf);const r=document.getElementById('uprev');if(r)r.hidden=true;
   const b=PV.back;PV.back=null;if(b&&b.isConnected&&b.focus)try{b.focus({preventScroll:true})}catch(e){}}
@@ -7994,7 +7995,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(u.freeAtk>0)tags.push(`<span class="tag good">Quickened${u.freeAtk>1?' ×'+u.freeAtk:''}: ${u.freeAtk>1?u.freeAtk+' free basic attacks':'one free basic attack'} this turn (no AP)</span>`);
   if(u.freeMove>0)tags.push('<span class="tag good">Rewound: one free move this turn (no AP), even after moving</span>');
   if(u.st.rush)tags.push('<span class="tag good">Clockwork Rush +1 ATK</span>');
-  if(u.poss)tags.push(`<span class="tag curse">Possessed: returns to P${u.poss.owner+1} at the end of this turn</span>`);
+  if(u.poss)tags.push(`<span class="tag curse">Possessed: it fights for P${u.owner+1} until it dies or the Possessor steps out (1 damage at each of their turn starts)</span>`);
   if(u.st.duel){const c=byId(u.st.duel.by);tags.push(`<span class="tag bad">Challenged${c?' by the '+c.name:''}: basic attacks only at the Champion (${u.st.duel.ttl} turn${u.st.duel.ttl>1?'s':''})</span>`)}
   if(u.mov>0&&onRoad(u))tags.push('<span class="tag good">Flank road +1 move</span>');
   if(cells(u).some(([q,r])=>isOutpost(q,r)))tags.push('<span class="tag good">On a flag: it is captured for this side and stays captured after the unit leaves</span>');
@@ -8046,6 +8047,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     ${statusChips(u,true)}
     ${UNIT_LINES[u.name]?`<p class="tagline">${UNIT_LINES[u.name]}</p>`:''}
     ${u.book?`<div class="abil hint"><b>Spellbook:</b> ${u.book.length} spells, one shared rest. Casting any of them rests all of them for that spell's cooldown.</div>`:''}${abilsOf(u).length?abilsOf(u).map(k=>abilBlock(u,k)).join(''):`<div class="abil hint">No ability. ${u.pawn?'Pawns trade tricks for speed and numbers.':u.statue?'A statue: it only waits to be woken.':'Pure stats.'}</div>`}
+    ${(()=>{const fk=u.kind!=='wall'&&u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:null;const pi=fk?FAC[fk].units.findIndex(d=>d.name===u.name):-1;return pi>=0?`<button class="btn sm" id="lookBtn" data-fac="${fk}" data-u="${pi}" style="margin:6px 0 2px">🔍 Look closer (3D)</button>`:''})()}
     <div class="tags">${tags.map(t=>t.startsWith('<')?t:`<span class="tag">${t}</span>`).join('')}</div>
     <details class="more" ${window.innerWidth>980?'open':''}><summary>How it moves and attacks</summary><div class="pats">
       <div class="pat">${patternSVG(u.mt,mv,0,F.color,F.color)}<div class="mvkind ${M.free?'free':'pat'}">${M.free?'Free move':'Pattern move'}</div><div class="mt">${M.text(mv)}${F.gate&&onHome(u)&&!G.gateUsed?' On teal: can also step to any empty teal hex.':''}</div></div>
