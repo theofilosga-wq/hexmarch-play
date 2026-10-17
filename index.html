@@ -2247,7 +2247,7 @@ function soulCount(t){if(!RULES.ARCHDEMON||t.kind==='wall'||t.summon||t.statue||
   const fp=G.players.filter(p=>p.fac==='fire'&&p.alive&&!p.demon);for(const p of fp){
     const mine=t.owner===p.id,byMe=CUR_SRC&&CUR_SRC.kind!=='wall'&&CUR_SRC.owner===p.id&&tm(t.owner)!==p.team;if(!mine&&!byMe)continue;
     if(!mine&&G.realm&&REALM.soulMode==='own')continue;// v75 test switch: souls only from the Court's own dead
-    const ns=hasTrait(t,'wisp')?2:1;p.souls=(p.souls||0)+ns;if(mine)p.soulsLost=(p.soulsLost||0)+ns;else p.soulsKilled=(p.soulsKilled||0)+ns;
+    const ns=hasTrait(t,'wisp')?2:(t.sacrificed&&G.realm?REALM.sacSouls:1);p.souls=(p.souls||0)+ns;if(mine)p.soulsLost=(p.soulsLost||0)+ns;else p.soulsKilled=(p.soulsKilled||0)+ns;
     const ready=RULES.DEMON_SOULS?p.souls>=RULES.DEMON_SOULS:(p.soulsLost||0)>=RULES.DEMON_LOST&&(p.soulsKilled||0)>=RULES.DEMON_KILLS;
     if(ready){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&u!==t);G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:L?[L.q,L.r]:[t.q,t.r]})}}}
 // v62 (owner): an enemy killed by the Pit Lord's Kindle (the blast or its burning ground) explodes: RULES.KINDLE_BLAST damage to every unit of its own side within 2.
@@ -2778,7 +2778,7 @@ function splashTargets(u,t){
 }
 function splashDmg(u,dmg){return u.aoe==='splash'?1:Math.max(1,Math.floor(dmg/2))}
 // Tempo cap (Second Hand, v28): at most RULES.TEMPO_CAP basic attacks per turn, however many Quickens it received.
-const tempoCap=u=>G&&G.realm?Math.min(6,2+(u.cmb||0)):RULES.TEMPO_CAP;// v75 (brief): 2 strikes a turn, +1 per kill of its own, up to 6
+const tempoCap=u=>G&&G.realm?Math.min(6,REALM.comboBase+(u.cmb||0)):RULES.TEMPO_CAP;// v75 (brief): 2 strikes a turn, +1 per kill of its own, up to 6
 const tempoSpent=u=>hasTrait(u,'tempo')&&(u.swings||0)>=tempoCap(u);
 // Strikes a Quicken can still add to a Second Hand this turn: the cap minus strikes made, free strikes held and its own unused action.
 const tempoRoom=u=>tempoCap(u)-(u.swings||0)-(u.freeAtk||0)-(u.acted?0:1);
@@ -4045,7 +4045,7 @@ function kingScore(p){
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
 const REALM={HW:28,HH:25,VR:7,open:7,target:10,hpMul:2,start:2,heal:2,killPts:0,leaderPts:0,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:24,suitHp:12,
-  faith:[12,18,24],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,camp:1,steps:[3,7,12,18,25,33,42,52]},armies:['fire','ice','gnomes','warband']};
+  comboBase:3,sacSouls:2,faith:[12,18,24],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,camp:1,steps:[3,7,12,18,25,33,42,52]},armies:['fire','ice','gnomes','warband']};
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:0},
@@ -4452,7 +4452,7 @@ function heuristic(u,k,q,r,ctx,dest){
     case 'disembark':return 0;
     case 'bombrun':{const sim=simScore(team,()=>useAbility(byId(u.id),k,q,r))-ctx.base;return sim}
     case 'rewindwounds':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)!==team)return 0;const back=t.hpPrev2!=null?t.hpPrev2:t.hpPrev1;if(back==null||back<=t.hp)return 0;const g=Math.min(back,t.maxhp)-t.hp;return g*(hasTrait(t,'tempo')?1.3:0.8)+(t.leader?1:0)}
-    case 'sacrifice':{const foes=ctx.foes.filter(f=>distUU(f,u)===1);if(!foes.length)return 0;let s=0;for(const f of foes){s+=Math.min(3,f.hp)*0.9+(f.hp<=3?worth(f)*0.6:0)}const p=G.players[u.owner];s+=p.demon?0:1.5;s-=u.hp>u.maxhp*0.6&&foes.length<2?3:0;return s-1}
+    case 'sacrifice':{const foes=ctx.foes.filter(f=>distUU(f,u)===1);if(!foes.length)return 0;let s=0;for(const f of foes){s+=Math.min(3,f.hp)*0.9+(f.hp<=3?worth(f)*0.6:0)}const p=G.players[u.owner];s+=p.demon?0:1.5+(G.realm?2.5:0);s-=u.hp>u.maxhp*0.6&&foes.length<2?1.5:0;return s-1}
     case 'possess':{const t=unitAt(q,r);if(!t||!possessable(t,A))return 0;const reach=effMov(t)+effRng(t);const n=G.units.filter(v=>v!==t&&v.kind!=='wall'&&tm(v.owner)===tm(t.owner)&&distUU(v,t)<=reach).length;return n?7+Math.min(n,3)*1.5+(t.stars||0)*2:0}
     // Rewind: a free extra walk. Worth it for a striker that has moved and still has a strike (its action or a free Quicken attack) but nothing in reach,
     // for a striker that needs two walks to reach a target, and to pull a spent blade or the Leader out of a crowd.
