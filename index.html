@@ -3633,7 +3633,7 @@ function monsterSlain(t){
   if(t.monster==='cracked'){addLog(null,'A cracked wall crumbles: the way is open.');vfx({k:'death',at:[t.q,t.r],icon:'mountain',col:'#9a9283'});return}
   addLog(null,`${t.name} falls.`);vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:'#b9b3d6',big:t.monster==='dragon'||t.monster==='wanderer'});
   const k=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC:null;
-  if(G.realm&&REALM_MON[t.monster]){realmSlain(t,R,k);return}
+  if(G.realm&&(REALM_MON[t.monster]||t.monster==='wanderer')){realmSlain(t,R,k);return}
   // v58 (owner: "make it so the unit that kills it takes the treasure automatically"): the treasure lands under the killer, who picks it up at once
   const auto=RULES.AUTO_LOOT&&k&&alive(k)&&canCarry(k)&&!lootOf(k)&&!(k.suitHp>0)&&!(R&&R.loot==='suit');// v59 (owner): a War Suit stays on the floor, you choose who wears it
   const lq=auto?k.q:t.q,lr=auto?k.r:t.r;
@@ -3714,9 +3714,9 @@ function spawnWanderer(){
   const camps=G.players.map(p=>p.camp).filter(Boolean);
   const spots=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!roomAt(q,r)&&hd(q,r,0,0)>7&&camps.every(c=>hd(q,r,c[0],c[1])>=5)&&!featAt(q,r));
   if(!spots.length)return;const c=spots[Math.floor(wildsHash(`${G.round}|wander|${Object.keys(G.levers).sort().join(';')}`)*spots.length)];
-  const m=makeMonster('wanderer',c[0],c[1],null);G.units.push(m);G.wander={id:m.id,round:G.round};
-  addLog(null,'Two levers are pulled: a trap door bursts open and the Wanderer runs out! It roams 3 hexes a round and only hits back when attacked. Its killing blow drops a Crown Shard.');
-  vfx({k:'trapdoor',at:c,col:'#b9a2ff',cam:1});announce({k:'note',col:'#b9a2ff',t:'A trap door opens: the Wanderer runs free',s:'It roams the board and only hits back when attacked. Its killing blow drops a Crown Shard.'});
+  const m=makeMonster('wanderer',c[0],c[1],null);if(G.realm)m.hp=m.maxhp=REALM.wanderHp;G.units.push(m);G.wander={id:m.id,round:G.round};
+  addLog(null,`Two levers are pulled: a trap door bursts open and the Wanderer runs out! It roams 3 hexes a round and only hits back when attacked. Its killing blow ${G.realm?`scores ${REALM.wanderPts} points`:'drops a Crown Shard'}.`);
+  vfx({k:'trapdoor',at:c,col:'#b9a2ff',cam:1});announce({k:'note',col:'#b9a2ff',t:'A trap door opens: the Wanderer runs free',s:G.realm?`It roams the board and only hits back when attacked. Its killing blow scores ${REALM.wanderPts} points.`:'It roams the board and only hits back when attacked. Its killing blow drops a Crown Shard.'});
   if(trk()){const O=tObj();if(O)O.wander={round:G.round}}}
 function wanderRoam(){const m=G.wander&&byId(G.wander.id);if(!m||!alive(m))return;let last=null;if(m.heldRound===G.round)return;// v45: frozen this round: it stays
   for(let i=0;i<WILDS.wanderMove-(m.st&&m.st.chill>0?1:0);i++){const opts=DIRS.map(([a,b])=>[m.q+a,m.r+b]).filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!G.players.some(p=>inCamp(p,q,r))&&!(G.loot||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)&&!['runestone','lever','tower'].includes(featAt(q,r))&&!(last&&q===last[0]&&r===last[1]));// v43: never parks on a runestone, lever or tower
@@ -3872,7 +3872,7 @@ function kingScore(p){
    Points: last hits (an enemy unit 1, a Leader 3, camps by tier) and the King on the Throne (1 a turn); first to REALM.target wins.
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
-const REALM={HW:28,HH:25,VR:7,open:8,target:15,hpMul:2,start:2,heal:2,killPts:1,leaderPts:3,respawn:6,beastHp:40,suitHp:12,armies:['fire','ice','gnomes','warband']};
+const REALM={HW:28,HH:25,VR:7,open:8,target:15,hpMul:2,start:2,heal:2,killPts:1,leaderPts:3,respawn:0,springHeal:3,wanderHp:36,wanderPts:4,beastHp:40,suitHp:12,armies:['fire','ice','gnomes','warband']};
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:1},
   warden:{name:'Spring Warden',icon:'golem',hp:28,atk:4,def:0,tier:2,pts:2},
@@ -3915,30 +3915,32 @@ function genRealm(){
   // the Heart's wall has a gate facing each base (it opens with the rest of the wall in round REALM.open)
   {const [bx,by]=pix(...b0),L=Math.hypot(bx,by);const g=hexRound(bx/L*(G.heartR+1)*S3*0.95,by/L*(G.heartR+1)*S3*0.95);for(const [q,r] of [g,...DIRS.map(([a,c])=>[g[0]+a,g[1]+c])])if(T[key(q,r)]==='wall')put(q,r,'gate',true)}
   const clear=(q,r,m)=>cellsAll.every(([a,b])=>hd(a,b,q,r)>m||!T[key(a,b)]||T[key(a,b)]==='wood'||T[key(a,b)]==='hill');
-  const lists={camp1:[],camp2:[],camp3:[],ruin:[]};
+  const lists={camp1:[],camp2:[],camp3:[],ruin:[],lever:[]};
   const stamp=(c,t,rad)=>{const set=[];for(const [q,r] of wildsMirrors(...c)){if(!inR(q,r))continue;for(const [a,b] of cellsAll)if(hd(a,b,q,r)<=rad)T[key(a,b)]=t;if(!lists[t].some(o=>o[0]===q&&o[1]===r)){lists[t].push([q,r]);set.push([q,r])}}return set};
   const sets={camp1:[]};
   const place=(test,t,n,rad,gap)=>{let tries=0;while(n>0&&tries++<1500){const c=cellsAll[Math.floor(RNG()*cellsAll.length)];if(!test(...c)||!clear(c[0],c[1],rad))continue;if(lists[t].some(o=>hd(o[0],o[1],c[0],c[1])<gap))continue;const s=stamp(c,t,rad);if(sets[t])sets[t].push(s);n--}};
   // tier 2: the middle of each edge (exactly on the mirror lines), shared by the two corner bases on that edge
   const rB=2*Math.floor((HH-2.2)/3);stamp(hexRound(HW-2.2,0),'camp2',1);stamp([-rB/2,rB],'camp2',1);
   place((q,r)=>inQ(q,r)&&nearBase(q,r)>=3&&nearBase(q,r)<=VR-2,'camp1',2,1,4);
-  place((q,r)=>inQ(q,r)&&hd(q,r,0,0)>=7&&hd(q,r,0,0)<=11&&nearBase(q,r)>VR+1,'camp3',1,1,6);
-  place((q,r)=>inQ(q,r)&&out(q,r)&&edgeD(q,r)<3&&edgeD(q,r)>1.2&&nearBase(q,r)>VR+2&&lists.camp2.every(o=>hd(o[0],o[1],q,r)>=5),'ruin',1,0,6);
+  const off=(q,r)=>{const [x,y]=pix(q,r);return x>=2&&y>=2};// off the mirror lines, so there are always four copies
+  for(const [lo,hi] of [[7,11],[6,13],[5,15]]){if(lists.camp3.length)break;place((q,r)=>off(q,r)&&hd(q,r,0,0)>=lo&&hd(q,r,0,0)<=hi&&nearBase(q,r)>VR+1,'camp3',1,1,6)}
+  for(const [e,nb,g] of [[3,VR+2,5],[4,VR+1,4],[6,VR,3]]){if(lists.ruin.length)break;place((q,r)=>off(q,r)&&out(q,r)&&edgeD(q,r)<e&&edgeD(q,r)>1.2&&nearBase(q,r)>nb&&lists.camp2.every(o=>hd(o[0],o[1],q,r)>=g),'ruin',1,0,6)}
+  {for(const [lo,hi,gap] of [[8,13,4],[6,16,3],[5,20,2]]){if(lists.lever.length)break;place((q,r)=>off(q,r)&&out(q,r)&&hd(q,r,0,0)>=lo&&hd(q,r,0,0)<=hi&&edgeD(q,r)>2&&[...lists.camp3,...lists.ruin].every(o=>hd(o[0],o[1],q,r)>=gap),'lever',1,0,6)}}
   // every base must reach the Heart and every camp: carve straight passes (mirrored) through mountains, rivers and the Heart's wall
   const pass=t=>t!=='mount'&&t!=='river'&&t!=='wall';
   const bfs=s=>{const D={};D[key(...s)]=0;const qu=[s];for(let i=0;i<qu.length;i++){const [q,r]=qu[i];for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(!inR(a,b)||k in D||!pass(T[k]))continue;D[k]=D[key(q,r)]+1;qu.push([a,b])}}return D};
   const carve=(a,b)=>{for(const [q,r] of hexLine(a,b)){const t=T[key(q,r)];if(t==='mount')put(q,r,'exit',true);else if(t==='river')put(q,r,'ford',true);else if(t==='wall')put(q,r,'gate',true)}};
-  const goals=[[0,0],...lists.camp1,...lists.camp2,...lists.camp3,...lists.ruin];
+  const goals=[[0,0],...lists.camp1,...lists.camp2,...lists.camp3,...lists.ruin,...lists.lever];
   for(const g of goals){for(let it=0;it<3;it++){const D=bfs(b0);const own=wildsMirrors(...g).filter(c=>inR(c[0],c[1]));if(own.every(c=>key(c[0],c[1]) in D))break;
     const c=own.filter(c=>!(key(c[0],c[1]) in D)).sort((x,y)=>hd(x[0],x[1],b0[0],b0[1])-hd(y[0],y[1],b0[0],b0[1]))[0];carve(b0,c)}}
   G.feat={};G.roads={};G.terr={};G.wallLook={};G.decor={};
-  for(const [k,t] of Object.entries(T)){if(t==='mount'||t==='wall')G.feat[k]='rock';else if(t==='river')G.feat[k]='river';else if(t==='wood')G.feat[k]='forest';else if(t==='hill')G.feat[k]='hill';else if(t==='ford')G.roads[k]=1}
+  for(const [k,t] of Object.entries(T)){if(t==='mount'||t==='wall')G.feat[k]='rock';else if(t==='river')G.feat[k]='river';else if(t==='wood')G.feat[k]='forest';else if(t==='hill')G.feat[k]='hill';else if(t==='ford')G.roads[k]=1;else if(t==='lever')G.feat[k]='lever'}
   // the camps: one record per copy, the monster sits on the centre hex; tier-1 boons are rolled per mirror set so every valley gets the same ones
   const pick=a=>a[Math.floor(RNG()*a.length)];const rooms=[];
   const mk=(type,c,enc,extra)=>rooms.push(Object.assign({id:type+'#'+rooms.length,type,c,cells:cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=1).map(([q,r])=>key(q,r)),ways:[],seen:true,enc,loot:null,state:'active',holdTeam:null,holdN:0,monMax:0,tier:REALM_MON[enc].tier},extra||{}));
-  for(const s of sets.camp1){const boon=pick(Object.keys(REALM_BOON));for(const c of s){let bi=0;bases.forEach((b,i)=>{if(hd(c[0],c[1],b[0],b[1])<hd(c[0],c[1],bases[bi][0],bases[bi][1]))bi=i});mk('t1',c,'brute',{boon,respawn:W.respawn,base:bi})}}
+  for(const s of sets.camp1){const boon=pick(Object.keys(REALM_BOON));for(const c of s){let bi=0;bases.forEach((b,i)=>{if(hd(c[0],c[1],b[0],b[1])<hd(c[0],c[1],bases[bi][0],bases[bi][1]))bi=i});mk('t1',c,'brute',{boon,respawn:W.respawn||0,base:bi})}}
   const item=pick(Object.keys(SUIT_ITEMS));
-  for(const c of lists.camp2){const heal=c[1]===0;mk(heal?'heal':'ogre',c,heal?'warden':'ogre',heal?{respawn:W.respawn}:{item})}
+  for(const c of lists.camp2){const heal=c[1]===0;mk(heal?'heal':'ogre',c,heal?'warden':'ogre',heal?{respawn:W.respawn||0}:{item})}
   for(const c of lists.camp3)mk('t3',c,'drake');
   for(const c of lists.ruin)mk('ruin',c,'chest');
   G.rooms=rooms;G.circles=[];G.cracks=[];G.levers={};G.gems={};G.wander=null;G.midUp=false;
@@ -3978,10 +3980,11 @@ function realmPts(pid,n,src,why){const p=G.players[pid];if(!p||!(n>0))return;con
 // A camp monster falls: the side that landed the killing blow scores its tier's points and takes its reward at once (nothing to carry home).
 function realmSlain(t,R,k){
   if(R){if(R.respawn){R.state='down';R.back=G.round+R.respawn}else R.state='done'}
-  const M=REALM_MON[t.monster]||{pts:0};if(!k||!G.players[k.owner]){addLog(null,`The ${t.name} falls, but no army lands the blow.`);return}
+  const M=t.monster==='wanderer'?{pts:REALM.wanderPts,tier:'w'}:REALM_MON[t.monster]||{pts:0};if(!k||!G.players[k.owner]){addLog(null,`The ${t.name} falls, but no army lands the blow.`);return}
   const p=G.players[k.owner],F=FAC[p.fac];let what='';
   if(t.monster==='brute'){const b=R&&R.boon||'atk';if(b==='atk')k.forgeAtk=(k.forgeAtk||0)+1;else if(b==='mov')k.mov+=1;else{k.maxhp+=4;healUnit(k,4,'#5fd68e','Valley Camp')}what=`the ${k.name} gains ${REALM_BOON[b]}`}
-  else if(t.monster==='warden'){let n=0;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&v.hp<v.maxhp){healUnit(v,v.maxhp-v.hp,'#9ff0c0','Healing Spring');n++}what=`every ${F.name} unit is healed to full (${n} healed)`}
+  else if(t.monster==='warden'){let n=0;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&v.hp<v.maxhp&&healUnit(v,REALM.springHeal,'#9ff0c0','Healing Spring'))n++;what=`every ${F.name} unit heals ${REALM.springHeal} (${n} healed)`}
+  else if(t.monster==='wanderer'){what=`the Wanderer is slain`}
   else if(t.monster==='ogre'){k.suitHp=k.suitMax=REALM.suitHp;k.suitItem=R&&R.item||'club';const I=SUIT_ITEMS[k.suitItem];what=`the ${k.name} takes the Ogre's War Suit: ${REALM.suitHp} extra HP that take every hit first, and ${I.name} (${I.text})`}
   else if(t.monster==='drake'){const fl=(p.fallen||[]).map(n=>FAC[p.fac].units.find(d=>d.name===n)).filter(Boolean).sort((a,b)=>b.hp-a.hp)[0];
     if(fl){const u=makeUnit(p,fl);if(realmPlace(p,u)){p.fallen.splice(p.fallen.indexOf(fl.name),1);u.moved=true;u.acted=true;G.units.push(u);tStat(u);what=`the fallen ${fl.name} returns to the ${F.name} base`}else what='the base is full, so nobody returns'}
@@ -3989,7 +3992,7 @@ function realmSlain(t,R,k){
   else if(t.monster==='chest'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(wildsHash(`${G.round}|${k.id}|${t.id}`)*free.length)]:null;
     if(rk&&canCarry(k)&&!relicOf(k)){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:k.id});what=`the ${k.name} takes the ${RELICS[rk].name} (${RELICS[rk].text})`}else what='the chest holds nothing this unit can carry'}
   addLog(p.id,`The ${k.name} slays the ${t.name}: ${what}.`);fx(k,t.monster==='warden'?'healed':'reward','#ffd766');
-  announce({k:'note',col:F.color,t:`${F.name} clear the ${ROOM_NAMES[R?R.type:'t1']}`,s:what.charAt(0).toUpperCase()+what.slice(1)+'.'});
+  announce({k:'note',col:F.color,t:R?`${F.name} clear the ${ROOM_NAMES[R.type]}`:`${F.name} slay the ${t.name}`,s:what.charAt(0).toUpperCase()+what.slice(1)+'.'});
   vfx({k:'buff',at:[k.q,k.r],col:F.color,cam:1});
   if(trk()){const O=tObj();if(O){O.realm=O.realm||[];O.realm.push({m:t.monster,pid:p.id,round:G.round})}}
   realmPts(p.id,M.pts,'camp'+M.tier,`${F.name} take the ${t.name}`)}
@@ -4005,11 +4008,11 @@ function realmStrike(m){if(!m.atk){m.lastBy=null;return}const o=[CUR_SRC,CUR_TAG
   for(const v of hit){if(!alive(v))continue;const d=Math.max(1,m.atk-effDef(v));addLog(v.owner,`The ${m.name} strikes the ${v.name} for ${d}.`);vfx({k:'slash',from:[m.q,m.r],to:[v.q,v.r],col:m.monster==='drake'?'#ff7a1a':'#b9b3d6'});hurt(v,d,m.monster==='drake'?'#ff7a1a':'#b9b3d6')}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o}
 // What a camp asks and gives (shown on the monster's card).
-function realmGoalText(m){const R=(G.rooms||[]).find(r=>r.id===m.room);const M=REALM_MON[m.monster];if(!M)return null;
+function realmGoalText(m){if(m.monster==='wanderer')return {todo:`land the killing blow on the Wanderer (${m.maxhp} HP). It roams 3 hexes a round and strikes back at the last unit that hit it.`,get:`${REALM.wanderPts} points.`};const R=(G.rooms||[]).find(r=>r.id===m.room);const M=REALM_MON[m.monster];if(!M)return null;
   const hits=m.tier>=2?'At each round start it strikes every unit next to it, and the last unit that hit it if that unit is within 3.':m.atk?'At each round start it strikes the last unit that hit it, if that unit is within 2.':'It never strikes back.';
   const back=R&&R.respawn?` It comes back ${R.respawn} rounds after it falls.`:'';
   const get=m.monster==='brute'?`${M.pts} point; the unit that lands the killing blow gains ${REALM_BOON[R&&R.boon||'atk']}.`
-    :m.monster==='warden'?`${M.pts} points, and every unit of your army is healed to full.`
+    :m.monster==='warden'?`${M.pts} points, and every unit of your army heals ${REALM.springHeal}.`
     :m.monster==='ogre'?`${M.pts} points; the killer puts on the Ogre's War Suit (${REALM.suitHp} extra HP that take every hit first, and ${SUIT_ITEMS[R&&R.item||'club'].name}: ${SUIT_ITEMS[R&&R.item||'club'].text}).`
     :m.monster==='drake'?`${M.pts} points; your strongest fallen unit returns to your base (if none has fallen, every unit of yours gains +3 max HP).`
     :`${M.pts} point; the opener takes an Ancient Relic.`;
@@ -4021,6 +4024,7 @@ function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.ma
   for(const m of G.units){if(!m.monster||!alive(m))continue;const R=(G.rooms||[]).find(r=>r.id===m.room);if(!R)continue;
     let w=R.type==='t1'?(inValley(p,m.q,m.r)?2.2:0.5):R.type==='heal'?(hurtN>=16?2.6:0.7):R.type==='ogre'?(G.round>=3?1.6:0.6):R.type==='t3'?(G.round>=6?1.5:0.3):1.3;
     if(u.leader)w*=0.6;opts.push([m.q,m.r,w])}
+  if(!G.wander&&u.id%5===2)for(const k of Object.keys(G.feat))if(G.feat[k]==='lever'&&G.levers[k]!==p.team){const [q,r]=k.split(',').map(Number);if(hd(q,r,p.camp[0],p.camp[1])<=16)opts.push([q,r,1.8])}
   if(G.throneBeast)opts.push([0,0,G.throneOpen&&!kingOf()?3.5:2.4]);else if(G.round>=REALM.open-2)opts.push([0,0,1.2]);
   let best=null,bs=1e9;for(const g of opts){const d=wildsDist(g,u.q,u.r,u);const sc=d/g[2]+(u.id%3)*0.7*(g[2]<1.5?1:0);if(sc<bs){bs=sc;best=g}}return best}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
@@ -7371,7 +7375,7 @@ function statusChips(u,long){const L=unitStatuses(u);if(!L.length)return '';
   const nTxt=n=>typeof n==='number'?(long?`${n} turn${n>1?'s':''}`:String(n)):n;
   return `<div class="schips">${L.map(x=>`<span class="schip ${x.good?'good':'bad'}" style="--c:${x.col}" title="${x.nm}: ${x.tip}"><i aria-hidden="true">${x.ic}</i>${x.nm}${x.n!=null?` <small>${nTxt(x.n)}</small>`:''}</span>`).join('')}</div>`}
 // v74 the Realm: no AP. The AP box shows the reserve instead: one button per unit type you can call into your base this turn.
-function REALM_HINT(){return `The big redesign, first test: 4 players, bases in the corners of a large board, everything else rolled every game and mirrored so it is fair. No AP: every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn from your reserve; the fallen are gone for good. Camps by tier around the map (Valley Camps at home, the Healing Spring and the Ogre on the edges, Drakes in the wasteland), the Throne from round ${REALM.open}. Last hits score: first to ${REALM.target} points wins. Units have twice the HP. The four core armies are set; you may change them.`}
+function REALM_HINT(){return `The big redesign, first test: 4 players, bases in the corners of a large board, everything else rolled every game and mirrored so it is fair. No AP: every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn from your reserve; the fallen are gone for good. Camps by tier around the map that never come back once taken (Valley Camps at home, the Healing Spring and the Ogre on the edges, Drakes in the wasteland), levers that wake the roaming Wanderer when two sides pull them, the Throne from round ${REALM.open}. Last hits score: first to ${REALM.target} points wins. Units have twice the HP. The four core armies are set; you may change them.`}
 function realmBar(){const pp=P(G.cur),box=$('#apBox');if(!box||!pp)return;const can=isHumanTurn()&&realmCanSummon(pp),res=pp.reserve||[];
   const hpOf=d=>Math.round((d.hp||0)*REALM.hpMul),names=[...new Set(res)],btn=n=>{const d=FAC[pp.fac].units.find(x=>x.name===n)||{};const c=res.filter(x=>x===n).length;return `<button class="abtn" data-sum="${n}" style="padding:4px 9px;margin:2px;min-width:0" title="${hpOf(d)} HP, ${d.atk} ATK, ${d.def} DEF">${n}${c>1?' ×'+c:''}<small>${hpOf(d)} HP · ${d.atk} ATK</small></button>`};
   box.innerHTML=res.length?(can?`<span class="aplabel"><b>Call one unit to your base:</b></span>${names.map(btn).join('')}`:`<span class="aplabel">${pp.sumDone?'<b>Unit called this turn.</b> ':''}Reserve: ${res.length} still to come</span>`):`<span class="aplabel">Every unit has been called</span>`;
@@ -7722,11 +7726,11 @@ function rulesTop(){
 function realmRules(){return `<h3>The Realm (test board)</h3><ul>
   <li><b>No AP.</b> Every unit may move once and act once (attack or ability) each turn. Abilities only rest.</li>
   <li><b>Your army grows.</b> You start with your Leader and ${REALM.start} units. Once per turn, tap a unit in the reserve bar (above the board) to call it into your base; if you forget, the first one comes at the end of your turn. The fallen are gone for good.</li>
-  <li><b>Home valley.</b> Your base sits in a corner valley ringed by broken mountains. Units inside it heal ${REALM.heal} at the start of your turn. Two Valley Camps live there: each gives the unit that kills it a lasting boost and comes back ${REALM.respawn} rounds later.</li>
-  <li><b>The edges.</b> In the middle of each edge waits a tier-2 lair shared by two bases: the <b>Healing Spring</b> (left and right: its killing blow heals your whole army to full; it comes back ${REALM.respawn} rounds later) and the <b>Ogre Lair</b> (top and bottom: a War Suit). Ancient Ruins near the edges hold a chest with a relic.</li>
-  <li><b>The wasteland.</b> Four <b>Elder Drakes</b> (tier 3): their killing blow brings back your strongest fallen unit.</li>
+  <li><b>Home valley.</b> Your base sits in a corner valley ringed by broken mountains. Units inside it heal ${REALM.heal} at the start of your turn. Two Valley Camps live there: each gives the unit that kills it a lasting boost. Camps never come back: once taken, they are gone.</li>
+  <li><b>The edges.</b> In the middle of each edge waits a tier-2 lair shared by two bases: the <b>Healing Spring</b> (left and right: its killing blow heals every unit of your army ${REALM.springHeal}) and the <b>Ogre Lair</b> (top and bottom: a War Suit). Ancient Ruins near the edges hold a chest with a relic.</li>
+  <li><b>The wasteland.</b> Four <b>Elder Drakes</b> (tier 3): their killing blow brings back your strongest fallen unit. Four <b>levers</b> stand out there too: a unit standing on one pulls it for its side, and once levers of two different sides are pulled a trap door opens and the <b>Wanderer</b> (${REALM.wanderHp} HP, roams 3 hexes a round) runs out; its killing blow scores ${REALM.wanderPts}. You choose when to wake it.</li>
   <li><b>The Heart.</b> Its walls fall in round ${REALM.open} and the Rift Beast wakes on the Throne. Slay it; the first unit to sit the Throne is King (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF) and scores 1 point at each of your turns on it.</li>
-  <li><b>Last hits score.</b> Enemy unit ${REALM.killPts}, enemy Leader ${REALM.leaderPts}, King killed ${RULES.KING_KILL} more, Valley Camp ${REALM_MON.brute.pts}, Ruin chest ${REALM_MON.chest.pts}, Healing Spring ${REALM_MON.warden.pts}, Ogre ${REALM_MON.ogre.pts}, Drake ${REALM_MON.drake.pts}, Rift Beast ${RULES.BEAST_PTS}. First to <b>${REALM.target}</b> wins.</li>
+  <li><b>Last hits score.</b> Enemy unit ${REALM.killPts}, enemy Leader ${REALM.leaderPts}, King killed ${RULES.KING_KILL} more, Valley Camp ${REALM_MON.brute.pts}, Ruin chest ${REALM_MON.chest.pts}, Healing Spring ${REALM_MON.warden.pts}, Ogre ${REALM_MON.ogre.pts}, Drake ${REALM_MON.drake.pts}, Wanderer ${REALM.wanderPts}, Rift Beast ${RULES.BEAST_PTS}. First to <b>${REALM.target}</b> wins.</li>
   <li><b>Monsters never move.</b> At each round start a monster strikes the last unit that hit it (if it is still close); tier 2 and 3 also strike everything next to them. You can always walk away.</li>
   <li>Units have twice their usual HP on this board.</li></ul>`}
 function rulesTop0(){
@@ -7889,7 +7893,7 @@ function showQuick(){
   const o=$('#overlay');const row=(a,b)=>`<tr><th>${a}</th><td>${b}</td></tr>`;
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
-  ${G&&G.realm?row('The Realm',`No AP: every unit moves once and acts once · call 1 unit a turn from your reserve · fallen units are gone · heal ${REALM.heal} a turn in your valley · points: enemy unit ${REALM.killPts}, Leader ${REALM.leaderPts}, Valley Camp ${REALM_MON.brute.pts}, Ruin ${REALM_MON.chest.pts}, Healing Spring ${REALM_MON.warden.pts} (heals your army to full), Ogre ${REALM_MON.ogre.pts} (War Suit), Drake ${REALM_MON.drake.pts} (a fallen unit returns), King 1 a turn · first to ${REALM.target}`):''}
+  ${G&&G.realm?row('The Realm',`No AP: every unit moves once and acts once · call 1 unit a turn from your reserve · fallen units are gone · heal ${REALM.heal} a turn in your valley · points: enemy unit ${REALM.killPts}, Leader ${REALM.leaderPts}, Valley Camp ${REALM_MON.brute.pts}, Ruin ${REALM_MON.chest.pts}, Healing Spring ${REALM_MON.warden.pts} (your army heals ${REALM.springHeal}), Ogre ${REALM_MON.ogre.pts} (War Suit), Drake ${REALM_MON.drake.pts} (a fallen unit returns), Wanderer ${REALM.wanderPts} (2 levers of 2 sides wake it), King 1 a turn · camps never come back · first to ${REALM.target}`):''}
   ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls and the Rift Beast breaks out beside the Heart · then the Collapse closes the board, slower as it goes`)}
   ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive (+${RULES.LEADERLESS_AP} without) · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free for 1 damage, and may attack at full strength once for 2 AP')}
