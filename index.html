@@ -4539,6 +4539,11 @@ function countTargets(v,m){const set=atkCells(v,m);let n=0;for(const f of G.unit
 function stormEsc(u,o){if(!RULES.RIFTKIT||!G.traps||voidWalk(u)||u.size===2)return 0;let sd=0;for(const [k,t] of Object.entries(G.traps)){if(!t.storm||tm(t.owner)===tm(u.owner))continue;const [hq,hr]=k.split(',').map(Number);
     const R=RULES.STORM_R+(talent(P(t.owner),'gravitylord')?1:0),dn=hd(o.q,o.r,hq,hr),d0=hd(u.q,u.r,hq,hr),w=d=>d===1?8+worth(u)*0.6:d<=R?2.5:0;sd+=w(d0)-w(dn)}return sd}
 function moveEval(u,o,ctx){return moveEval0(u,o,ctx)+stormEsc(u,o)}
+// v76: what a Second Hand could deal this turn from hex v with the helpers that can still reach it (bots only)
+function comboPotential(u,v){const helpers=G.units.filter(w=>w.owner===u.owner&&w.kind!=='wall'&&!w.st.frozen&&w.at==='none'&&(w.cd||0)<=0&&!w.acted&&distUU(w,v)<=3+(w.moved?0:effMov(w)));
+  const q=helpers.filter(w=>w.ability==='quicken').length,tick=helpers.some(w=>w.ability==='overwind')?1:0,sand=helpers.some(w=>w.ability==='sand')?2:0;
+  const ch=G.units.find(w=>w.owner===u.owner&&w.leader&&w.kind!=='wall'&&!w.st.frozen);const sync=ch&&(ch.cd||0)<=0&&!ch.acted&&distUU(ch,v)<=4?1:0,bolt=ch&&!ch.acted?3:0;
+  const own=effAtk(u)+1+sync,granted=own+(u.cmb||0);return own+sand+(q+tick)*granted+bolt}
 function moveEval0(u,o,ctx){if(o.board!=null){const b=byId(o.board);if(!b)return 0;const n=(b.crew||[]).length;return 5+(n<1?4:n<3?3:0)-(u.leader?6:0)-(ctx.foes.some(f=>distUU(f,u)<=2)?2:0)}  if(G.sinks&&!voidWalk(u)){const here=cells(u).some(([q,r])=>{const k=G.sinks[key(q,r)];return k&&tm(k.owner)!==tm(u.owner)}),there=(()=>{const k=G.sinks[key(o.q,o.r)];return k&&tm(k.owner)!==tm(u.owner)})();if(there)return -50;if(here)return 9+worth(u)*0.5+RULES_J()}// v50: get off cracked ground, never step onto it
 if(o.pilot!=null){const near=ctx.foes.some(f=>hd(f.q,f.r,o.q,o.r)<=6);if(RULES.FORTRESS){const m=byId(o.pilot);if(m&&m.machine==='suit')return 9+RNG()*0.3;const busy=m&&ctx.foes.some(f=>f.owner>=0&&hd(f.q,f.r,m.q,m.r)<=(m.rng||1)+1);return (busy?-6:5)+RNG()*0.3}
 if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&&hd(f.q,f.r,m.q,m.r)<=(m.rng||1)+1);return (busy?-6:5)+RNG()*0.3}return (near?4.5:1.2)+RNG()*0.3}// v48: climb into a machine, mostly when a fight is near
@@ -4549,12 +4554,12 @@ if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&
   const d0=nearest(u),d1=nearest(v);
   let s=-1.2;
   if((!u.acted||u.freeAtk>0)&&u.at!=='none'&&G.ap>=(u.freeMove>0?0:1)+atkCost(u)){const tNow=countTargets(u,m),tNew=countTargets(v,m);if(tNew>0&&tNow===0){s+=6+Math.min(tNew,3);
-      if(G.realm&&hasTrait(u,'tempo')){const mages=G.units.filter(w=>w.owner===u.owner&&w.ability==='quicken'&&w.cd<=0&&!w.st.frozen&&distUU(w,v)<=3).length;const pot=(1+Math.min(mages,tempoCap(u)-1))*(effAtk(u)+1+(u.sync?1:0))+3;const kill=foes.some(f=>!inert(f)&&distUU(v,f)<=1&&f.hp<=pot);if(!kill)s-=5.5;else s+=3}}}// v75c: the blade commits only to a combo that can kill
+      if(G.realm&&hasTrait(u,'tempo')){const pot=comboPotential(u,v);const kill=foes.some(f=>!inert(f)&&distUU(v,f)<=1&&f.hp<=pot);if(!kill)s-=5.5;else s+=3}}}// v75c: the blade commits only to a combo that can kill
   if(u.freeMove>0)s+=1.2;// a Rewind move costs no AP
   // v28 Hourglass: a Second Hand whose strikes are spent walks back to safety (Rewind or its own move): out of reach, next to friends, out of sight after a kill.
   const spentBlade=hasTrait(u,'tempo')&&u.atkd&&(tempoSpent(u)||(u.acted&&!(u.freeAtk>0)));
   const danger=x=>{let d=0;for(const f of foes){const reach=effMov(f)+effRng(f)+(f.mt==='knight'?2:0)+(f.mt==='fly'?1:0);if(distUU(x,f)<=reach)d+=effAtk(f)}return d};
-  if(!u.leader&&!spentBlade){let bladeWait=false;if(G.realm&&hasTrait(u,'tempo')&&!u.atkd){const mages=G.units.filter(w=>w.owner===u.owner&&w.ability==='quicken'&&w.cd<=0&&!w.st.frozen&&distUU(w,v)<=3).length;const pot=(1+Math.min(mages,tempoCap(u)-1))*(effAtk(u)+1)+3;bladeWait=!foes.some(f=>!inert(f)&&distUU(v,f)<=1&&f.hp<=pot)}
+  if(!u.leader&&!spentBlade){let bladeWait=false;if(G.realm&&hasTrait(u,'tempo')&&!u.atkd){const pot=comboPotential(u,v);bladeWait=!foes.some(f=>!inert(f)&&distUU(v,f)<=1&&f.hp<=pot)}
     const pref=bladeWait?3:(u.ability==='quicken'||u.ability==='rewind'||u.ability==='clock'||u.ability==='rewindwounds'||u.ability==='sand'||u.ability==='echo'||u.ability==='overwind')?3:u.at==='lob'?Math.min(effRng(u),u.rmin+1):u.at==='reach'?2:(u.at==='melee'||u.at==='fwd')?1:Math.min(effRng(u),3);s+=(Math.abs(d0-pref)-Math.abs(d1-pref))*2.2}
   if(spentBlade){const pals=x=>{let n=0;for(const w of G.units)if(w!==u&&w.id!==u.id&&w.kind!=='wall'&&w.owner===u.owner&&!inert(w)&&distUU(w,x)===1)n++;return Math.min(2,n)};
     s+=(danger(u)-danger(v))*0.6+(pals(v)-pals(u))*1.5+(Math.min(d1,4)-Math.min(d0,4))*1.2;
