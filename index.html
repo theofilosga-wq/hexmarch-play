@@ -5658,7 +5658,7 @@ function glTileKind(q,r,k){const T=THREE;const tint=new T.Color('#ffffff');let k
   if(isHeart(q,r)){kind='heart';if(isCentreWall(q,r))tint.multiplyScalar(0.55)}
   if(G.map){const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){tint.set(GROUND.hidden).multiplyScalar(1.2);return {kind,tint}}}
   const tf=terrAt(q,r);if(tf&&kind!=='heart'&&kind!=='river'){if(ARMY_TILE[tf])kind=ARMY_TILE[tf];else tint.lerp(new T.Color(FAC[tf].color),G.paint[k]?0.6:0.3)}
-  const of=GL.occ&&GL.occ.get(k);if(of&&kind!=='heart'){if(ARMY_TILE[of])kind=ARMY_TILE[of];else tint.lerp(new T.Color(FAC[of].color),0.55)}
+  const of=GL.occ&&GL.occ.get(k);if(of&&kind!=='heart')tint.lerp(new T.Color(FAC[of].color),0.62);// v78e (owner): the hex under a piece keeps its own ground and turns the army's colour; only burning ground becomes the lava tile
   if(isDoomed(q,r))tint.lerp(new T.Color('#ff3c28'),0.4);
   return {kind,tint}}
 function glPaintTiles(){if(!GL.tileSets||!GL.tileIdx)return;const o=new THREE.Object3D();const n={};for(const kind of Object.keys(GL.tileSets))n[kind]=0;
