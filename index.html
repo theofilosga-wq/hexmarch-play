@@ -1260,7 +1260,8 @@ const FAC={
   chrono:{name:'Hourglass Order',color:'#c81ca6',
     theme:'One assassin, six helpers. Alone the Second Hand strikes once for 3; every supporter adds a piece (another strike, a sharpened blow, an echo, a free step, a rewound clock), and every kill makes the pieces they give hit harder.',
     passive:'The combo is a synergy. Quicken (Tempo Mage): one more strike. Synchrony (Chronarch): +1 on every strike this turn. Hourglass Sand (Sand Weaver): the next strike ignores DEF and deals +2. Echo (Echo Knight): the next strike lands on a second adjacent enemy too. Chase the Clock (Rewinder): a free move after every kill. Overwind (Tick): an ally’s abilities are ready again and it may act again. Rewind Wounds: an ally’s HP back to the start of your previous turn. Tempo stacks: every kill by a Second Hand is a stack on that blade, with no cap; each stack adds +1 to every strike a supporter granted it (never to its own single blow). Stealth: a blade that killed this turn can only be targeted from 2 hexes or closer.',bank:2,
-    home:'Magenta ground: abilities cast from it cost 1 AP less. An enemy standing on magenta ground pays 1 more AP for its abilities.',homeRealm:'No home ground on the Realm.',cheap:1,
+    home:'Shattered Time (magenta): where a Second Hand kills, its hex and the victim’s hex turn magenta for 3 turns; Hourglass Sand paints its ally’s hex. An enemy that starts its turn on magenta moves 1 less and gets no free moves. An Hourglass unit that starts its turn on magenta has its rests cut by 1 more, and a Second Hand that kills while standing on magenta may move again.',
+    homeRealm:'Shattered Time (magenta): where a Second Hand kills, its hex and the victim’s hex turn magenta for 3 turns; Hourglass Sand paints its ally’s hex. An enemy that starts its turn on magenta moves 1 less and gets no free moves. An Hourglass unit that starts its turn on magenta has its rests cut by 1 more, and a Second Hand that kills while standing on magenta may move again. No home ground on the Realm.',cheap:1,
     units:[
       {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:4,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'synchrony',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
       // v76 (owner 18 Oct 2026): the combo is a SYNERGY. Alone the assassin strikes once for 3; every supporter adds a piece; the Tempo stacks (kills) only grow the pieces the supporters give.
@@ -1416,6 +1417,18 @@ function possEnd(host,dead){const P0=host.poss;if(!P0)return;host.owner=P0.owner
 function possTick(p){for(const u of G.units.slice()){if(!u.poss||u.owner!==p.id||!alive(u))continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Abil';CUR_NAME='Possession (host burns)';if(!SIM)vfx({k:'buff',at:[u.q,u.r],col:'#e8e23a'});hurt(u,1,'#e8e23a',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 // v77 Forward! (Captain): the connected block of army units around u (touching, one-hex, not frozen)
 function blockOf(u){const cs=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg&&v.size!==2&&!(v.st&&v.st.frozen>0)&&alive(v));const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen}
+/* v77b SHATTERED TIME (Hourglass ground, owner 17 Oct 2026, replaces the AP-cost magenta rule): where a Second Hand kills, time breaks: the
+   victim's hex and the blade's hex turn magenta for 3 turns; Hourglass Sand paints the hex of the ally it empowers. An enemy that starts its turn
+   on magenta moves 1 less and gets no free moves (st.tslow, cleared at the end of its turn). An Hourglass unit standing on magenta at the start of
+   its turn has every rest shortened by 1 more; a Second Hand that kills while standing on magenta may move again. */
+function shatterPaint(q,r,owner,label){if(!solid(q,r)||isHeart(q,r))return 0;G.paint[key(q,r)]={fac:'chrono',ttl:3,owner};if(!SIM&&trk()){const e=tFx('chrono','',label||'Shattered Time (hexes)');if(e)e.uses++}return 1}
+const onMagenta=u=>!!u&&u.kind!=='wall'&&cells(u).some(([q,r])=>terrAt(q,r)==='chrono');
+function shatterTime(k,t){const stood=onMagenta(k);for(const [q,r] of cells(t))shatterPaint(q,r,k.owner);for(const [q,r] of cells(k))shatterPaint(q,r,k.owner);
+  if(!SIM)vfx({k:'buff',at:[t.q,t.r],col:'#c81ca6'});if(stood){k.moved=false;k.mdist=0;if(!SIM){fx(k,'time flows: move again','#c81ca6');if(trk()){const e=tFx('chrono',k.name,'Shattered Time: free moves');if(e)e.uses++}}}}
+function timeDrag(p){for(const u of G.units){if(u.kind==='wall'||!u.st)continue;
+  if(u.owner===p.id){u.st.tslow=0;if(!onMagenta(u))continue;
+    if(p.fac==='chrono'){let c=0;if(u.cd>0){u.cd--;c++}if(u.cd2>0){u.cd2--;c++}if(c&&!SIM){fx(u,'time flows','#c81ca6');if(trk()){const e=tFx('chrono',u.name,'Shattered Time: rests cut');if(e)e.uses+=c}}}
+    else{u.st.tslow=1;if(!SIM){fx(u,'time drags','#c81ca6');if(trk()){const e=tFx('chrono','','Shattered Time: enemies slowed');if(e)e.uses++}}}}}}
 // v77 Aftershock (Riftwalker talent): a hole of p's that closes at k shakes every enemy next to it for 2, ignoring DEF
 function aftershock(p,k){if(!talent(p,'aftershock'))return;const [q,r]=k.split(',').map(Number);const vs=G.units.filter(v=>v.kind!=='wall'&&alive(v)&&!v.statue&&!v.egg&&tm(v.owner)!==p.team&&distUC(v,q,r)===1);if(!vs.length)return;
   const src=G.units.find(v=>v.owner===p.id&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===p.id&&v.kind!=='wall')||null;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Abil';CUR_NAME='Aftershock (talent)';
@@ -1738,7 +1751,7 @@ function cleanseValue(t){const d=debuffOf(t);if(!d)return 0;const w=Math.min(wor
 function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&oldCentre()?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill'||featAt(q,r)==='tower')?1:0))}
 // A flyer can perch on a rock: out of reach of walkers, but its attacks lose 1 range.
 const perched=u=>u.mt==='fly'&&u.kind!=='wall'&&featAt(u.q,u.r)==='rock';
-function abilCost(u,k){const F=facOf(u);if(RULES.SHAMANS&&u.elemental){const A=ABIL[k];if(A.cost===1&&A.el&&utal(u,'wellspring')&&onElHex(u,A.el))return 0;if(A.cost===2&&u.st&&u.st.surgeFree)return 0}if((k==='march'&&utal(u,'warchief'))||((k==='quicken'||k==='clock')&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(F.cheap&&onHome(u)?F.cheap:0)-(spellEcho(u)?1:0)+(onClaimOf(u,'chrono')?1:0))}// v45: magenta ground taxes enemy abilities
+function abilCost(u,k){const F=facOf(u);if(RULES.SHAMANS&&u.elemental){const A=ABIL[k];if(A.cost===1&&A.el&&utal(u,'wellspring')&&onElHex(u,A.el))return 0;if(A.cost===2&&u.st&&u.st.surgeFree)return 0}if((k==='march'&&utal(u,'warchief'))||((k==='quicken'||k==='clock')&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(spellEcho(u)?1:0))}// v45: magenta ground taxes enemy abilities
 // Spell Echo (Arcane Conclave talent): the Archmage's first spell each turn costs 1 AP less (u.echoed = already used this turn).
 const spellEcho=u=>!!(u.leader&&u.book&&!u.echoed&&utal(u,'spellecho'));
 // Spell range: green ground gives a mage's spells of range 2 or more +1 range (Arcane Conclave home bonus).
@@ -1763,7 +1776,7 @@ function movBase(u){if(G&&G.realm&&RULES.WILDS_MOV)return u.size===2&&u.kind!=='
 const isRiftSrc=src=>!!RULES.RIFTKIT&&!!src&&src.kind!=='wall'&&!!G.players[src.owner]&&G.players[src.owner].fac==='rift';
 function rMark(t,src){if(!RULES.RIFTKIT||!t||t.kind==='wall'||!alive(t)||!isRiftSrc(src)||tm(t.owner)===tm(src.owner))return;const fresh=!(t.st.rmark>0);t.st.rmark=2;t.st.rmBy=src.owner;
   if(fresh&&!SIM){fx(t,'rift-marked','#12d69a');if(trk()){const e=tFx('rift','','Rift Mark (enemies marked)');if(e)e.uses++}}}
-function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine?1:0)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
+function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov;return Math.max(0,base-(u.st.chill>0&&!tough?1:0)-(u.st.tslow?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine?1:0)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
 const isRoad=(q,r)=>G.map?!!(G.roads&&G.roads[key(q,r)]):hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
@@ -2135,7 +2148,7 @@ function beginTurn(){
   if(RULES.FORTRESS&&p.salvAP>0){G.ap=Math.min(RULES.AP_CAP+3,G.ap+p.salvAP);if(!SIM&&trk()){const e=tFx('gnomes','','Salvage (talent)');if(e){e.uses++;e.apGranted=(e.apGranted||0)+p.salvAP}}p.salvAP=0}
   if(p.hold)p.hold=0;
   if(G.realm){p.sumDone=false;if(p.ctrl!=='human'){const s=realmSites(p).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0))[0];if(!(s&&realmSummon(p,realmBotPick(p),true,s)))realmSummon(p,realmBotPick(p),true)}}// v74 the Realm: bots call their unit at once; people pick in the dock
-  dreadTurn(p);mammothTurn(p);possTick(p);
+  dreadTurn(p);mammothTurn(p);possTick(p);timeDrag(p);
   if(RULES.SHAMANS&&G.realm&&p.fac==='mage')for(const u of G.units.filter(u=>u.owner===p.id&&u.el&&!u.elemental&&u.kind!=='wall')){if(!onElHex(u,u.el)||(p.evo&&p.evo[u.el]))continue;p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);p.el[u.el]+=1;if(!SIM){fx(u,'shrine +1','#2bff5a');if(trk()){const e=tFx('mage',u.name,'Shrine (bar +1)');if(e)e.uses++}}if(p.el[u.el]>=elNeed(p))ascend(p,u.el)}// v75: a shaman on its own shrine
   if(RULES.PILOTS2)for(const u of G.units.filter(u=>u.owner===p.id&&isGnome(u))){if(u.build==='done')walkerIn2(u);else if(u.build==='started'){u.build='still';u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'stand still','#ff6ec7')}}
   machineFire(p,'Auto-fire','Basic');ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
@@ -2247,7 +2260,7 @@ function endTurn(){
   for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){
     // Defender Barrier (v25): a unit that made no basic attack and used no ability this turn has a Barrier until an enemy hit breaks it.
     {const had=!!u.bar;u.bar=barrierAble(u)&&!u.fought;u.fought=false;if(u.bar&&!had&&!SIM&&trk()){const s=tStat(u);const e=s&&tFx(s.fac,s.name,'Barrier');if(e)e.raised=(e.raised||0)+1}}
-    if(u.st.chill>0)u.st.chill--;
+    if(u.st.chill>0)u.st.chill--;if(u.st.tslow)u.st.tslow=0;
     if(u.st.frozen>0&&u.st.frzBy!=null&&G.players[u.st.frzBy]&&G.players[u.st.frzBy].alive&&!u.st.stun){u.st.frzLost=1}// v63: a freeze holds until the end of the freezing side's next turn (the victim still loses one turn)
     else if(u.st.frozen>0){u.st.frozen--;if(!u.st.frozen){u.st.fimm=1;u.st.frzBy=null;if(!u.st.stun)u.st.chill=Math.max(u.st.chill||0,1);u.st.stun=0}}else if(u.st.fimm>0)u.st.fimm--;// a thawed unit is chilled for 1 turn (not after a stun)
     // v21: Seared ends after the unit's own turn; Sunder counts down its own turns; a delay has been felt once the unit's turn is over (a cleanse can no longer take it back).
@@ -2349,6 +2362,7 @@ function kill(t){
   }
   if(k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner))k.kt=(k.kt||0)+1;// kills this turn (Stealth)
   if(G.realm&&k&&alive(k)&&hasTrait(k,'tempo')&&t.kind!=='wall'&&!t.summon&&tm(k.owner)!==tm(t.owner)){k.cmb=(k.cmb||0)+(k.grantHit&&utal(k,'echo')?2:1);if(!SIM){fx(k,`Tempo ${k.cmb}`,'#c81ca6');if(trk()){const e=tFx('chrono',k.name,'Combo grows (kills)');if(e)e.uses++}}}// v75: each kill adds a strike to this assassin's combo
+  if(k&&alive(k)&&hasTrait(k,'tempo')&&t.kind!=='wall'&&!t.summon&&tm(k.owner)!==tm(t.owner))shatterTime(k,t);// v77b Shattered Time
   if(k&&alive(k)&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)){
     addCharge(k.owner,(t.summon?0:1)+(!t.summon&&G.lead!=null&&tm(t.owner)===G.lead?1:0));
     if(hasTrait(k,'scavenger')&&k.hp<k.maxhp){const o=CUR_NAME;CUR_NAME='Scavenger (trait)';healUnit(k,3,'#5fd68e');CUR_NAME=o}
@@ -2581,7 +2595,7 @@ function moveOpts(u,ignoreState){
   if(u.kind==='wall'||u.st.frozen)return out;
   if(u.behemoth&&(u.crew||[]).length<3)return out;// v75: a Behemoth moves only with 3 gnomes inside
   // Rewind (Hourglass): a free extra move (u.freeMove) works even after the unit has moved and costs no AP.
-  const canMove=ignoreState||(!u.moved&&G.ap>=1)||(u.freeMove>0&&!(RULES.CHILL_FREE&&u.st.chill>0));// v41: a chilled unit gets no free moves
+  const canMove=ignoreState||(!u.moved&&G.ap>=1)||(u.freeMove>0&&!(RULES.CHILL_FREE&&u.st.chill>0)&&!u.st.tslow);// v41: a chilled unit gets no free moves
   if(!canMove)return out;
   // v28: a Rewind move (u.freeMove) ignores engagement, so a Second Hand can walk back to safety after its strikes.
   const m=occ(),N0=engaged(u)&&!(u.freeMove>0)?Math.min(1,effMov(u)):effMov(u);
@@ -2894,7 +2908,7 @@ function attack(u,t){
     if(parry&&alive(t)&&alive(u)){const pd=Math.max(1,2-effDef(u));CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Parry';addLog(t.owner,`${t.name} parries and answers for ${pd}.`);vfx({k:'slash',from:[t.q,t.r],to:[u.q,u.r],col:facOf(t).color});hurt(u,pd,facOf(t).color)}// v77 Parry: the riposte
     const rd=barBroke?0:retaliation(u,t);if(rd>0&&alive(u)){CUR_SRC=t;CUR_TAG='Ret';CUR_NAME='Strike-back';addLog(t.owner,`${t.name} strikes back for ${rd}.`);vfx({k:'slash',from:[t.q,t.r],to:[u.q,u.r],col:facOf(t).color});hurt(u,rd)}
   }
-  if(alive(u)&&hasTrait(u,'hitrun')&&u.moved&&!u.hr&&!(RULES.CHILL_FREE&&u.st.chill>0)){u.moved=false;u.hr=true;fx(u,'hit and run','#9ff0c0')}
+  if(alive(u)&&hasTrait(u,'hitrun')&&u.moved&&!u.hr&&!(RULES.CHILL_FREE&&u.st.chill>0)&&!u.st.tslow){u.moved=false;u.hr=true;fx(u,'hit and run','#9ff0c0')}
   if(alive(u)&&u.crew2&&u.walker==='pilot'&&!u.dbl&&!freeHit){u.dbl=true;u.acted=false;fx(u,'second gunner','#ff6ec7');if(!SIM&&trk()){const e=tFx('gnomes','','Hot Swap (talent): second shots');if(e)e.uses++}}// v77 Hot Swap: two gnomes inside, two shots
   CUR_SRC=null;CUR_TAG=null;CUR_NAME=null;
   afterAction();
@@ -3174,7 +3188,7 @@ function useAbility(u,k,q,r,dest){
   if(u.st&&u.st.stealth){u.st.stealth=0;fx(u,'revealed','#c81ca6')}// Stealth ends when the unit uses an ability
   {const cost=abilCost(u,k);G.ap-=cost;if(A.spell&&spellEcho(u)){u.echoed=true;if(cost<A.cost&&trk()&&!SIM){const e=tFx(G.players[u.owner].fac,'','Spell Echo (talent)');if(e){e.uses++;e.apGranted+=A.cost-cost}}}}
   if(!A.aux)u.fought=true;// Defender Barrier: using an ability (Dismantle aside) means no Barrier at the end of this turn
-  if(!A.free)u.acted=true;setCd(u,k,Math.max(1,A.cd+1-(k==='march'&&utal(u,'warchief')?1:0)-(k==='drakebreath'&&utal(u,'draconic')?1:0)-(G.realm&&A.cd>0&&facOf(u).cheap&&onHome(u)?1:0)));/* v76: magenta ground = rests 1 turn less */G.amode=null;G.aim=null;CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;{const s=tStat(u);if(s){s.abils++;const e=srcFx();if(e){e.uses++;if(s.lastAbil!=null){e.gapSum+=G.round-s.lastAbil;e.gapN++}s.lastAbil=G.round}if(s.firstAct==null)s.firstAct=G.round;const key=s.fac+':'+A.name;trk().abil[key]=(trk().abil[key]||0)+1}}
+  if(!A.free)u.acted=true;setCd(u,k,Math.max(1,A.cd+1-(k==='march'&&utal(u,'warchief')?1:0)-(k==='drakebreath'&&utal(u,'draconic')?1:0)));G.amode=null;G.aim=null;CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;{const s=tStat(u);if(s){s.abils++;const e=srcFx();if(e){e.uses++;if(s.lastAbil!=null){e.gapSum+=G.round-s.lastAbil;e.gapN++}s.lastAbil=G.round}if(s.firstAct==null)s.firstAct=G.round;const key=s.fac+':'+A.name;trk().abil[key]=(trk().abil[key]||0)+1}}
   if(!SIM&&(A.special==='gainap'||A.special==='quicken'))G.combo=true;// Hourglass plan check: the rest of this turn is a combo turn
   addLog(u.owner,`${u.name} uses ${A.name}.`);
   const tgt=unitAt(q,r);
@@ -3208,7 +3222,7 @@ function useAbility(u,k,q,r,dest){
     // Void Trap: a temporary void for 3 of the caster's turns.
     case 'sinkhole':if(tgt&&tgt.kind!=='wall'){G.sinks=G.sinks||{};for(const [a,b] of cells(tgt))if(!isHeart(a,b)||true)G.sinks[key(a,b)]={owner:u.owner,by:u.id};fx(tgt,'the ground cracks!','#12d69a');vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[tgt.q,tgt.r],cells:cells(tgt),col:F.color,cam:1});addLog(u.owner,`${u.name} cracks the ground under the ${tgt.name}: it falls at the start of the Riftwalkers’ next turn.`)}break;
     case 'trap':if(passable(q,r)&&!unitAt(q,r)&&!isHeart(q,r)){G.traps=G.traps||{};G.traps[key(q,r)]={owner:u.owner,by:u.id,ttl:G.realm?RULES.HOLE_TTL:3};vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[q,r],cells:[[q,r]],col:F.color})}break;
-    case 'sand':if(tgt&&tgt.kind!=='wall'&&tgt.at!=='none'){tgt.st.sand=1;if(!SIM){fx(tgt,'sharpened','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}break;
+    case 'sand':if(tgt&&tgt.kind!=='wall'&&tgt.at!=='none'){tgt.st.sand=1;shatterPaint(tgt.q,tgt.r,u.owner,'Hourglass Sand');if(!SIM){fx(tgt,'sharpened','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}break;
     case 'echo':if(tgt&&tgt.kind!=='wall'&&tgt.at!=='none'){tgt.st.echo=1;if(!SIM){fx(tgt,'echo','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}break;
     case 'overwind':if(tgt&&tgt!==u&&tgt.kind!=='wall'&&tgt.owner===u.owner){tgt.cd=0;tgt.cd2=0;tgt.acted=false;if(!SIM){fx(tgt,'rewound','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color});if(trk()){const e=tFx('chrono',u.name,'Overwind');if(e)e.cdCut=(e.cdCut||0)+1}}}break;
     case 'rewindwounds':if(tgt&&tgt.kind!=='wall'){const back=tgt.hpPrev2!=null?tgt.hpPrev2:tgt.hpPrev1;if(back!=null&&back>tgt.hp){const g=Math.min(back,tgt.maxhp)-tgt.hp;healUnit(tgt,g,'#c81ca6','Rewind Wounds',u.id);if(!SIM){fx(tgt,'wounds rewound','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}else if(!SIM)fx(tgt,'nothing to rewind','#c81ca6')}break;
@@ -7666,6 +7680,7 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
 function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn and stays frozen until the end of the freezer’s next turn; any Frost Hold hit on it deals double (Shatter)')}
   if(s.chill>0)add('chill','❄️','Chilled',s.chill,'#5cc8ff',0,'1 less move; Ice Lance deals double');
+  if(s.tslow)add('tslow','⌛','Time drags',1,'#c81ca6',0,'started its turn on magenta ground (Shattered Time): 1 less move and no free moves this turn');
   if(s.fb>0)add('frostbite','❄','Frostbite '+s.fb+'/'+frostNeed(),s.fbT,'#bfefff',0,'at '+frostNeed()+' frost marks it freezes; marks fade after 2 of its turns without a new one');
   if(u.oldAtk)add('oldones','⛰','Wrath of the Old Ones +'+u.oldAtk,'','#ffb347',1,'+'+u.oldAtk+' ATK for the rest of the game (a giant fell)');
   if(s.fimm>0)add('thaw','💧','Just thawed',s.fimm,'#9fdcff',1,'can’t be frozen or stunned again this turn');
