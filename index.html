@@ -548,6 +548,7 @@ body.wide .recap{font-size:15px}
 .fac details.more{display:inline}.fac details.more summary{display:inline;cursor:pointer;color:var(--gold);font-size:.9em;margin-left:4px}.fac details.more[open]{display:block;margin-top:4px;color:var(--muted)}
 /* v92 (last so it beats the media-query rule): in play mode the turn chip has flex-basis 0, so it never forces the buttons onto a new row and takes what is left */
 body.focus .turnbar .chip#curChip{flex:1 1 0;min-width:0}
+body.focus .turnbar #apBox>*{flex:0 0 auto}/* the reserve strip's buttons keep their width; the strip scrolls sideways */
 
 </style>
 
