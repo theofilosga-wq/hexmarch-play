@@ -5926,8 +5926,12 @@ const MODELS={// v78b (owner: 'too small, I want to see the detail'): real model
   'Archdemon':{file:'models/fire_archdemon.glb',h:4.2},'Ember Egg':{file:'models/fire_ember-egg.glb',h:1.4},
   'Ice Queen':{file:'models/ice_ice-queen.glb',h:3.0},'Frost Warden':{file:'models/ice_frost-warden.glb',h:2.6},'Rime Mammoth':{file:'models/ice_rime-mammoth.glb',h:3.4},
   'Gunner':{file:'models/gnomes_gunner.glb',h:1.9},'machine:Cannon Walker':{file:'models/gnomes_cannon-walker.glb',h:3.2},// the owner's 'steampunk dwarf' carries the bazooka and grenades: the Gunner; the mech is its Cannon Walker
-  'Second Hand':{file:'models/chrono_second-hand.glb',h:2.8}};
-const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6}};// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
+  'Second Hand':{file:'models/chrono_second-hand.glb',h:2.8},
+  'Glacier Knight':{file:'models/ice_glacier-knight.glb',h:2.9},'Hailcaller':{file:'models/ice_hailcaller.glb',h:2.6},'Ice Statue':{file:'models/ice_ice-statue.glb',h:2.4},
+  'High Priest':{file:'models/arcane_high-priest.glb',h:3.0},'Rift Sovereign':{file:'models/rift_rift-sovereign.glb',h:3.2},
+  'Rampart':{file:'models/giants_rampart.glb',h:4.6},'Mountain King':{file:'models/giants_mountain-king.glb',h:4.8},
+  'Elder Drake':{file:'models/camps_elder-drake.glb',h:3.2},'Wanderer':{file:'models/camps_wanderer.glb',h:3.6}};// v82: Frost, Priests, Rift, Giants leaders and the Realm's monsters
+const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'models/ice_base-glacier-keep.glb',h:5.0}};// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
 const GLM={};
 function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
   new THREE.GLTFLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map)mt.map.encoding=THREE.LinearEncoding;mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
