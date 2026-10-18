@@ -141,6 +141,11 @@ select{background:var(--ink);color:var(--text);border:1px solid var(--line);bord
 .modal h3{font-size:15px;margin:16px 0 6px;color:var(--gold)}
 .modal p,.modal li{font-size:14px;color:#d3d0c6}
 .modal ul{padding-left:18px;margin:6px 0}
+/* v92: the rulebook's search bar and section shortcuts, sticky at the top of the modal */
+.rtools{position:sticky;top:-22px;background:var(--panel);padding:8px 0 10px;margin:-6px 0 6px;z-index:2;border-bottom:1px solid var(--line)}.rtools .srow{display:flex;gap:6px;align-items:center}
+.rtools input{flex:1;min-width:120px;font:inherit;font-size:14px;color:var(--text,#e6e9f0);background:#0f131c;border:1px solid var(--line);border-radius:8px;padding:7px 10px}.rtools .cnt{font-size:12px;color:#9aa0b0;white-space:nowrap}
+.rtools .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.rtools .chips button{font:inherit;font-size:12px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:#161b26;color:#d3d0c6;cursor:pointer}.rtools .chips button:hover{border-color:var(--gold)}
+.modal .rhide{display:none!important}.modal mark{background:#e8b84e;color:#1a1206;padding:0 2px;border-radius:2px}
 .tablewrap{overflow-x:auto;margin-top:10px}
 table.mx{border-collapse:separate;border-spacing:2px;font-size:12.5px;font-variant-numeric:tabular-nums}
 table.mx th{font-family:var(--display);font-weight:600;color:var(--muted);font-size:11px;padding:4px 6px;text-align:center;white-space:nowrap}
@@ -279,7 +284,7 @@ body.focus .game>div:first-child{flex:1;min-height:0;display:flex;flex-direction
 body.focus .boardbox{flex:1;min-height:0;max-height:none!important}
 body.focus .dock{position:static!important;background:none!important;padding-top:4px;margin-top:4px}
 body.focus .turnbar{flex-wrap:nowrap;overflow:hidden;position:static}
-body.focus #menuBtn{display:inline-flex}
+body.focus #menuBtn,body.focus #rulesBtn2{display:inline-flex;flex-shrink:0}
 body.focus #infoBtn,body.focus #viewBtn,body.focus #rotL,body.focus #rotR,body.focus #zoomIn,body.focus #zoomOut,body.focus #focusBtn{display:none!important}
 body.focus .turnbar .chip{padding:5px 9px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 body.focus .aplabel{display:none}
@@ -305,6 +310,8 @@ body.focus .game{align-items:stretch!important;min-width:0}
 body.focus .game>div,body.focus .turnbar,body.focus .boardbox,body.focus .dock,body.focus .actionbar,body.focus .unitstrip{min-width:0;max-width:100%}
 body.focus .turnbar>*{flex-shrink:1}
 body.focus .turnbar .btn{flex-shrink:0}
+/* v92: on the Realm the reserve strip lives in the turn bar; let it scroll sideways so the Rules and menu buttons always stay on screen */
+body.focus .turnbar{flex-wrap:wrap;row-gap:4px}body.focus .turnbar #apBox{flex:1 1 auto;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}body.focus .turnbar #curChip{flex:0 1 auto;min-width:0;max-width:42%}body.focus #pauseBtn{display:none!important}/* Pause lives in the menu in play mode */
 body.focus{margin:0}
 @media (max-width:700px){
   body.focus .ultbtn .un{display:none}
@@ -566,6 +573,7 @@ body.wide .recap{font-size:15px}
           <div class="chip timer" id="timerChip" hidden></div>
           <div class="spacer"></div>
           <button class="btn sm focusbtn" id="focusBtn" title="Full-screen play">⛶ Full screen</button>
+          <button class="btn sm" id="rulesBtn2" title="The rules, while you play">📖 Rules</button>
           <button class="btn sm" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
           <button class="btn sm" id="pauseBtn" title="Pause the game">⏸ Pause</button>
           <button class="btn sm" id="infoBtn" title="Game info">Info</button>
@@ -8004,10 +8012,10 @@ let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e
 let MENU_RESET=0;
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
-    if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
@@ -8313,6 +8321,19 @@ function rulesTop0(){
   <p>Your units colour the ground they walk on, and each army's ground helps it (the army cards on the home page say how). Some grounds also hurt enemies standing on them: red slows, blue chills, pale makes curses bite harder. Some abilities paint the ground under an enemy: Frost Hold's cold leaves blue ice.</p>
   <h3>The armies</h3>
   <p>Ten armies, each with its own way to win and its own weakness: see the cards on the home page, and tap any unit there to look at it in 3D.</p>`}
+/* v92 (owner 18 Oct 2026: "I need the rulebook accessible while playing; I often forget the current rules"): a Rules button in the turn bar and the menu,
+   and inside the rulebook a search box that filters every rule line (opening the folded sections) plus shortcuts to the main sections. */
+function rulesTools(o,chips){const m=o.querySelector('.modal');if(!m)return;const h2=m.querySelector('h2');const bar=document.createElement('div');bar.className='rtools';
+  bar.innerHTML=`<div class="srow"><input type="search" placeholder="Search the rules (freeze, King, souls, Faith...)" aria-label="Search the rules"><span class="cnt"></span></div>${chips&&chips.length?`<div class="chips">${chips.map(c=>`<button type="button" data-j="${c}">${c}</button>`).join('')}</div>`:''}`;
+  h2.after(bar);const inp=bar.querySelector('input'),cnt=bar.querySelector('.cnt');const blocks=[...m.querySelectorAll('p,li,tr')].filter(b=>!b.closest('.rtools')&&!b.closest('.row')&&!b.querySelector('p,li,tr'));const heads=[...m.querySelectorAll('h3,h4,summary')].filter(h=>!h.closest('.rtools'));
+  const unmark=()=>{m.querySelectorAll('mark[data-s]').forEach(x=>x.replaceWith(x.textContent))};
+  const run=()=>{const q=inp.value.trim().toLowerCase();unmark();if(!q){for(const b of blocks)b.classList.remove('rhide');for(const h of heads)h.classList.remove('rhide');cnt.textContent='';return}
+    let n=0;for(const b of blocks){const hit=b.textContent.toLowerCase().includes(q);b.classList.toggle('rhide',!hit);if(hit){n++;const d=b.closest('details');if(d)d.open=true;
+      const walk=el=>{for(const c of [...el.childNodes]){if(c.nodeType===3){const t=c.nodeValue,i=t.toLowerCase().indexOf(q);if(i>=0){const mk=document.createElement('mark');mk.dataset.s=1;mk.textContent=t.slice(i,i+q.length);const after=document.createTextNode(t.slice(i+q.length));c.nodeValue=t.slice(0,i);c.after(mk,after)}}else if(c.nodeType===1&&c.tagName!=='MARK')walk(c)}};walk(b)}}
+    for(const h of heads){let e=h.nextElementSibling,any=false;while(e&&!/^H[234]$/.test(e.tagName)){if(!e.classList.contains('rhide')&&(e.matches('p,li,tr')||e.querySelector('p:not(.rhide),li:not(.rhide),tr:not(.rhide)'))){any=true;break}e=e.nextElementSibling}h.classList.toggle('rhide',!any&&h.tagName!=='SUMMARY')}
+    cnt.textContent=n?`${n} rule${n>1?'s':''}`:'nothing found'};
+  inp.oninput=run;bar.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>{inp.value='';run();const t=b.dataset.j.toLowerCase();const h=heads.find(h=>h.textContent.toLowerCase().includes(t));if(h){const d=h.closest('details');if(d)d.open=true;h.scrollIntoView({block:'start',behavior:'smooth'})}});
+  if(!('ontouchstart' in window))setTimeout(()=>inp.focus(),50)}
 function showRules(){
   const o=$('#overlay');
   const mv=Object.entries(MOVES).filter(([k])=>k!=='fly').map(([k,m])=>`<li><span class="glyph">${m.glyph}︎</span> <b>${m.free?'Free':'Pattern'}</b>: ${m.text(k==='march'?2:3)}</li>`).join('');
@@ -8413,7 +8434,7 @@ function showRules(){
   <h3>Teams of 2</h3><p>With 4 or 6 players, partners start side by side and share a win. You can't attack your partner, but Gizmo Bombs hit everyone.</p>
   </details>
   <div class="row" style="margin-top:14px"><button class="btn primary" id="closeM">Got it</button></div></div>`;
-  o.hidden=false;$('#closeM').onclick=closeModal;
+  o.hidden=false;$('#closeM').onclick=closeModal;rulesTools(o,[(G&&G.realm)||(!G&&cfg.map==='realm')?'The Realm':'Crown Wilds','How you score','Your turn','Moving','Fighting','Abilities','Statuses','The armies']);
 }
 function showQuick(){
   const o=$('#overlay');const row=(a,b)=>`<tr><th>${a}</th><td>${b}</td></tr>`;
@@ -8472,7 +8493,7 @@ function showQuick(){
   ${row('Leader talent','Pick 1 of 3 per army at the start')}
   </tbody></table>
   <div class="row" style="margin-top:14px"><button class="btn primary" id="closeM">Close</button><button class="btn" id="toRules">Full rules</button></div></div>`;
-  o.hidden=false;$('#closeM').onclick=closeModal;$('#toRules').onclick=showRules;
+  o.hidden=false;$('#closeM').onclick=closeModal;$('#toRules').onclick=showRules;rulesTools(o,[]);
 }
 /* Armies rebuilt after the War Room run that BALANCE comes from: their old win numbers would mislead, so the setup cards and the
    balance table say "new roster, not yet measured" until a full run with a new version label replaces BALANCE (v19 candidate, 29 Sep 2026). */
@@ -9063,7 +9084,7 @@ function zoomBtn(f){camUserTook();const u=G&&(G.sel!=null?byId(G.sel):G.inspect!
 $('#zoomIn').onclick=()=>zoomBtn(1.35);
 $('#zoomOut').onclick=()=>zoomBtn(1/1.35);
 function centerBoard(){const b=$('#boardbox');b.scrollLeft=(b.scrollWidth-b.clientWidth)/2;b.scrollTop=(b.scrollHeight-b.clientHeight)/2}
-$('#rulesBtn').onclick=showRules;
+$('#rulesBtn').onclick=showRules;$('#rulesBtn2').onclick=showRules;
 $('#quickBtn').onclick=showQuick;
 function syncSnd(){$('#sndBtn').textContent=SND.on?'Sound on':'Sound off'}
 $('#annBtn').onclick=()=>annSet(!ANN.on);syncAnnBtn();
