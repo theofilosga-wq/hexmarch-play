@@ -5742,7 +5742,7 @@ function glBuildStatics(){
       const lk=G.map&&G.wallLook?G.wallLook[k]:null;
       if(lk&&lk!=='cliff')(WLK[lk]=WLK[lk]||[]).push([x,0,z,h(4)*6.28,1]);
       else if(lk==='cliff'){const hgt=1.3+h(1)*0.8;L.peak.push([x,hgt/2,z,h(2)*3,1,hgt]);L.peak2.push([x+0.4,hgt*0.25,z-0.3,h(3)*3,1,hgt*0.5])}
-      else if(G.map&&(!G.realm||hd(q,r,0,0)<=G.heartR+1)){L.wall.push([x,0,z,0,1,1]);for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;L.merlon.push([x+Math.cos(a)*0.72,1.16,z+Math.sin(a)*0.72,a,1])}}
+      else if(G.map&&(!G.realm||hd(q,r,0,0)<=G.heartR+1)){if(!cityWallUp()){L.wall.push([x,0,z,0,1,1]);for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;L.merlon.push([x+Math.cos(a)*0.72,1.16,z+Math.sin(a)*0.72,a,1])}}}
       else{const hgt=1.6+h(1)*0.9;L.peak.push([x,hgt/2,z,h(2)*3,1,hgt]);L.snow.push([x,hgt*0.83,z,h(2)*3,1,hgt]);L.peak2.push([x+0.42,hgt*0.25,z-0.3,h(3)*3,1,hgt*0.5])}}
     else if(f==='hill'){L.hill.push([x,0,z,h(1)*3,1,1])}
     else if(f==='shrine'){L.shrine.push([x,0.55,z,h(1)*3,1]);for(let i=0;i<4;i++){const a=i*1.57+0.4;L.shrineStone.push([x+Math.cos(a)*0.45,0.12,z+Math.sin(a)*0.45,a,1])}}
@@ -5759,6 +5759,8 @@ function glBuildStatics(){
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
   if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5);const fm=new T.InstancedMesh(FOREST_GEO.geo,FOREST_GEO.mat,L.fmodel.length);fm.castShadow=innerWidth>=1000;/* phones skip the forests' shadow pass: 29k triangles x ~100 forests */fm.receiveShadow=true;const o=new T.Object3D();
     L.fmodel.forEach((t,i)=>{o.position.set(t[0],0.02-bb.y0*sc,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc);o.updateMatrix();fm.setMatrixAt(i,o.matrix)});fm.userData.forest={sc,y0:bb.y0};grp.add(fm);GL.forestMesh=fm;GL.forestList=L.fmodel}else{GL.forestMesh=null;GL.forestList=null}
+  if(cityWallUp()){const bb=CITY_WALL.bb,o=CITY_WALL.src.clone();const target=2*(G.heartR+1)*S3+1.3;const sc=target/Math.max(bb.w||1,bb.d||1);o.scale.setScalar(sc);o.position.set(-bb.cx*sc,0.03-bb.y0*sc,-bb.cz*sc);
+    o.traverse(m=>{if(m.isMesh){m.castShadow=innerWidth>=1000;m.receiveShadow=true}});const pv=new T.Group();pv.rotation.y=bb.w<bb.d?Math.PI/6:0;/* the ring's corners must lie on the x axis, like the hex ring's */pv.add(o);grp.add(pv);GL.cityWall=pv}else GL.cityWall=null
   add(tree(glInst(L.trunk,gGeo('trunk',()=>{const g=new T.CylinderGeometry(0.06,0.1,0.45,6);g.translate(0,0,0);return g}),gMat('#6b4a2e')),L.trunk));
   add(tree(glInst(L.crown,gGeo('crown',()=>new T.IcosahedronGeometry(0.42,1)),gMat('#4f9a4a')),L.crown));
   add(tree(glInst(L.crown2,gGeo('crown',()=>new T.IcosahedronGeometry(0.42,1)),gMat('#63ad55')),L.crown2));
@@ -5957,6 +5959,10 @@ const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'
 /* v83b FOREST MODEL (owner's forest diorama): one instanced copy per forest hex, scaled to the hex, replacing the code trees; a copy shrinks
    to 0.45 while a unit stands in that forest (the old 'trees step aside' feel). Loaded once; until it arrives (or without it) the code trees stay. */
 const FOREST_MODEL='models/tile_forest-meadow.glb';let FOREST_GEO=null;
+// v88: the owner's city wall (one whole hexagonal ring) stands on the Realm's wall ring until the Beast falls; then the code wall blocks and rubble return (the ruined ring will replace them when he makes it)
+const CITY_WALL_MODEL='models/camps_city-wall.glb';let CITY_WALL=null;
+function glCityWallLoad(){if(CITY_WALL!==null)return;CITY_WALL=false;glModel(CITY_WALL_MODEL).then(src=>{CITY_WALL={src,bb:src.userData.bb};GL.sig='';GL.dirty=true}).catch(()=>{})}
+const cityWallUp=()=>!!(G&&G.realm&&CITY_WALL&&!G.cityDown);
 function glForestLoad(){if(FOREST_GEO!==null)return;FOREST_GEO=false;glModel(FOREST_MODEL).then(src=>{let mesh=null;src.traverse(m=>{if(m.isMesh&&!mesh)mesh=m});if(!mesh)return;const bb=src.userData.bb;FOREST_GEO={geo:mesh.geometry,mat:mesh.material,bb};GL.sig='';GL.dirty=true}).catch(()=>{})}// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
 const GLM={};
 function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
@@ -6159,7 +6165,7 @@ function glNoCull(o){o.traverse(x=>{x.frustumCulled=false})}
 function glFrame(){
   if(!glInit())return false;GL.tick++;
   if(GL.game!==G){GL.game=G;GL.sig='';GL.terrSig='';for(const f of GL.figs.values()){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose())}GL.figs.clear()}
-  glForestLoad();
+  glForestLoad();if(G.realm)glCityWallLoad();
   if(GL.tick%15===1||!GL.sig){const s=glStaticSig();if(s!==GL.sig){GL.sig=s;glBuildTiles();glBuildStatics();glPlinth();glProps();glSunFit();GL.terrSig='';glNoCull(GL.scene)}
     const t=glTerrSig();if(t!==GL.terrSig){GL.terrSig=t;glPaintTiles();glBuildTerrDeco();glNoCull(GL.terrDeco)}}
   if(GL.throne)GL.throne.visible=!unitAt(0,0);
