@@ -634,7 +634,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:1,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -951,7 +951,7 @@ const ABIL={
   repel:{name:'Repel',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:1,shape:'single',push:3,
     desc:'Blast an adjacent enemy 3 hexes straight away from the Repulsor. If it slams into a wall or a unit it takes 4 damage, plus 1 for each hex of the throw that was left (up to +2); thrown into a river, a small walking unit takes 2 more. Pushed off the board, into a void or into a Void Trap, it dies. Giants can\u2019t be moved, and neither can Crown Wilds monsters: they take the full slam instead (4 + 2).'},
   riftmark:{name:'Rift Mark',cost:1,cd:2,aim:'hex',range:3,special:'riftmark',bot:'riftmark',
-    desc:'Turn a hex within 3 teal for 3 turns, even under an enemy. Riftwalkers on teal can step through the rift to any empty teal hex, and a Riftwalker push or pull moves an enemy standing on teal 1 hex further.'},
+    desc:'Turn a hex within 3 teal for 3 turns, even under an enemy. Riftwalkers on teal can step through the rift to any empty teal hex.'},
   /* v50 Sinkhole (owner 4 Oct 2026: "one more ability like the Void Trap but a bit different"). Aimed at the hex an ENEMY stands on: the ground
      cracks (G.sinks[key]={owner,by}) and falls at the start of the Riftwalkers' next turn. A unit still standing there falls and dies; a Leader or a
      two-hex giant takes RULES.SINK_DMG instead and the ground holds. The hole then stays open as a Void Trap for 3 turns. Riftwalkers never fall. */
@@ -1053,6 +1053,7 @@ const ABIL={
 
 /* ---------- traits: one passive quirk per unit ---------- */
 const TRAITS={
+  trail:{name:'Hellfire Trail',text:'Every hex the Pit Lord walks over burns until the start of its next turn: red ground, where fire units get +1 ATK, any other unit that starts its turn there takes 1 and enemies move 1 less.'},
   pilot:{name:'Pilot',text:'Inside its machine: the machine’s HP take every hit first; when they are gone the gnome is thrown clear, alive, and the wreck stays as scrap.'},
   behemoth:{name:'Behemoth',text:'Built from 3 scrap. Fires only with a gnome inside, moves only with 3. When it is wrecked the crew climbs out alive and it leaves 2 scrap.'},
   mammoth:{name:'Rime Mammoth',text:'Leaves 1 frost mark on every enemy it walks past, and on every enemy standing next to it at the start of your turn.'},
@@ -1167,12 +1168,12 @@ const FAC={
     theme:'Demons and fire. Rogue demons that do not buff each other or work as a team: each one uses fire to kill and torment, and every death, theirs or their enemies’, is a soul. In the end they are sacrificed to summon the Archdemon: the Court’s carry and its only sure way to victory.',// owner's words, 17 Oct 2026
     passive:'Souls: every Ember unit that falls and every enemy the Court kills is a soul (a Sacrificed Imp and a death next to the Soul Devourer count 2; a Phoenix that leaves an egg counts 0). At 10 souls the Archdemon rises next to the Pit Lord (2 hexes, 18 HP, 4 ATK, Hellwhip), or at once if the whole Court falls. The Archdemon FEEDS: whenever a unit it has wounded dies, it gains +1 ATK and heals 2, with no limit. Hellspawn: a dying Ember unit bursts for 2 ignoring DEF on every adjacent enemy and its hex burns red. Seared targets can’t be healed until the end of their next turn.',
     home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage, and Crown Wilds monsters on it burn for 1 each round. An enemy standing on red ground moves 1 less.',homeAtk:1,
-    homeRealm:'Burning ground: there is no home ground on the Realm, only the fire you make. Hexes set alight by Kindle, the breaths, the Fireball, Fire Frenzy, Hellspawn or Scorched Earth are red while they burn: fire units on them get +1 ATK, any other unit that starts its turn on one takes 1 damage, and enemies on them move 1 less.',
+    homeRealm:'Burning ground: there is no home ground on the Realm, only the fire you make. Hexes set alight by Kindle, the breaths, the Fireball, Fire Frenzy, Hellspawn, Scorched Earth or the Pit Lord’s trail are red while they burn: fire units on them get +1 ATK, any other unit that starts its turn on one takes 1 damage, and enemies on them move 1 less.',
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
     units:[
       // v75 (brief): demons only. Expendable Imps and Soul Wisps feed the Archdemon; Hellhounds, the Hellknight and the Magma Wyrm are the core kept beside it.
       // v76 (owner 18 Oct 2026, army review): the v73 character units are back; the Soul Wisps and the Hellknight are out; the Wyrm is a small demonic dragon.
-      {name:'Pit Lord',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'kindle'},
+      {name:'Pit Lord',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'kindle',trait:'trail'},
       {name:'Imp',icon:'fireball',n:2,hp:6,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'sacrifice'},
       {name:'Hellhound',icon:'paw',n:2,hp:12,atk:4,def:0,mov:4,mt:'walk',at:'melee',rng:1,ab:'spin',trait:'hitrun'},
       {name:'Phoenix',icon:'phoenix',hp:8,atk:3,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'breath',trait:'rebirth'},
@@ -1205,7 +1206,7 @@ const FAC={
   gnomes:{name:'Gnome Tinkers',color:'#ff6ec7',
     theme:'Pilots: every gnome builds and climbs into its own machine. On foot it is weak; inside it is strong and has one extra trick. Wrecks become scrap, and scrap builds a Behemoth.',
     passive:'Build: use Build (you may move first), stand still through your next turn, and you climb in for free at the start of the turn after. Inside, the machine’s HP take every hit; when they are gone the pilot is thrown clear, alive, and the wreck stays as scrap on its hex. Any gnome that walks onto scrap collects it; an enemy standing on it crushes it. Behemoth: 3 scrap raise a 2-hex Behemoth (30 HP, 6 ATK, shoots 4) that fires with 1 gnome on foot inside and moves with 3; one at a time, rebuildable. Overdrive (Ultimate): every machine is repaired and acts again.',
-    home:'Pink ground: +1 move for gnomes (machines get nothing). An enemy standing on pink ground takes 1 more from machine attacks.',homeRealm:'No home ground on the Realm.',homeMov:1,
+    home:'Pink ground: +1 move for gnomes (machines get nothing).',homeRealm:'No home ground on the Realm.',homeMov:1,
     units:[
       // v67 Gnome Fortress (owner 6 Oct 2026). bare = the gnome's stats after it sets its weapon down.
       // v75 (brief): PILOTS. Every gnome has its own machine (mach): on foot a weak version of its role, inside it stronger with one extra ability.
@@ -1222,7 +1223,7 @@ const FAC={
   arcane:{name:'Circle of Priests',color:'#8f5cff',
     theme:'Healers only, no shields: expose a priest, mend it, and the light that overflows burns the nearest enemy. Faith brings the dead back.',
     passive:'Overflowing light: every heal beyond full HP becomes damage on the nearest enemy within 3. Faith: every point of healing a priest lands on a priest unit is 1 Faith; at 16 the unit that died last rises where it fell at full HP (then 22, then 28, +6 each time). Holy ground heals allies and burns enemies; Bless gives +1 ATK and healing over time; Mend lifts a debuff; whoever hits a blessed priest takes 2 back. No tank and low HP: a priest alone dies in a turn or two.',
-    home:'Indigo ground: your units standing on it heal 1 at the start of your turn. An enemy standing on indigo ground can’t be healed.',
+    home:'Indigo ground: your units standing on it heal 1 at the start of your turn.',
     homeRealm:'Holy ground: the Druids’ Groves are the only ground you make: your units on a Grove heal 1 at the start of your turn and enemies on it burn for 1. No home ground on the Realm.',homeHeal:1,
     units:[
       {name:'High Priest',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'sanctuary'},
@@ -1234,7 +1235,7 @@ const FAC={
   warband:{name:'Iron Warband',color:'#eef0f4',
     theme:'A pure army that moves as one: shields in front, spears behind, swords on the flanks, the Warlord and the Captain inside. No spells, just formation.',
     passive:'An army, not ten men. Shield Wall: a Warband unit touching a Shieldbearer that stands between it and the attacker takes 1 less from every hit (melee, ranged, abilities); the Shieldbearer takes 1 less from everything. Spears strike 2 hexes in straight lines over an ally, +1 when the thrust passes over a Shieldbearer. Swords get +1 move while touching a comrade (they break out and flank) and cleave. The Phalanx: touching Warband units have +1 ATK (not the Warlord) and strike together; five or more also have +1 DEF and hold the line. Move as One: the connected block moves in one direction as far as its slowest member minus 1, plus 1 with the Warlord or the Captain in it. Born for war: the Warlord touching 2 or more comrades cannot be hurt by hits and does not strike; out of the line he throws his Javelin. Veterans: kills give XP and each level alternates +1 ATK and +2 max HP.',line:1,phalanx:1,
-    home:'Bone ground: +1 ATK. An enemy standing on bone ground takes 1 more from Warband basic attacks.',homeRealm:'No home ground on the Realm: the Phalanx is the Warband’s ground.',homeAtk:1,
+    home:'Bone ground: +1 ATK.',homeRealm:'No home ground on the Realm: the Phalanx is the Warband’s ground.',homeAtk:1,
     units:[
       // v75 (brief): a pure army that moves as one. Warlord, Captain (second in command), 3 shields, 3 spears, 2 swords. Berserker, Outrider and Raider are off the roster.
       {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'holdfast',ab2:'javelin',trait:'bornforwar'},
@@ -1245,7 +1246,7 @@ const FAC={
   rift:{name:'Riftwalkers',color:'#12d69a',voidWalk:1,
     theme:'Aliens of advanced technology. They never fight: they crack the ground, pull, push and swap, and throw you in. Every ability grows with use.',
     passive:'Levels: each Riftwalker ability levels up from its own uses (after 2, 6 and 12): Repel throws 3, 4, 5 hexes; Riptide drags from 4, 5, 6 (at level 3 it also tugs 2 more enemies); the Gravity Well grows wider, then pulls 2 hexes. Cracks: holes show as cracks and open at the start of the Riftwalkers’ next turn, then last 4 turns. Black Hole (Sovereign): when it opens it pulls every enemy within 2 one hex toward it. Phase Link: instead of moving, swap places with any Riftwalker of yours. Rift Step: Riftwalkers appear on any empty hex within their move. Collision: an enemy thrown into another hurts both. Anchored or marked enemies move 1 less and fly 1 further.',slam:2,
-    home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move, and a Riftwalker push or pull moves an enemy on teal 1 hex further. ',homeRealm:'No home ground on the Realm: Riftwalkers shape the board with cracks and holes instead.',gate:1,
+    home:'Teal ground: once per turn, a unit on teal can step through the rift to any empty teal hex as its move. ',homeRealm:'No home ground on the Realm: Riftwalkers shape the board with cracks and holes instead.',gate:1,
     units:[
       // v75 (brief): displacement and traps only. Every ability levels up from its own uses (2, then 4 more, then 6 more); Phase Link swaps places with any teammate instead of moving.
       {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'blackhole',ab2:'anchor'},
@@ -1271,8 +1272,8 @@ const FAC={
   chrono:{name:'Hourglass Order',color:'#c81ca6',
     theme:'One assassin, six helpers. Alone the Second Hand strikes once for 3; every supporter adds a piece (another strike, a sharpened blow, an echo, a free step, a rewound clock), and every kill makes the pieces they give hit harder.',
     passive:'The combo is a synergy. Quicken (Tempo Mage): one more strike. Synchrony (Chronarch): +1 on every strike this turn. Hourglass Sand (Sand Weaver): the next strike ignores DEF and deals +2. Echo (Echo Knight): the next strike lands on a second adjacent enemy too. Chase the Clock (Rewinder): a free move after every kill. Overwind (Tick): an ally’s abilities are ready again and it may act again. Rewind Wounds: an ally’s HP back to the start of your previous turn. Tempo stacks: every kill by a Second Hand is a stack on that blade, with no cap; each stack adds +1 to every strike a supporter granted it (never to its own single blow). Stealth: a blade that killed this turn can only be targeted from 2 hexes or closer.',bank:2,
-    home:'Shattered Time (magenta): where a Second Hand kills, its hex and the victim’s hex turn magenta for 3 turns; Hourglass Sand paints its ally’s hex. An enemy that starts its turn on magenta moves 1 less and gets no free moves. An Hourglass unit that starts its turn on magenta has its rests cut by 1 more, and a Second Hand that kills while standing on magenta may move again.',
-    homeRealm:'Shattered Time (magenta): where a Second Hand kills, its hex and the victim’s hex turn magenta for 3 turns; Hourglass Sand paints its ally’s hex. An enemy that starts its turn on magenta moves 1 less and gets no free moves. An Hourglass unit that starts its turn on magenta has its rests cut by 1 more, and a Second Hand that kills while standing on magenta may move again. No home ground on the Realm.',cheap:1,
+    home:'Shattered Time: the Hourglass paints no ground. Where a Second Hand kills, time breaks around the body: enemies next to the victim move 1 less and get no free moves on their next turn, Hourglass units within 2 have their rests cut by 1 at once, and a Second Hand’s second kill in one turn lets it move again.',
+    homeRealm:'Shattered Time: the Hourglass paints no ground. Where a Second Hand kills, time breaks around the body: enemies next to the victim move 1 less and get no free moves on their next turn, Hourglass units within 2 have their rests cut by 1 at once, and a Second Hand’s second kill in one turn lets it move again.',cheap:1,
     units:[
       {name:'Chronarch',icon:'crown',leader:1,hp:16,atk:4,def:1,mov:1,mt:'walk',at:'bolt',rng:3,ab:'synchrony',ab2:'turnback',trait:'delaybolt'},// v21: the delay bolt (Final Second included in the trait)
       // v76 (owner 18 Oct 2026): the combo is a SYNERGY. Alone the assassin strikes once for 3; every supporter adds a piece; the Tempo stacks (kills) only grow the pieces the supporters give.
@@ -1428,18 +1429,16 @@ function possEnd(host,dead){const P0=host.poss;if(!P0)return;host.owner=P0.owner
 function possTick(p){for(const u of G.units.slice()){if(!u.poss||u.owner!==p.id||!alive(u))continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Abil';CUR_NAME='Possession (host burns)';if(!SIM)vfx({k:'buff',at:[u.q,u.r],col:'#e8e23a'});hurt(u,1,'#e8e23a',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 // v77 Forward! (Captain): the connected block of army units around u (touching, one-hex, not frozen)
 function blockOf(u){const cs=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg&&v.size!==2&&!(v.st&&v.st.frozen>0)&&alive(v));const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen}
-/* v77b SHATTERED TIME (Hourglass ground, owner 17 Oct 2026, replaces the AP-cost magenta rule): where a Second Hand kills, time breaks: the
-   victim's hex and the blade's hex turn magenta for 3 turns; Hourglass Sand paints the hex of the ally it empowers. An enemy that starts its turn
-   on magenta moves 1 less and gets no free moves (st.tslow, cleared at the end of its turn). An Hourglass unit standing on magenta at the start of
-   its turn has every rest shortened by 1 more; a Second Hand that kills while standing on magenta may move again. */
-function shatterPaint(q,r,owner,label){if(!solid(q,r)||isHeart(q,r))return 0;G.paint[key(q,r)]={fac:'chrono',ttl:3,owner};if(!SIM&&trk()){const e=tFx('chrono','',label||'Shattered Time (hexes)');if(e)e.uses++}return 1}
-const onMagenta=u=>!!u&&u.kind!=='wall'&&cells(u).some(([q,r])=>terrAt(q,r)==='chrono');
-function shatterTime(k,t){const stood=onMagenta(k);for(const [q,r] of cells(t))shatterPaint(q,r,k.owner);for(const [q,r] of cells(k))shatterPaint(q,r,k.owner);
-  if(!SIM)vfx({k:'buff',at:[t.q,t.r],col:'#c81ca6'});if(stood){k.moved=false;k.mdist=0;if(!SIM){fx(k,'time flows: move again','#c81ca6');if(trk()){const e=tFx('chrono',k.name,'Shattered Time: free moves');if(e)e.uses++}}}}
-function timeDrag(p){for(const u of G.units){if(u.kind==='wall'||!u.st)continue;
-  if(u.owner===p.id){u.st.tslow=0;if(!onMagenta(u))continue;
-    if(p.fac==='chrono'){let c=0;if(u.cd>0){u.cd--;c++}if(u.cd2>0){u.cd2--;c++}if(c&&!SIM){fx(u,'time flows','#c81ca6');if(trk()){const e=tFx('chrono',u.name,'Shattered Time: rests cut');if(e)e.uses+=c}}}
-    else{u.st.tslow=1;if(!SIM){fx(u,'time drags','#c81ca6');if(trk()){const e=tFx('chrono','','Shattered Time: enemies slowed');if(e)e.uses++}}}}}}
+/* v86 SHATTERED TIME AS A MARK (owner 18 Oct 2026: the Hourglass paints no ground; the v77b magenta rule becomes an effect around the kill):
+   where a Second Hand kills, time breaks around the body: every enemy next to the victim moves 1 less and gets no free moves on its next turn
+   (st.tslow, cleared at the end of that unit's own turn); every Hourglass unit within 2 of the victim has its rests cut by 1 at once; the
+   Second Hand's SECOND kill in the same turn lets it move again (k.shatR / k.shatN). Hourglass Sand no longer paints. */
+function shatterTime(k,t){if(k.shatR!==G.round){k.shatR=G.round;k.shatN=0}k.shatN++;const tc=cells(t);const near=(u,n)=>cells(u).some(([q,r])=>tc.some(([a,b])=>hd(q,r,a,b)<=n));
+  let slowed=0,cut=0;for(const u of G.units){if(u.kind==='wall'||!u.st||!alive(u)||u===t)continue;
+    if(tm(u.owner)!==tm(k.owner)){if(near(u,1)){u.st.tslow=1;slowed++;if(!SIM)fx(u,'time drags','#c81ca6')}}
+    else if(u.owner===k.owner&&near(u,2)){let c=0;if(u.cd>0){u.cd--;c++}if(u.cd2>0){u.cd2--;c++}if(c){cut+=c;if(!SIM)fx(u,'time flows','#c81ca6')}}}
+  if(!SIM){vfx({k:'buff',at:[t.q,t.r],col:'#c81ca6'});if(trk()){if(slowed){const e=tFx('chrono','','Shattered Time: enemies slowed');if(e)e.uses+=slowed}if(cut){const e=tFx('chrono','','Shattered Time: rests cut');if(e)e.uses+=cut}}}
+  if(k.shatN>=2){k.moved=false;k.mdist=0;if(!SIM){fx(k,'time flows: move again','#c81ca6');if(trk()){const e=tFx('chrono',k.name,'Shattered Time: free moves');if(e)e.uses++}}}}
 // v77 Aftershock (Riftwalker talent): a hole of p's that closes at k shakes every enemy next to it for 2, ignoring DEF
 function aftershock(p,k){if(!talent(p,'aftershock'))return;const [q,r]=k.split(',').map(Number);const vs=G.units.filter(v=>v.kind!=='wall'&&alive(v)&&!v.statue&&!v.egg&&tm(v.owner)!==p.team&&distUC(v,q,r)===1);if(!vs.length)return;
   const src=G.units.find(v=>v.owner===p.id&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===p.id&&v.kind!=='wall')||null;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Abil';CUR_NAME='Aftershock (talent)';
@@ -2165,7 +2164,7 @@ function beginTurn(){
   if(RULES.FORTRESS&&p.salvAP>0){G.ap=Math.min(RULES.AP_CAP+3,G.ap+p.salvAP);if(!SIM&&trk()){const e=tFx('gnomes','','Salvage (talent)');if(e){e.uses++;e.apGranted=(e.apGranted||0)+p.salvAP}}p.salvAP=0}
   if(p.hold)p.hold=0;
   if(G.realm){p.sumDone=false;if(p.ctrl!=='human'){const s=realmSites(p).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0))[0];if(!(s&&realmSummon(p,realmBotPick(p),true,s)))realmSummon(p,realmBotPick(p),true)}}// v74 the Realm: bots call their unit at once; people pick in the dock
-  dreadTurn(p);mammothTurn(p);possTick(p);timeDrag(p);
+  dreadTurn(p);mammothTurn(p);possTick(p);
   if(RULES.SHAMANS&&G.realm&&p.fac==='mage')for(const u of G.units.filter(u=>u.owner===p.id&&u.el&&!u.elemental&&u.kind!=='wall')){if(!onElHex(u,u.el)||(p.evo&&p.evo[u.el]))continue;p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);p.el[u.el]+=1;if(!SIM){fx(u,'shrine +1','#2bff5a');if(trk()){const e=tFx('mage',u.name,'Shrine (bar +1)');if(e)e.uses++}}if(p.el[u.el]>=elNeed(p))ascend(p,u.el)}// v75: a shaman on its own shrine
   if(RULES.PILOTS2)for(const u of G.units.filter(u=>u.owner===p.id&&isGnome(u))){if(u.build==='done')walkerIn2(u);else if(u.build==='started'){u.build='still';u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'stand still','#ff6ec7')}}
   machineFire(p,'Auto-fire','Basic');ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
@@ -2665,8 +2664,11 @@ function doMove(u,o){
   if(u.freeMove>0){u.freeMove--;if(!u.clockMv)tSupBy(u.rwBy,null,ABIL.rewind.name,'moved',1);else u.clockMv--;if(u.atkd)tSupBy(u.rwBy,null,'Rewind after strikes','moved',1)}else{G.ap-=1;u.moved=true}setAnim(u);u.mdist=hd(u.q,u.r,o.q,o.r);{const s=tStat(u);if(s){s.moves++;s.hexes+=u.mdist}}
   {const pm=o.pilot!=null?byId(o.pilot):null;if(pm&&pilotable(u,pm)){if(RULES.FORTRESS&&pm.machine==='suit')walkerIn(u,pm);else if(RULES.HEAVY)pickUpWeapon(u,pm);else walkerIn(u,pm)}}
   if(o.board!=null){const b=byId(o.board);if(b&&b.behemoth){const i=G.units.indexOf(u);if(i>=0)G.units.splice(i,1);u.moved=true;b.crew=(b.crew||[]).concat([u]);if(!SIM){addLog(u.owner,`The ${u.name} climbs into the Behemoth (${b.crew.length} inside).`);fx(b,'crew '+b.crew.length,'#ff6ec7');if(trk()){const e=tFx('gnomes','','Behemoth boardings');if(e)e.uses++}}if(G.sel===u.id)G.sel=null;G.amode=null;G.aim=null;afterAction();return}}
-  {const was=cells(u);u.q=o.q;u.r=o.r;u.dir=o.dir;if(hasTrait(u,'mammoth'))mammothMarks(u,was)}if(o.gate)G.gateUsed=true;G.amode=null;G.aim=null;braceCheck(u);afterAction();
+  {const was=cells(u);u.q=o.q;u.r=o.r;u.dir=o.dir;if(hasTrait(u,'mammoth'))mammothMarks(u,was);if(hasTrait(u,'trail'))hellTrail(u,was[0],[o.q,o.r])}if(o.gate)G.gateUsed=true;G.amode=null;G.aim=null;braceCheck(u);afterAction();
 }
+/* v86 HELLFIRE TRAIL (owner 18 Oct 2026): the Pit Lord sets every hex of its path alight for 1 turn (red ground, ttl 1: it burns through the other sides' turns and dies at the start of the Pit Lord's next turn). The path is the straight hex line from where it stood to where it stops. */
+function hellTrail(u,from,to){let n=0;for(const [q,r] of hexLine(from,to)){if(!solid(q,r)||isHeart(q,r))continue;const k=key(q,r),p=G.paint[k];if(p&&p.fac==='fire'&&p.ttl>1)continue;G.paint[k]={fac:'fire',ttl:1,owner:u.owner};n++}
+  if(n&&!SIM){fx(u,'hellfire trail','#ff6a3d');if(trk()){const e=tFx('fire',u.name,'Hellfire Trail (hexes lit)');if(e)e.uses+=n}}}
 // Brace (Spearman): an enemy that ends a move on a hex in front of an un-moved Spearman runs onto the spear: 2 damage minus DEF.
 function braceCheck(u){
   if(u.kind==='wall'||truce())return;
@@ -3247,7 +3249,7 @@ function useAbility(u,k,q,r,dest){
     // Void Trap: a temporary void for 3 of the caster's turns.
     case 'sinkhole':if(tgt&&tgt.kind!=='wall'){G.sinks=G.sinks||{};for(const [a,b] of cells(tgt))if(!isHeart(a,b)||true)G.sinks[key(a,b)]={owner:u.owner,by:u.id};fx(tgt,'the ground cracks!','#12d69a');vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[tgt.q,tgt.r],cells:cells(tgt),col:F.color,cam:1});addLog(u.owner,`${u.name} cracks the ground under the ${tgt.name}: it falls at the start of the Riftwalkers’ next turn.`)}break;
     case 'trap':if(passable(q,r)&&!unitAt(q,r)&&!isHeart(q,r)){G.traps=G.traps||{};G.traps[key(q,r)]={owner:u.owner,by:u.id,ttl:G.realm?RULES.HOLE_TTL:3};vfx({k:'ab',ab:'voidtrap',shape:'void',from:[u.q,u.r],to:[q,r],cells:[[q,r]],col:F.color})}break;
-    case 'sand':if(tgt&&tgt.kind!=='wall'&&tgt.at!=='none'){tgt.st.sand=1;shatterPaint(tgt.q,tgt.r,u.owner,'Hourglass Sand');if(!SIM){fx(tgt,'sharpened','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}break;
+    case 'sand':if(tgt&&tgt.kind!=='wall'&&tgt.at!=='none'){tgt.st.sand=1;if(!SIM){fx(tgt,'sharpened','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}break;
     case 'echo':if(tgt&&tgt.kind!=='wall'&&tgt.at!=='none'){tgt.st.echo=1;if(!SIM){fx(tgt,'echo','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}break;
     case 'overwind':if(tgt&&tgt!==u&&tgt.kind!=='wall'&&tgt.owner===u.owner){tgt.cd=0;tgt.cd2=0;tgt.acted=false;if(!SIM){fx(tgt,'rewound','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color});if(trk()){const e=tFx('chrono',u.name,'Overwind');if(e)e.cdCut=(e.cdCut||0)+1}}}break;
     case 'rewindwounds':if(tgt&&tgt.kind!=='wall'){const back=tgt.hpPrev2!=null?tgt.hpPrev2:tgt.hpPrev1;if(back!=null&&back>tgt.hp){const g=Math.min(back,tgt.maxhp)-tgt.hp;healUnit(tgt,g,'#c81ca6','Rewind Wounds',u.id);if(!SIM){fx(tgt,'wounds rewound','#c81ca6');vfx({k:'buff',at:[tgt.q,tgt.r],col:F.color})}}else if(!SIM)fx(tgt,'nothing to rewind','#c81ca6')}break;
@@ -7818,7 +7820,7 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
 function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn and stays frozen until the end of the freezer’s next turn; any Frost Hold hit on it deals double (Shatter)')}
   if(s.chill>0)add('chill','❄️','Chilled',s.chill,'#5cc8ff',0,'1 less move; Ice Lance deals double');
-  if(s.tslow)add('tslow','⌛','Time drags',1,'#c81ca6',0,'started its turn on magenta ground (Shattered Time): 1 less move and no free moves this turn');
+  if(s.tslow)add('tslow','⌛','Time drags',1,'#c81ca6',0,'time broke beside a Second Hand’s kill (Shattered Time): 1 less move and no free moves on its next turn');
   if(s.fb>0)add('frostbite','❄','Frostbite '+s.fb+'/'+frostNeed(),s.fbT,'#bfefff',0,'at '+frostNeed()+' frost marks it freezes; marks fade after 2 of its turns without a new one');
   if(u.oldAtk)add('oldones','⛰','Wrath of the Old Ones +'+u.oldAtk,'','#ffb347',1,'+'+u.oldAtk+' ATK for the rest of the game (a giant fell)');
   if(s.fimm>0)add('thaw','💧','Just thawed',s.fimm,'#9fdcff',1,'can’t be frozen or stunned again this turn');
@@ -8328,7 +8330,7 @@ function showRules(){
   <li><b>Hold the Line.</b> Nobody is pinned by ordinary units: hit and run is allowed. Only the guards hold the line: the Shieldbearer, Frost Warden, Rampart, Grave Knight, Gargoyle and the gnome Mortar. A unit that starts its move next to an enemy guard can only step 1 hex (flyers, knights, Swift, Unstoppable and Ambush units slip away).</li>
   <li><b>Red ground.</b> An enemy of the Ember Court standing on red ground moves 1 less. <b>Chill</b> also stops every free move (Hit and Run, Chase the Clock).</li>
   <li><b>Retribution</b> (Circle of Priests). Whoever hits a shielded or blessed Priest unit with an attack or ability takes 2 damage back (minus its DEF, at least 1), once per action.</li>
-  <li><b>Ground as a weapon.</b> Some armies paint the ground under their enemies: Frost Hold’s chills and freezes leave blue ground (it chills again), the Covenant’s Bog Ring leaves pale ground (curses tick 1 harder there), and the Riftwalkers’ Rift Mark paints any hex teal (their pushes and pulls throw 1 hex further there).</li>
+  <li><b>Ground as a weapon.</b> Only abilities paint the ground, and only where it fits the army: Ember fire (Kindle, the breaths, Fireball, Fire Frenzy, Wildfire and the Pit Lord’s trail: red burns and slows), Frost Hold’s chills and freezes (blue chills again), the Druids’ Grove (holy ground heals you, burns enemies), the Covenant’s Bog Ring (pale: curses tick 1 harder) and the Giants’ Earthshaker and Earthquake (stone). The Warband, the Gnomes and the Hourglass paint nothing.</li>
   <li><b>Red move dots</b> mark hexes where an enemy could hit the unit with a basic attack on its next turn (abilities not counted). White dots are out of their reach.</li>
   <li><b>Counters on the board.</b> Pills beside a piece show what holds it and for how many of its turns: ice block = frozen, star = stunned, snowflake = chilled, one skull per curse, crack = Sunder, rune = Hex.</li>
   <li><b>Melee units move 1 further</b> (except the two-hex giants) than their listed move on the random board (included in the numbers you see). On the Crown Wilds every unit moves 1 further and Leaders 2.</li>
