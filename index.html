@@ -284,7 +284,7 @@ body.focus .game>div:first-child{flex:1;min-height:0;display:flex;flex-direction
 body.focus .boardbox{flex:1;min-height:0;max-height:none!important}
 body.focus .dock{position:static!important;background:none!important;padding-top:4px;margin-top:4px}
 body.focus .turnbar{flex-wrap:nowrap;overflow:hidden;position:static}
-body.focus #menuBtn,body.focus #rulesBtn2{display:inline-flex;flex-shrink:0}
+body.focus #menuBtn,body.focus #rulesPlayBtn{display:inline-flex;flex-shrink:0}@media (max-width:520px){body.focus #rulesPlayBtn .lbl{display:none}}
 body.focus #infoBtn,body.focus #viewBtn,body.focus #rotL,body.focus #rotR,body.focus #zoomIn,body.focus #zoomOut,body.focus #focusBtn{display:none!important}
 body.focus .turnbar .chip{padding:5px 9px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 body.focus .aplabel{display:none}
@@ -311,7 +311,7 @@ body.focus .game>div,body.focus .turnbar,body.focus .boardbox,body.focus .dock,b
 body.focus .turnbar>*{flex-shrink:1}
 body.focus .turnbar .btn{flex-shrink:0}
 /* v92: on the Realm the reserve strip lives in the turn bar; let it scroll sideways so the Rules and menu buttons always stay on screen */
-body.focus .turnbar{flex-wrap:wrap;row-gap:4px}body.focus .turnbar #apBox{flex:1 1 auto;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}body.focus .turnbar #curChip{flex:0 1 auto;min-width:0;max-width:42%}body.focus #pauseBtn{display:none!important}/* Pause lives in the menu in play mode */
+body.focus .turnbar{flex-wrap:wrap;row-gap:4px}body.focus .turnbar #apBox{order:9;flex:1 1 auto;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}body.focus .turnbar #curChip{flex:1 1 0;min-width:0}/* basis 0: the chip never forces the buttons onto a new row, it takes what is left */body.focus #pauseBtn{display:none!important}/* Pause lives in the menu in play mode */
 body.focus{margin:0}
 @media (max-width:700px){
   body.focus .ultbtn .un{display:none}
@@ -573,7 +573,7 @@ body.wide .recap{font-size:15px}
           <div class="chip timer" id="timerChip" hidden></div>
           <div class="spacer"></div>
           <button class="btn sm focusbtn" id="focusBtn" title="Full-screen play">⛶ Full screen</button>
-          <button class="btn sm" id="rulesBtn2" title="The rules, while you play">📖 Rules</button>
+          <button class="btn sm" id="rulesPlayBtn" title="The rules, while you play" aria-label="Rules">📖<span class="lbl"> Rules</span></button>
           <button class="btn sm" id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
           <button class="btn sm" id="pauseBtn" title="Pause the game">⏸ Pause</button>
           <button class="btn sm" id="infoBtn" title="Game info">Info</button>
@@ -9084,7 +9084,7 @@ function zoomBtn(f){camUserTook();const u=G&&(G.sel!=null?byId(G.sel):G.inspect!
 $('#zoomIn').onclick=()=>zoomBtn(1.35);
 $('#zoomOut').onclick=()=>zoomBtn(1/1.35);
 function centerBoard(){const b=$('#boardbox');b.scrollLeft=(b.scrollWidth-b.clientWidth)/2;b.scrollTop=(b.scrollHeight-b.clientHeight)/2}
-$('#rulesBtn').onclick=showRules;$('#rulesBtn2').onclick=showRules;
+$('#rulesBtn').onclick=showRules;$('#rulesPlayBtn').onclick=showRules;
 $('#quickBtn').onclick=showQuick;
 function syncSnd(){$('#sndBtn').textContent=SND.on?'Sound on':'Sound off'}
 $('#annBtn').onclick=()=>annSet(!ANN.on);syncAnnBtn();
