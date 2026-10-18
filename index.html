@@ -5686,8 +5686,9 @@ function glTileColor(q,r,k){
    real-model figure takes its army's kind (Ember: lava) instead of a base under the piece. Without the textures (offline) the kinds
    render as plain colours. */
 const TILE_TEX={meadow:'models/tiles/meadow.jpg',dry:'models/tiles/dry.jpg',waste:'models/tiles/waste.jpg',lava:'models/tiles/lava.jpg',heart:'models/tiles/heart.jpg',river:'models/tiles/river.jpg'};
-const TILE_COL={meadow:'#5b6150',dry:'#8a7f5a',waste:'#6a6560',lava:'#6a2a1e',heart:'#8a6f34',river:'#2f6c9e'};
-const ARMY_TILE={fire:'lava'};// armies whose ground has its own tile art; the rest tint the ground in their colour
+const TILE_COL={meadow:'#5b6150',dry:'#8a7f5a',waste:'#6a6560',lava:'#6a2a1e',heart:'#8a6f34',river:'#2f6c9e',paint:'#ffffff'};// 'paint' has no texture: the army colour shows pure
+const ARMY_TILE={fire:'lava'};// add an army's tile art here once its models/tiles/<kind>.jpg exists
+const GROUND_PAINT={ice:'#8ee2ff',curse:'#c9b35a',arcane:'#fff0b3',chrono:'#ff7af0',rift:'#4ff0c8',warband:'#f0e6d2',gnomes:'#ffb0e0',giants:'#c8c0b0',mage:'#8dff9a'};// armies whose ground has its own tile art; the rest tint the ground in their colour
 const TILE_SIDE='#2a2d33';
 function glTileMat(kind){const T=THREE;const k='tile|'+kind;if(GLC.mat[k])return GLC.mat[k];
   const top=new T.MeshStandardMaterial({color:TILE_COL[kind]||'#555',roughness:0.95,metalness:0});
@@ -5708,7 +5709,7 @@ function glTileKind(q,r,k){const T=THREE;const tint=new T.Color('#ffffff');let k
   if(f==='river')kind='river';
   if(isHeart(q,r)){kind='heart';if(isCentreWall(q,r))tint.multiplyScalar(0.55)}
   if(G.map){const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){tint.set(GROUND.hidden).multiplyScalar(1.2);return {kind,tint}}}
-  const tf=terrAt(q,r);if(tf&&kind!=='heart'&&kind!=='river'){if(ARMY_TILE[tf])kind=ARMY_TILE[tf];else tint.lerp(new T.Color(FAC[tf].color),G.paint[k]?0.6:0.3)}
+  const tf=terrAt(q,r);if(tf&&kind!=='heart'&&kind!=='river'){if(ARMY_TILE[tf])kind=ARMY_TILE[tf];else if(G.paint[k]){kind='paint';tint.set(GROUND_PAINT[tf]||FAC[tf].color).multiplyScalar(0.8)}else tint.lerp(new T.Color(FAC[tf].color),0.3)}// v82d (owner: 'I didn't see hexes turn into their colours'): ability-made ground is painted in a strong, bright colour per army until each army has its own tile art
   const of=GL.occ&&GL.occ.get(k);if(of&&kind!=='heart')tint.lerp(new T.Color(FAC[of].color),0.62);// v78e (owner): the hex under a piece keeps its own ground and turns the army's colour; only burning ground becomes the lava tile
   if(isDoomed(q,r))tint.lerp(new T.Color('#ff3c28'),0.4);
   return {kind,tint}}
