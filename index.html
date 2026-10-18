@@ -4950,7 +4950,7 @@ function draw3D(now){
   if(moving&&Math.abs(CAM.azT-CAM.az)<0.002)moving;
   ctx.clearRect(0,0,CW,CH);
   // v35 real 3D: ground, terrain and miniatures come from the WebGL scene under this canvas (gl3d.js); this canvas keeps the overlays
-  const GLON=glActive()&&glFrame();if(GL.cv)GL.cv.hidden=!GLON;
+  const GLON=glActive()&&glFrame();window.GLON_NOW=GLON;/* v82b: drawBeast3D reads it */if(GL.cv)GL.cv.hidden=!GLON;
   const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
   const R=G.R,Rw=(G.Rv||R)*S3+1.05;
   // plinth
@@ -5142,6 +5142,12 @@ function drawProp3D(f,x,z,sx,sy,s,c,p,now){
 }
 // The Rift Beast (3D): a hunched rift creature over its 3 hexes: dark base, a swollen body with horns, glowing eyes, the HP bar floating above.
 function drawBeast3D(u,pts,x,z,sx,sy,now){const big=pts.length>3;pts=beastHull(pts);const S=CAM.S*(big?2.4:1),V=S*Math.sin(CAM.tilt),br=0.5+0.5*Math.sin((now||0)/380),hit=hl.hitIds.has(u.id);// v80: the city-sized Beast
+  if(window.GLON_NOW){const top=glUnit(u,pts,x,z,now,false);const f=GL.figs.get(u.id+'|'+u.name+'|monster|');if(f&&f.userData.model){// v82b: the real Beast model stands on the hexes; only the ring, the HP bar and the name are drawn here
+    if(hit||G.inspect===u.id){ctx.save();const base=pts.map(([a,b])=>proj(a,b,0));ctx.beginPath();base.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();ctx.strokeStyle=hit?'#ffaa3c':'#ffffff';ctx.lineWidth=Math.max(2,S*0.12);ctx.stroke();ctx.restore()}
+    if(hl.atk.has(u.id))for(const [a,b] of pts)groundRing(a,b,0.84,'#ff6161',Math.max(2,S*0.1));
+    const [hx,hy]=proj(x,z,top+0.3);const bw=S*2.2,bh=Math.max(4,S*0.2),bx0=hx-bw/2,by0=hy,pct=Math.max(0,u.hp/u.maxhp);ctx.save();
+    ctx.fillStyle='#0b0e14';ctx.fillRect(bx0-1.5,by0-1.5,bw+3,bh+3);ctx.fillStyle=pct>.5?'#b06bff':pct>.25?'#e8b84e':'#ff6161';ctx.fillRect(bx0,by0,bw*pct,bh);
+    ctx.font=`900 ${Math.max(10,S*0.5)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;ctx.strokeStyle='#0b0e14';const tx=`Rift Beast ${Math.ceil(u.hp)}/${u.maxhp}`;ctx.strokeText(tx,hx,by0-S*0.45);ctx.fillStyle='#f2e6ff';ctx.fillText(tx,hx,by0-S*0.45);ctx.restore();return}}
   const base=pts.map(([a,b])=>proj(a,b,0));
   ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
   ctx.beginPath();base.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();ctx.strokeStyle=hit?'#ffaa3c':G.inspect===u.id?'#ffffff':'rgba(0,0,0,.55)';ctx.lineWidth=S*1.5*Math.cos(CAM.tilt)+4;ctx.stroke();
@@ -5930,13 +5936,14 @@ const MODELS={// v78b (owner: 'too small, I want to see the detail'): real model
   'Glacier Knight':{file:'models/ice_glacier-knight.glb',h:2.9},'Hailcaller':{file:'models/ice_hailcaller.glb',h:2.6},'Ice Statue':{file:'models/ice_ice-statue.glb',h:2.4},
   'High Priest':{file:'models/arcane_high-priest.glb',h:3.0},'Rift Sovereign':{file:'models/rift_rift-sovereign.glb',h:3.2},
   'Rampart':{file:'models/giants_rampart.glb',h:4.6},'Mountain King':{file:'models/giants_mountain-king.glb',h:4.8},
-  'Elder Drake':{file:'models/camps_elder-drake.glb',h:3.2},'Wanderer':{file:'models/camps_wanderer.glb',h:3.6}};// v82: Frost, Priests, Rift, Giants leaders and the Realm's monsters
+  'Elder Drake':{file:'models/camps_elder-drake.glb',h:3.2},'Wanderer':{file:'models/camps_wanderer.glb',h:3.6},
+  'Rift Beast':{file:'models/camps_rift-beast.glb',h:()=>G&&G.realm?11:3.8}};// v82b: the Beast; on the Realm its body is scaled to sprawl over the whole Heart// v82: Frost, Priests, Rift, Giants leaders and the Realm's monsters
 const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'models/ice_base-glacier-keep.glb',h:5.0}};// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
 const GLM={};
 function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
   new THREE.GLTFLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map)mt.map.encoding=THREE.LinearEncoding;mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
     const b=new THREE.Box3().setFromObject(o);o.userData.bb={h:b.max.y-b.min.y,y0:b.min.y,cx:(b.max.x+b.min.x)/2,cz:(b.max.z+b.min.z)/2};res(o)},undefined,e=>rej(e))}))}
-function glSwapModel(g,MD){glModel(MD.file).then(src=>{if(!g.parent&&!g.userData.pv)return;const o=src.clone();const bb=src.userData.bb;const s=MD.h*FIG3D_K/bb.h;o.scale.setScalar(s);o.position.set(-bb.cx*s,0.17-bb.y0*s,-bb.cz*s);if(MD.rot)o.rotation.y=MD.rot;
+function glSwapModel(g,MD){glModel(MD.file).then(src=>{if(!g.parent&&!g.userData.pv)return;const o=src.clone();const bb=src.userData.bb;const s=(typeof MD.h==='function'?MD.h():MD.h)*FIG3D_K/bb.h;o.scale.setScalar(s);o.position.set(-bb.cx*s,0.17-bb.y0*s,-bb.cz*s);if(MD.rot)o.rotation.y=MD.rot;
   for(const ch of g.children.slice())g.remove(ch);/* v78c (owner): no base under a real model, the hex itself takes the army's ground */o.position.y=0.03-bb.y0*s;o.traverse(m=>{if(m.isMesh&&m.material)m.material=m.material.clone()});g.add(o);g.userData.top=0.03+bb.h*s;g.userData.giant=0;if(g.userData.spent){g.userData.spent=undefined;glSpent(g,true)}g.userData.bob=[];g.userData.wings=[];g.userData.spin=null;g.userData.model=1;glNoCull(g);if(typeof GL!=='undefined')GL.dirty=true}).catch(()=>{})}
 function buildFigure(u,fac){
   const g0=buildFigure0(u,fac);const MD=u.suitHp>0?(u.walker==='pilot'?MODELS['machine:'+u.walkerName]:null):MODELS[u.name];if(MD)glSwapModel(g0,MD);return g0}// a piloted gnome shows its machine's model
@@ -6140,7 +6147,7 @@ function glFrame(){
   GL.seen=new Set();GL.occNow=new Map();return true}
 // place (and if needed build) one unit's miniature; returns the world height of its head top
 function glUnit(u,pts,x,z,now,spent){
-  const fac=u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:u.monster?'monster':'warband';
+  const fac=u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:(u.monster||u.beast)?'monster':'warband';
   const k=u.id+'|'+u.name+'|'+fac+'|'+(u.suitHp>0?u.suitItem:'');let fig=GL.figs.get(k);
   if(!fig){fig=buildFigure(u,fac);fig.userData.k=k;fig.userData.ph=(u.id*1.7)%6.28;GL.figs.set(k,fig);GL.scene.add(fig);glNoCull(fig)}
   GL.seen.add(k);const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
@@ -7744,10 +7751,11 @@ function refresh(){
         else{const K=kingOf();if(!G.throneOpen)lines.push(`<b style="color:#ffd766">The Throne:</b> hidden under the Rift Beast. Slay it to reveal the Throne.`);
           else if(K){const on=K.q===0&&K.r===0,blocked=heartFoes(tm(K.owner));lines.push(`<b style="color:#ffd766">♛ King:</b> the <b style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name} ${K.name}</b> (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF). ${on?(blocked?'On the Throne, but enemies stand on the Heart: no point this turn.':'On the Throne: 1 point at the start of its turn.'):'Away from the Throne: no points.'}`)}
           else lines.push(`<b style="color:#ffd766">The Throne is free:</b> the first unit to sit on it is crowned King.`)}
-        const rs=G.rooms||[],seen=rs.filter(R=>R.seen).length,open=rs.filter(R=>R.state==='active'||R.state==='loot').length;lines.push(`<b style="color:#b9b3d6">Rooms:</b> ${seen} of ${rs.length} discovered, ${open} still hold a fight or a treasure.`);
+        if(G.realm){const rs=G.rooms||[];const live=t=>G.units.filter(m=>m.monster&&m.owner<0&&!m.beast&&rs.find(R=>R.id===m.room&&R.tier===t)).length;lines.push(`<b style="color:#b9b3d6">Camps:</b> ${live(1)} valley camps, ${live(2)} edge lairs and ${live(3)} Drake lairs still held by monsters.`)}/* v82b: Realm-only side panel */
+        else{const rs=G.rooms||[],seen=rs.filter(R=>R.seen).length,open=rs.filter(R=>R.state==='active'||R.state==='loot').length;lines.push(`<b style="color:#b9b3d6">Rooms:</b> ${seen} of ${rs.length} discovered, ${open} still hold a fight or a treasure.`);
         if(G.midUp){for(const R of rs.filter(R=>R.type==='lair')){const d=G.units.find(m=>m.monster==='dragon'&&m.room===R.id);lines.push(`<b style="color:#ff9a3d">Dragon’s Lair:</b> ${d?`the Dragon has ${fmt(d.hp)}/${d.maxhp} HP. Killing blow: +${WILDS.dragonPts} points.`:'the Dragon is slain.'}`)}
           for(const c of G.circles||[]){const n=c.team!=null?c.charge:0;lines.push(`<b style="color:#c8b6ff">Standing Stones:</b> ${G.round<c.dark?`asleep until round ${c.dark}.`:n?`<b style="color:${teamColor(c.team)}">${teamName(c.team)}</b> started the ritual (1/2).`:`hold all three runestones at the start of two turns in a row: +${WILDS.stonesPts} points.`}`)}}
-        else lines.push(`<b style="color:#ff9a3d">Round ${WILDS.midAt}:</b> the Dragons wake (+${WILDS.dragonPts} points for the killing blow) and the Standing Stones glow (+${WILDS.stonesPts} points).`);
+        else lines.push(`<b style="color:#ff9a3d">Round ${WILDS.midAt}:</b> the Dragons wake (+${WILDS.dragonPts} points for the killing blow) and the Standing Stones glow (+${WILDS.stonesPts} points).`);}
         {const wd=G.wander&&byId(G.wander.id);lines.push(`<b style="color:#b9a2ff">Wanderer:</b> ${wd?`${fmt(wd.hp)}/${wd.maxhp} HP, roaming. Its killing blow drops a Crown Shard.`:G.wander?'slain.':'levers of two different sides open its trap door (once per game).'}`)}
         for(const t of Object.keys(G.gems||{})){const g=G.gems[t];const list=GKEYS.filter(k=>g[k]).map(k=>`<b style="color:${GEMS[k].col}">${GEMS[k].name}${g[k]>1?' ×'+g[k]:''}</b>`);if(list.length)lines.push(`<b style="color:${teamColor(+t)}">${teamName(+t)} crown:</b> ${list.join(', ')}${kingOf()&&tm(kingOf().owner)===+t?' (powering their King)':' (no King yet: no effect)'}.`)}
         for(const x of G.loot||[]){const c=x.carrier!=null?byId(x.carrier):null;lines.push(`<b style="color:${lootCol(x)}">${lootName(x)}:</b> ${c?`carried by the <b style="color:${FAC[P(c.owner).fac].color}">${FAC[P(c.owner).fac].name} ${c.name}</b>`:'on the ground'}.`)}
