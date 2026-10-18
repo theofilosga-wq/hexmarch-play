@@ -3711,8 +3711,8 @@ function beastRoam(){
 // Round events of the three acts, called at the start of each new round (advance), after the Collapse and the relics.
 function actEvents(){
   if(G.objOff)return;const R=G.round;
-  if(G.map){if(R===RULES.CENTRE_FROM-1)vfx({k:'announce',msg:'Next round the Throne Hall falls and the Rift Beast wakes'});
-    if(R===RULES.CENTRE_FROM-1){addLog(null,'Next round the walls of the Throne Hall collapse and the Rift Beast wakes on the Throne.')}
+  if(G.map){if(R===RULES.CENTRE_FROM-1)vfx({k:'announce',msg:G.realm?'Next round the Rift Beast falls from the sky onto the city':'Next round the Throne Hall falls and the Rift Beast wakes'});
+    if(R===RULES.CENTRE_FROM-1){addLog(null,G.realm?'The sky cracks: next round the Rift Beast falls onto the city in the centre.':'Next round the walls of the Throne Hall collapse and the Rift Beast wakes on the Throne.')}
     if(R===RULES.CENTRE_FROM&&!G.throneBeast)wildsThroneBeast();
     for(const Rm of G.rooms||[])if(Rm.enc==='beast'&&Rm.state==='active'&&G.beast&&G.beast.dead)Rm.state='done';return}
   const both=RULES.BEAST_AT===RULES.CENTRE_FROM;// v26: the Beast awakens in the same moment the wall falls, announced together
@@ -4047,7 +4047,7 @@ function wildsTick(turnStart){
 // Start of every round: the mid game wakes (Dragons and Standing Stones), monsters answer the last unit that hit them, the Throne Beast too, the Wanderer roams.
 function wildsRound(){
   if(!G.map)return;
-  realmRound();
+  realmRound();if(G.realm)realmBeastCones();
   if(!G.realm&&G.round===WILDS.midAt-1){addLog(null,'The ground trembles: next round the Dragons wake in their lairs and the Standing Stones start to glow.');announce({k:'note',col:'#ff9a3d',t:'The Dragons stir',s:'Next round they wake in their lairs, and the Standing Stones start to glow.'})}
   if(!G.realm&&G.round>=WILDS.midAt&&!G.midUp){G.midUp=true;
     for(const R of G.rooms||[])if(R.type==='lair'){R.state='active';const c=unitAt(R.c[0],R.c[1])?roomFree(R)[0]:R.c;if(c){const m=makeMonster('dragon',c[0],c[1],R.id);G.units.push(m);R.monMax+=m.maxhp;vfx({k:'buff',at:c,col:'#ff7a1a'})}}
@@ -4068,7 +4068,7 @@ function wildsRound(){
     vfx({k:'slash',from:[m.q,m.r],to:[a.q,a.r],col:m.monster==='dragon'?'#ff7a1a':'#b9b3d6'});hurt(a,d,m.monster==='dragon'?'#ff7a1a':'#b9b3d6')}
   const b=G.units.find(v=>v.beast&&alive(v));
   if(b&&b.st&&b.st.frozen>0){b.st.frozen--;b.st.stun=0;if(G.beast)G.beast.hitN=0;if(!SIM)fx(b,'frozen: no strike','#bfefff')}// v45
-  else if(b&&G.beast&&G.beast.hitN>0){const a=byId(G.beast.lastBy);const d=1+G.beast.hitN;
+  else if(b&&G.beast&&G.beast.hitN>0&&!G.realm){const a=byId(G.beast.lastBy);const d=1+G.beast.hitN;/* on the Realm the cones replace the lash */
     if(a&&alive(a)){CUR_NAME=BEAST_SB;addLog(a.owner,`The Rift Beast strikes back at ${a.name} for ${d}.`);vfx({k:'slash',from:[b.q,b.r],to:[a.q,a.r],col:'#b06bff'});hurt(a,d,'#b06bff')}}
   if(G.beast){G.beast.hitN=0}
   CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2];
@@ -4114,8 +4114,30 @@ function wildsGoal(u){
    for as long as it lives, wherever it goes. At the start of its side's turn the King scores 1 Warlord point if it sits on the Throne and no enemy unit
    stands on the Heart. When the King falls the crown is free again: the next unit to sit on the Throne becomes King. On this map the Heart itself gives
    no points and no army buffs, and the Throne gives nothing but the crown. */
+/* v80 THE CITY AND THE FALL (owner 18 Oct 2026): on the Realm a walled city stands in the centre; in round REALM.open the Rift Beast falls from the sky
+   onto it: the houses are crushed (3D: rubble), two random wall segments crumble to rubble (flyers cross, walkers do not), the gates stay open, and the
+   Beast's body covers every hex of the Heart. At every round start it breathes a cone (REALM.beastCone deep, 60 degrees wide) in each of the four
+   quadrants at the closest unit within REALM.beastReach: REALM.beastAtk minus DEF to everyone in the cone. Slay it (REALM.beastHp) for the points and the Throne. */
+function realmBeastFall(){const R1=G.heartR+1;const ring=allCells().filter(([q,r])=>hd(q,r,0,0)===R1&&G.feat[key(q,r)]==='rock');
+  const picks=[];for(let i=0;i<2&&ring.length;i++){const c=ring[Math.floor(RNG()*ring.length)];for(const [q,r] of ring)if(hd(q,r,c[0],c[1])<=1&&!picks.some(p=>p[0]===q&&p[1]===r))picks.push([q,r])}
+  for(const [q,r] of picks)G.feat[key(q,r)]='rubble';G.cityDown=true;
+  const city=allCells().filter(([q,r])=>hd(q,r,0,0)<=G.heartR).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0));
+  for(const [q,r] of city){const o=unitAt(q,r);if(o&&o.kind!=='wall'){const c=allCells().filter(([a,b])=>passable(a,b)&&!unitAt(a,b)&&hd(a,b,0,0)>R1).sort((x,y)=>hd(x[0],x[1],q,r)-hd(y[0],y[1],q,r))[0];if(c){o.q=c[0];o.r=c[1]}}}
+  addLog(null,'The Rift Beast falls from the sky onto the city! The houses are crushed, two stretches of wall crumble, and the Beast sprawls over the whole Heart. Slay it to reveal the Throne.');
+  vfx({k:'wallfall',msg:'The Rift Beast falls on the city: slay it to reveal the Throne'});announce({k:'wall'});
+  const b=spawnBeast(city);if(b){b.hp=b.maxhp=REALM.beastHp;b.def=0;G.beast.room='throne'}}
+function realmBeastCones(){const b=G.units.find(u=>u.beast);if(!b||!alive(b)||!G.realm||(b.st&&b.st.frozen>0))return;const cs=cells(b);
+  const ang=(q,r)=>{const [x,y]=pix(q,r);return Math.atan2(y,x)},quad=(q,r)=>{const [x,y]=pix(q,r);return (x>=0?1:0)+(y>=0?2:0)};
+  const live=v=>v.kind!=='wall'&&v.owner>=0&&!v.statue&&!v.egg&&alive(v);
+  const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Rift Beast: cone';let n=0;
+  for(let Q=0;Q<4;Q++){const vs=G.units.filter(v=>live(v)&&quad(v.q,v.r)===Q&&distUU(b,v)<=REALM.beastReach).sort((a,c)=>distUU(b,a)-distUU(b,c)||a.hp-c.hp||a.id-c.id);if(!vs.length)continue;
+    const t=vs[0],ta=ang(t.q,t.r);const cone=allCells().filter(([q,r])=>{const d=distUC(b,q,r);if(d<1||d>REALM.beastCone||quad(q,r)!==Q)return false;let da=Math.abs(ang(q,r)-ta);if(da>Math.PI)da=2*Math.PI-da;return da<=Math.PI/6});/* clipped to its quadrant: nobody is caught by two breaths */
+    const hit=G.units.filter(v=>live(v)&&cells(v).some(([q,r])=>cone.some(([a,c])=>a===q&&c===r)));const edge=cs.slice().sort((a,c)=>hd(a[0],a[1],t.q,t.r)-hd(c[0],c[1],t.q,t.r))[0];
+    if(!SIM)vfx({k:'ab',ab:'breath',shape:'cone',from:edge,to:[t.q,t.r],cells:cone,col:'#b06bff',cam:1});
+    for(const v of hit){if(!alive(v))continue;const d=Math.max(1,REALM.beastAtk-effDef(v));if(!SIM)addLog(v.owner,`The Rift Beast's breath scorches the ${v.name} for ${d}.`);hurt(v,d,'#b06bff');n++;const O=tObj();if(O&&O.beast){O.beast.strikes++;O.beast.strikeDmg+=d}}}
+  [CUR_SRC,CUR_TAG,CUR_NAME]=o;if(n&&!SIM)addLog(null,`The Rift Beast lashes out from the ruins: ${n} unit${n>1?'s':''} scorched.`)}
 function wildsThroneBeast(){
-  G.throneBeast=true;for(const [q,r] of allCells())if(hd(q,r,0,0)===G.heartR+1&&G.feat[key(q,r)]==='rock')delete G.feat[key(q,r)];
+  G.throneBeast=true;if(G.realm)return realmBeastFall();for(const [q,r] of allCells())if(hd(q,r,0,0)===G.heartR+1&&G.feat[key(q,r)]==='rock')delete G.feat[key(q,r)];
   addLog(null,'The walls of the Throne Hall collapse! The Rift Beast wakes on the Throne: slay it to reveal the Throne.');
   vfx({k:'wallfall',msg:'The Throne Hall falls: the Rift Beast wakes on the Throne'});announce({k:'wall'});
   const tri=[[0,0],[1,0],[0,1]];for(const [q,r] of tri){const o=unitAt(q,r);if(o&&o.kind!=='wall'){const c=allCells().filter(([a,b])=>passable(a,b)&&!unitAt(a,b)&&!tri.some(t=>t[0]===a&&t[1]===b)).sort((x,y)=>hd(x[0],x[1],q,r)-hd(y[0],y[1],q,r))[0];if(c){o.q=c[0];o.r=c[1]}}}
@@ -4159,7 +4181,7 @@ function kingScore(p){
    Points: last hits (an enemy unit 1, a Leader 3, camps by tier) and the King on the Throne (1 a turn); first to REALM.target wins.
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
-const REALM={HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:0,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:24,suitHp:12,
+const REALM={HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:0,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,beastAtk:3,beastCone:3,beastReach:4,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,camp:1,steps:[5,11,18,26,35,45,56,68]},armies:['fire','ice','gnomes','warband']};
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
@@ -5099,7 +5121,7 @@ function drawProp3D(f,x,z,sx,sy,s,c,p,now){
     const g=ctx.createLinearGradient(sx-S*w,0,sx+S*w,0);const off=p&&shrineBack(p.q,p.r);g.addColorStop(0,off?'#7d8a83':'#e7fff1');g.addColorStop(1,off?'#3c4a42':'#6fbf92');ctx.fillStyle=g;ctx.shadowColor='#9ff0c0';ctx.shadowBlur=off?0:S*0.4;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#2e6b4a';ctx.lineWidth=1;ctx.stroke()}
 }
 // The Rift Beast (3D): a hunched rift creature over its 3 hexes: dark base, a swollen body with horns, glowing eyes, the HP bar floating above.
-function drawBeast3D(u,pts,x,z,sx,sy,now){const S=CAM.S,V=S*Math.sin(CAM.tilt),br=0.5+0.5*Math.sin((now||0)/380),hit=hl.hitIds.has(u.id);
+function drawBeast3D(u,pts,x,z,sx,sy,now){const big=pts.length>3;pts=beastHull(pts);const S=CAM.S*(big?2.4:1),V=S*Math.sin(CAM.tilt),br=0.5+0.5*Math.sin((now||0)/380),hit=hl.hitIds.has(u.id);// v80: the city-sized Beast
   const base=pts.map(([a,b])=>proj(a,b,0));
   ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
   ctx.beginPath();base.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();ctx.strokeStyle=hit?'#ffaa3c':G.inspect===u.id?'#ffffff':'rgba(0,0,0,.55)';ctx.lineWidth=S*1.5*Math.cos(CAM.tilt)+4;ctx.stroke();
@@ -5676,7 +5698,7 @@ function glInst(list,geo,mat,shadow){if(!list.length)return null;const m=new THR
 function glBuildStatics(){
   const T=THREE;if(GL.statics)GL.scene.remove(GL.statics);const grp=new T.Group();GL.water=[];GL.glow=[];
   const WLK={};// v38: Crown Wilds wall looks (G.wallLook): fence, mausoleum, arch, boulder and each army's camp material
-  const L={trunk:[],crown:[],crown2:[],pine:[],peak:[],snow:[],peak2:[],wall:[],merlon:[],hill:[],shrine:[],shrineStone:[],water:[],cwall:[],pebble:[],grass:[],rubble:[],post:[],deck:[],roof:[],lever:[],rune:[],anvil:[],coal:[]};
+  const L={house:[],roofc:[],trunk:[],crown:[],crown2:[],pine:[],peak:[],snow:[],peak2:[],wall:[],merlon:[],hill:[],shrine:[],shrineStone:[],water:[],cwall:[],pebble:[],grass:[],rubble:[],post:[],deck:[],roof:[],lever:[],rune:[],anvil:[],coal:[]};
   for(const [q,r] of ringCells()){const k=key(q,r);if(G.voids[k])continue;const [x,z]=world(q,r);const f=featAt(q,r);const h=(i)=>hexRand(q,r,i);
     if(f==='forest')for(let i=0;i<3;i++){const a=i*2.1+h(i)*1.2,d=0.45,tx=x+Math.cos(a)*d,tz=z+Math.sin(a)*d,tall=1.0+h(i+5)*0.6;
       L.trunk.push([tx,tall*0.22,tz,0,1,tall,0,0,1,q,r]);
@@ -5696,7 +5718,9 @@ function glBuildStatics(){
     else if(f==='runestone'){L.rune.push([x,0.7,z,h(1)*3,1])}
     else if(f==='forge'){L.anvil.push([x,0.25,z,0,1]);L.coal.push([x+0.35,0.15,z-0.3,0,1])}
     else if(!isHeart(q,r)&&!G.map){if(h(7)<0.5)L.pebble.push([x+(h(8)-0.5)*1.2,0.03,z+(h(9)-0.5)*1.2,h(10)*3,0.6+h(11)*0.8]);if(h(12)<0.45)for(let i=0;i<3;i++)L.grass.push([x+(h(13+i)-0.5)*1.3,0.1,z+(h(16+i)-0.5)*1.3,h(19+i),1])}
-    if(isCentreWall(q,r)&&!isHeart(q,r)&&!f)L.cwall.push([x,0,z,0,1,1])}
+    if(isCentreWall(q,r)&&!isHeart(q,r)&&!f)L.cwall.push([x,0,z,0,1,1])
+    // v80 the Realm's city: houses inside the Heart until the Beast falls, then rubble
+    if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast){if(h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
   add(tree(glInst(L.trunk,gGeo('trunk',()=>{const g=new T.CylinderGeometry(0.06,0.1,0.45,6);g.translate(0,0,0);return g}),gMat('#6b4a2e')),L.trunk));
   add(tree(glInst(L.crown,gGeo('crown',()=>new T.IcosahedronGeometry(0.42,1)),gMat('#4f9a4a')),L.crown));
@@ -5711,6 +5735,7 @@ function glBuildStatics(){
   if(L.shrine.length){add(glInst(L.shrine,gGeo('shrine',()=>new T.OctahedronGeometry(0.28,0)),gMat('#bff7d8',{emissive:'#5fd68e',emissiveIntensity:0.9,flatShading:true}),false));add(glInst(L.shrineStone,gGeo('sstone',()=>new T.BoxGeometry(0.16,0.3,0.16)),gMat('#9aa3a0')))}
   if(L.water.length){const w=glInst(L.water,gGeo('water',()=>new T.CylinderGeometry(0.99,0.99,0.06,6)),new T.MeshStandardMaterial({color:'#4c9ad6',transparent:true,opacity:0.82,roughness:0.15,metalness:0.2}),false);add(w);GL.water.push(w)}
   add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));
+  add(glInst(L.house,gGeo('house',()=>{const g=new T.BoxGeometry(0.82,0.62,0.7);g.translate(0,0.31,0);return g}),gMat('#b8a98c')));add(glInst(L.roofc,gGeo('roofc',()=>{const g=new T.ConeGeometry(0.66,0.5,4);g.translate(0,0.87,0);return g}),gMat('#7a3f36')));// v80 the city
   add(glInst(L.post,gGeo('tpost',()=>new T.CylinderGeometry(0.08,0.1,2.2,6)),gMat('#6b4a2e')));
   add(glInst(L.deck,gGeo('tdeck',()=>new T.BoxGeometry(1.2,0.14,1.2)),gMat('#a8875a')));
   add(glInst(L.roof,gGeo('troof',()=>new T.ConeGeometry(0.95,0.8,4)),gMat('#7a2a24')));
@@ -6070,7 +6095,7 @@ function ghostOf(m){let g=GHOST.get(m);if(!g){g=m.clone();g.transparent=true;g.o
 function glSetGhost(fig,on){if(fig.userData.ghost===on)return;fig.userData.ghost=on;fig.traverse(o=>{if(!o.isMesh)return;if(on){o.userData.mat0=o.material;o.material=ghostOf(o.material);o.castShadow=false}else if(o.userData.mat0){o.material=o.userData.mat0;o.castShadow=true}})}
 function glSpent(fig,on){if(fig.userData.spent===on)return;fig.userData.spent=on;fig.traverse(o=>{if(o.userData&&o.userData.rim){o.userData.rimMat=o.userData.rimMat||o.material;o.material=on?gMat('#3a3a3a'):o.userData.rimMat}
   else if(fig.userData.model&&o.isMesh&&o.material&&o.material.color){if(!o.userData.col0)o.userData.col0=o.material.color.clone();o.material.color.copy(o.userData.col0).multiplyScalar(on?0.5:1);if(o.material.emissiveIntensity!=null){if(o.userData.em0==null)o.userData.em0=o.material.emissiveIntensity;o.material.emissiveIntensity=on?o.userData.em0*0.4:o.userData.em0}}})}// v78c: a spent real model darkens (it has no rim)
-function glStaticSig(){let n=G.midUp?1000:0,f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
+function glStaticSig(){let n=(G.midUp?1000:0)+(G.throneBeast?3000:0)+(G.cityDown?7000:0),f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
 function glTerrSig(){let h=0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
 function glProps(){if(GL.props)GL.scene.remove(GL.props);const g=new THREE.Group();GL.props=g;GL.scene.add(g);if(!G.realm||!G.players)return;
   for(const p of G.players){const MD=BASE_MODELS[p.fac];if(!MD||!p.base||!p.base.length)continue;const c=p.base.map(k=>k.split(',').map(Number)).sort((a,b)=>hd(b[0],b[1],0,0)-hd(a[0],a[1],0,0))[0];
@@ -7478,7 +7503,7 @@ function annText(e){
       else t=`${who} ${({collapse:'has fallen into the Collapse!',beast:'has fallen to the Rift Beast!',fire:'has burned on Ember ground!',self:'has fallen to friendly fire!'})[e.cause]||'has fallen!'}`;
       const left=e.left===0?'No leaders remain.':`${e.left} leader${e.left===1?' remains':'s remain'}.`;
       return {col:FAC[e.fac].color,t,s:left+(e.pts&&e.scores?`<br>${annSide(e.team)} +${e.pts}: ${annStanding(e.team,e.scores)}`:'')}}
-    case 'wall':return {col:'#e8b84e',t:G.map?'The Throne Hall falls: the Rift Beast wakes on the Throne':'The wall falls: the Heart is open',s:G.map?'Slay it to reveal the Throne, then sit on it to be crowned King.':'Heart points and the Throne count from now on.'};
+    case 'wall':return {col:'#e8b84e',t:G.realm?'The Rift Beast falls on the city: the Heart is its lair':G.map?'The Throne Hall falls: the Rift Beast wakes on the Throne':'The wall falls: the Heart is open',s:G.map?'Slay it to reveal the Throne, then sit on it to be crowned King.':'Heart points and the Throne count from now on.'};
     case 'spring':{const [q,r]=e.at||[0,0];const a=Math.atan2(-1.5*r,S3*(q+r/2))*180/Math.PI;const dir=['east','north-east','north','north-west','west','south-west','south','south-east'][Math.round(((a+360)%360)/45)%8];
       return {col:'#7fe8ff',t:`The Wellspring rises in the ${dir}`,s:'Step on it to claim it: +1 AP every turn.'}}
     case 'king':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} crowns a King!`,s:`The ${annEsc(e.unit)} sits the Throne: ${kingText()}`};
@@ -8151,7 +8176,7 @@ function realmRules(){return `<h3>The Realm (test board)</h3><ul>
   <li><b>Spawn sites.</b> A cleared tier-1 or tier-2 camp is yours: when you call a unit you may put it next to any spawn site you own. A site stays yours until an enemy unit stands on it.</li>
   <li><b>The edges.</b> In the middle of each edge waits a tier-2 lair shared by two bases: the <b>Healing Spring</b> (left and right: its killing blow heals every unit of your army ${REALM.springHeal}) and the <b>Ogre Lair</b> (top and bottom: the unit that lands the killing blow gains +${REALM.ogreAtk} ATK for good). Both become spawn sites worth fighting over. Ancient Ruins near the edges hold a chest with a relic.</li>
   <li><b>The wasteland.</b> Two <b>Elder Drakes</b> (tier 3), one north and one south of the Heart: their killing blow scores ${REALM_MON.drake.pts} points and brings back your strongest fallen unit. Four <b>levers</b> stand out there too: a unit standing on one pulls it for its side, and once levers of two different sides are pulled a trap door opens and the <b>Wanderer</b> (${REALM.wanderHp} HP, roams 3 hexes a round) runs out; its killing blow scores ${REALM.wanderPts}. You choose when to wake it.</li>
-  <li><b>The Heart.</b> Its walls fall in round ${REALM.open} and the Rift Beast wakes on the Throne. Slay it; the first unit to sit the Throne is King (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF) and scores 1 point at each of your turns on it.</li>
+  <li><b>The city and the Beast.</b> A walled city holds the centre. In round ${REALM.open} the Rift Beast falls from the sky onto it: the houses are crushed, stretches of wall crumble (flyers cross the rubble), and the Beast's body (${REALM.beastHp} HP) covers the whole Heart. At every round start it breathes a cone in each of the four quadrants at the closest unit within ${REALM.beastReach} hexes: ${REALM.beastAtk} damage minus DEF to everyone in the cone. Slay it; the first unit to sit the Throne is King (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF) and scores 1 point at each of your turns on it.</li>
   <li><b>Points.</b> Only four things score: the King on the Throne (1 a turn), an Elder Drake (${REALM_MON.drake.pts}), the Wanderer (${REALM.wanderPts}) and the Rift Beast (${RULES.BEAST_PTS}), each for the killing blow. First to <b>${REALM.target}</b> wins. Killing an enemy Leader gives +${REALM.leaderCharge} Ultimate charge; camps give charge too (tier 1 +${REALM.charge[1]}, tier 2 +${REALM.charge[2]}, tier 3 +${REALM.charge[3]}).</li>
   <li><b>Light and fast, heavy and slow.</b> Units with no armour move 1 more, units with 2+ DEF move 1 less. Blows struck from next to the target deal 1 more; shots from afar (and abilities from 3+ hexes) deal 1 less.</li>
   <li><b>Monsters never move.</b> At each round start a monster strikes the last unit that hit it (if it is still close); tier 2 and 3 also strike everything next to them. You can always walk away.</li>
@@ -8581,7 +8606,8 @@ function drawSpringWith(T,U,now){const s=G.spring;if(!s||!solid(s.q,s.r))return;
   ctx.restore()}
 function drawSpring2D(now){drawSpringWith((q,r,ox,oy)=>{const [x,y]=px(q,r);return [x+ox*SZ,y+oy*SZ]},SZ,now)}
 // The Rift Beast (2D): one dark, glowing body stretched over its 3 hexes, horns, eyes and a maw, an HP bar underneath.
-function drawBeastBody(c,pts,U,now,u,hit,sel){const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length,br=0.5+0.5*Math.sin((now||0)/380);
+function beastHull(pts){if(pts.length<=3)return pts;const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length;const d=pts.map(p=>Math.hypot(p[0]-cx,p[1]-cy));const m=Math.max(...d);return pts.filter((p,i)=>d[i]>=m*0.8).sort((a,b)=>Math.atan2(a[1]-cy,a[0]-cx)-Math.atan2(b[1]-cy,b[0]-cx))}// v80: the city-sized Beast is drawn as its outer ring
+function drawBeastBody(c,pts,U,now,u,hit,sel){const big=pts.length>3;pts=beastHull(pts);if(big)U=U*2.4;const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length,br=0.5+0.5*Math.sin((now||0)/380);
   c.save();c.lineJoin='round';c.lineCap='round';
   if(hit||sel){c.strokeStyle=hit?'#ffaa3c':'#ffffff';c.lineWidth=U*1.9;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.stroke()}
   c.strokeStyle='#0b0e14';c.lineWidth=U*1.62;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.stroke();
