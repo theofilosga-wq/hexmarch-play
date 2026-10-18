@@ -1226,7 +1226,7 @@ const FAC={
       {name:'Mechanic',icon:'gear',hp:8,atk:1,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'build2',ab2:'repair',mach:{name:'Repair Spider',hp:12,atk:1,def:0,mov:3,at:'melee',rng:1,ab:'repair2',ab2:'salvage'}}]},
   arcane:{name:'Circle of Priests',color:'#8f5cff',
     theme:'Healers only, no shields: expose a priest, mend it, and the light that overflows burns the nearest enemy. Faith brings the dead back.',
-    passive:'Overflowing light: every heal beyond full HP becomes damage on the nearest enemy within 3. Faith: every point of healing a priest lands on a priest unit is 1 Faith; at 16 the unit that died last rises where it fell at full HP (then 22, then 28, +6 each time). Holy ground heals allies and burns enemies; Bless gives +1 ATK and healing over time; Mend lifts a debuff; whoever hits a blessed priest takes 2 back. No tank and low HP: a priest alone dies in a turn or two.',
+    passive:'Overflowing light: every heal beyond full HP becomes damage on the nearest enemy within 3. Faith: every point of healing a priest’s heal (Mend, Lay on Hands, Tend, Field Surgery, Sanctuary, Bless, Grove, Radiance) actually lands on a priest unit is 1 Faith; healing a unit already at full HP gives none (that light burns an enemy instead), and the valley, shrines and the Spring give none; at 16 the unit that died last rises where it fell at full HP (then 22, then 28, +6 each time). Holy ground heals allies and burns enemies; Bless gives +1 ATK and healing over time; Mend lifts a debuff; whoever hits a blessed priest takes 2 back. No tank and low HP: a priest alone dies in a turn or two.',
     home:'Indigo ground: your units standing on it heal 1 at the start of your turn.',
     homeRealm:'Holy ground: the Druids’ Groves are the only ground you make: your units on a Grove heal 1 at the start of your turn and enemies on it burn for 1. No home ground on the Realm.',homeHeal:1,
     units:[
@@ -2588,6 +2588,8 @@ function overheal(src,t,excess,name){if(!RULES.OVERHEAL||!(excess>0)||!alive(t))
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src||t;CUR_TAG='Abil';CUR_NAME=(name||'Healing')+': overflowing light';
   if(!SIM){vfx({k:'bolt',from:[t.q,t.r],to:[e.q,e.r],col:'#ffe9a8'});addLog(t.owner,`Overflowing light: ${excess} burns the ${e.name}.`)}
   hurt(e,excess,'#ffe9a8');[CUR_SRC,CUR_TAG,CUR_NAME]=o;return excess}
+/* v91 (owner 18 Oct 2026): Faith comes ONLY from the priests' own heals (the names below) and only from healing that lands: a heal on a unit at full HP gives no Faith (its light burns an enemy instead); the home valley, shrines, the Healing Spring and camp rewards never give Faith. */
+const FAITH_HEALS=new Set(['Mend','Lay on Hands','Tend','Field Surgery','Sanctuary','Bless','Grove','Radiance']);
 function healUnit(t,n,col,name,by){
   if(!alive(t)||t.kind==='wall'||!(n>0))return 0;
   if(onClaimOf(t,'arcane')){if(!SIM)fx(t,'no healing here','#9a8cff');if(trk()&&!SIM){const e=tFx('arcane','','Indigo ground: heals denied');if(e)e.uses++}return 0}/* v45 */
@@ -2596,7 +2598,7 @@ function healUnit(t,n,col,name,by){
   // Seared (Ember Court): no healing of any kind until the end of the unit's next turn; the heal it missed is credited to the fire unit that seared it.
   if(t.st&&t.st.seared>0){if(!SIM){fx(t,'seared','#ff9a3d');tFxBy(t.st.searBy,'fire','Seared (heals blocked)','blocked',h)}return 0}
   t.hp=r2(t.hp+h);t.fv=(t.fv||0)+h;
-  if(G.realm&&G.players[t.owner]&&G.players[t.owner].fac==='arcane'){const hs=by!=null&&by>=0?byId(by):CUR_SRC;if(hs&&hs.kind!=='wall'&&G.players[hs.owner]&&G.players[hs.owner].fac==='arcane')faithGain(G.players[t.owner],h)}// v75 Faith: healing by a priest that lands
+  if(G.realm&&G.players[t.owner]&&G.players[t.owner].fac==='arcane'&&FAITH_HEALS.has(name)){const hs=by!=null&&by>=0?byId(by):CUR_SRC;if(hs&&hs.kind!=='wall'&&G.players[hs.owner]&&G.players[hs.owner].fac==='arcane')faithGain(G.players[t.owner],h)}// v75 Faith: healing by a priest that lands
   if(SIM)return h;
   if(trk()){const s=tStat(t);if(s)s.healed+=h;let e=null;
     if(by!=null&&by>=0){const bs=trk().units[by];if(bs)e=tFx(bs.fac,bs.name,name||'Other')}else if(name)e=tFx(G.players[t.owner].fac,'',name);else e=CUR_SRC&&CUR_NAME?srcFx():tFx(G.players[t.owner].fac,'','Passive healing (Heart, shrines, traits)');
@@ -3485,7 +3487,7 @@ function ultEffect(p){
     // Hallowed Dawn (v27, replaces Exodus): every priest heals 2 and gets +1 ATK for this turn and the next (st.blessU, counted down in endTurn);
     // every enemy unit heals 1 (tracked on the same Ultimate row as "Hallowed Dawn: enemies healed" through the caster's id).
     case 'arcane':{// v49 Radiance: every unit heals 3; what does not fit burns the nearest enemy within 3
-      for(const v of mine()){if(v.egg||v.statue||!alive(v))continue;const room=Math.max(0,v.maxhp-v.hp),blocked=v.st&&v.st.seared>0;healUnit(v,3,'#ffe9a8');if(!SIM)vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'});if(!blocked)overheal(src||v,v,3-room,'Radiance')}break}
+      for(const v of mine()){if(v.egg||v.statue||!alive(v))continue;const room=Math.max(0,v.maxhp-v.hp),blocked=v.st&&v.st.seared>0;healUnit(v,3,'#ffe9a8','Radiance',src?src.id:null);if(!SIM)vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'});if(!blocked)overheal(src||v,v,3-room,'Radiance')}break}
     case 'warband':{const ap0=G.ap;G.ap=Math.min(RULES.AP_CAP+2,G.ap+2);tSup('apGranted',G.ap-ap0)}for(const v of mine()){v.st.emp=1;v.acted=false;v.mom=false;fx(v,'+2 ATK','#e8b84e')}break;
     case 'rift':{// v54 Rift Storm: 3 holes (picked by the player, else stormAuto), at least 3 apart, on empty hexes; they pull at the end of the next 2 Riftwalker turns
       const picks=(G.stormPicks&&G.stormPicks.length?G.stormPicks:stormAuto(p)).slice(0,3);G.stormPicks=null;
