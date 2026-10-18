@@ -5725,9 +5725,10 @@ function glInst(list,geo,mat,shadow){if(!list.length)return null;const m=new THR
 function glBuildStatics(){
   const T=THREE;if(GL.statics)GL.scene.remove(GL.statics);const grp=new T.Group();GL.water=[];GL.glow=[];
   const WLK={};// v38: Crown Wilds wall looks (G.wallLook): fence, mausoleum, arch, boulder and each army's camp material
-  const L={house:[],roofc:[],trunk:[],crown:[],crown2:[],pine:[],peak:[],snow:[],peak2:[],wall:[],merlon:[],hill:[],shrine:[],shrineStone:[],water:[],cwall:[],pebble:[],grass:[],rubble:[],post:[],deck:[],roof:[],lever:[],rune:[],anvil:[],coal:[]};
+  const L={fmodel:[],house:[],roofc:[],trunk:[],crown:[],crown2:[],pine:[],peak:[],snow:[],peak2:[],wall:[],merlon:[],hill:[],shrine:[],shrineStone:[],water:[],cwall:[],pebble:[],grass:[],rubble:[],post:[],deck:[],roof:[],lever:[],rune:[],anvil:[],coal:[]};
   for(const [q,r] of ringCells()){const k=key(q,r);if(G.voids[k])continue;const [x,z]=world(q,r);const f=featAt(q,r);const h=(i)=>hexRand(q,r,i);
-    if(f==='forest')for(let i=0;i<3;i++){const a=i*2.1+h(i)*1.2,d=0.45,tx=x+Math.cos(a)*d,tz=z+Math.sin(a)*d,tall=1.0+h(i+5)*0.6;
+    if(f==='forest'&&FOREST_GEO){L.fmodel.push([x,0,z,h(1)*6.28,1,q,r])}
+    else if(f==='forest')for(let i=0;i<3;i++){const a=i*2.1+h(i)*1.2,d=0.45,tx=x+Math.cos(a)*d,tz=z+Math.sin(a)*d,tall=1.0+h(i+5)*0.6;
       L.trunk.push([tx,tall*0.22,tz,0,1,tall,0,0,1,q,r]);
       if((i+q)%2)L.pine.push([tx,tall*0.62,tz,h(i+9)*3,1,tall,0,0,1,q,r]);else{L.crown.push([tx,tall*0.62,tz,h(i)*3,1+h(i+2)*0.3,0,0,0,0,q,r]);L.crown2.push([tx+0.16,tall*0.8,tz-0.1,h(i+1)*3,0.7,0,0,0,0,q,r])}}
     else if(f==='rock'){
@@ -5749,6 +5750,8 @@ function glBuildStatics(){
     // v80 the Realm's city: houses inside the Heart until the Beast falls, then rubble
     if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast){if(h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
+  if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5);const fm=new T.InstancedMesh(FOREST_GEO.geo,FOREST_GEO.mat,L.fmodel.length);fm.castShadow=innerWidth>=1000;/* phones skip the forests' shadow pass: 29k triangles x ~100 forests */fm.receiveShadow=true;const o=new T.Object3D();
+    L.fmodel.forEach((t,i)=>{o.position.set(t[0],0.02-bb.y0*sc,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc);o.updateMatrix();fm.setMatrixAt(i,o.matrix)});fm.userData.forest={sc,y0:bb.y0};grp.add(fm);GL.forestMesh=fm;GL.forestList=L.fmodel}else{GL.forestMesh=null;GL.forestList=null}
   add(tree(glInst(L.trunk,gGeo('trunk',()=>{const g=new T.CylinderGeometry(0.06,0.1,0.45,6);g.translate(0,0,0);return g}),gMat('#6b4a2e')),L.trunk));
   add(tree(glInst(L.crown,gGeo('crown',()=>new T.IcosahedronGeometry(0.42,1)),gMat('#4f9a4a')),L.crown));
   add(tree(glInst(L.crown2,gGeo('crown',()=>new T.IcosahedronGeometry(0.42,1)),gMat('#63ad55')),L.crown2));
@@ -5805,7 +5808,9 @@ function glBuildStatics(){
    th.add(gMesh(gGeo('thgem',()=>new T.OctahedronGeometry(0.09,0)),gMat('#ff6b6b',{emissive:'#ff3d3d',emissiveIntensity:0.8}),0,0.8,-0.22));th.visible=!unitAt(0,0);GL.throne=th;grp.add(th)}
   GL.statics=grp;GL.scene.add(grp)}
 // trees on a hex with a unit on it step back to the rim of the hex and shrink, so the miniature stays visible
-function glTrees(){if(!GL.trees||!GL.trees.length)return;let sig='';const occ=new Set();for(const t of GL.trees[0].list){const k=t[9]+','+t[10];if(!occ.has(k)&&unitAt(t[9],t[10]))occ.add(k)}sig=[...occ].sort().join(';');
+function glForestOcc(){const fm=GL.forestMesh;if(!fm||!GL.forestList)return;const occ=new Set();for(const t of GL.forestList){const k=t[5]+','+t[6];if(unitAt(t[5],t[6]))occ.add(k)}const sig=[...occ].sort().join(';');if(sig===GL.forestSig)return;GL.forestSig=sig;
+  const o=new THREE.Object3D();const {sc,y0}=fm.userData.forest;GL.forestList.forEach((t,i)=>{const k=occ.has(t[5]+','+t[6])?0.45:1;o.position.set(t[0],0.02-y0*sc*k,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc*k);o.updateMatrix();fm.setMatrixAt(i,o.matrix)});fm.instanceMatrix.needsUpdate=true;GL.dirty=true}
+function glTrees(){glForestOcc();if(!GL.trees||!GL.trees.length)return;let sig='';const occ=new Set();for(const t of GL.trees[0].list){const k=t[9]+','+t[10];if(!occ.has(k)&&unitAt(t[9],t[10]))occ.add(k)}sig=[...occ].sort().join(';');
   if(sig===GL.treeSig)return;GL.treeSig=sig;const o=new THREE.Object3D();
   for(const {m,list} of GL.trees){list.forEach((t,i)=>{let x=t[0],y=t[1],z=t[2],k=1;if(occ.has(t[9]+','+t[10])){const [cx,cz]=world(t[9],t[10]);x=cx+(x-cx)*1.95;z=cz+(z-cz)*1.95;k=0.45;y*=k}
     o.position.set(x,y,z);o.rotation.set(t[6]||0,t[3]||0,t[7]||0);o.scale.set((t[4]||1)*k,(t[5]||t[4]||1)*k,(t[8]||t[4]||1)*k);o.updateMatrix();m.setMatrixAt(i,o.matrix)});m.instanceMatrix.needsUpdate=true}}
@@ -5940,7 +5945,11 @@ const MODELS={// v78b (owner: 'too small, I want to see the detail'): real model
   'Rampart':{file:'models/giants_rampart.glb',h:4.6},'Mountain King':{file:'models/giants_mountain-king.glb',h:4.8},
   'Elder Drake':{file:'models/camps_elder-drake.glb',h:3.2},'Wanderer':{file:'models/camps_wanderer.glb',h:3.6},
   'Rift Beast':{file:()=>G&&G.realm?'models/camps_rift-beast-city.glb':'models/camps_rift-beast.glb',h:()=>G&&G.realm?7.5:3.8}};// v82c (owner): on the Realm the Beast sprawled over the ruined city, elsewhere the creature alone// v82b: the Beast; on the Realm its body is scaled to sprawl over the whole Heart// v82: Frost, Priests, Rift, Giants leaders and the Realm's monsters
-const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'models/ice_base-glacier-keep.glb',h:5.0}};// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
+const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'models/ice_base-glacier-keep.glb',h:5.0},warband:{file:'models/warband_base-iron-keep.glb',h:4.8}};
+/* v83b FOREST MODEL (owner's forest diorama): one instanced copy per forest hex, scaled to the hex, replacing the code trees; a copy shrinks
+   to 0.45 while a unit stands in that forest (the old 'trees step aside' feel). Loaded once; until it arrives (or without it) the code trees stay. */
+const FOREST_MODEL='models/tile_forest-meadow.glb';let FOREST_GEO=null;
+function glForestLoad(){if(FOREST_GEO!==null)return;FOREST_GEO=false;glModel(FOREST_MODEL).then(src=>{let mesh=null;src.traverse(m=>{if(m.isMesh&&!mesh)mesh=m});if(!mesh)return;const bb=src.userData.bb;FOREST_GEO={geo:mesh.geometry,mat:mesh.material,bb};GL.sig='';GL.dirty=true}).catch(()=>{})}// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
 const GLM={};
 function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
   new THREE.GLTFLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map)mt.map.encoding=THREE.LinearEncoding;mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
@@ -6142,6 +6151,7 @@ function glNoCull(o){o.traverse(x=>{x.frustumCulled=false})}
 function glFrame(){
   if(!glInit())return false;GL.tick++;
   if(GL.game!==G){GL.game=G;GL.sig='';GL.terrSig='';for(const f of GL.figs.values()){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose())}GL.figs.clear()}
+  glForestLoad();
   if(GL.tick%15===1||!GL.sig){const s=glStaticSig();if(s!==GL.sig){GL.sig=s;glBuildTiles();glBuildStatics();glPlinth();glProps();glSunFit();GL.terrSig='';glNoCull(GL.scene)}
     const t=glTerrSig();if(t!==GL.terrSig){GL.terrSig=t;glPaintTiles();glBuildTerrDeco();glNoCull(GL.terrDeco)}}
   if(GL.throne)GL.throne.visible=!unitAt(0,0);
