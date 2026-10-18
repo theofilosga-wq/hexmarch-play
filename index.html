@@ -311,7 +311,7 @@ body.focus .game>div,body.focus .turnbar,body.focus .boardbox,body.focus .dock,b
 body.focus .turnbar>*{flex-shrink:1}
 body.focus .turnbar .btn{flex-shrink:0}
 /* v92: on the Realm the reserve strip lives in the turn bar; let it scroll sideways so the Rules and menu buttons always stay on screen */
-body.focus .turnbar{flex-wrap:wrap;row-gap:4px}body.focus .turnbar #apBox{order:9;flex:1 1 auto;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}body.focus .turnbar #curChip{flex:1 1 0;min-width:0}/* basis 0: the chip never forces the buttons onto a new row, it takes what is left */body.focus #pauseBtn{display:none!important}/* Pause lives in the menu in play mode */
+body.focus .turnbar{flex-wrap:wrap;row-gap:4px}body.focus .turnbar #apBox{order:9;flex:1 1 auto;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}body.focus #pauseBtn{display:none!important}/* Pause lives in the menu in play mode */
 body.focus{margin:0}
 @media (max-width:700px){
   body.focus .ultbtn .un{display:none}
@@ -546,6 +546,8 @@ body.wide .recap{font-size:15px}
 
 /* v64 home cards: the full passive folds open */
 .fac details.more{display:inline}.fac details.more summary{display:inline;cursor:pointer;color:var(--gold);font-size:.9em;margin-left:4px}.fac details.more[open]{display:block;margin-top:4px;color:var(--muted)}
+/* v92 (last so it beats the media-query rule): in play mode the turn chip has flex-basis 0, so it never forces the buttons onto a new row and takes what is left */
+body.focus .turnbar .chip#curChip{flex:1 1 0;min-width:0}
 
 </style>
 
