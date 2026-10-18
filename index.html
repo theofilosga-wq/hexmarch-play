@@ -62,6 +62,8 @@ select{background:var(--ink);color:var(--text);border:1px solid var(--line);bord
 .facs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:12px}
 .fac{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .fac h3{font-size:16px;display:flex;align-items:center;gap:8px}
+.fac h3 .tier{margin-left:auto;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1px solid #4a4f5e;color:#b9bfd0}
+.fac h3 .tier.t-simple{border-color:#3f8a52;color:#8fe0a3}.fac h3 .tier.t-medium{border-color:#9a7a2a;color:#f0cc6a}.fac h3 .tier.t-advanced{border-color:#8a3f5c;color:#f08fb6}
 .fac p{margin:0;font-size:13px;color:var(--soft)}
 .fac .theme{color:var(--muted);font-style:italic}
 .roster{display:flex;flex-direction:column;gap:6px;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
@@ -7164,11 +7166,11 @@ let cfg={n:4,teams:false,mode:'warlord',map:'wilds',deploy:true,relics:true,seat
 let setupMore=false;// the 'More options' fold on the home page
 try{const bl=localStorage.getItem('hexmarch.bot');if(bl)cfg.botLevel=bl}catch(e){}
 let screen='setup',zoom=1,fxs=[],hl={moves:new Map(),atk:new Set(),aim:new Set(),range:new Set(),area:new Set(),hitIds:new Set(),ghost:false};
-const MOBW={walk:1,fly:1.3,line:0.7,diag:0.7,march:0.45,knight:0.8};
+const MOBW={walk:1,fly:1.3,line:0.7,diag:0.7,march:0.45,knight:0.8,blink:1.1};
 const PROFILE={};
 for(const k of FKEYS){
   let n=0,slots=0,hp=0,atk=0,def=0,mob=0,rng=0,ab=0,pawns=0;
-  for(const d of FAC[k].units){const c=d.n||1,sz=d.size||FAC[k].size||1;n+=c;slots+=c*sz;hp+=d.hp*c;atk+=d.atk*c;def+=d.def*c;rng+=d.rng*c;mob+=(d.mt==='knight'?2.4:d.mov*MOBW[d.mt])*c;if(d.ab)ab+=c;if(d.pawn)pawns+=c}
+  for(const d of FAC[k].units){const c=d.n||1,sz=d.size||FAC[k].size||1;n+=c;slots+=c*sz;hp+=d.hp*c;atk+=d.atk*c;def+=d.def*c;rng+=d.rng*c;mob+=(d.mt==='knight'?2.4:d.mov*(MOBW[d.mt]||1))*c;if(d.ab)ab+=c;if(d.pawn)pawns+=c}
   PROFILE[k]={n,slots,hp,atk,def:def/n,mob:mob/n,rng:rng/n,ab,pawns};
 }
 function teamsAllowed(){return cfg.n===4||cfg.n===6}
@@ -7177,6 +7179,10 @@ const UNIT_LINES={"Possessor": "A whisper from the pit that climbs into a wounde
 /* v64 (owner 6 Oct 2026: "the info for each team is too much and overwhelming"): the home cards show only the passive, the Ultimate,
    the coloured ground, the army's stats and each unit's HP, ATK, DEF, attack and ability names; the full passive folds open; tap a unit to see it. */
 const HOME_COMPACT=true;
+// v84 (owner 18 Oct 2026): the armies in order of how complex they are to play. The main four come first, then the Giants, the Gnomes and the rest.
+const HOME_ORDER=['warband','fire','ice','arcane','giants','gnomes','rift','curse','chrono','mage'];
+const HOME_TIER={warband:'Simple',fire:'Simple',ice:'Simple',arcane:'Simple',giants:'Medium',gnomes:'Medium',rift:'Advanced',curse:'Advanced',chrono:'Advanced',mage:'Advanced'};
+const HKEYS=()=>HOME_ORDER.filter(k=>FAC[k]).concat(FKEYS.filter(k=>!HOME_ORDER.includes(k)));
 // v77: on the Realm there is no claimed home ground; each army's homeRealm text says what ground it still makes
 function homeText(F){return ((G&&G.realm)||(!G&&cfg.map==='realm'))&&F.homeRealm?F.homeRealm:F.home}
 const PASSIVE_SHORT={
@@ -7323,16 +7329,16 @@ function renderSetup(){
   for(let i=0;i<cfg.n;i++){
     const s=cfg.seats[i];
     seats+=`<div class="seat"><div class="who"><span class="dot" style="background:${FAC[s.fac].color}"></span>Player ${i+1}${tOn?` <span class="team">Team ${'ABC'[seatTeam(i)]}</span>`:''}</div>
-      <select id="fac${i}" data-seat="${i}" aria-label="Army for player ${i+1}">${FKEYS.map(k=>`<option value="${k}" ${k===s.fac?'selected':''}>${FAC[k].name}</option>`).join('')}</select>
+      <select id="fac${i}" data-seat="${i}" aria-label="Army for player ${i+1}">${HKEYS().map(k=>`<option value="${k}" ${k===s.fac?'selected':''}>${FAC[k].name}</option>`).join('')}</select>
       ${seg([['human','Human'],['bot','Bot']],s.ctrl,'ctrl'+i)}
       <select data-tal="${i}" aria-label="Leader talent for player ${i+1}" title="Leader talent">${TALENTS[s.fac].map(t=>`<option value="${t.k}" ${s.talent===t.k?'selected':''}>Talent: ${t.name}</option>`).join('')}</select></div>`;
   }
   const mx=f=>Math.max(...FKEYS.map(k=>PROFILE[k][f]));
   const bm=balMode(),BM=BALANCE&&BALANCE.modes&&BALANCE.modes[bm],BT=BAL_TXT[bm];
   const mxWin=BM?Math.max(...FKEYS.map(k=>BM.armies[k]&&!unmeasured(k)?BM.armies[k].winPct:0),1):1;
-  const facs=FKEYS.map(k=>{const F=FAC[k],Pp=PROFILE[k],B=BM&&!unmeasured(k)&&BM.armies[k];
+  const facs=HKEYS().map(k=>{const F=FAC[k],Pp=PROFILE[k],B=BM&&!unmeasured(k)&&BM.armies[k];
     const bar=(lab,v,m,txt,cls)=>`<span>${lab}</span><div class="m"><i class="${cls||''}" style="width:${Math.max(4,v/m*100)}%"></i></div><b>${txt}</b>`;
-    return `<div class="fac"><h3><span class="dot" style="width:14px;height:14px;background:${F.color}"></span>${F.name}</h3>
+    return `<div class="fac"><h3><span class="dot" style="width:14px;height:14px;background:${F.color}"></span>${F.name}${HOME_TIER[k]?`<span class="tier t-${HOME_TIER[k].toLowerCase()}">${HOME_TIER[k]}</span>`:''}</h3>
     ${HOME_COMPACT?`<p><b>Passive.</b> ${PASSIVE_SHORT[k]||F.passive} <details class="more"><summary>Full rules</summary>${F.passive}</details></p>`:`${WIN_LINES[k]?`<p class="winline" style="--fc:${F.color}">${WIN_LINES[k]}</p>`:''}${LOSE_LINES[k]?`<p><b>How to beat it.</b> ${LOSE_LINES[k]}</p>`:''}<p><b>Passive.</b> ${F.passive}</p>`}<p><b>Ultimate: ${ULTS[k].name}.</b> ${ULTS[k].text}</p>
     <div class="homeline"><span class="sw" style="background:${hexA(F.color,.55)}"></span><span>${homeText(F)}</span></div>
     <div class="profile" aria-label="Army profile">${bar('HP',Pp.hp,mx('hp'),Pp.hp)}${bar('ATK',Pp.atk,mx('atk'),Pp.atk)}${bar('DEF',Pp.def,mx('def'),Pp.def.toFixed(1))}${bar('Speed',Pp.mob,mx('mob'),Pp.mob.toFixed(1))}${bar('Range',Pp.rng,mx('rng'),Pp.rng.toFixed(1))}</div>
@@ -7384,7 +7390,7 @@ function renderSetup(){
       <li><b>Slay the big ones.</b> A Dragon is worth ${WILDS.dragonPts} points, the Rift Beast on the Throne ${RULES.BEAST_PTS}, an enemy Leader 2.</li>
       <li><b>Become King.</b> Sit on the Throne and score 1 point every turn. Whoever kills the King scores ${RULES.KING_KILL}.</li>
       <li><b>First to ${WILDS.target} points wins.</b></li></ol></div>
-    <div><div class="label">Ten armies, no two alike <span class="hint" style="text-transform:none;letter-spacing:0">· tap a unit to see it in 3D</span></div><div class="facs">${facs}</div>
+    <div><div class="label">Ten armies, no two alike <span class="hint" style="text-transform:none;letter-spacing:0">· simplest first · tap a unit to see it in 3D</span></div><div class="facs">${facs}</div>
       <p class="hint" style="margin:12px 0 0">Each army has up to 10 slots (a giant takes 2). <button class="btn sm" id="balBtn2" style="margin-top:6px">See the War Room numbers</button></p></div>
    </div>`;
   {const mo=$('#moreOpts');if(mo)mo.ontoggle=()=>{setupMore=mo.open}}
