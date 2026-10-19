@@ -555,6 +555,21 @@ body.wide .recap{font-size:15px}
 body.focus .turnbar .chip#curChip{flex:1 1 0;min-width:0}
 body.focus .turnbar #apBox>*{flex:0 0 auto}/* the reserve strip's buttons keep their width; the strip scrolls sideways */
 
+/* v103 interface kit */
+#uxRing{position:fixed;left:0;top:0;z-index:30;display:flex;gap:4px;flex-wrap:nowrap;pointer-events:auto;transition:opacity .15s}
+#uxRing .uxb{font:700 12px Oxanium,sans-serif;padding:6px 9px;border-radius:999px;border:1px solid #0b0e14;background:#232a36;color:#e8ebf2;box-shadow:0 2px 8px rgba(0,0,0,.45);white-space:nowrap;cursor:pointer;min-height:30px}
+#uxRing .uxb.go{background:#ffd766;color:#1a1206}
+#uxRing .uxb.cd{background:#3a2323;color:#ffb3b3}
+#uxRing .uxb.off{opacity:.55}
+#uxRing .uxb:disabled{opacity:.5;cursor:default}
+@media (max-width:999px){#uxRing .uxb{font-size:13px;padding:0 10px;min-height:34px;min-width:34px}#uxRing{gap:6px}}
+.uxnow{margin:8px 0 6px;padding:7px 9px;border-left:3px solid #ffd766;background:rgba(255,215,102,.07);border-radius:4px}
+.uxnow ul{margin:4px 0 0;padding:0 0 0 2px;list-style:none}
+.uxnow li{margin:2px 0;font-size:13px;line-height:1.35}
+.uxnow li.go{color:#f4f0e2}.uxnow li.no{color:#8a8f9c}
+.kbt td{padding:3px 8px;vertical-align:top;font-size:14px}.kbt kbd{background:#232a36;border:1px solid #3a4250;border-radius:4px;padding:1px 6px;font:700 12px Oxanium,sans-serif;white-space:nowrap}
+#boardbox,#board{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
 </style>
 
 <div class="wrap">
@@ -654,7 +669,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={STORY2:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
@@ -4225,7 +4240,7 @@ function storyFall(){
   for(const br of G.breaches){const c=allCells().filter(([q,r])=>hd(q,r,0,0)===REALM.stoneDist&&passable(q,r)&&!unitAt(q,r)&&!G.loot.some(x=>x.q===q&&x.r===r)).sort((x,y)=>angGap(storyAng(...x),br.ang)-angGap(storyAng(...y),br.ang))[0];
     if(c)G.loot.push({id:G.nid++,kind:'stone',q:c[0],r:c[1],carrier:null,road:br.pid})}
   if(!SIM){addLog(null,'The sky cracks and the Rift Beast falls on the city! The tower of the crown is crushed, the wall breaks in four places, and four Crown Stones are thrown out onto the roads. The fifth is in the Beast\'s belly.');
-    vfx({k:'thefall',at:[0,0],portals:G.players.map(p=>({at:p.camp,col:FAC[p.fac].color})),stones:(G.loot||[]).filter(x=>x.kind==='stone').map(x=>[x.q,x.r])});announce({k:'note',col:'#b06bff',t:'The Fall',s:'The Rift Beast crushes the city and the crown\'s stones scatter onto the roads. It cannot move, but it strikes whoever comes close, and every few rounds it sends spawns to fetch the stones.'});
+    vfx({k:'thefall',at:[0,0],portals:G.players.map(p=>({at:p.camp,col:FAC[p.fac].color})),stones:(G.loot||[]).filter(x=>x.kind==='stone').map(x=>[x.q,x.r])});announce({k:'note',col:'#b06bff',t:'The Fall',s:'The Rift Beast crushes the city and an earthquake rolls across the land: the green fields crack into wasteland and the ground round the city starts to rot. The crown\'s stones scatter onto the roads. The Beast cannot move, but it strikes whoever comes close, and every few rounds it sends spawns to fetch the stones.'});
     const O=tObj();if(O){O.story={waves:[],eaten:0,crowned:[],spawnKills:{},beastDead:null,blast:0,god:null}}}}
 // a breach's sweep zone: the cone 3 deep and 60 degrees wide that opens outward from the breach (the breach hexes themselves included)
 function storySweepCells(br){const R1=G.heartR+1,out=new Set();const [bx,by]=pix(br.c[0],br.c[1]);
@@ -4397,6 +4412,28 @@ function genRealm(){
   const out=(q,r)=>nearBase(q,r)>VR;
   const walk=(s,steps,bias,t,keep)=>{let [q,r]=s;for(let i=0;i<steps;i++){if(!inR(q,r))break;if(keep(q,r))put(q,r,t);let best=null,bv=-1e9;for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;if(!inR(a,b))continue;const v=bias(a,b)+RNG()*1.6;if(v>bv){bv=v;best=[a,b]}}if(!best)break;[q,r]=best}};
   const pickC=f=>{const pool=cellsAll.filter(([q,r])=>f(q,r));return pool[Math.floor(RNG()*pool.length)]};
+  /* v104 THE SHAPED REALM (owner 19 Oct 2026: "a green field, forests and mountains on the outer circles and edges; mountains, rivers and lakes
+     shape the land and force players to follow certain paths and cross paths with the enemy"). The layout is fixed, mirrored for all four:
+     four rivers run out from the city along the lines between neighbouring bases, two fords each, so neighbours meet at the fords;
+     one lake and one short ridge per quarter beside the road to the stone make two narrow passes; the board's edge is forest and mountain;
+     the middle stays open field (the camps' ground). Only small things (single trees and hills) change from game to game. */
+  if(RULES.REALM_SHAPE&&RULES.STORY2){const R0=G.heartR+3;
+    const water=(q,r)=>{if(!T[key(q,r)]||T[key(q,r)]==='wood')put(q,r,'river',true)};
+    // the rivers: along the horizontal mirror line (row r=0) and the vertical one (|x| under one hex), from 3 rings out of the city to a few hexes short of the edge camps
+    const arm=(cellsOf,len)=>{const L=cellsOf.sort((a,b)=>a.t-b.t);for(const c of L){const f=Math.abs(c.t-0.3)<0.12||Math.abs(c.t-0.78)<0.12;if(f)put(c.q,c.r,'ford',true);else water(c.q,c.r)}};
+    {const xs=[];for(const [q,r] of cellsAll){if(r!==0)continue;const [x]=pix(q,r);if(x<R0*S3||x>HW-5)continue;xs.push({q,r,t:(x-R0*S3)/(HW-5-R0*S3)})}arm(xs)}
+    {const ys=[];for(const [q,r] of cellsAll){const [x,y]=pix(q,r);if(Math.abs(x)>0.9||y<R0*1.5||y>HH-4.6)continue;ys.push({q,r,t:(y-R0*1.5)/(HH-4.6-R0*1.5)})}arm(ys)}
+    // a lake and a ridge in each quarter, either side of the base's road to the city
+    const [bx,by]=pix(...b0),L=Math.hypot(bx,by),ux=bx/L,uy=by/L,vx=uy,vy=-ux;const at=(f,o)=>hexRound(bx*f+vx*o*S3,by*f+vy*o*S3);
+    {const c=at(0.56,3.2);put(...c,'river',true);let n=0;for(const d of [0,1,2,3,4,5].sort(()=>RNG()-0.5)){if(n>=4)break;const a=c[0]+DIRS[d][0],b=c[1]+DIRS[d][1];if(inR(a,b)&&inQ(a,b)&&(!T[key(a,b)]||T[key(a,b)]==='wood')){put(a,b,'river',true);n++}}}
+    {const c=at(0.5,-3.4),[cx0,cy0]=pix(...c);for(let i=-2;i<=2;i++){const h=hexRound(cx0+ux*i*S3,cy0+uy*i*S3);if(inR(...h)&&inQ(...h)&&!T[key(...h)]&&Math.abs(i)<2+RNG())put(...h,'mount')}}
+    // the edge band: forest with mountains, thick on the outermost ring, outside the home valleys
+    for(const [q,r] of cellsAll){if(!inQ(q,r)||T[key(q,r)])continue;const e=edgeD(q,r);if(e>=2.7||!out(q,r)||nearBase(q,r)<=VR)continue;const x=RNG();
+      if(e<1.3){if(x<0.3)put(q,r,'mount');else if(x<0.92)put(q,r,'wood')}else if(x<0.12)put(q,r,'mount');else if(x<0.7)put(q,r,'wood')}
+    // the field: open, a couple of copses and one hill per quarter
+    for(let k=0;k<2;k++){const s=pickC((q,r)=>!T[key(q,r)]&&hd(q,r,0,0)>G.heartR+3&&out(q,r)&&inQ(q,r)&&edgeD(q,r)>3);if(!s)continue;put(...s,'wood');for(const [dq,dr] of DIRS)if(RNG()<0.35){const a=s[0]+dq,b=s[1]+dr;if(inR(a,b)&&inQ(a,b)&&!T[key(a,b)])put(a,b,'wood')}}
+    {const s=pickC((q,r)=>!T[key(q,r)]&&hd(q,r,0,0)>G.heartR+4&&out(q,r)&&inQ(q,r)&&edgeD(q,r)>3);if(s)put(...s,'hill')}
+  }else{
   // rivers run in from the edges toward the Heart, with a ford every few hexes; ridges are short mountain lines; woods in clumps
   for(let k=0;k<2;k++){const s=pickC((q,r)=>edgeD(q,r)<1.6&&out(q,r)&&inQ(q,r)&&nearBase(q,r)>VR+2);if(!s)continue;let n=0;
     walk(s,16+Math.floor(RNG()*8),(a,b)=>-hd(a,b,0,0),'river',(q,r)=>hd(q,r,0,0)>G.heartR+2&&out(q,r)&&inQ(q,r)&&((++n)%5===0?(put(q,r,'ford'),false):true))}
@@ -4404,6 +4441,7 @@ function genRealm(){
     walk(s,5+Math.floor(RNG()*6),(a,b)=>{const [x,y]=pix(a,b),[sx,sy]=pix(...s);return (x-sx)*ux+(y-sy)*uy},'mount',(q,r)=>hd(q,r,0,0)>G.heartR+2&&nearBase(q,r)>VR+1&&inQ(q,r)&&!T[key(q,r)]&&RNG()>0.1)}
   for(let k=0;k<5;k++){const s=pickC((q,r)=>!T[key(q,r)]&&hd(q,r,0,0)>G.heartR+2&&out(q,r)&&inQ(q,r));if(!s)continue;put(...s,'wood');for(const [dq,dr] of DIRS)if(RNG()<0.5){const a=s[0]+dq,b=s[1]+dr;if(inR(a,b)&&inQ(a,b))put(a,b,'wood')}}
   for(let k=0;k<3;k++){const s=pickC((q,r)=>!T[key(q,r)]&&hd(q,r,0,0)>G.heartR+3&&out(q,r)&&inQ(q,r));if(s)put(...s,'hill')}
+  }
   // v76 (owner: the map feels a bit empty): a few woods, a hill and a rock near every camp, on two sides at most, never a ring
   const dress=c=>{const sides=[0,1,2,3,4,5].sort(()=>RNG()-0.5).slice(0,2);for(const d of sides){const [dq,dr]=DIRS[d];for(const [dist,t] of [[2,'wood'],[3,RNG()<0.5?'hill':'wood'],[3,'mount']]){const q=c[0]+dq*dist+(t==='mount'?DIRS[(d+1)%6][0]:0),r=c[1]+dr*dist+(t==='mount'?DIRS[(d+1)%6][1]:0);if(inR(q,r)&&!T[key(q,r)]&&nearBase(q,r)>2)put(q,r,t)}}};
   // the Heart's wall has a gate facing each base (it opens with the rest of the wall in round REALM.open)
@@ -4446,8 +4484,15 @@ function genRealm(){
     p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2&&passable(q,r)).map(([q,r])=>key(q,r))});
 }
 // Ground colour: lush near each base (tinted with its army colour), fading to dry land and then grey wasteland toward the centre.
+/* v104 (owner): the shaped Realm has bands: HOME (the valley round each base, lush), EDGE (forest floor along the board's edge), FIELD (the open middle
+   where the camps are: green until the Beast lands, then the quake turns it to wasteland, with a light rot near the city) and the CITY. Looks only. */
+function realmBand(q,r){if(hd(q,r,0,0)<=G.heartR+1)return 'city';let bd=1e9;for(const p of G.players)if(p.camp)bd=Math.min(bd,hd(q,r,p.camp[0],p.camp[1]));if(bd<REALM.VR)return 'home';
+  const [x,y]=pix(q,r);if(Math.min(REALM.HW-Math.abs(x),REALM.HH-Math.abs(y))<2.7)return 'edge';return 'field'}
+/* has the opening quake reached this hex yet? (the Fall scene sets QUAKE on the screen; without it, the land is already broken) */
+function realmQuaked(q,r){if(typeof window==='undefined'||!window.QUAKE)return true;const Q=window.QUAKE,t=(Date.now()-Q.t0)/Q.dur;if(t>=1)return true;if(t<0)return false;return hd(q,r,0,0)<=G.heartR+1+t*(G.Rv||24)}
+const realmShaped=()=>G&&G.realm&&RULES.REALM_SHAPE&&RULES.STORY2;
 let RTILE=null;
-function realmTile(q,r){if(!RTILE||RTILE.G!==G)RTILE={G,m:new Map()};const k=key(q,r);let c=RTILE.m.get(k);if(c)return c;
+function realmTile(q,r){if(realmShaped())return realmTile2(q,r);if(!RTILE||RTILE.G!==G)RTILE={G,m:new Map()};const k=key(q,r);let c=RTILE.m.get(k);if(c)return c;
   let bi=0,bd=1e9;for(const p of G.players){if(!p.camp)continue;const d=hd(q,r,p.camp[0],p.camp[1]);if(d<bd){bd=d;bi=p.id}}
   const fade=Math.min(1,Math.max(0,(bd-3)/18)),ac=FAC[G.players[bi].fac].color;
   const h2=s=>[parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)],mx=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
@@ -4455,6 +4500,16 @@ function realmTile(q,r){if(!RTILE||RTILE.G!==G)RTILE={G,m:new Map()};const k=key
   let rgb=fade<0.45?mx(mx(lush,h2(ac),0.25),dry,fade/0.45):mx(dry,waste,(fade-0.45)/0.55);
   const j=((q-r)%3+3)%3;rgb=rgb.map(v=>Math.max(0,Math.min(255,Math.round(v*0.5+j*3))));// dark enough for move dots and overlays to read
   c='#'+rgb.map(v=>v.toString(16).padStart(2,'0')).join('');RTILE.m.set(k,c);return c}
+let RTILE2=null;
+function realmTile2(q,r){if(!RTILE2||RTILE2.G!==G)RTILE2={G,m:new Map()};const band=realmBand(q,r),qk=band==='field'&&realmQuaked(q,r),k=key(q,r)+(qk?'q':'');let c=RTILE2.m.get(k);if(c)return c;
+  const h2=s=>[parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)],mx=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+  const j=((q-r)%3+3)%3,n=(Math.sin(q*12.9898+r*78.233)*43758.5453)%1;let rgb;
+  if(band==='home'){let bi=0,bd=1e9;for(const p of G.players){if(!p.camp)continue;const d=hd(q,r,p.camp[0],p.camp[1]);if(d<bd){bd=d;bi=p.id}}rgb=mx([84,158,72],h2(FAC[G.players[bi].fac].color),0.2)}
+  else if(band==='edge')rgb=[58,104,56];
+  else if(band==='city')rgb=[96,86,104];
+  else if(!qk)rgb=[96,160,74];
+  else{const d=hd(q,r,0,0);rgb=mx([150,132,94],[104,96,88],Math.min(1,Math.max(0,1-(d-G.heartR)/14)));const rot=Math.max(0,1-(d-G.heartR-2)/3);if(rot>0)rgb=mx(rgb,[112,84,128],0.28*rot);rgb=mx(rgb,[78,70,62],Math.abs(n)*0.25)}
+  rgb=rgb.map(v=>Math.max(0,Math.min(255,Math.round(v*0.5+j*3))));c='#'+rgb.map(v=>v.toString(16).padStart(2,'0')).join('');RTILE2.m.set(k,c);return c}
 // Start: the Leader and the first REALM.start units of the roster stand in the base; the rest wait in the reserve.
 function realmDeploy(p){
   const defs=[];for(const d of FAC[p.fac].units)for(let n=0;n<(d.n||1);n++)defs.push(d);
@@ -5029,7 +5084,15 @@ const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
-const CAM={az:0,azT:0,tilt:0.92,S:20,cx:0,cy:0,follow:true};
+const CAM={az:0,azT:0,tilt:0.92,tiltT:0.92,S:20,cx:0,cy:0,follow:true};
+/* v102 (owner): the tabletop looks from the side (figures) and tilts up to look from above while one of your units is selected (hexes and enemies easy to tap) */
+const TILT_SIDE=0.92,TILT_TOP=0.48;let TOPVIEW=true;try{TOPVIEW=localStorage.getItem('hexmarch.topview')!=='off'}catch(e){}
+const tiltH=(t,Rw,S)=>2*Rw*S*Math.cos(t)+3*S*Math.sin(t);
+function camCyFix(){if(!CAM.Rw)return;const st=Math.sin(CAM.tilt),ct=Math.cos(CAM.tilt);CAM.cy=CAM.padY+4+(CAM.Hmax-tiltH(CAM.tilt,CAM.Rw,CAM.S))/2+2.8*CAM.S*st+CAM.Rw*CAM.S*ct}
+function tiltStep(){const T=CAM.tiltT==null?TILT_SIDE:CAM.tiltT;const d=T-CAM.tilt;if(Math.abs(d)<0.002){if(CAM.tilt!==T){CAM.tilt=T;camCyFix()}return false}
+  const a=G&&G.sel!=null?byId(G.sel):null;const box=$('#boardbox');let y0=null;if(a&&box){const [wx,wz]=world(a.q,a.r);y0=proj(wx,wz,0)[1]}
+  CAM.tilt+=d*0.2;camCyFix();if(y0!=null){const [wx,wz]=world(a.q,a.r);box.scrollTop+=proj(wx,wz,0)[1]-y0}if(typeof GL!=='undefined')GL.dirty=true;return true}
+function tiltWanted(){if(typeof UX!=='undefined'&&UX.drag&&UX.drag.on)return CAM.tilt;/* v103: the camera holds still while a unit is dragged */return VIEW==='3d'&&TOPVIEW&&!!G&&!G.phase&&!G.over&&G.sel!=null&&typeof isHumanTurn==='function'&&isHumanTurn()?TILT_TOP:TILT_SIDE}
 const TILE_H=0.24;
 function world(q,r){return [S3*(q+r/2),1.5*r]}
 /* v101 MOTION PASS: a move takes ~150 ms per hex (at least 320 ms) with a walking ease; returns the progress, the hexes covered and the heading */
@@ -5039,11 +5102,12 @@ function mix(hex,to,t){const a=parseInt(hex.slice(1),16),b=parseInt(to.slice(1),
 function layout3D(){
   const box=$('#boardbox');const w=boardW(box);
   const maxH=boardMaxH(w);
-  const Rw=(G.Rv||G.R)*S3+1.3,ct=Math.cos(CAM.tilt),st=Math.sin(CAM.tilt);
+  const Rw=(G.Rv||G.R)*S3+1.3,ct=Math.cos(TILT_SIDE),st=Math.sin(TILT_SIDE);
   CAM.S=Math.min(w/(2*Rw),maxH/(2*Rw*ct+3*st))*zoom;
   const [padX,padY]=boardPad(box);
-  CW=Math.ceil(2*Rw*CAM.S)+8+2*padX;CH=Math.ceil(2*Rw*CAM.S*ct+3*CAM.S*st)+8+2*padY;
-  CAM.cx=CW/2;CAM.cy=2.8*CAM.S*st+Rw*CAM.S*ct+4+padY;
+  CAM.Rw=Rw;CAM.padY=padY;CAM.Hmax=Math.max(tiltH(TILT_SIDE,Rw,CAM.S),TOPVIEW?tiltH(TILT_TOP,Rw,CAM.S):0);// v102: room for both views
+  CW=Math.ceil(2*Rw*CAM.S)+8+2*padX;CH=Math.ceil(CAM.Hmax)+8+2*padY;
+  CAM.cx=CW/2;camCyFix();
   SZ=CAM.S;
   const dpr=safeDpr();
   cv.width=CW*dpr;cv.height=CH*dpr;cv.style.width=CW+'px';cv.style.height=CH+'px';
@@ -5117,6 +5181,7 @@ function hexTop(x,z,rad,y){const o=[];for(let i=0;i<6;i++){const a=Math.PI/180*(
 function polyPath(p){ctx.beginPath();p.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath()}
 let drawnUnits=[];
 function draw3D(now){
+  CAM.tiltT=tiltWanted();tiltStep();
   const moving=angleStep();
   if(moving&&Math.abs(CAM.azT-CAM.az)<0.002)moving;
   ctx.clearRect(0,0,CW,CH);
@@ -5277,7 +5342,7 @@ function draw3D(now){
   }
   for(const w of G.wells||[]){const [x,z]=world(w.q,w.r);const p=proj(x+0.5*s+0.55*c,z+0.5*c-0.55*s,0);wellBadge(p[0],p[1],CAM.S,w)}// turns left, in front of the centre hex, above the figures
   if(GLON)glRender();
-  flushStatusBadges();drawVFX(now);
+  flushStatusBadges();drawVFX(now);if(typeof uxDraw==='function')uxDraw(now);
   fxs=fxs.filter(f=>now-f.t0<1000);
   for(const f of fxs){const t=(now-f.t0)/1000;const [wx,wz]=world(f.q,f.r);const [x,y]=proj(wx,wz,1.3+t*0.8);
     ctx.globalAlpha=1-t;ctx.font=`800 ${Math.max(12,CAM.S*0.7)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
@@ -5342,7 +5407,8 @@ function drawBeast3D(u,pts,x,z,sx,sy,now){const big=pts.length>3;pts=beastHull(p
 // so a tap between two overlapping miniatures picks the nearer one rather than the one drawn in front (v26).
 function axisDist(d,mx,my){if(!d.ax){const [a,b,c2,d2]=d.rect;return Math.hypot(mx-(a+c2)/2,my-(b+d2)/2)}const [x,y0,y1]=d.ax;const y=Math.max(y0,Math.min(y1,my));return Math.hypot(mx-x,my-y)}
 function hexAt3D(mx,my){
-  {let best=null,bd=1e9;for(const d of drawnUnits){const [a,b,c2,d2]=d.rect;if(mx>=a&&mx<=c2&&my>=b&&my<=d2&&alive(d.u)){const k=axisDist(d,mx,my);if(k<bd){bd=k;best=d}}}if(best)return best.cell}
+  {let best=null,bd=1e9;for(const d of drawnUnits){const [a,b,c2,d2]=d.rect;if(mx>=a&&mx<=c2&&my>=b&&my<=d2&&alive(d.u)){const k=axisDist(d,mx,my);if(k<bd){bd=k;best=d}}}
+    if(best){if(typeof uxPreferGround==='function'){const sv=drawnUnits;drawnUnits=[];let g=null;try{g=hexAt3D(mx,my)}finally{drawnUnits=sv}if(uxPreferGround(g,best.u))return g}return best.cell}}/* v103: in a crowd the ground wins when it is a move or aim spot */
   const xr=(mx-CAM.cx)/CAM.S,zr=(my-CAM.cy)/(CAM.S*Math.cos(CAM.tilt));const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
   const x=xr*c+zr*s,z=-xr*s+zr*c;
   const rf=z/1.5,qf=x/S3-rf/2,sf=-qf-rf;let q=Math.round(qf),r=Math.round(rf),s2=Math.round(sf);
@@ -5873,7 +5939,12 @@ function glBuildTiles(){
   glPaintTiles()}
 function glTileKind(q,r,k){const T=THREE;const tint=new T.Color('#ffffff');let kind='meadow';
   const f=featAt(q,r);
-  if(G.realm){let bd=1e9,bi=0;for(const p of G.players){if(!p.camp)continue;const d=hd(q,r,p.camp[0],p.camp[1]);if(d<bd){bd=d;bi=p.id}}const fade=Math.min(1,Math.max(0,(bd-3)/18));
+  if(G.realm&&realmShaped()){const band=realmBand(q,r);/* v104 bands: home and edge green, the field green until the quake, then wasteland with a light rot near the city */
+    if(band==='home'){let bd=1e9,bi=0;for(const p of G.players){if(!p.camp)continue;const d=hd(q,r,p.camp[0],p.camp[1]);if(d<bd){bd=d;bi=p.id}}kind='meadow';if(G.players[bi])tint.lerp(new T.Color(FAC[G.players[bi].fac].color),0.14)}
+    else if(band==='edge'){kind='meadow';tint.multiplyScalar(0.72)}
+    else if(band==='field'){if(!realmQuaked(q,r))kind='meadow';else{const d=hd(q,r,0,0);kind=d>G.heartR+9?'dry':'waste';const rot=Math.max(0,1-(d-G.heartR-2)/3);if(rot>0)tint.lerp(new T.Color('#9a6fc0'),0.32*rot)}}
+    else kind='waste'}
+  else if(G.realm){let bd=1e9,bi=0;for(const p of G.players){if(!p.camp)continue;const d=hd(q,r,p.camp[0],p.camp[1]);if(d<bd){bd=d;bi=p.id}}const fade=Math.min(1,Math.max(0,(bd-3)/18));
     kind=fade<0.45?'meadow':fade<0.8?'dry':'waste';if(fade<0.2&&G.players[bi])tint.lerp(new T.Color(FAC[G.players[bi].fac].color),0.18)}
   else{if(isNoMans(q,r)&&!G.map)tint.lerp(new T.Color(GROUND.nomans),0.5);if(G.map&&isRoad(q,r))kind='dry'}
   if(f==='hill')kind='dry';
@@ -6316,7 +6387,7 @@ function glSetGhost(fig,on){if(fig.userData.ghost===on)return;fig.userData.ghost
 function glSpent(fig,on){if(fig.userData.spent===on)return;fig.userData.spent=on;fig.traverse(o=>{if(o.userData&&o.userData.rim){o.userData.rimMat=o.userData.rimMat||o.material;o.material=on?gMat('#3a3a3a'):o.userData.rimMat}
   else if(fig.userData.model&&o.isMesh&&o.material&&o.material.color){if(!o.userData.col0)o.userData.col0=o.material.color.clone();o.material.color.copy(o.userData.col0).multiplyScalar(on?0.5:1);if(o.material.emissiveIntensity!=null){if(o.userData.em0==null)o.userData.em0=o.material.emissiveIntensity;o.material.emissiveIntensity=on?o.userData.em0*0.4:o.userData.em0}}})}// v78c: a spent real model darkens (it has no rim)
 function glStaticSig(){let n=(G.midUp?1000:0)+(G.throneBeast?3000:0)+(G.cityDown?7000:0),f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
-function glTerrSig(){let h=0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
+function glTerrSig(){let h=(typeof window!=='undefined'&&window.QUAKE&&G&&G.realm)?Math.floor(Math.min(1.05,Math.max(-0.05,(Date.now()-window.QUAKE.t0)/window.QUAKE.dur))*24):0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
 function glProps(){if(GL.props)GL.scene.remove(GL.props);const g=new THREE.Group();GL.props=g;GL.scene.add(g);if(!G.realm||!G.players)return;
   for(const p of G.players){const MD=BASE_MODELS[p.fac];if(!MD||!p.base||!p.base.length)continue;const c=p.base.map(k=>k.split(',').map(Number)).sort((a,b)=>hd(b[0],b[1],0,0)-hd(a[0],a[1],0,0))[0];
     glModel(MD.file).then(src=>{if(GL.props!==g)return;const o=src.clone();const bb=src.userData.bb;let sc=MD.h/bb.h;if(MD.w)sc=Math.min(sc,MD.w/Math.max(bb.w||1,bb.d||1));o.scale.setScalar(sc);const [x,z]=world(c[0],c[1]);o.position.set(x-bb.cx*sc,0.03-bb.y0*sc,z-bb.cz*sc);o.rotation.y=Math.atan2(-x,-z)+(MD.rot||0);
@@ -6627,6 +6698,13 @@ function drawVFX(now){
       // Act 1 (v23): the wall falls (dust over the grey ring), the Wellspring rises or is claimed, a flag changes hands, the Rift Beast appears and dies.
       case 'thefall':{// v100 the opening scene: the Rift Beast drops out of a crack in the sky onto the city, the shockwave rolls out, then each army's portal tears open and the four stones glint on the roads
         dur=4200;const t=el/dur;const [cx,cy]=vPos(0,0,0.4);ctx.save();
+        if(!ev.qk){ev.qk=1;window.QUAKE={t0:Date.now()+dur*0.38,dur:2300}}/* v104: the field stays green until the Beast lands, then the quake wave turns it to wasteland */
+        if(t>0.38&&!ev.snd){ev.snd=1;try{playSound('ult');setTimeout(()=>playSound('death'),350);setTimeout(()=>playSound('hit'),700)}catch(e){}}
+        if(t>0.38&&t<0.97&&window.QUAKE){/* dust rolls out with the quake front: puffs on the ring the wave has reached */
+          const fr=Math.min(1,(Date.now()-window.QUAKE.t0)/window.QUAKE.dur),R=Math.round(G.heartR+1+fr*(G.Rv||24));if(!ev.rings)ev.rings={};
+          const ringAt=d=>ev.rings[d]||(ev.rings[d]=allCells().filter(([q,r])=>hd(q,r,0,0)===d&&((q*7+r*13+d)%3+3)%3===0));
+          for(const dd of [R-1,R,R+1])for(const [q,r] of ringAt(dd)){const [x,y]=vPos(q,r,0.2),w=Math.sin(q*3.1+r*1.7+now/300);ctx.globalAlpha=0.32*(1-fr*0.6)*(dd===R?1:0.6);ctx.fillStyle=(q+r)%2?'#a08a6a':'#8a7a66';ctx.beginPath();ctx.ellipse(x+w*SZ*0.3,y-SZ*0.2,SZ*(0.9+0.3*w),SZ*0.55,0,0,7);ctx.fill()}
+          if(now>(ev.shk||0)){ev.shk=now+500;shakeUntil=now+420}ctx.globalAlpha=1}
         if(t<0.38){const k=t/0.38,y=cy-CH*0.75*(1-k*k);ctx.globalAlpha=0.9;ctx.strokeStyle='#d6b3ff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx-40,cy-CH*0.75);ctx.lineTo(cx+12,cy-CH*0.75+30);ctx.lineTo(cx-10,cy-CH*0.75+55);ctx.lineTo(cx+30,cy-CH*0.75+90);ctx.stroke();
           const r=SZ*(1.2+k*2.4);const g=ctx.createRadialGradient(cx,y,r*0.1,cx,y,r);g.addColorStop(0,'#f2e2ff');g.addColorStop(0.35,'#9b5cff');g.addColorStop(1,'rgba(60,10,110,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,y,r,0,7);ctx.fill();
           for(let i=0;i<10;i++){ctx.globalAlpha=0.5;ctx.fillStyle='#b06bff';ctx.beginPath();ctx.arc(cx+Math.sin(i*2.3+k*9)*r*0.9,y-r*(0.4+i*0.18),SZ*0.12,0,7);ctx.fill()}}
@@ -8259,10 +8337,10 @@ let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e
 let MENU_RESET=0;
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button>${VIEW==='3d'?`<button class="btn sm" data-m="topv">${TOPVIEW?'🎯 Top view when a unit is selected: on':'🎯 Top view when a unit is selected: off'}</button>`:''}<button class="btn sm" data-m="ring">${UX.ring?'🔘 Buttons beside the unit: on':'🔘 Buttons beside the unit: off'}</button><button class="btn sm" data-m="kb">⌨ Keyboard keys</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
-    if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
@@ -8448,6 +8526,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
     <div class="hpbar"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div>
     <div class="stat"><div><b>${fmt(u.hp)}</b><span>HP</span></div><div>${statB(effAtk(u),u.atk)}<span>ATK</span></div><div>${statB(effDef(u),u.def)}<span>DEF</span></div><div>${statB(effMov(u),u.mov)}<span>MOV</span></div><div>${statB(rg,u.rng)}<span>RNG</span></div></div>
     ${statusChips(u,true)}
+    ${typeof uxNowBox==='function'?uxNowBox(u):''}
     ${UNIT_LINES[u.name]?`<p class="tagline">${UNIT_LINES[u.name]}</p>`:''}
     ${u.book?`<div class="abil hint"><b>Spellbook:</b> ${u.book.length} spells, one shared rest. Casting any of them rests all of them for that spell's cooldown.</div>`:''}${abilsOf(u).length?abilsOf(u).map(k=>abilBlock(u,k)).join(''):`<div class="abil hint">No ability. ${u.pawn?'Pawns trade tricks for speed and numbers.':u.statue?'A statue: it only waits to be woken.':'Pure stats.'}</div>`}
     ${(()=>{const fk=u.kind!=='wall'&&u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:null;const pi=fk?FAC[fk].units.findIndex(d=>d.name===u.name):-1;return pi>=0?`<button class="btn sm" id="lookBtn" data-fac="${fk}" data-u="${pi}" style="margin:6px 0 2px">🔍 Look closer (3D)</button>`:''})()}
@@ -9136,7 +9215,7 @@ function draw(now){
   }
   drawFlagTops2D(now);
   drawWellBadges2D();
-  flushStatusBadges();drawVFX(now);
+  flushStatusBadges();drawVFX(now);if(typeof uxDraw==='function')uxDraw(now);
   fxs=fxs.filter(f=>now-f.t0<1000);
   for(const f of fxs){const t=(now-f.t0)/1000;const [x,y]=px(f.q,f.r);
     ctx.globalAlpha=1-t;ctx.font=`800 ${Math.max(12,SZ*0.75)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
@@ -9165,8 +9244,8 @@ function zoomAt(z,cx,cy){
 }
 cv.addEventListener('pointerdown',e=>{camUserTook();
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:zoom};drag=null;return}
-  drag={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,az:CAM.az,moved:false,id:e.pointerId};
+  if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:zoom};drag=null;if(typeof UX!=='undefined'){UX.drag=null;UX.dragTo=null}return}
+  drag={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,az:CAM.az,moved:false,id:e.pointerId};if(typeof uxDragDown==='function')uxDragDown(e);/* v103 drag to move */
   clearTimeout(lpTimer);const d0=drag;
   lpTimer=setTimeout(()=>{if(drag!==d0||d0.moved||pinch||!G)return;const h=hexAt({clientX:d0.x,clientY:d0.y});const u=h&&unitAt(h[0],h[1]);
     if(!u||u.kind==='wall'||!visibleUnit(u))return;d0.lp=true;lpInspect(u)},480);
@@ -9180,6 +9259,7 @@ cv.addEventListener('pointermove',e=>{
   if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pinch&&ptrs.size>=2){const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch.d>10)zoomAt(pinch.z*d/pinch.d,(a.x+b.x)/2,(a.y+b.y)/2);return}
   if(!drag||drag.id!==e.pointerId)return;
+  if(typeof UX!=='undefined'&&UX.drag){if(uxDragMove(e)){drag.moved=true;clearTimeout(lpTimer)}return}/* v103: a press on your own unit drags the unit, not the board */
   const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
   if(!drag.moved&&Math.hypot(dx,dy)<9)return;
   drag.moved=true;clearTimeout(lpTimer);
@@ -9192,7 +9272,7 @@ function endPtr(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null}
 cv.addEventListener('pointerup',e=>{
   const wasPinch=!!pinch||ptrs.size>1;endPtr(e);
   if(!G||!drag||drag.id!==e.pointerId){drag=null;return}
-  clearTimeout(lpTimer);const d=drag;drag=null;if(d.moved||wasPinch||d.lp)return;
+  clearTimeout(lpTimer);const d=drag;drag=null;if(typeof UX!=='undefined'&&UX.drag&&!wasPinch&&!d.lp){if(uxDragUp(e))return}else if(typeof UX!=='undefined')UX.drag=null;if(d.moved||wasPinch||d.lp)return;
   // double tap on an empty hex (nothing to move to or aim at): centre the board there, zooming in if the whole board is shown
   const now=performance.now(),raw=hexAt(e),empty=raw&&!unitAt(raw[0],raw[1])&&!hl.moves.has(key(raw[0],raw[1]))&&!hl.aim.has(key(raw[0],raw[1]));
   if(empty&&lastTap&&now-lastTap.t<380&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<40&&lastTap.empty){lastTap=null;centreOn(e.clientX,e.clientY,zoom<1.5?1.9:zoom);return}
@@ -9256,7 +9336,7 @@ function frameArmy(pid){if(window.FALL_HOLD&&Date.now()<window.FALL_HOLD)return;
   const br=box.getBoundingClientRect();
   box.scrollLeft+=(x0+x1)/2-(br.left+br.width/2);box.scrollTop+=(y0+y1)/2-(br.top+br.height/2)}
 function fitBoard(){zoom=1;layout();centerBoard()}
-cv.addEventListener('pointercancel',e=>{endPtr(e);drag=null;clearTimeout(lpTimer)});
+cv.addEventListener('pointercancel',e=>{endPtr(e);drag=null;clearTimeout(lpTimer);if(typeof UX!=='undefined'){UX.drag=null;UX.dragTo=null}});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('wheel',e=>{camUserTook();if(e.shiftKey)return;const own=e.ctrlKey||document.body.classList.contains('focus')||document.body.classList.contains('wide');if(!own)return;e.preventDefault();zoomAt(zoom*(e.deltaY>0?0.88:1.14),e.clientX,e.clientY)},{passive:false});
 // Screen position of a hex centre, in client coordinates.
@@ -9520,6 +9600,161 @@ function showcaseStep(){clearTimeout(SHOW.timer);if(!SHOW.on||!G)return;const [l
 function startShowcase(){if(SHOW.on)return;SHOW.on=true;cfg.map='random';cfg.n=5;cfg.mode='warlord';cfg.collapse=false;cfg.deploy=false;cfg.relics=false;cfg.seats=cfg.seats.slice(0,5).map((s,i)=>({...s,ctrl:'human',fac:['fire','ice','arcane','warband','giants'][i]}));
   newGameUI();G.phase=null;try{localStorage.setItem('hexmarch.camfollow','off')}catch(e){}CAMF.on=false;showcaseScene();SHOW.timer=setTimeout(showcaseStep,1800)}
 if(typeof location!=='undefined'&&location.hash==='#motion')setTimeout(startShowcase,900);
+
+/* v103 INTERFACE KIT (owner 19 Oct 2026, after his friends found picking and moving units hard):
+   1. Drag to move: press one of your units and drag it onto a dot (move) or an enemy (attack); release anywhere else and nothing happens.
+   2. Crowded figures: a tap on a figure's body picks that figure, except when the ground under the finger is a place you can move or aim to.
+   3. Aim shapes: while aiming, every unit inside the shape carries a tag (damage, KILL, or a warning on allies); aiming starts on the best target.
+   4. Right now: the unit card starts with what the unit can do at this moment (or on its next turn, for enemies).
+   5. Action buttons beside the selected unit: its abilities, the card and close; while aiming, Cast and Cancel (☰ menu switch hexmarch.ring).
+   6. Full keyboard play (the owner's friend asked for it): arrows move a cursor, Enter acts, Tab cycles units, 1-3 abilities, and more (press ?).
+   Everything here is interface only: no rule changes, nothing synced online. */
+const UX={drag:null,dragTo:null,ring:true,ringKey:'',kbEnd:0};
+try{UX.ring=localStorage.getItem('hexmarch.ring')!=='off'}catch(e){}
+const KB={on:false,cur:null,drift:0};
+
+/* ---------- shared helpers ---------- */
+function uxPoly(q,r,s){if(VIEW==='3d'){const [x,z]=world(q,r);return hexTop(x,z,s||0.98,0)}const [x,y]=px(q,r);const o=[];for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30);o.push([x+SZ*(s||0.97)*Math.cos(a),y+SZ*(s||0.97)*Math.sin(a)])}return o}
+function uxOutline(q,r,col,w,fill){const p=uxPoly(q,r);ctx.beginPath();p.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}ctx.strokeStyle=col;ctx.lineWidth=w;ctx.stroke()}
+function uxSel(){const u=G&&G.sel!=null?byId(G.sel):null;return u&&isHumanTurn()&&u.owner===G.cur&&G.inspect==null?u:null}
+// the top of a unit's figure on the board canvas (head height in 3D, above the token on the flat map)
+function uxHead(u){if(VIEW==='3d'&&typeof drawnUnits!=='undefined'){const d=drawnUnits.find(d=>d.u===u);if(d)return [(d.rect[0]+d.rect[2])/2,d.rect[1]]}const [x,y]=vPos(u.q,u.r,0);return [x,y-(VIEW==='3d'?CAM.S*1.4:SZ*0.95)]}
+function uxPill(x,y,txt,bg,fg,fs){ctx.save();ctx.font=`800 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(txt).width+fs*0.8,h=fs*1.3;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-h/2,w,h,h/2);else ctx.rect(x-w/2,y-h/2,w,h);ctx.fillStyle=bg;ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#0b0e14';ctx.stroke();ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,x,y+0.5);ctx.restore()}
+// the hex on the ground under a screen point, ignoring figures (drag targets)
+function uxGround(e){const rc=cv.getBoundingClientRect();if(VIEW!=='3d')return hexAt(e);const save=drawnUnits;drawnUnits=[];try{return hexAt3D(e.clientX-rc.left,e.clientY-rc.top)}finally{drawnUnits=save}}
+// v103: in a crowd, prefer the ground hex when it is somewhere the selected unit can go or aim, and the figure in front is not a target
+function uxPreferGround(g,bodyU){if(!g||!G)return false;const k=key(g[0],g[1]);if(unitAt(g[0],g[1]))return false;const u=uxSel();if(!u)return false;
+  if(G.amode)return hl.aim.has(k)&&!cells(bodyU).some(([q,r])=>hl.aim.has(key(q,r)));
+  return hl.moves.has(k)&&!hl.atk.has(bodyU.id)}
+
+/* ---------- 1. drag to move ---------- */
+// called from the board's pointerdown: remember a press on one of your own units that can still move or attack
+function uxDraggable(u){if(!u||u.kind==='wall'||u.owner!==G.cur||inert(u))return false;if(G.phase==='deploy')return true;if(G.phase)return false;return !!(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length)}
+function uxDragDown(e){UX.drag=null;if(!G||!isHumanTurn()||G.amode||G.stormPick||G.over)return;
+  // the figure under the finger, or else the unit standing on the ground hex under it (a taller figure in front may hide it)
+  const pick=h=>h&&unitAt(h[0],h[1]);const u=[pick(hexAt(e)),pick(uxGround(e))].find(uxDraggable);if(!u)return;
+  if(G.phase==='deploy'){UX.drag={id:u.id,x:e.clientX,y:e.clientY,on:false,sy:window.scrollY,sx:window.scrollX};return}
+  if(G.phase)return;const canMove=(!u.moved||u.freeMove>0)&&moveOpts(u).size,canHit=attackTargets(u).length;if(!canMove&&!canHit)return;
+  UX.drag={id:u.id,x:e.clientX,y:e.clientY,on:false,sy:window.scrollY,sx:window.scrollX};try{cv.setPointerCapture(e.pointerId)}catch(x){}/* the release still counts when the finger leaves the board */}
+// pointermove: returns true when the drag belongs to a unit (the board must not pan or rotate)
+function uxDragMove(e){const d=UX.drag;if(!d)return false;if(!d.on){if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<12)return false;d.on=true;
+    if(G.sel!==d.id){G.sel=d.id;G.inspect=null;G.amode=null;G.aim=null;G.tile=null;refresh()}}
+  if(window.scrollY!==d.sy||window.scrollX!==d.sx)window.scrollTo(d.sx,d.sy);/* the page must not slide under a dragged unit */
+  {const bx=$('#boardbox'),r=bx.getBoundingClientRect(),m=36,v=14;if(e.clientX<r.left+m)bx.scrollLeft-=v;else if(e.clientX>r.right-m)bx.scrollLeft+=v;if(e.clientY<r.top+m)bx.scrollTop-=v;else if(e.clientY>r.bottom-m)bx.scrollTop+=v}/* near the edge the board scrolls along */
+  UX.dragTo=uxGround(e);return true}
+// pointerup: drop on a dot = move, on an enemy in reach = attack, anywhere else = nothing (the unit stays selected)
+function uxDragUp(e){const d=UX.drag;UX.drag=null;if(!d||!d.on){UX.dragTo=null;return false}const h=uxGround(e)||UX.dragTo;UX.dragTo=null;const u=byId(d.id);if(!u||!h)return true;
+  const k=key(h[0],h[1]),t=unitAt(h[0],h[1]);
+  // a body under the finger counts too: dropping onto a tall enemy figure attacks it
+  const rc=cv.getBoundingClientRect();let body=null;if(VIEW==='3d'){const b=hexAt3D(e.clientX-rc.left,e.clientY-rc.top);body=b&&unitAt(b[0],b[1])}
+  const foe=[t,body].find(x=>x&&hl.atk.has(x.id));
+  if(hl.moves.has(k)&&(!t||hl.moves.get(k).pilot!=null)){clickCell(h[0],h[1]);return true}
+  if(foe){clickCell(foe.q,foe.r);return true}
+  if(!(cells(u).some(([q,r])=>q===h[0]&&r===h[1])))toast('Drop it on a dot to move, or on an enemy with a red ring to attack.',2400);refresh();return true}
+function uxDragDraw(){const d=UX.drag;if(!d||!d.on||!UX.dragTo)return;const u=byId(d.id);if(!u)return;const [q,r]=UX.dragTo,k=key(q,r),t=unitAt(q,r);
+  const ok=hl.moves.has(k)&&(!t||hl.moves.get(k).pilot!=null),hit=t&&hl.atk.has(t.id);
+  const [x0,y0]=vPos(u.q,u.r,0),[x1,y1]=vPos(q,r,0);ctx.save();ctx.setLineDash([6,5]);ctx.lineWidth=3;ctx.strokeStyle=ok?'rgba(110,230,150,.9)':hit?'rgba(255,97,97,.95)':'rgba(200,205,215,.6)';ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();ctx.setLineDash([]);
+  uxOutline(q,r,ok?'#6ee696':hit?'#ff6161':'#8a8f9c',3,ok?'rgba(110,230,150,.25)':hit?'rgba(255,97,97,.25)':'rgba(140,145,156,.15)');ctx.restore()}
+
+/* ---------- 3. aim shapes: tags on everyone inside, best target first ---------- */
+function uxAimTags(){const u=uxSel();if(!u||!G.amode||!hl.hitIds.size)return;const A=ABIL[G.amode];if(!A)return;const fs=Math.max(11,(VIEW==='3d'?CAM.S:SZ)*0.42);
+  for(const id of hl.hitIds){const t=byId(id);if(!t||!alive(t))continue;const ally=t.owner>=0&&tm(t.owner)===tm(u.owner);const [x,y]=uxHead(t);
+    if(ally){if(hostileAbil(A)&&t!==u)uxPill(x,y-fs*0.9,'⚠ ally','#ffb35c','#1a1206',fs)}
+    else if(A.dmg||A.useAtk){let dm=0;try{dm=hitDmg(u,t,A)}catch(e){dm=0}if(dm>0)uxPill(x,y-fs*0.9,dm>=t.hp?`KILL (${dm})`:`−${dm}`,dm>=t.hp?'#ff6161':'#ffd766','#1a1206',fs)}}}
+function uxAimScore(u,k,q,r){let s=0;try{for(const t of abilityTargets(u,k,q,r)){const ally=t.owner>=0&&tm(t.owner)===tm(u.owner);const A=ABIL[k];
+  if(ally){s+=hostileAbil(A)&&t!==u?-6:2}else{let d=0;try{d=hitDmg(u,t,A)}catch(e){}s+=1+d+(d>=t.hp?4:0)+(t.leader?1:0)}}}catch(e){}return s}
+// after the aim hexes are known: put the aim on the best spot so the shape shows at once (tap another gold hex to move it)
+function uxAutoAim(u,k){const A=ABIL[k];if(!u||!A||A.aim==='self'||twoTap(A)||A.special==='march'||G.aim)return;let best=null,bv=0;
+  for(const kk of hl.aim){const [q,r]=kk.split(',').map(Number);const v=uxAimScore(u,k,q,r);if(v>bv){bv=v;best=[q,r]}}
+  if(best){G.aim=best;KB.cur=best.slice();computePreview()}}
+
+/* ---------- 4. "Right now" on the unit card ---------- */
+function uxShort(A){const s0=String(A.desc||'').replace(/<[^>]+>/g,''),m0=s0.match(/^.*?[.!](\s|$)/),t=(m0?m0[0]:s0).trim();return t.length>110?t.slice(0,107)+'…':t}
+function uxNowBox(u){if(!G||!u||u.kind==='wall'||u.owner<0||!G.players[u.owner]||G.phase)return '';const mineNow=isHumanTurn()&&u.owner===G.cur;const L=[];
+  const frozen=u.st&&u.st.frozen;const mv=effMov(u)||u.mov,rg=effRng(u);
+  if(mineNow){
+    if(frozen)L.push(`<li class="no">${u.st.stun?'Stunned':'Frozen'}: it loses this turn.</li>`);
+    else{const n=moveOpts(u).size;L.push((!u.moved||u.freeMove>0)?(n?`<li class="go">➤ Can move: ${n} place${n>1?'s':''} (the dots).</li>`:'<li class="no">➤ No room to move.</li>'):'<li class="no">➤ Already moved.</li>');
+      const tg=attackTargets(u);if(u.acted&&!(u.freeAtk>0))L.push('<li class="no">⚔ Already acted.</li>');
+      else if(tg.length){const b=tg.map(t=>({t,d:basicDmg(u,t)+(typeof phalanxJoin==='function'?phalanxJoin(u,t):0)})).sort((a,b)=>(b.d>=b.t.hp)-(a.d>=a.t.hp)||b.d-a.d)[0];L.push(`<li class="go">⚔ Can attack ${tg.length} enem${tg.length>1?'ies':'y'}: best ${b.t.name}, hit for ${b.d}${b.d>=b.t.hp?' (KILL)':''}.</li>`)}
+      else L.push(`<li class="no">⚔ Nobody in reach (${ATTACKS[u.at].label.toLowerCase()} ${rg}).</li>`);
+      for(const k of abilsOf(u)){const A=ABIL[k],cd=cdOf(u,k);if(cd>0)L.push(`<li class="no">✦ ${A.name} rests ${cd} more turn${cd>1?'s':''}.</li>`);else if(canAbil(u,k))L.push(`<li class="go">✦ <b>${A.name} ready:</b> ${uxShort(A)}</li>`);else L.push(`<li class="no">✦ ${A.name}: ${u.acted?'already acted':'no target in reach'}.</li>`)}}
+    return `<div class="uxnow"><div class="label">Right now</div><ul>${L.join('')}</ul></div>`}
+  L.push(`<li>➤ Moves ${mv}.</li><li>⚔ ${ATTACKS[u.at].label} attack, reach ${rg}, ${effAtk(u)} ATK.</li>`);
+  for(const k of abilsOf(u)){const A=ABIL[k],cd=cdOf(u,k);L.push(cd>0?`<li class="no">✦ ${A.name} rests ${cd} more turn${cd>1?'s':''}.</li>`:`<li class="go">✦ <b>${A.name} ready:</b> ${uxShort(A)}</li>`)}
+  return `<div class="uxnow"><div class="label">On its next turn</div><ul>${L.join('')}</ul></div>`}
+
+/* ---------- 5. action buttons beside the selected unit ---------- */
+function uxRingEl(){let el=document.getElementById('uxRing');if(!el){el=document.createElement('div');el.id='uxRing';el.hidden=true;document.body.appendChild(el)}return el}
+function uxRingBuild(){const el=uxRingEl(),u=uxSel();
+  if(!UX.ring||!u||G.phase||G.over||screen!=='game'||G.stormPick){el.hidden=true;UX.ringKey='';return}
+  const ks=abilsOf(u),A=G.amode?ABIL[G.amode]:null;const sig=[u.id,G.amode,G.aim&&G.aim.join(),G.blinkT,ks.map(k=>cdOf(u,k)+':'+canAbil(u,k)).join(),u.acted].join('|');
+  if(sig===UX.ringKey&&!el.hidden)return;UX.ringKey=sig;
+  let h='';
+  if(A){const two=twoTap(A)&&G.blinkT==null;h=`<button class="uxb go" data-r="cast" ${G.aim?'':'disabled'} title="${A.name}">✓ ${two?'Pick':'Cast'}</button><button class="uxb" data-r="cancel" title="Cancel">✕</button>`}
+  else{const narrow=window.innerWidth<1000;/* phones: numbered round buttons (the names are in the action bar below) */
+    h=ks.map((k,i)=>{const B=ABIL[k],cd=cdOf(u,k),ok=canAbil(u,k);const lab=narrow?`${ok?'✦':cd>0?'⏳':'✦'}${i+1}`:`${ok?'✦':cd>0?'⏳'+cd:'✦'} ${B.name.length>12?B.name.slice(0,11)+'…':B.name}`;return `<button class="uxb ${narrow?'rnd':''} ${ok?'go':cd>0?'cd':'off'}" data-r="ab" data-k="${k}" title="${B.name}" aria-label="${B.name}">${lab}</button>`}).join('')+`<button class="uxb" data-r="card" title="Full card">ⓘ</button><button class="uxb" data-r="x" title="Deselect">✕</button>`}
+  el.innerHTML=h;el.hidden=false;
+  el.querySelectorAll('[data-r]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();const r=b.dataset.r,v=uxSel();if(!v)return;
+    if(r==='ab'){const k=b.dataset.k;if(canAbil(v,k))aimAbil(v,k);else{const st=abState(v,k);toast(`${ABIL[k].name}: ${cdOf(v,k)>0?'resting, '+cdOf(v,k)+' more turn'+(cdOf(v,k)>1?'s':''):v.acted?'already acted this turn':'no target in reach'}${st&&st.text&&cdOf(v,k)<=0&&!v.acted?'':''}.`,2400)}}
+    else if(r==='cast'){if(G.aim)castAt(v,G.amode,G.aim[0],G.aim[1])}
+    else if(r==='cancel'){G.amode=null;G.aim=null;G.blinkT=null;refresh()}
+    else if(r==='card'){if(document.body.classList.contains('focus'))document.body.classList.add('drawer');else{const c=$('#unitCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'})}}
+    else if(r==='x'){G.sel=null;G.amode=null;G.aim=null;refresh()}})}
+// every frame: keep the buttons just above the selected unit's head, hidden while it is off screen or being dragged
+function uxRingPlace(){const el=document.getElementById('uxRing');if(!el||el.hidden)return;const u=uxSel();if(!u||UX.drag&&UX.drag.on){el.style.visibility='hidden';return}
+  const [x,y]=uxHead(u),rc=cv.getBoundingClientRect(),bx=$('#boardbox').getBoundingClientRect();const cx=rc.left+x,cy=rc.top+y-(SHOW_HP?14:6);
+  const on=cx>bx.left+10&&cx<bx.right-10&&cy>bx.top+30&&cy<bx.bottom;el.style.visibility=on?'visible':'hidden';if(!on)return;
+  const w=el.offsetWidth,hh=el.offsetHeight;const L=Math.max(bx.left+4,Math.min(bx.right-w-4,cx-w/2)),T=Math.max(bx.top+4,cy-hh-6);
+  const s=`${Math.round(L)}px,${Math.round(T)}px`;if(el.dataset.at!==s){el.dataset.at=s;el.style.transform=`translate(${Math.round(L)}px,${Math.round(T)}px)`}}
+
+/* ---------- 6. keyboard play ---------- */
+const KB_HELP=[['Arrow keys','move the cursor (gold hex)'],['Enter or Space','act on the cursor: select, move, attack, aim, then Enter again to cast'],['Tab / Shift+Tab','next / previous unit that can still act'],['T','jump the cursor to the next target (enemy in reach, or a spot for the ability being aimed)'],['1, 2, 3','aim the selected unit’s first, second or third ability'],['U','Ultimate'],['C','call a unit from your reserve (the Realm)'],['I','full card of the unit under the cursor'],['Esc or right-click','cancel aiming, then deselect'],['E','end turn (press twice if units can still act)'],['Ctrl+Z','undo'],['[ and ]','rotate the tabletop'],['+ and −','zoom'],['F','fit the whole board'],['V','switch flat map / tabletop'],['M','menu'],['?','this list']];
+function kbHelp(){const o=$('#overlay');if(!o)return;o.dataset.kind='kb';o.innerHTML=`<div class="modal"><h3>Keyboard</h3><table class="kbt">${KB_HELP.map(([k,t])=>`<tr><td><kbd>${k}</kbd></td><td>${t}</td></tr>`).join('')}</table><div class="row" style="margin-top:10px"><button class="btn primary" id="kbClose">Close</button></div></div>`;o.hidden=false;$('#kbClose').onclick=()=>closeModal()}
+function kbStart(){if(KB.cur)return;const u=G.sel!=null?byId(G.sel):null;const me=u||G.units.find(v=>v.owner===G.cur&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===G.cur&&v.kind!=='wall');KB.cur=me?[me.q,me.r]:[0,0]}
+function kbReveal(){if(!KB.cur)return;const box=$('#boardbox'),[sx,sy]=screenOf(KB.cur[0],KB.cur[1]),rc=box.getBoundingClientRect(),m=Math.max(50,(VIEW==='3d'?CAM.S:SZ)*2);
+  if(sx<rc.left+m||sx>rc.right-m)box.scrollLeft+=sx-(rc.left+rc.width/2);if(sy<rc.top+m||sy>rc.bottom-m)box.scrollTop+=sy-(rc.top+rc.height/2)}
+function kbHover(){if(G.amode&&!G.aim&&KB.cur){G.hover=KB.cur.slice();computePreview()}}
+// step to the neighbour that best matches the arrow's screen direction; going up or down alternates between the two slanted neighbours so the cursor runs straight
+function kbStep(dx,dy){kbStart();const [q,r]=KB.cur,[sx,sy]=screenOf(q,r);let best=null,bv=-1;
+  for(const [a,b] of DIRS){const nq=q+a,nr=r+b;if(!inR(nq,nr))continue;const [tx,ty]=screenOf(nq,nr),vx=tx-sx,vy=ty-sy,L=Math.hypot(vx,vy)||1;let c=(vx*dx+vy*dy)/L;if(dy&&!dx)c-=Math.abs(KB.drift+vx/L)*0.05;if(c>bv+1e-6){bv=c;best=[nq,nr,vx/L]}}
+  if(!best||bv<0.3)return;KB.drift=dy&&!dx?KB.drift+best[2]:0;KB.cur=[best[0],best[1]];kbHover();kbReveal()}
+function kbTargets(){const u=uxSel();if(!u)return [];if(G.amode){const all=[...hl.aim].map(k=>k.split(',').map(Number));const w=all.filter(([q,r])=>{const t=unitAt(q,r);return t&&t.owner>=0&&tm(t.owner)!==tm(u.owner)});return w.length?w:all}
+  return [...hl.atk].map(id=>byId(id)).filter(Boolean).map(t=>[t.q,t.r])}
+function kbTypingOrModal(e){if(e.target&&e.target.closest&&e.target.closest('input,textarea,select,[contenteditable]'))return true;if(typeof PV!=='undefined'&&PV.open)return true;const o=$('#overlay');return o&&!o.hidden}
+document.addEventListener('keydown',e=>{
+  if(!G||screen!=='game'||e.ctrlKey||e.metaKey||e.altKey)return;
+  const o=$('#overlay');if(o&&!o.hidden){if(e.key==='Escape'&&o.dataset.kind==='kb'){e.preventDefault();closeModal()}return}
+  if(kbTypingOrModal(e))return;
+  const k=e.key;let used=true;
+  const act=()=>{const u=uxSel();if(u&&!G.amode&&KB.cur){const t=unitAt(KB.cur[0],KB.cur[1]);if(t&&t!==u&&t.owner===u.owner){selectUnit(t);KB.cur=[t.q,t.r];return}}clickCell(KB.cur[0],KB.cur[1])};
+  if(k==='ArrowLeft')kbStep(-1,0);else if(k==='ArrowRight')kbStep(1,0);else if(k==='ArrowUp')kbStep(0,-1);else if(k==='ArrowDown')kbStep(0,1);
+  else if(k==='Enter'||k===' '){kbStart();act()}
+  else if(k==='Tab'){if(isHumanTurn()){const r=readyUnits();if(r.length){const i=r.findIndex(u=>u.id===G.sel);const n=r[(i+(e.shiftKey?-1:1)+r.length)%r.length];selectUnit(n);KB.cur=[n.q,n.r]}else toast('Nothing left to do: press E to end your turn',2200)}}
+  else if(k==='t'||k==='T'){const L=kbTargets();if(L.length){const i=KB.cur?L.findIndex(([q,r])=>q===KB.cur[0]&&r===KB.cur[1]):-1;KB.cur=L[(i+1)%L.length].slice();if(G.amode){G.aim=KB.cur.slice();computePreview();refresh()}kbReveal()}else toast(G.amode?'No spot for this ability':'Nobody in reach',1800)}
+  else if(k==='1'||k==='2'||k==='3'){const u=uxSel();const key2=u&&abilsOf(u)[+k-1];if(key2){if(canAbil(u,key2)){aimAbil(u,key2);if(G.aim)KB.cur=G.aim.slice()}else toast(`${ABIL[key2].name} can’t be used now`,1800)}else used=!!u}
+  else if(k==='u'||k==='U'){const b=$('#ultBtn');if(b&&!b.hidden&&!b.disabled)b.click()}
+  else if(k==='c'||k==='C'){const box=$('#apBox');const at=box&&box.querySelector('[data-at="base"]');const s=box&&box.querySelector('[data-sum]');if(at)at.click();else if(s)s.click();else toast('Nobody to call right now',1800)}
+  else if(k==='i'||k==='I'){const t=KB.cur&&unitAt(KB.cur[0],KB.cur[1]);if(t&&typeof lpInspect==='function')lpInspect(t)}
+  else if(k==='Escape'){if(G.amode){G.amode=null;G.aim=null;G.blinkT=null}else if(G.inspect!=null)G.inspect=null;else{G.sel=null;G.tile=null}refresh()}
+  else if(k==='e'||k==='E'){if(!isHumanTurn())used=false;else{const left=readyUnits().length;if(left&&Date.now()-UX.kbEnd>1800){UX.kbEnd=Date.now();toast(`${left} unit${left>1?'s':''} can still act. Press E again to end your turn.`,1800)}else{UX.kbEnd=0;$('#endBtn').click()}}}
+  else if(k==='['){CAM.azT-=Math.PI/3}else if(k===']'){CAM.azT+=Math.PI/3}
+  else if(k==='+'||k==='='){zoomBtn(1.25)}else if(k==='-'||k==='_'){zoomBtn(1/1.25)}
+  else if(k==='f'||k==='F'){fitBoard()}else if(k==='v'||k==='V'){const b=$('#viewBtn');if(b)b.click()}
+  else if(k==='m'||k==='M'){const b=$('#menuBtn');if(b)b.click()}
+  else if(k==='?'||k==='h'||k==='H'){kbHelp()}
+  else used=false;
+  if(used){e.preventDefault();KB.on=true}});
+// the mouse or a finger takes over: hide the cursor (it comes back with the next key)
+document.addEventListener('pointerdown',()=>{KB.on=false},true);
+cv.addEventListener('contextmenu',()=>{if(!G||screen!=='game')return;if(G.amode){G.amode=null;G.aim=null;G.blinkT=null}else{G.sel=null;G.tile=null}refresh()});
+function kbDraw(now){if(!KB.on||!KB.cur||!G)return;const p=0.55+0.45*Math.sin(now/220);uxOutline(KB.cur[0],KB.cur[1],`rgba(255,215,102,${0.6+0.4*p})`,Math.max(3,(VIEW==='3d'?CAM.S:SZ)*0.12),'rgba(255,215,102,.12)')}
+
+/* ---------- hooks ---------- */
+// drawn on the board after the effects, in both views
+function uxDraw(now){if(!G)return;try{uxDragDraw();uxAimTags();kbDraw(now);uxRingPlace()}catch(e){}}
+{const r0=refresh;refresh=function(){r0.apply(this,arguments);try{uxRingBuild()}catch(e){}}}
+{const a0=aimAbil;aimAbil=function(u,k){a0(u,k);try{uxAutoAim(u,k);refresh()}catch(e){}}}
 
 </script>
 <script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
