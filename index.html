@@ -33,6 +33,10 @@ button{font:inherit;color:inherit}
 .pulse{animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{box-shadow:0 0 0 5px rgba(232,184,78,.28)}}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+/* v99: End turn glows when nothing is left to do this turn */
+#endBtn.endglow{background:#ffd766;color:#1a1206;border-color:#ffe9a8;box-shadow:0 0 14px 4px rgba(255,215,102,.75);animation:endglow 1.1s ease-in-out infinite}
+@keyframes endglow{0%,100%{box-shadow:0 0 10px 2px rgba(255,215,102,.55)}50%{box-shadow:0 0 22px 8px rgba(255,215,102,.95)}}
+@media (prefers-reduced-motion:reduce){#endBtn.endglow{animation:none}}
 
 /* v46 home page: play and invite at the top, the game and the armies below */
 .setup{display:block}
@@ -650,13 +654,13 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={STORY2:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV=0.35;
 let G=null,SIM=false,CUR_SRC=null,CUR_TAG=null,CUR_NAME=null;
 // The centre opens in round 5 on the random board and in round WILDS.open (10) on the Crown Wilds map (v30). A getter, so every rule and text follows the game in hand.
-{let base=RULES.CENTRE_FROM;delete RULES.CENTRE_FROM;Object.defineProperty(RULES,'CENTRE_FROM',{get(){return G&&G.map?(G.realm?REALM.open:WILDS.open):base},set(v){base=v},enumerable:true})}
+{let base=RULES.CENTRE_FROM;delete RULES.CENTRE_FROM;Object.defineProperty(RULES,'CENTRE_FROM',{get(){return G&&G.map?(G.realm?(G.noWall?1:REALM.open):WILDS.open):base},set(v){base=v},enumerable:true})}
 // Random source. The live game never calls setRNG, so it stays Math.random; headless sims install a seeded generator for reproducible runs.
 let RNG=Math.random;function setRNG(f){RNG=f||Math.random;}
 // Stats tracking: games keep their tallies in G.stats (shown on the score card); simulations may point TRACK elsewhere.
@@ -1379,7 +1383,7 @@ function spawnLord(p){if(p.lord)return;const L=G.units.find(u=>u.owner===p.id&&u
   const cs=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))&&!isTrap(q,r)).sort((a,b)=>hd(a[0],a[1],aq,ar)-hd(b[0],b[1],aq,ar));
   for(const [q,r] of cs){for(let d=0;d<6;d++){const a=q+DIRS[d][0],b=r+DIRS[d][1];if(passable(a,b)&&!m.get(key(a,b))&&!isTrap(a,b)){spot=[q,r,d];break}}if(spot)break}if(!spot)return;
   p.lord=1;const u=makeUnit(p,ELEMENTAL_LORD);u.size=2;u.q=spot[0];u.r=spot[1];u.dir=spot[2];u.summon=true;u.lord=1;u.ttl=99999;u.ability2='convergence';u.cd2=0;G.units.push(u);
-  if(!SIM){tStat(u);const e=tFx('mage','Elemental Lord','Summoned');if(e)e.uses++;addLog(p.id,'All four elements have ascended: the Elemental Lord walks the earth.');fx(u,'ELEMENTAL LORD','#2bff5a');vfx({k:'buff',at:[u.q,u.r],col:'#2bff5a',cam:1});
+  if(!SIM){tStat(u);const e=tFx('mage','Elemental Lord','Summoned');if(e)e.uses++;addLog(p.id,'All four elements have ascended: the Elemental Lord walks the earth.');fx(u,'ELEMENTAL LORD','#2bff5a');vfx({k:'rise',at:[u.q,u.r],col:'#2bff5a',cam:1});announce({k:'lord',fac:p.fac,at:[u.q,u.r],hp:u.maxhp,atk:u.atk});
     announce({k:'note',col:'#2bff5a',t:'The Elemental Lord rises!',s:'Fire, water, earth and air in one body.'})}}
 // Elemental passives at the start of a side's turn: Living Flame burns enemies of the Fire Elementals that start next to one; Spring heals allies near a Water Elemental.
 function elementalTurn(p){if(!RULES.SHAMANS)return;
@@ -2126,7 +2130,7 @@ function newGame(c){
   if(c.map==='wilds'){G.map='wilds';G.R=WILDS.R;G.relicsOn=false;G.rooms=[];G.loot=[]}
   if(c.map==='realm'){G.map='realm';G.realm=true;G.heartR=3;G.relicsOn=false;G.rooms=[];G.loot=[];realmBoard()}
   if(!G.map&&c.collapse!==false&&COLLAPSE_START[c.mode])G.col={start:collapseStart(c.mode,n),ring:G.R,stop:G.heartR+(n>=4?2:3)};
-  if(G.map){G.outposts=[];if(G.realm)genRealm();else genWilds()}else{
+  if(G.map){G.outposts=[];if(G.realm){genRealm();if(RULES.STORY2)storyFall()}else genWilds()}else{
   G.outposts=outpostPoints(n,G.R);
   genFeatures();
   // Tile layout: 'classic' (default, today's clusters) or 'bands' (rotated bands, see genTerrainBands). Only set on G when not classic.
@@ -2180,7 +2184,7 @@ function beginTurn(){
   if(RULES.FORTRESS&&p.salvAP>0){G.ap=Math.min(RULES.AP_CAP+3,G.ap+p.salvAP);if(!SIM&&trk()){const e=tFx('gnomes','','Salvage (talent)');if(e){e.uses++;e.apGranted=(e.apGranted||0)+p.salvAP}}p.salvAP=0}
   if(p.hold)p.hold=0;
   if(G.realm){p.sumDone=false;if(p.ctrl!=='human'){const s=realmSites(p).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0))[0];if(!(s&&realmSummon(p,realmBotPick(p),true,s)))realmSummon(p,realmBotPick(p),true)}}// v74 the Realm: bots call their unit at once; people pick in the dock
-  dreadTurn(p);mammothTurn(p);possTick(p);
+  dreadTurn(p);mammothTurn(p);possTick(p);soulSafety(p);
   if(RULES.SHAMANS&&G.realm&&p.fac==='mage')for(const u of G.units.filter(u=>u.owner===p.id&&u.el&&!u.elemental&&u.kind!=='wall')){if(!onElHex(u,u.el)||(p.evo&&p.evo[u.el]))continue;p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);p.el[u.el]+=1;if(!SIM){fx(u,'shrine +1','#2bff5a');if(trk()){const e=tFx('mage',u.name,'Shrine (bar +1)');if(e)e.uses++}}if(p.el[u.el]>=elNeed(p))ascend(p,u.el)}// v75: a shaman on its own shrine
   if(RULES.PILOTS2)for(const u of G.units.filter(u=>u.owner===p.id&&isGnome(u))){if(u.build==='done')walkerIn2(u);else if(u.build==='started'){u.build='still';u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'stand still','#ff6ec7')}}
   machineFire(p,'Auto-fire','Basic');ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
@@ -2355,6 +2359,9 @@ function soulCount(t){if(!RULES.ARCHDEMON||t.kind==='wall'||t.summon||t.statue||
     if(!SIM&&!p.demon){const nd=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;fx(t,`+${ns} soul${ns>1?'s':''}  ${Math.min(p.souls,nd)}/${nd}`,'#ff6a3d');vfx({k:'soul',at:[t.q,t.r],n:p.souls,need:nd,col:'#ff4a3d'});if(nd&&p.souls<nd&&nd-p.souls<=2){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall');if(L)fx(L,`the pit hungers: ${nd-p.souls} more`,'#ff4a3d')}}/* v89 (owner): a very visible souls counter */
     const need=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;const ready=need?p.souls>=need:(p.soulsLost||0)>=RULES.DEMON_LOST&&(p.soulsKilled||0)>=RULES.DEMON_KILLS;
     if(ready){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&u!==t);const gate=talent(p,'hellsgate')&&byMe?[CUR_SRC.q,CUR_SRC.r]:null;G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:gate||(L?[L.q,L.r]:[t.q,t.r])})}}}
+/* v100 (owner: "I went to 10 souls and the Archdemon was not summoned"): every soul gain checks the pit; a turn-start safety net catches anything missed */
+function soulReady(p,at){if(!RULES.ARCHDEMON||!p||p.demon)return;const need=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;if(!need||(p.souls||0)<need)return;if((G.demonDue||[]).some(d=>d.pid===p.id))return;const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall');G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:L?[L.q,L.r]:at||p.home})}
+function soulSafety(p){if(SIM||!p||p.fac!=='fire'||p.demon)return;soulReady(p,null);if(G.demonDue&&G.demonDue.length){const due=G.demonDue;G.demonDue=[];for(const d of due)spawnArchdemon(G.players[d.pid],d.at)}}
 // v62 (owner): an enemy killed by the Pit Lord's Kindle (the blast or its burning ground) explodes: RULES.KINDLE_BLAST damage to every unit of its own side within 2.
 function kindleBlast(t){if(!RULES.KINDLE_BLAST||t.kind==='wall'||!(CUR_NAME==='Kindle'||CUR_NAME==='Kindle ground'))return;const src=CUR_SRC;if(!src||src.kind==='wall'||tm(src.owner)===tm(t.owner))return;
   const vs=G.units.filter(v=>v!==t&&v.kind!=='wall'&&!v.statue&&tm(v.owner)===tm(t.owner)&&distUU(v,t)<=2);if(!SIM){vfx({k:'ab',ab:'eruption',shape:'blast',from:[t.q,t.r],to:[t.q,t.r],cells:allCells().filter(([a,b])=>hd(a,b,t.q,t.r)<=2),col:'#ff4a3d',cam:1});addLog(src.owner,`The ${t.name} bursts in hellfire!`)}
@@ -2365,14 +2372,14 @@ function kill(t){
   if(RULES.SPLITTERS&&SPLITS[t.name])splitUnit(t);// v64: the Frost Colossus breaks into smaller pieces
   if(t.behemoth)behemothDown(t);
   if(t.beast){beastSlain(t);return}
-  if(t.monster){if(!SIM)monsterSlain(t);return}
+  if(t.monster){if(G.loot&&!SIM)dropLootOf(t);/* v98: a spawn drops its Crown Stone */if(!SIM)monsterSlain(t);return}
   if(G.loot&&!SIM)dropLootOf(t);
   if(t.kind==='wall'){if(RULES.FORTRESS&&t.wall==='shield'&&t.creator!=null&&G.players[t.creator]&&talent(G.players[t.creator],'salvage'))G.players[t.creator].salvAP=(G.players[t.creator].salvAP||0)+1;addLog(null,`A ${t.wall} wall shatters.`);return}
   if(t.poss)possEnd(t,true);// v77: the host died, the Possessor steps out
   if(RULES.GHOULS)ghoulMark(t);iceStatue(t);
-  if(G.realm&&!SIM&&t.size===2&&t.kind!=='wall'&&G.players[t.owner]&&G.players[t.owner].fac==='giants'&&t.name!=='Archdemon'){G.loot=G.loot||[];for(const [q,r] of cells(t))if(solid(q,r)&&passable(q,r))G.loot.push({id:G.nid++,kind:'remains',owner:t.owner,q,r,carrier:null,ab:t.ability||null,from:t.name});if(!SIM)addLog(t.owner,`The ${t.name}'s remains lie on the ground: a giant that steps on them heals 6, grows and learns its ${t.ability?ABIL[t.ability].name:'ways'}.`)}// v75 Giant Remains; v79 (owner): the stones carry the fallen giant's ability
+  if(G.realm&&!SIM&&t.size===2&&t.kind!=='wall'&&G.players[t.owner]&&G.players[t.owner].fac==='giants'&&t.name!=='Archdemon'){G.loot=G.loot||[];for(const [q,r] of cells(t))if(solid(q,r)&&passable(q,r))G.loot.push({id:G.nid++,kind:'remains',owner:t.owner,q,r,carrier:null,ab:t.ability||null,from:t.name,gid:t.id});if(!SIM)addLog(t.owner,`The ${t.name}'s remains lie on the ground: a giant that steps on them heals 6, grows and learns its ${t.ability?ABIL[t.ability].name:'ways'}.`)}// v75 Giant Remains; v79 (owner): the stones carry the fallen giant's ability
   if(t.demonHit!=null&&t.kind!=='wall'){const dm=G.units.find(v=>v.name==='Archdemon'&&v.owner===t.demonHit&&alive(v));if(dm){dm.oldAtk=(dm.oldAtk||0)+1;healUnit(dm,2,'#ff4a3d','Archdemon feeds');if(!SIM){fx(dm,`feeds: +1 ATK (${dm.oldAtk})`,'#ff4a3d');addLog(dm.owner,`The Archdemon feeds on the ${t.name}: +1 ATK and heals 2.`);if(trk()){const e=tFx('fire','Archdemon','Feeds (grows)');if(e)e.uses++}}}}
-  if(t.kind!=='wall'&&!t.summon&&t.owner>=0)for(const d of G.units)if(d.trait==='devourer'&&d!==t&&tm(d.owner)!==tm(t.owner)&&distUU(d,t)===1&&alive(d)){d.fed=Math.min(3,(d.fed||0)+1);const p=G.players[d.owner];if(p&&RULES.ARCHDEMON&&p.fac==='fire'&&!p.demon)p.souls=(p.souls||0)+1;if(!SIM){fx(d,'soul devoured +1 ATK','#ff4a3d');if(trk()){const e=tFxBy(d.id,'fire','Souls devoured','uses',1)}}}// v73
+  if(t.kind!=='wall'&&!t.summon&&t.owner>=0)for(const d of G.units)if(d.trait==='devourer'&&d!==t&&tm(d.owner)!==tm(t.owner)&&distUU(d,t)===1&&alive(d)){d.fed=Math.min(3,(d.fed||0)+1);const p=G.players[d.owner];if(p&&RULES.ARCHDEMON&&p.fac==='fire'&&!p.demon){p.souls=(p.souls||0)+1;soulReady(p,[d.q,d.r])}/* v100: this soul could be the tenth */if(!SIM){fx(d,'soul devoured +1 ATK','#ff4a3d');if(trk()){const e=tFxBy(d.id,'fire','Souls devoured','uses',1)}}}// v73
   if(RULES.SHAMANS&&t.el&&!t.elemental&&t.owner>=0){const p=G.players[t.owner];if(p&&p.alive&&talent(p,'pactofash')&&!(p.evo&&p.evo[t.el])){p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);p.el[t.el]+=1;if(p.el[t.el]>=elNeed(p))ascend(p,t.el)}}// v66: a cursed enemy's corpse will rise as a Ghoul
   addLog(t.owner,`${t.name} ${t.summon?'breaks apart':'falls'}.`);
   // Time Wraith (Hourglass, v28): the last Second Hand has fallen, so a Wraith answers at the start of this side's next turn (once per game).
@@ -2476,7 +2483,7 @@ function spawnArchdemon(p,at){if(!RULES.ARCHDEMON||!p||p.fac!=='fire'||p.demon)r
   for(const [q,r] of cs){for(let d=0;d<6;d++){const a=q+DIRS[d][0],b=r+DIRS[d][1];if(passable(a,b)&&!m.get(key(a,b))&&!isTrap(a,b)){spot=[q,r,d];break}}if(spot)break}
   if(!spot)return null;p.demon=1;const u=makeUnit(p,ARCHDEMON);u.size=2;u.q=spot[0];u.r=spot[1];u.dir=spot[2];if(!talent(p,'hellsgate')){u.moved=true;u.acted=true}/* v77: it acts next turn, unless Hell's Gate */G.units.push(u);
   if(!SIM){tStat(u);const e=tFx('fire','Archdemon','Summoned');if(e)e.uses++;addLog(p.id,`The Ember Court has fallen, and from its ashes rises the Archdemon: ${ARCHDEMON.hp} HP, ${ARCHDEMON.atk} ATK, walks ${ARCHDEMON.mov}.`);
-    fx(u,'ARCHDEMON','#ff4a3d');vfx({k:'buff',at:[u.q,u.r],col:FAC.fire.color,cam:1});announce({k:'demon',fac:p.fac})}
+    fx(u,'ARCHDEMON','#ff4a3d');vfx({k:'rise',at:[u.q,u.r],col:FAC.fire.color,cam:1});announce({k:'demon',fac:p.fac,at:[u.q,u.r],hp:u.maxhp,atk:u.atk})}
   return u}
 /* v66 GHOULS (Pale Covenant, owner 6 Oct 2026): an enemy army unit that dies while cursed (whoever killed it) leaves a corpse; at the start of the
    Covenant's next turn a Ghoul crawls out of it. Ghouls obey no one: at the start of every Covenant turn each one walks up to 2 hexes toward the
@@ -2553,6 +2560,7 @@ function riseStatue(s){
   return u}
 function hurt(t,n,col,tick){
   if(!alive(t)||n<=0)return 0;
+  if(t.spawnW&&!tick&&CUR_SRC&&CUR_SRC.king)n*=2;// v98: spawns take double damage from the King
   const hostile=(t.beast||t.monster)?true:!(CUR_SRC&&CUR_SRC.kind!=='wall'&&tm(CUR_SRC.owner)===tm(t.kind==='wall'?t.creator:t.owner));// the Rift Beast is everyone's enemy
   if(hostile){barrierCheck(t,tick);retribCheck(t,tick)}// Defender Barrier (v25): the first enemy attack or ability hit breaks it and queues the answer
   // Shield Wall (Warband): 1 less from a hostile hit, never below 1. Not on curse ticks or burning ground.
@@ -3665,7 +3673,7 @@ function resolveBeast(){
     hurt(a,1,'#b06bff');[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 function beastSlain(t){
   const k=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].alive?CUR_SRC:null;
-  G.beast=G.beast||{};G.beast.dead=true;BEAST_Q=[];beastLand(t);
+  G.beast=G.beast||{};G.beast.dead=true;BEAST_Q=[];beastLand(t);if(STORY())storyBeastDeath(t,k);
   if(G.map&&!SIM&&G.beast.room==='throne'){G.throneOpen=true;addLog(null,'The Rift Beast falls: the Throne is revealed! The first unit to sit on it is crowned King.');announce({k:'throne'});vfx({k:'buff',at:[0,0],col:'#ffd766',cam:1})}
   if(!k){if(!SIM){addLog(null,'The Rift Beast is gone.');vfx({k:'death',at:[t.q,t.r],icon:'skull',col:'#b06bff',big:true});const O=tObj();if(O&&O.beast)O.beast.gone=true}return}
   const pid=k.owner,kt=tm(pid),F=FAC[G.players[pid].fac];G.beast.killer=pid;G.beast.killTeam=kt;
@@ -3808,6 +3816,7 @@ const LOOT={
   scrap:{name:'Scrap',text:'the wreck of a gnome machine: a gnome that walks onto it collects it (3 scrap build a Behemoth); an enemy standing here crushes it',col:'#ff6ec7'},
   remains:{name:'Giant Remains',text:'the stones of a fallen giant: a giant of its army that steps here heals 6 and gains +2 max HP and +1 ATK for good; an enemy standing here crushes them',col:'#b9a98c'},
   gem:{name:'Crown Shard',text:'a gem for your crown: it powers your King',col:'#f2c75c'},
+  stone:{name:'Crown Stone',text:'one of the five stones of the old crown: carry it (it does nothing yet); when a unit of your side is crowned, every stone your side carries goes into the crown: +1 ATK and +1 max HP for the King each. A carrier that dies drops it, and the Rift spawns hunt whoever holds it',col:'#ffd766'},
   suit:{name:'War Suit',text:`a unit that steps on it climbs in: ${8} extra HP that take every hit first, plus its item`,col:'#c9a24a'},
   captive:{name:'Captive',text:'a prisoner in chains: step on him to free him, then walk him into your base',col:'#d8b49a'},
   relic:{name:'Ancient Relic',text:'the unit that brings it home carries a random relic',col:'#b98cff'},
@@ -3985,7 +3994,7 @@ function pickupLoot(){
   for(const x of G.loot.slice()){if(x.carrier!=null){if(!byId(x.carrier)){x.carrier=null}continue}
     if(x.kind==='scrap'){const u=unitAt(x.q,x.r);if(!u||u.kind==='wall')continue;if(isGnome(u)&&tm(u.owner)===tm(x.owner)){G.loot.splice(G.loot.indexOf(x),1);const p=G.players[u.owner];p.scrap=(p.scrap||0)+1;if(!SIM){fx(u,'+1 scrap','#ff6ec7');addLog(u.owner,`The ${u.name} collects scrap (${p.scrap} in all${p.scrap>=3?': enough for a Behemoth':''}).`);if(trk()){const e=tFx('gnomes','','Scrap collected');if(e)e.uses++}}}
       else if(tm(u.owner)!==tm(x.owner)&&!u.summon){G.loot.splice(G.loot.indexOf(x),1);if(!SIM)addLog(u.owner,`The ${u.name} crushes a pile of scrap.`)}continue}
-    if(x.kind==='remains'){const u=unitAt(x.q,x.r);if(!u||u.kind==='wall')continue;if(u.size===2&&G.players[u.owner]&&G.players[u.owner].fac==='giants'&&tm(u.owner)===tm(x.owner)){G.loot.splice(G.loot.indexOf(x),1);u.maxhp+=2;u.oldAtk=(u.oldAtk||0)+1;healUnit(u,6,'#b9a98c','Giant Remains');if(!SIM){fx(u,'+2 HP, +1 ATK','#b9a98c');addLog(u.owner,`The ${u.name} takes up its fallen kin's stones: heals 6, +2 max HP, +1 ATK.`);if(trk()){const e=tFx('giants','','Giant Remains taken');if(e)e.uses++}}
+    if(x.kind==='remains'){if(!G.loot.includes(x))continue;/* v98: already taken with its twin */const u=unitAt(x.q,x.r);if(!u||u.kind==='wall')continue;if(u.size===2&&G.players[u.owner]&&G.players[u.owner].fac==='giants'&&tm(u.owner)===tm(x.owner)){G.loot.splice(G.loot.indexOf(x),1);if(x.gid!=null&&RULES.STORY2)G.loot=G.loot.filter(y=>!(y.kind==='remains'&&y.gid===x.gid));/* v98 (owner): one reward per fallen giant */u.maxhp+=2;u.oldAtk=(u.oldAtk||0)+1;healUnit(u,6,'#b9a98c','Giant Remains');if(!SIM){fx(u,'+2 HP, +1 ATK','#b9a98c');addLog(u.owner,`The ${u.name} takes up its fallen kin's stones: heals 6, +2 max HP, +1 ATK.`);if(trk()){const e=tFx('giants','','Giant Remains taken');if(e)e.uses++}}
       /* v79 OLD ONES' LEGACY (owner 18 Oct 2026): the first stone of a fallen giant also hands its ability to the giant that takes it (one per fallen giant, never a duplicate of its own); inherited abilities keep their own rests in u.cdx */
       if(x.ab&&ABIL[x.ab]&&x.ab!==u.ability&&x.ab!==u.ability2&&!(u.inh||[]).includes(x.ab)){u.inh=(u.inh||[]).concat([x.ab]);u.cdx=Object.assign({},u.cdx||{});u.cdx[x.ab]=0;if(!SIM){fx(u,'learns '+ABIL[x.ab].name,'#ffd766');addLog(u.owner,`${u.name} learns the ${x.from}'s ${ABIL[x.ab].name}.`);if(trk()){const e=tFx('giants',u.name,'Old Ones’ legacy (abilities inherited)');if(e)e.uses++}}}}
       else if(tm(u.owner)!==tm(x.owner)&&!u.summon){G.loot.splice(G.loot.indexOf(x),1);if(!SIM){addLog(u.owner,`The ${u.name} crushes the Giant Remains.`);if(trk()){const e=tFx(G.players[u.owner].fac,'','Giant Remains crushed');if(e)e.uses++}}}continue}
@@ -4017,7 +4026,7 @@ function deliverLoot(){
     addLog(u.owner,`The Captive reaches the ${F.name} base, takes up armour and a sword: a Freedman (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`);
     fx(u,'Freedman','#d8b49a');vfx({k:'buff',at:[u.q,u.r],col:F.color,cam:1});announce({k:'note',col:F.color,t:`The Captive reaches the ${F.name} base`,s:`He takes up armour and a sword: a Freedman joins the army (${FREEDMAN.hp} HP, ${FREEDMAN.atk} ATK, ${FREEDMAN.def} DEF).`})}
   if(!G.loot)return;
-  for(const x of G.loot.slice()){if(x.carrier==null)continue;const u=byId(x.carrier);if(!u){x.carrier=null;continue}const p=G.players[u.owner];if(!cells(u).some(([q,r])=>inCamp(p,q,r)))continue;
+  for(const x of G.loot.slice()){if(x.carrier==null||x.kind==='stone')continue;/* v98: Crown Stones go to the crown, never to a base */const u=byId(x.carrier);if(!u){x.carrier=null;continue}const p=G.players[u.owner];if(!cells(u).some(([q,r])=>inCamp(p,q,r)))continue;
     G.loot.splice(G.loot.indexOf(x),1);const R=(G.rooms||[]).find(r=>r.id===x.room);if(R)R.state='done';
     const pid=p.id,k=x.kind;let text=lootText(x);
     if(k==='gem'){const g=G.gems[p.team]=G.gems[p.team]||{};const was=g[x.gem]||0;g[x.gem]=Math.min(WILDS.gemMax,was+1);
@@ -4064,7 +4073,7 @@ function wildsTick(turnStart){
   for(const k of Object.keys(G.feat)){if(G.feat[k]!=='lever')continue;const [q,r]=k.split(',').map(Number);const u=unitAt(q,r);if(!u||u.kind==='wall'||u.summon||u.statue)continue;const t=tm(u.owner);
     if(G.levers[k]!==t){G.levers[k]=t;addLog(u.owner,`The ${u.name} pulls a lever. Somewhere below, chains rattle...`);fx(u,'lever!','#b9a2ff');
       if(!G.wander&&new Set(Object.values(G.levers)).size>=2)spawnWanderer()}}
-  pickupLoot();deliverLoot();
+  pickupLoot();deliverLoot();if(STORY())storyCrownTick();
   if(turnStart){const p=P(G.cur);
     for(const R of G.rooms||[]){if(R.enc!=='hold'||R.state!=='active')continue;const teams=new Set(G.units.filter(v=>v.kind!=='wall'&&!v.statue&&!v.summon&&cells(v).some(([q,r])=>R.cells.includes(key(q,r)))).map(v=>tm(v.owner)));
       if(teams.size!==1){if(teams.size>1||R.holdTeam===p.team){R.holdTeam=null;R.holdN=0}continue}
@@ -4093,7 +4102,7 @@ function wildsTick(turnStart){
 // Start of every round: the mid game wakes (Dragons and Standing Stones), monsters answer the last unit that hit them, the Throne Beast too, the Wanderer roams.
 function wildsRound(){
   if(!G.map)return;
-  realmRound();if(G.realm)realmBeastCones();
+  realmRound();if(G.realm){if(STORY())storyRound();else realmBeastCones()}
   if(!G.realm&&G.round===WILDS.midAt-1){addLog(null,'The ground trembles: next round the Dragons wake in their lairs and the Standing Stones start to glow.');announce({k:'note',col:'#ff9a3d',t:'The Dragons stir',s:'Next round they wake in their lairs, and the Standing Stones start to glow.'})}
   if(!G.realm&&G.round>=WILDS.midAt&&!G.midUp){G.midUp=true;
     for(const R of G.rooms||[])if(R.type==='lair'){R.state='active';const c=unitAt(R.c[0],R.c[1])?roomFree(R)[0]:R.c;if(c){const m=makeMonster('dragon',c[0],c[1],R.id);G.units.push(m);R.monMax+=m.maxhp;vfx({k:'buff',at:c,col:'#ff7a1a'})}}
@@ -4109,7 +4118,7 @@ function wildsRound(){
       CUR_SRC=G.units.find(v=>v.owner===(k2&&k2.owner!=null?k2.owner:fp.id)&&v.kind!=='wall')||null;CUR_TAG='Dot';CUR_NAME='Burning ground (monsters)';if(!SIM)vfx({k:'buff',at:[m.q,m.r],col:'#ff4a3d'});hurt(m,1,'#ff4a3d',true)}
     [CUR_SRC,CUR_TAG,CUR_NAME]=o2}
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Room monster';
-  for(const m of G.units.slice()){if(!m.monster||!alive(m))continue;if(m.st&&m.st.frozen>0){m.st.frozen--;m.heldRound=G.round;if(!m.st.frozen&&!m.st.stun)m.st.chill=Math.max(m.st.chill||0,1);m.st.stun=0;if(m.lastBy!=null){m.lastBy=null;if(!SIM)fx(m,'frozen: no strike','#bfefff')}continue}if(G.realm&&m.tier!=null){if(m.st&&m.st.chill>0)m.st.chill--;realmStrike(m);continue}if(m.st&&m.st.chill>0)m.st.chill--;if(!m.atk||m.lastBy==null)continue;const a=byId(m.lastBy);m.lastBy=null;if(!a||!alive(a)||a.kind==='wall')continue;
+  for(const m of G.units.slice()){if(!m.monster||!alive(m))continue;if(m.spawnW||m.god)continue;/* v98: spawns and the Old God act in storyRound */if(m.st&&m.st.frozen>0){m.st.frozen--;m.heldRound=G.round;if(!m.st.frozen&&!m.st.stun)m.st.chill=Math.max(m.st.chill||0,1);m.st.stun=0;if(m.lastBy!=null){m.lastBy=null;if(!SIM)fx(m,'frozen: no strike','#bfefff')}continue}if(G.realm&&m.tier!=null){if(m.st&&m.st.chill>0)m.st.chill--;realmStrike(m);continue}if(m.st&&m.st.chill>0)m.st.chill--;if(!m.atk||m.lastBy==null)continue;const a=byId(m.lastBy);m.lastBy=null;if(!a||!alive(a)||a.kind==='wall')continue;
     const d=Math.max(1,m.atk-effDef(a));CUR_NAME=m.monster==='dragon'?'Dragon fire':'Room monster';addLog(a.owner,`${m.name} ${m.monster==='dragon'?'breathes fire on':'strikes back at'} ${a.name} for ${d}.`);
     vfx({k:'slash',from:[m.q,m.r],to:[a.q,a.r],col:m.monster==='dragon'?'#ff7a1a':'#b9b3d6'});hurt(a,d,m.monster==='dragon'?'#ff7a1a':'#b9b3d6')}
   const b=G.units.find(v=>v.beast&&alive(v));
@@ -4182,6 +4191,129 @@ function realmBeastCones(){const b=G.units.find(u=>u.beast);if(!b||!alive(b)||!G
     if(!SIM)vfx({k:'ab',ab:'breath',shape:'cone',from:edge,to:[t.q,t.r],cells:cone,col:'#b06bff',cam:1});
     for(const v of hit){if(!alive(v))continue;const d=Math.max(1,REALM.beastAtk-effDef(v));if(!SIM)addLog(v.owner,`The Rift Beast's breath scorches the ${v.name} for ${d}.`);hurt(v,d,'#b06bff');n++;const O=tObj();if(O&&O.beast){O.beast.strikes++;O.beast.strikeDmg+=d}}}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o;if(n&&!SIM)addLog(null,`The Rift Beast lashes out from the ruins: ${n} unit${n>1?'s':''} scorched.`)}
+
+/* ===================== v98 STORY V2: THE FALL, THE STONES, THE SPAWNS, THE CROWN, THE OLD GOD (owner 19 Oct 2026) =====================
+   Sheet: https://claude.ai/artifact/VrKyWEQjFSoVufeVEehAQt. Everything here is gated by RULES.STORY2 on the Realm (STORY()).
+   Round 1: the Rift Beast falls on the city (storyFall): the wall ring stands, broken in 4 fixed BREACHES (one facing each army's portal, 3 hexes
+   wide); 4 Crown Stones land REALM.stoneDist from the centre, one on each army's road; the 5th is in the Beast's belly (G.belly).
+   Round start (storyRound): the Beast's max HP falls REALM.beastDecay (cap only); it makes ONE attack, the one dealing the most total damage
+   (tentacle sweep through a breach / rift spit at range / roar around the body; ties in that order); on wave rounds it tears one SPAWN per stone
+   still in play (one per player at most), each bound to its stone; spawns fetch their stone and run it back (the Beast eats it: +1 damage on all
+   its attacks, +10 max HP, heals 10), hunt whoever carries it, never hunt the King and take double damage from him; after the Beast dies they
+   fear the King. Stones do nothing while carried; when a unit is crowned every stone its side carries goes into the CROWN (G.crown, kept on the
+   throne for the next King): +1 ATK and +1 max HP for the King per stone. The Beast's killer is crowned on the spot and teleported onto the throne,
+   with the belly stones; if the Beast dies before wave 4, the wave-4 spawns are spat out far from the centre. The OLD GOD rises at the first King's
+   portal, walks to the King, heals him 2 at his turn start (within 3) and every 3rd round roars 1 ignoring DEF at the King's enemies within 3. */
+const STORY=()=>!!(G&&G.realm&&RULES.STORY2);
+const storyAng=(q,r)=>{const [x,y]=pix(q,r);return Math.atan2(y,x)};
+const angGap=(a,b)=>{const d=a-b;return Math.abs(Math.atan2(Math.sin(d),Math.cos(d)))};
+const storyLive=v=>!!v&&v.kind!=='wall'&&v.owner>=0&&!v.statue&&!v.egg&&alive(v);
+const crownable=u=>!(!u||u.kind==='wall'||u.summon||u.statue||u.egg||u.machine||(u.walker&&!RULES.WALKER_KING)||u.name==='Archdemon'||u.name==='Time Wraith');
+const storyBeast=()=>G.units.find(u=>u.beast&&alive(u))||null;
+function storyFall(){
+  const R1=G.heartR+1;const ring=allCells().filter(([q,r])=>hd(q,r,0,0)===R1);
+  for(const [q,r] of ring){const k=key(q,r);G.feat[k]='rock';if(G.roads)delete G.roads[k]}
+  G.breaches=[];
+  for(const p of G.players){if(!p.camp)continue;const a=storyAng(p.camp[0],p.camp[1]);const by=ring.slice().sort((x,y)=>angGap(storyAng(...x),a)-angGap(storyAng(...y),a));const mid=by[0];
+    const side=ring.filter(c=>hd(c[0],c[1],mid[0],mid[1])===1).sort((x,y)=>angGap(storyAng(...x),a)-angGap(storyAng(...y),a)).slice(0,2);const cs=[mid,...side];
+    for(const [q,r] of cs)delete G.feat[key(q,r)];G.breaches.push({pid:p.id,c:mid,cells:cs,ang:a})}
+  for(const br of G.breaches)br.zone=[...storySweepCells(br)];
+  G.noWall=true;G.cityDown=true;G.throneBeast=true;
+  const city=allCells().filter(([q,r])=>hd(q,r,0,0)<=G.heartR).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0));
+  const b=spawnBeast(city);if(b){b.hp=b.maxhp=REALM.storyBeastHp;b.def=0;G.beast.room='throne'}
+  G.belly=1;G.eaten=0;G.crown=0;G.waveN=0;G.loot=G.loot||[];
+  for(const br of G.breaches){const c=allCells().filter(([q,r])=>hd(q,r,0,0)===REALM.stoneDist&&passable(q,r)&&!unitAt(q,r)&&!G.loot.some(x=>x.q===q&&x.r===r)).sort((x,y)=>angGap(storyAng(...x),br.ang)-angGap(storyAng(...y),br.ang))[0];
+    if(c)G.loot.push({id:G.nid++,kind:'stone',q:c[0],r:c[1],carrier:null,road:br.pid})}
+  if(!SIM){addLog(null,'The sky cracks and the Rift Beast falls on the city! The tower of the crown is crushed, the wall breaks in four places, and four Crown Stones are thrown out onto the roads. The fifth is in the Beast\'s belly.');
+    vfx({k:'thefall',at:[0,0],portals:G.players.map(p=>({at:p.camp,col:FAC[p.fac].color})),stones:(G.loot||[]).filter(x=>x.kind==='stone').map(x=>[x.q,x.r])});announce({k:'note',col:'#b06bff',t:'The Fall',s:'The Rift Beast crushes the city and the crown\'s stones scatter onto the roads. It cannot move, but it strikes whoever comes close, and every few rounds it sends spawns to fetch the stones.'});
+    const O=tObj();if(O){O.story={waves:[],eaten:0,crowned:[],spawnKills:{},beastDead:null,blast:0,god:null}}}}
+// a breach's sweep zone: the cone 3 deep and 60 degrees wide that opens outward from the breach (the breach hexes themselves included)
+function storySweepCells(br){const R1=G.heartR+1,out=new Set();const [bx,by]=pix(br.c[0],br.c[1]);
+  for(const [q,r] of allCells()){const d=hd(q,r,br.c[0],br.c[1]);if(d>REALM.sweepDeep||hd(q,r,0,0)<R1||!solid(q,r))continue;if(br.cells.some(c=>c[0]===q&&c[1]===r)){out.add(key(q,r));continue}if(d<1)continue;
+    const [px,py]=pix(q,r);if(angGap(Math.atan2(py-by,px-bx),br.ang)<=Math.PI/6+0.06&&hd(q,r,0,0)>R1)out.add(key(q,r))}return out}
+function storyShove(v,from){if(!alive(v)||v.size===2||v.kind==='wall')return false;const d=dirTo(from[0],from[1],v.q,v.r);const a=v.q+DIRS[d][0],b=v.r+DIRS[d][1];
+  if(!passable(a,b)||unitAt(a,b)||hd(a,b,0,0)<=G.heartR)return false;v.anim={fq:v.q,fr:v.r,t0:typeof performance!=='undefined'?performance.now():0,dur:250};v.q=a;v.r=b;return true}
+function storyBeastAct(){const b=storyBeast();if(!b)return;if(b.st&&b.st.frozen>0){b.st.frozen--;if(!SIM)fx(b,'frozen: no attack','#bfefff');return}
+  const plus=G.eaten||0,us=G.units.filter(storyLive),opts=[];const dmgOf=(v,base,pierce)=>Math.max(1,base+plus-(pierce?0:effDef(v)));
+  for(const br of G.breaches||[]){const z=new Set(br.zone||[]);const hit=us.filter(v=>cells(v).some(([q,r])=>z.has(key(q,r))));if(hit.length)opts.push({k:'sweep',br,hit,o:0,tot:hit.reduce((s,v)=>s+Math.min(v.hp,dmgOf(v,REALM.sweepDmg)),0)})}
+  {let best=null;for(const t of us){const d=distUU(b,t);if(d<REALM.spitMin||d>REALM.spitMax)continue;const nb=us.filter(v=>v!==t&&distUU(v,t)===1);const tot=Math.min(t.hp,dmgOf(t,REALM.spitDmg,1))+nb.reduce((s,v)=>s+Math.min(v.hp,dmgOf(v,REALM.spitSplash,1)),0);
+    if(!best||tot>best.tot||(tot===best.tot&&t.id<best.t.id))best={k:'spit',t,nb,tot,o:1}}if(best)opts.push(best)}
+  {const hit=us.filter(v=>distUU(b,v)<=REALM.roarReach);if(hit.length)opts.push({k:'roar',hit,o:2,tot:hit.reduce((s,v)=>s+Math.min(v.hp,dmgOf(v,REALM.roarDmg,1)),0)})}
+  if(!opts.length)return;opts.sort((a,c)=>c.tot-a.tot||a.o-c.o);const A=opts[0];
+  const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';const col='#b06bff';let n=0;
+  if(A.k==='sweep'){CUR_NAME='Rift Beast: tentacle sweep';if(!SIM){vfx({k:'ab',ab:'breath',shape:'cone',from:A.br.c,to:A.hit[0]?[A.hit[0].q,A.hit[0].r]:A.br.c,cells:(A.br.zone||[]).map(k=>k.split(',').map(Number)),col,cam:1});addLog(null,`The Rift Beast sweeps a tentacle through the breach facing the ${FAC[G.players[A.br.pid].fac].name}.`)}
+    for(const v of A.hit){if(!alive(v))continue;const d=dmgOf(v,REALM.sweepDmg);hurt(v,d,col);n++;if(alive(v))storyShove(v,A.br.c)}}
+  else if(A.k==='spit'){CUR_NAME='Rift Beast: rift spit';if(!SIM){vfx({k:'lob',from:[0,0],to:[A.t.q,A.t.r],col,cam:1});addLog(null,`The Rift Beast spits rift matter at the ${A.t.name}.`)}
+    hurt(A.t,dmgOf(A.t,REALM.spitDmg,1),col);n++;for(const v of A.nb){if(alive(v)){hurt(v,dmgOf(v,REALM.spitSplash,1),col);n++}}}
+  else{CUR_NAME='Rift Beast: roar';if(!SIM){vfx({k:'ab',ab:'nova',shape:'aura',from:[0,0],to:[0,0],cells:A.hit.map(v=>[v.q,v.r]),col,cam:1});addLog(null,'The Rift Beast roars at everyone near its body.')}
+    for(const v of A.hit){if(!alive(v))continue;hurt(v,dmgOf(v,REALM.roarDmg,1),col);n++;if(alive(v))storyShove(v,[0,0])}}
+  [CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM){const O=tObj();if(O&&O.beast){O.beast.strikes+=n;O.beast[A.k]=(O.beast[A.k]||0)+1}}}
+// round start on the Realm (STORY): the Rift closes, the Beast attacks, waves are born, spawns act, the Drakes wake, the Old God walks
+function storyRound(){const b=storyBeast();
+  if(b){b.maxhp=Math.max(REALM.beastFloor,b.maxhp-REALM.beastDecay);b.hp=Math.min(b.hp,b.maxhp);storyBeastAct()}
+  storyWaves();storySpawns();storyGodTurn();
+  if(G.round===REALM.drakeAt)for(const R of G.rooms||[])if(R.state==='sleeping'&&R.enc==='drake'){const m=makeMonster('drake',R.c[0],R.c[1],R.id);m.tier=R.tier;const m0=occ();for(let d=0;d<6;d++){const a=R.c[0]+DIRS[d][0],c=R.c[1]+DIRS[d][1];if(passable(a,c)&&!m0.get(key(a,c))){m.size=2;m.dir=d;break}}
+    if(unitAt(R.c[0],R.c[1]))continue;G.units.push(m);R.state='active';R.monMax=m.maxhp;if(!SIM){addLog(null,'An Elder Drake wakes on its hoard at the edge of the map: 3 points for the killing blow.');vfx({k:'buff',at:R.c,col:'#ff9a3d',cam:1})}}
+  if(G.round===REALM.drakeAt&&!SIM)announce({k:'note',col:'#ff9a3d',t:'The Elder Drakes wake',s:'At the north and south edges. The killing blow: 3 points and your strongest fallen unit back. They strike only the last unit that hit them.'})}
+function storyBreachFor(q,r){let best=null,bd=1e9;for(const br of G.breaches||[]){const d=hd(q,r,br.c[0],br.c[1]);if(d<bd){bd=d;best=br}}return best}
+function storyWaves(){const b=storyBeast();if(!b)return;const i=REALM.waves.indexOf(G.round);if(i<0)return;G.waveN=i+1;
+  {let back=0;for(const m of G.units.filter(u=>u.spawnW&&alive(u))){const x=(G.loot||[]).find(l=>l.carrier===m.id);if(x){x.carrier=null;x.q=m.q;x.r=m.r}G.units.splice(G.units.indexOf(m),1);back++}if(back&&!SIM)addLog(null,`The Beast pulls back the ${back} spawn${back>1?'s':''} still roaming and tears stronger ones from its body.`)}// v98: each wave replaces the last one's survivors: one hunter per stone, never more than one per player
+  const alivePl=G.players.filter(p=>p.alive).length;const stones=(G.loot||[]).filter(x=>x.kind==='stone'&&!G.units.some(m=>m.spawnW&&alive(m)&&m.spawnStone===x.id)).slice(0,alivePl);
+  let born=0;for(const x of stones){const c0=x.carrier!=null?byId(x.carrier):null;const at=c0?[c0.q,c0.r]:[x.q,x.r];const br=storyBreachFor(at[0],at[1]);if(!br)continue;
+    const spot=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&hd(q,r,0,0)>=G.heartR+1).sort((u,v)=>hd(u[0],u[1],br.c[0],br.c[1])-hd(v[0],v[1],br.c[0],br.c[1])||hd(u[0],u[1],at[0],at[1])-hd(v[0],v[1],at[0],at[1]))[0];if(!spot)continue;
+    const m=makeMonster('spawn'+(i+1),spot[0],spot[1],null);m.spawnW=i+1;m.spawnStone=x.id;m.born=G.round;m.mov=MONSTERS['spawn'+(i+1)].mov;G.units.push(m);born++}
+  if(!SIM&&born){const tr=['bites','roars, knocking back everyone around it','spits at range','sweeps a cone'][i];addLog(null,`Wave ${i+1}: the Rift Beast tears ${born} spawn${born>1?'s':''} off its body to fetch the Crown Stones. This wave ${tr}.`);
+    announce({k:'note',col:'#b06bff',t:`Wave ${i+1}: the Beast sends its spawn`,s:`${born} spawn${born>1?'s':''} hunt the Crown Stones. A spawn with a stone runs it back to the Beast; whoever carries a stone is hunted.${i>=2?` Killing one: ${i===2?'1 point and +1 ATK':'2 points and +2 max HP for your army'}.`:' They give nothing: they set the rhythm.'}`});
+    const O=tObj();if(O&&O.story)O.story.waves.push({w:i+1,round:G.round,born})}}
+// breadth-first walk toward a set of goal hexes, at most `steps` hexes, through free walkable ground
+function storyWalk(m,goals,steps,avoid){if(!goals.size||steps<=0)return;const free=(q,r)=>passable(q,r)&&(!unitAt(q,r)||unitAt(q,r)===m)&&!(avoid&&avoid(q,r));
+  const D=new Map(),qu=[];for(const k of goals){const [q,r]=k.split(',').map(Number);if(!free(q,r))continue;D.set(k,0);qu.push([q,r])}
+  for(let i=0;i<qu.length;i++){const [q,r]=qu[i],d0=D.get(key(q,r));for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(D.has(k)||!inR(a,b)||!free(a,b))continue;D.set(k,d0+1);qu.push([a,b])}}
+  let cur=[m.q,m.r];const fq=m.q,fr=m.r;for(let s=0;s<steps;s++){const dc=D.get(key(cur[0],cur[1]));if(dc===0)break;let nx=null,nd=dc==null?1e9:dc;
+    for(const [dq,dr] of DIRS){const a=cur[0]+dq,b=cur[1]+dr,d=D.get(key(a,b));if(d!=null&&d<nd&&!unitAt(a,b)){nd=d;nx=[a,b]}}if(!nx)break;cur=nx}
+  if(cur[0]!==fq||cur[1]!==fr){m.anim={fq,fr,t0:typeof performance!=='undefined'?performance.now():0,dur:350};m.q=cur[0];m.r=cur[1]}}
+const ringOf=(t,n)=>{const s=new Set();for(const [q,r] of allCells()){if(distUC(t,q,r)>=1&&distUC(t,q,r)<=n)s.add(key(q,r))}return s};
+function storySpawnHit(m,v,col){const d=Math.max(1,m.atk-effDef(v));hurt(v,d,col);return d}
+function storySpawns(){const b=storyBeast(),K=kingOf(),col='#b06bff';
+  const fear=(q,r)=>!b&&(hd(q,r,0,0)<=G.heartR||(K&&distUC(K,q,r)<=2));
+  for(const m of G.units.filter(u=>u.spawnW&&alive(u))){if(m.st&&m.st.frozen>0){m.st.frozen--;continue}if(m.st&&m.st.chill>0)m.st.chill--;
+    const x=(G.loot||[]).find(l=>l.id===m.spawnStone)||null,carry=!!(x&&x.carrier===m.id);let goal=null,prey=null;
+    if(b&&carry)goal=ringOf(b,1);
+    else if(b&&x&&x.carrier==null)goal=new Set([key(x.q,x.r)]);
+    else{const c=b&&x&&x.carrier!=null?byId(x.carrier):null;prey=c&&storyLive(c)&&!c.king?c:G.units.filter(v=>storyLive(v)&&!v.king&&!fear(v.q,v.r)).sort((u,v)=>distUU(m,u)-distUU(m,v)||u.id-v.id)[0]||null;if(prey)goal=ringOf(prey,1)}
+    const reach=m.spawnW===3?3:1;if(!(prey&&distUU(m,prey)<=reach&&!carry))storyWalk(m,goal||new Set(),m.mov||3,fear);
+    if(b&&carry&&distUU(b,m)<=1){G.loot.splice(G.loot.indexOf(x),1);G.eaten=(G.eaten||0)+1;b.maxhp+=REALM.stoneHp;b.hp=Math.min(b.maxhp,b.hp+REALM.stoneHp);G.units.splice(G.units.indexOf(m),1);
+      if(!SIM){addLog(null,`A spawn brings a Crown Stone back: the Rift Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP; ${G.eaten} eaten).`);vfx({k:'buff',at:[0,0],col,cam:1});announce({k:'note',col,t:'The Beast swallows a Crown Stone',s:`+1 damage on all its attacks and +${REALM.stoneHp} HP. Its belly now holds ${1+G.eaten} stones, and they all spill out for its killer.`});const O=tObj();if(O&&O.story)O.story.eaten++}G.belly=(G.belly||0)+1;continue}
+    if(b&&x&&x.carrier==null&&x.q===m.q&&x.r===m.r){x.carrier=m.id;if(!SIM){addLog(null,'A spawn seizes a Crown Stone and turns back toward the Beast!');fx(m,'stone!','#ffd766')}}
+    const CUR=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME=`Rift spawn (wave ${m.spawnW})`;
+    let t=prey&&alive(prey)&&distUU(m,prey)<=reach?prey:G.units.filter(v=>storyLive(v)&&!v.king&&distUU(m,v)<=1).sort((u,v)=>u.hp-v.hp||u.id-v.id)[0]||null;
+    if(t){if(!SIM)vfx({k:m.spawnW===3?'bolt':'slash',from:[m.q,m.r],to:[t.q,t.r],col});
+      if(m.spawnW===4){const a=Math.atan2(pix(t.q,t.r)[1]-pix(m.q,m.r)[1],pix(t.q,t.r)[0]-pix(m.q,m.r)[0]);for(const v of G.units.filter(v=>storyLive(v)&&!v.king&&distUU(m,v)<=2)){const [px,py]=pix(v.q,v.r),[mx,my]=pix(m.q,m.r);if(v===t||angGap(Math.atan2(py-my,px-mx),a)<=Math.PI/6+0.06)storySpawnHit(m,v,col)}}
+      else storySpawnHit(m,t,col);
+      if(m.spawnW===2)for(const v of G.units.filter(v=>storyLive(v)&&distUU(m,v)===1))storyShove(v,[m.q,m.r]);
+      if(!SIM&&alive(t))addLog(t.owner,`A wave-${m.spawnW} spawn attacks the ${t.name}.`)}
+    [CUR_SRC,CUR_TAG,CUR_NAME]=CUR}}
+// the Beast dies (STORY): belly stones to the crown, the killer is teleported onto the throne (kingCrown crowns it after the action), the spawns let go of their stones,
+// the wave-4 spawns are spat far from the centre if they were not born yet; the Old God waits for the crowning
+function storyBeastDeath(t,k){G.crown=(G.crown||0)+(G.belly||0);G.belly=0;
+  for(const m of G.units.filter(u=>u.spawnW&&alive(u))){const x=(G.loot||[]).find(l=>l.carrier===m.id);if(x){x.carrier=null;x.q=m.q;x.r=m.r}}
+  if(k&&alive(k)&&crownable(k)&&!kingOf()){const fq=k.q,fr=k.r;k.q=0;k.r=0;k.dir=0;k.anim={fq,fr,t0:typeof performance!=='undefined'?performance.now():0,dur:500};if(!SIM){addLog(k.owner,`The ${k.name} lands the killing blow and is lifted onto the throne!`);fx(k,'to the throne!','#ffd766')}}
+  if(G.round<REALM.waves[3]&&!G.blastDone){G.blastDone=true;let n=0;for(const p of G.players.filter(p=>p.alive&&p.camp)){const a=storyAng(p.camp[0],p.camp[1]);
+      const c=allCells().filter(([q,r])=>hd(q,r,0,0)===REALM.blastDist&&passable(q,r)&&!unitAt(q,r)).sort((x,y)=>angGap(storyAng(...x),a)-angGap(storyAng(...y),a))[0];if(!c)continue;const m=makeMonster('spawn4',c[0],c[1],null);m.spawnW=4;m.spawnStone=null;m.born=G.round;m.mov=MONSTERS.spawn4.mov;G.units.push(m);n++}
+    if(!SIM&&n){addLog(null,`The Rift Beast explodes as it dies! ${n} wave-4 spawns are flung far across the land and attack whoever is closest.`);announce({k:'note',col:'#b06bff',t:'The Beast explodes',s:`${n} wave-4 spawns are thrown far from the centre. They attack the closest units and fear the King. Each one: 2 points and +2 max HP for the army that kills it.`});const O=tObj();if(O&&O.story)O.story.blast=n}}
+  if(!SIM){const O=tObj();if(O&&O.story)O.story.beastDead=G.round}}
+// the crown: every stone the King's side carries goes into it; +1 ATK (kingStat) and +1 max HP per stone for the King
+function storyCrown(u){if(!STORY()||!u||!u.king)return;let add=0;for(const x of (G.loot||[]).slice()){if(x.kind!=='stone'||x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall'&&tm(c.owner)===tm(u.owner)){G.loot.splice(G.loot.indexOf(x),1);add++}}
+  G.crown=(G.crown||0)+add;const gain=G.crown-(u.crownN||0);if(gain>0){u.maxhp+=gain;u.hp+=gain;u.crownN=G.crown;if(!SIM){fx(u,`crown: ${G.crown} stone${G.crown>1?'s':''}`,'#ffd766');addLog(u.owner,`The crown now holds ${G.crown} Crown Stone${G.crown>1?'s':''}: the King has +${G.crown} ATK and +${G.crown} max HP.`);const O=tObj();if(O&&O.story)O.story.crowned.push({pid:u.owner,round:G.round,crown:G.crown})}}
+  if(G.beast&&G.beast.dead&&!G.godDone)storyGod(u)}
+function storyCrownTick(){const K=kingOf();if(K)storyCrown(K)}
+function storyGod(K){const p=G.players[K.owner];if(!p||!p.camp)return;const c=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)).sort((x,y)=>hd(x[0],x[1],p.camp[0],p.camp[1])-hd(y[0],y[1],p.camp[0],p.camp[1]))[0];if(!c)return;
+  const m=makeMonster('oldgod',c[0],c[1],null);m.god=true;m.born=G.round;G.units.push(m);G.godDone=true;G.god=m.id;
+  if(!SIM){addLog(null,`The Old God wakes beside the ${FAC[p.fac].name} portal and walks to serve the King.`);vfx({k:'buff',at:c,col:'#ffd766',cam:1});announce({k:'note',col:'#ffd766',t:'The Old God wakes',s:`The last god of the old kingdom serves whoever wears the crown: near the King it heals him ${REALM.godHeal} each turn, and every ${REALM.godEvery} rounds it roars at his enemies. Kill it for 2 points.`});const O=tObj();if(O&&O.story)O.story.god={round:G.round,pid:p.id}}}
+function storyGodTurn(){const m=G.god!=null?byId(G.god):null;if(!m||!alive(m))return;if(m.st&&m.st.frozen>0){m.st.frozen--;return}const K=kingOf();if(!K)return;
+  if(distUU(m,K)>2){const g=new Set();for(const [q,r] of allCells())if(distUC(K,q,r)<=2&&distUC(K,q,r)>=1)g.add(key(q,r));storyWalk(m,g,REALM.godMove,null)}
+  if(G.round>m.born&&(G.round-m.born)%REALM.godEvery===0){const foes=G.units.filter(v=>storyLive(v)&&tm(v.owner)!==tm(K.owner)&&distUU(m,v)<=3);if(foes.length){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Old God: roar';
+    if(!SIM){vfx({k:'ab',ab:'nova',shape:'aura',from:[m.q,m.r],to:[m.q,m.r],cells:foes.map(v=>[v.q,v.r]),col:'#ffd766',cam:1});addLog(null,`The Old God roars: ${foes.length} enem${foes.length>1?'ies':'y'} of the King take ${REALM.godRoar}.`)}for(const v of foes)hurt(v,REALM.godRoar,'#ffd766',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}}
 function wildsThroneBeast(){
   G.throneBeast=true;if(G.realm)return realmBeastFall();for(const [q,r] of allCells())if(hd(q,r,0,0)===G.heartR+1&&G.feat[key(q,r)]==='rock')delete G.feat[key(q,r)];
   addLog(null,'The walls of the Throne Hall collapse! The Rift Beast wakes on the Throne: slay it to reveal the Throne.');
@@ -4193,7 +4325,7 @@ const kingOf=()=>G&&!oldCentre()?G.units.find(u=>u.king&&u.kind!=='wall')||null:
 const throneOpen=()=>G.map?!!G.throneOpen:G.round>=RULES.CENTRE_FROM;
 const kingChallenged=u=>!!(u&&u.king&&onThrone(u)&&heartFoes(tm(u.owner)));
 // King bonuses. Crown Wilds: +2 ATK, +2 DEF for life. Random board (v33): +1 ATK, +1 DEF for life, and +2/+2 instead while it sits the Throne challenged.
-function kingStat(u,k){if(!u.king||u.kind==='wall'||oldCentre())return 0;if(G.map)return k==='atk'?WILDS.kingAtk:WILDS.kingDef;return kingChallenged(u)?2:1}
+function kingStat(u,k){if(!u.king||u.kind==='wall'||oldCentre())return 0;if(G.map)return k==='atk'?WILDS.kingAtk+(STORY()?(G.crown||0):0):WILDS.kingDef;return kingChallenged(u)?2:1}
 const heartFoes=team=>RULES.KING_ADJ!==2&&G.units.some(v=>v.kind!=='wall'&&!v.statue&&tm(v.owner)!==team&&cells(v).some(([q,r])=>RULES.KING_ADJ?hd(q,r,0,0)===1:isHeart(q,r)));// v40: only an enemy next to the Throne challenges the King
 // Crowning. Crown Wilds: the first unit to sit the Throne, then the next after the King falls. Random board: whoever sits the Throne takes the crown
 // (from a living King too, if the King has left the Throne).
@@ -4202,13 +4334,14 @@ function kingCrown(){
   const u=unitAt(0,0);if(!u||u.kind==='wall'||u.summon||u.statue||u.egg||u.king||u.machine||(u.walker&&!RULES.WALKER_KING)||u.name==='Archdemon'||u.name==='Time Wraith')return;// v58 (owner): summoned units (Archdemon, Time Wraith, machines, walkers) are never crowned
   const old=kingOf();if(old&&G.map)return;
   if(old){old.king=false;addLog(old.owner,`${old.name} loses the crown.`)}
-  u.king=true;const F=FAC[G.players[u.owner].fac];
+  u.king=true;const F=FAC[G.players[u.owner].fac];storyCrown(u);
   kingPromote(u);
   addLog(u.owner,G.map?`${u.name} sits the Throne and is crowned King! +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF while it lives.`:`${u.name} sits the Throne and is crowned King! +1 ATK and +1 DEF while it lives. It scores 1 point at each of its turns on the Throne; whoever kills it scores ${RULES.KING_KILL}.`);fx(u,'crowned!','#ffd766');
   vfx({k:'buff',at:[0,0],col:'#ffd766',cam:1});announce({k:'king',fac:G.players[u.owner].fac,unit:u.name});
   if(trk()){const O=tObj();if(O){O.kings=O.kings||[];O.kings.push({pid:u.owner,unit:u.name,round:G.round})}}}
 function kingPromote(u){const p=G.players[u.owner];if(!RULES.NEW_LEADER||!p.leaderless||u.leader)return;u.leader=true;p.leaderless=false;addLog(u.owner,`${FAC[p.fac].name} has a Leader again: the ${u.name} wears the crown and leads the army.`);fx(u,'new Leader!','#ffd766')}
 function kingScore(p){
+  if(STORY()&&!SIM){const K=kingOf(),god=G.god!=null?byId(G.god):null;if(K&&K.owner===p.id&&god&&alive(god)&&distUU(god,K)<=3&&K.hp<K.maxhp)healUnit(K,REALM.godHeal,'#ffd766','Old God')}// v98: the Old God heals the King
   {const k=kingOf();if(k&&k.owner===p.id&&!SIM)kingPromote(k)}// v40: a King whose side lost its Leader becomes the new Leader
   if(G.mode!=='warlord'||p.leaderless)return;
   const k=kingOf();if(!k||k.owner!==p.id||!onThrone(k))return;
@@ -4227,14 +4360,17 @@ function kingScore(p){
    Points: last hits (an enemy unit 1, a Leader 3, camps by tier) and the King on the Throne (1 a turn); first to REALM.target wins.
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
-const REALM={HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:2,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,suitHp:12,
+const REALM={HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:2,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,camp:1,steps:[5,11,18,26,35,45,56,68]},armies:['fire','ice','gnomes','warband']};
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:0},
   warden:{name:'Spring Warden',icon:'golem',hp:20,atk:4,def:0,tier:2,pts:0},
   ogre:{name:'Ogre Warlord',icon:'golem',hp:24,atk:5,def:0,tier:2,pts:0},
-  drake:{name:'Elder Drake',icon:'drake',hp:36,atk:6,def:0,tier:3,pts:3},/* v96 (owner): camps are quick to clear; the real fights are army against army */
+  drake:{name:'Elder Drake',icon:'drake',hp:36,atk:6,def:0,tier:3,pts:3},
+  spawn1:{name:'Rift Spawn',icon:'skull',hp:10,atk:2,def:0,mov:3,tier:'s',pts:0},spawn2:{name:'Rift Spawn',icon:'skull',hp:16,atk:3,def:0,mov:3,tier:'s',pts:0},
+  spawn3:{name:'Rift Spawn',icon:'skull',hp:24,atk:4,def:1,mov:3,tier:'s',pts:1},spawn4:{name:'Rift Spawn',icon:'skull',hp:32,atk:5,def:1,mov:4,tier:'s',pts:2},
+  oldgod:{name:'Old God',icon:'crown',hp:30,atk:0,def:1,mov:3,tier:'g',pts:2},/* v98 story v2 *//* v96 (owner): camps are quick to clear; the real fights are army against army */
   chest:{name:'Ruin Chest',icon:'chest',hp:10,atk:0,def:0,tier:0,pts:0}};
 Object.assign(MONSTERS,REALM_MON);
 Object.assign(ROOM_NAMES,{t1:'Valley Camp',heal:'Healing Spring',ogre:'Ogre Lair',t3:'Drake Lair',ruin:'Ancient Ruin'});
@@ -4281,9 +4417,9 @@ function genRealm(){
   const rB=2*Math.floor((HH-2.2)/3);stamp(hexRound(HW-2.2,0),'camp2',1);stamp([-rB/2,rB],'camp3',1);/* v85 (owner): the Drake Lair sits at the top and bottom EDGE */
   place((q,r)=>inQ(q,r)&&nearBase(q,r)>=3&&nearBase(q,r)<=VR-2,'camp1',2,1,4);
   const off=(q,r)=>{const [x,y]=pix(q,r);return x>=2&&y>=2};// off the mirror lines, so there are always four copies
-  {const rr=[6,8][Math.floor(RNG()*2)];stamp([-rr/2,rr],'camp2',1)}/* v85 (owner): the Ogre Lair (a spawn site) sits CLOSE TO THE CENTRE, between the two bases of each half; before v85 the Drake stood here and the Ogre at the edge */
-  for(const [e,nb,g] of [[3,VR+2,5],[4,VR+1,4],[6,VR,3]]){if(lists.ruin.length)break;place((q,r)=>off(q,r)&&out(q,r)&&edgeD(q,r)<e&&edgeD(q,r)>1.2&&nearBase(q,r)>nb&&[...lists.camp2,...lists.camp3].every(o=>hd(o[0],o[1],q,r)>=g),'ruin',1,0,6)}
-  {for(const [lo,hi,gap] of [[8,13,4],[6,16,3],[5,20,2]]){if(lists.lever.length)break;place((q,r)=>off(q,r)&&out(q,r)&&hd(q,r,0,0)>=lo&&hd(q,r,0,0)<=hi&&edgeD(q,r)>2&&[...lists.camp3,...lists.ruin].every(o=>hd(o[0],o[1],q,r)>=gap),'lever',1,0,6)}}
+  if(!RULES.STORY2){const rr=[6,8][Math.floor(RNG()*2)];stamp([-rr/2,rr],'camp2',1)}/* v98: no Ogre Lair *//* v85 (owner): the Ogre Lair (a spawn site) sits CLOSE TO THE CENTRE, between the two bases of each half; before v85 the Drake stood here and the Ogre at the edge */
+  if(!RULES.STORY2)for(const [e,nb,g] of [[3,VR+2,5],[4,VR+1,4],[6,VR,3]]){if(lists.ruin.length)break;place((q,r)=>off(q,r)&&out(q,r)&&edgeD(q,r)<e&&edgeD(q,r)>1.2&&nearBase(q,r)>nb&&[...lists.camp2,...lists.camp3].every(o=>hd(o[0],o[1],q,r)>=g),'ruin',1,0,6)}
+  if(!RULES.STORY2){for(const [lo,hi,gap] of [[8,13,4],[6,16,3],[5,20,2]]){if(lists.lever.length)break;place((q,r)=>off(q,r)&&out(q,r)&&hd(q,r,0,0)>=lo&&hd(q,r,0,0)<=hi&&edgeD(q,r)>2&&[...lists.camp3,...lists.ruin].every(o=>hd(o[0],o[1],q,r)>=gap),'lever',1,0,6)}}
   // every base must reach the Heart and every camp: carve straight passes (mirrored) through mountains, rivers and the Heart's wall
   const pass=t=>t!=='mount'&&t!=='river'&&t!=='wall';
   const bfs=s=>{const D={};D[key(...s)]=0;const qu=[s];for(let i=0;i<qu.length;i++){const [q,r]=qu[i];for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(!inR(a,b)||k in D||!pass(T[k]))continue;D[k]=D[key(q,r)]+1;qu.push([a,b])}}return D};
@@ -4303,7 +4439,7 @@ function genRealm(){
   for(const c of [...lists.camp1,...lists.camp2].filter(c=>inQ(c[0],c[1])))dress(c);
   for(const c of lists.ruin)mk('ruin',c,'chest');
   G.rooms=rooms;G.circles=[];G.cracks=[];G.levers={};G.gems={};G.wander=null;G.midUp=false;
-  for(const R of G.rooms){const m=makeMonster(R.enc,R.c[0],R.c[1],R.id);m.tier=R.tier;if(R.enc==='drake'){const m0=occ();for(let d=0;d<6;d++){const a=R.c[0]+DIRS[d][0],b=R.c[1]+DIRS[d][1];if(passable(a,b)&&!m0.get(key(a,b))){m.size=2;m.dir=d;break}}}G.units.push(m);R.monMax=m.maxhp}// v76 (owner): the Drake stands on 2 hexes
+  for(const R of G.rooms){if(RULES.STORY2&&R.enc==='drake'){R.state='sleeping';continue}/* v98: the Drakes sleep until REALM.drakeAt */const m=makeMonster(R.enc,R.c[0],R.c[1],R.id);m.tier=R.tier;if(R.enc==='drake'){const m0=occ();for(let d=0;d<6;d++){const a=R.c[0]+DIRS[d][0],b=R.c[1]+DIRS[d][1];if(passable(a,b)&&!m0.get(key(a,b))){m.size=2;m.dir=d;break}}}G.units.push(m);R.monMax=m.maxhp}// v76 (owner): the Drake stands on 2 hexes
   const order=[0,1,3,2].map(i=>bases[i]);
   G.players.forEach(p=>{const c=order[p.spot%4];p.home=c;p.camp=c;
     p.base=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=1).map(([q,r])=>key(q,r));
@@ -4352,6 +4488,10 @@ function realmSlain(t,R,k){
   else if(t.monster==='drake'){const fl=(p.fallen||[]).map(n=>FAC[p.fac].units.find(d=>d.name===n)).filter(Boolean).sort((a,b)=>b.hp-a.hp)[0];
     if(fl){const u=makeUnit(p,fl);if(realmPlace(p,u)){p.fallen.splice(p.fallen.indexOf(fl.name),1);u.moved=true;u.acted=true;G.units.push(u);tStat(u);what=`the fallen ${fl.name} returns to the ${F.name} base`}else what='the base is full, so nobody returns'}
     else{for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'){v.maxhp+=3;v.hp+=3}what=`every ${F.name} unit gains +3 max HP for good`}}
+  else if(t.spawnW===3){k.forgeAtk=(k.forgeAtk||0)+1;what=`the ${k.name} tears the spawn apart: +1 ATK for good`}
+  else if(t.spawnW===4){for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'){v.maxhp+=2;v.hp+=2}what=`every ${F.name} unit gains +2 max HP for good`}
+  else if(t.spawnW){what='a piece of the Beast is destroyed'}
+  else if(t.god){G.god=null;what='the Old God falls and will not return'}
   else if(t.monster==='chest'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(wildsHash(`${G.round}|${k.id}|${t.id}`)*free.length)]:null;
     if(rk&&canCarry(k)&&!relicOf(k)){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:k.id});what=`the ${k.name} takes the ${RELICS[rk].name} (${RELICS[rk].text})`}else what='the chest holds nothing this unit can carry'}
   addLog(p.id,`The ${k.name} slays the ${t.name}: ${what}.`);fx(k,t.monster==='warden'?'healed':'reward','#ffd766');
@@ -4368,12 +4508,13 @@ function realmRound(){if(!G.realm)return;
     addLog(null,`The ${ROOM_NAMES[R.type]} stirs again: a new ${m.name}.`);vfx({k:'buff',at:c,col:'#b9b3d6'})}}
 // A camp monster's strike at the round start (it never moves).
 function realmStrike(m){if(!m.atk){m.lastBy=null;return}const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME=m.name;
-  const hit=new Set();if(m.tier>=2)for(const v of G.units)if(v.kind!=='wall'&&!v.statue&&distUU(m,v)===1)hit.add(v);
+  const hit=new Set();if(m.tier>=2&&!(STORY()&&m.monster==='drake'))for(const v of G.units)if(v.kind!=='wall'&&!v.statue&&distUU(m,v)===1)hit.add(v);
   const a=m.lastBy!=null?byId(m.lastBy):null;m.lastBy=null;if(a&&alive(a)&&a.kind!=='wall'&&distUU(m,a)<=(m.tier>=2?3:2))hit.add(a);
   for(const v of hit){if(!alive(v))continue;const d=Math.max(1,m.atk-effDef(v));addLog(v.owner,`The ${m.name} strikes the ${v.name} for ${d}.`);vfx({k:'slash',from:[m.q,m.r],to:[v.q,v.r],col:m.monster==='drake'?'#ff7a1a':'#b9b3d6'});hurt(v,d,m.monster==='drake'?'#ff7a1a':'#b9b3d6')}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o}
 // What a camp asks and gives (shown on the monster's card).
-function realmGoalText(m){if(m.monster==='wanderer')return {todo:`land the killing blow on the Wanderer (${m.maxhp} HP). It roams 3 hexes a round and strikes back at the last unit that hit it.`,get:`${REALM.wanderPts} points and +${REALM.charge.w} Ultimate charge.`};const R=(G.rooms||[]).find(r=>r.id===m.room);const M=REALM_MON[m.monster];if(!M)return null;
+function realmGoalText(m){if(m.spawnW)return {todo:`kill this wave-${m.spawnW} Rift spawn (${m.maxhp} HP${m.def?', '+m.def+' DEF':''}). It hunts one Crown Stone: it fetches it from the ground, runs it back to the Beast (which swallows it and grows stronger), and hunts whoever carries it. It never hunts the King and takes double damage from him.`,get:m.spawnW===3?'1 point and +1 ATK for good for the killer.':m.spawnW===4?'2 points and +2 max HP for every unit of the killer\'s army.':'nothing: the first two waves set the rhythm. It drops its stone where it dies.'};
+  if(m.god)return {todo:`the Old God serves the King: within 3 of him it heals him ${REALM.godHeal} each turn, and every ${REALM.godEvery} rounds it roars at his enemies within 3 for ${REALM.godRoar} ignoring DEF.`,get:'2 points for the killing blow. It never returns.'};if(m.monster==='wanderer')return {todo:`land the killing blow on the Wanderer (${m.maxhp} HP). It roams 3 hexes a round and strikes back at the last unit that hit it.`,get:`${REALM.wanderPts} points and +${REALM.charge.w} Ultimate charge.`};const R=(G.rooms||[]).find(r=>r.id===m.room);const M=REALM_MON[m.monster];if(!M)return null;
   const hits=m.tier>=2?'At each round start it strikes every unit next to it, and the last unit that hit it if that unit is within 3.':m.atk?'At each round start it strikes the last unit that hit it, if that unit is within 2.':'It never strikes back.';
   const back=` Every ${REALM.dmgCharge} damage your side deals to it earns +1 Ultimate charge, whoever lands the last hit.`,site=' The camp becomes your spawn site: you may call units next to it (it stays yours until an enemy unit stands on it).';
   const get=m.monster==='brute'?`the unit that lands the killing blow gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good (choose who strikes last), +${REALM.charge[1]} Ultimate charge.${site}`
@@ -4391,8 +4532,9 @@ function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.ma
     if(u.leader)w*=0.6;opts.push([m.q,m.r,w])}
   for(const [q,r] of G.outposts||[]){const o=flagOwner(q,r);if(o!=null&&o!==p.id&&!inValley(G.players[o],q,r))opts.push([q,r,1.5])}
   if(!G.wander&&u.id%5===2)for(const k of Object.keys(G.feat))if(G.feat[k]==='lever'&&G.levers[k]!==p.team){const [q,r]=k.split(',').map(Number);if(hd(q,r,p.camp[0],p.camp[1])<=16)opts.push([q,r,1.8])}
-  for(const x of G.loot||[]){if(x.carrier!=null)continue;if(x.kind==='remains'&&u.size===2&&tm(x.owner)===p.team)opts.push([x.q,x.r,3]);if(x.kind==='scrap'&&isGnome(u)&&tm(x.owner)===p.team)opts.push([x.q,x.r,u.walker?1.2:2.2])}// v75c bots: giants fetch their Remains, gnomes their scrap
-  if(G.throneBeast){const k=kingOf();const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon).length;const late=Math.min(2,Math.max(0,(G.round-REALM.open)/6))+(mine<=4?1.5:0);opts.push([0,0,(G.throneOpen&&!k?3.8:k&&k.owner!==p.id?3.2:2.6)+late])}else if(G.round>=REALM.open-2)opts.push([0,0,1.4]);
+  {const L=lootOf(u);if(L&&L.kind==='stone')return G.beast&&G.beast.dead?[0,0,9]:[p.camp[0],p.camp[1],9]}// v98: a stone carrier keeps it safe until the throne is open
+  for(const x of G.loot||[]){if(x.carrier!=null)continue;if(x.kind==='stone'&&canCarry(u)&&!lootOf(u)&&!u.leader)opts.push([x.q,x.r,3.4]);if(x.kind==='remains'&&u.size===2&&tm(x.owner)===p.team)opts.push([x.q,x.r,3]);if(x.kind==='scrap'&&isGnome(u)&&tm(x.owner)===p.team)opts.push([x.q,x.r,u.walker?1.2:2.2])}// v75c bots: giants fetch their Remains, gnomes their scrap
+  if(G.throneBeast){const k=kingOf();const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon).length;const late=Math.min(2,Math.max(0,(G.round-REALM.open)/6))+(mine<=4?1.5:0);{const sb=STORY()&&storyBeast();opts.push([0,0,sb&&sb.hp>30&&G.round<10?1.0:(G.throneOpen&&!k?3.8:k&&k.owner!==p.id?3.2:2.6)+late])}}else if(G.round>=REALM.open-2)opts.push([0,0,1.4]);
   let best=null,bs=1e9;for(const g of opts){const d=wildsDist(g,u.q,u.r,u);const sc=d/g[2]+(u.id%3)*0.7*(g[2]<1.5?1:0);if(sc<bs){bs=sc;best=g}}return best}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
 function labClear(){G.sinks={};G.objOff=true;G.flagOwner={};G.flagEver={};G.spring=null;G.springDone=false;G.beast=null;BEAST_Q=[];BAR_Q=[];G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
@@ -4431,6 +4573,7 @@ function evaluate(team){
    const so=springOwner();if(so!=null)s+=tm(so)===team?5:-2;
    if(G.beast){const b=G.beast,gate=G.map&&b.room==='throne';s+=((b.dmgT&&b.dmgT[team])||0)*(gate?2.2:0.9);if(b.dead&&b.killTeam===team)s+=gate?20:10}}// on the Crown Wilds the Beast guards the Throne: worth much more
   if(G.map){for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
+    if(STORY()){for(const m of G.units)if(m.spawnW&&m.hp>0)s-=m.hp*0.7+(m.spawnW>=3?6:0);for(const x of G.loot||[])if(x.kind==='stone'&&x.carrier!=null){const c=G.units.find(v=>v.id===x.carrier);if(c&&c.kind!=='wall'&&tm(c.owner)===team)s+=5}}// v98 bots: spawns are worth killing, stones worth holding
     for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*(R.type==='lair'?0.8:0.5)+(left<=0?(R.type==='lair'?14:6):0)}
     if(G.midUp)for(const c of G.circles||[])if(G.round>=c.dark){let n=0;for(const [q,r] of c.stones){const o=unitAt(q,r);if(o&&o.kind!=='wall'&&tm(o.owner)===team)n++}s+=n*n*1.5}}
   for(const v of G.units)if(v.st&&v.st.fb>0&&v.kind!=='wall'&&tm(v.owner)!==team)s+=v.st.fb*(v.leader?1.6:1.1);// Frostbite marks (v37)
@@ -4889,6 +5032,8 @@ let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
 const CAM={az:0,azT:0,tilt:0.92,S:20,cx:0,cy:0,follow:true};
 const TILE_H=0.24;
 function world(q,r){return [S3*(q+r/2),1.5*r]}
+/* v101 MOTION PASS: a move takes ~150 ms per hex (at least 320 ms) with a walking ease; returns the progress, the hexes covered and the heading */
+function motionOf(u,now){const a=u.anim;if(!a)return null;const n=Math.max(1,hd(a.fq,a.fr,u.q,u.r));const dur=a.dur||Math.max(320,150*n);const t=(now-a.t0)/dur;if(t>=1||t<0)return null;const e=t*t*(3-2*t);const [ax,az]=world(a.fq,a.fr),[bx,bz]=world(u.q,u.r);return {t,e,n,dx:bx-ax,dz:bz-az}}
 function proj(x,z,y){const c=Math.cos(CAM.az),s=Math.sin(CAM.az);const xr=x*c-z*s,zr=x*s+z*c;return [CAM.cx+xr*CAM.S,CAM.cy+zr*CAM.S*Math.cos(CAM.tilt)-(y||0)*CAM.S*Math.sin(CAM.tilt),zr]}
 function mix(hex,to,t){const a=parseInt(hex.slice(1),16),b=parseInt(to.slice(1),16);const f=(sh)=>Math.round(((a>>sh)&255)*(1-t)+((b>>sh)&255)*t);return `rgb(${f(16)},${f(8)},${f(0)})`}
 function layout3D(){
@@ -5049,7 +5194,7 @@ function draw3D(now){
   const zone3=myDeployZone();
   if(zone3){const col=FAC[P(G.cur).fac].color;for(const k of zone3){const [q,r]=k.split(',').map(Number);const [x,z]=world(q,r);polyPath(hexTop(x,z,0.9,0.01));ctx.fillStyle=hexA(col,0.16+0.08*Math.sin(now/300));ctx.fill();ctx.strokeStyle=hexA(col,0.8);ctx.lineWidth=1.5;ctx.stroke()}}
   const list=G.units.filter(visibleUnit).map(u=>{let pts=cells(u).map(([q,r])=>world(q,r));
-    if(u.anim){const t=Math.min(1,(now-u.anim.t0)/(u.anim.dur||260));if(t>=1)delete u.anim;else{const e=1-Math.pow(1-t,3);const [ax,az]=world(u.anim.fq,u.anim.fr),[bx,bz]=world(u.q,u.r);pts=pts.map(([x,z])=>[x+(ax-bx)*(1-e),z+(az-bz)*(1-e)])}}
+    if(u.anim){const mv=motionOf(u,now);if(!mv)delete u.anim;else{const e=mv.e;const [ax,az]=world(u.anim.fq,u.anim.fr),[bx,bz]=world(u.q,u.r);pts=pts.map(([x,z])=>[x+(ax-bx)*(1-e),z+(az-bz)*(1-e)])}}
     const x=pts.reduce((a,p)=>a+p[0],0)/pts.length,z=pts.reduce((a,p)=>a+p[1],0)/pts.length;
     return {u,pts,x,z,d:x*s+z*c}});
   if(!GLON)for(const [q,r] of ringCells()){const f=featAt(q,r);if(f==='rock'||f==='forest'||f==='shrine'){const [x,z]=world(q,r);list.push({u:{kind:'prop',feat:f,q,r},pts:[[x,z]],x,z,d:x*s+z*c-0.01})}}
@@ -5152,7 +5297,7 @@ function drawProp3D(f,x,z,sx,sy,s,c,p,now){
     {const a=proj(x-0.45,z,h),b=proj(x+0.45,z,h),c1=proj(x,z-0.45,h),d=proj(x,z+0.45,h);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.moveTo(c1[0],c1[1]);ctx.lineTo(d[0],d[1]);ctx.strokeStyle='rgba(60,45,30,.55)';ctx.lineWidth=1;ctx.stroke()}
     if(last){const fl=0.5+0.5*Math.sin((now||0)/240);const pp=[[-0.5,-0.2],[-0.1,0.1],[0.15,-0.15],[0.5,0.25]].map(([a,b])=>proj(x+a,z+b,h+0.01));ctx.beginPath();pp.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.strokeStyle=`rgba(255,150,70,${0.55+0.4*fl})`;ctx.lineWidth=Math.max(1.5,S*0.08);ctx.stroke()}
     return}
-  if(f==='loot'){const bob=Math.sin((now||0)/350)*V*0.06;drawChest(ctx,sx,sy-V*0.45+bob,S*0.95,p.col||'#f2c75c',now||0);return}
+  if(f==='loot'){const bob=Math.sin((now||0)/350)*V*0.06;if(p.loot==='stone')drawStone(ctx,sx,sy-V*0.55+bob,S*1.0,now||0);else drawChest(ctx,sx,sy-V*0.45+bob,S*0.95,p.col||'#f2c75c',now||0);return}
   if(f==='relic'){const bob=Math.sin((now||0)/350)*V*0.08;ctx.beginPath();ctx.ellipse(sx,sy,S*0.4,S*0.4*Math.cos(CAM.tilt),0,0,7);ctx.fillStyle=hexA(RELICS[p.relic].col,0.25);ctx.fill();drawRelicGlyph(p.relic,sx,sy-V*0.75+bob,S*0.8,now||0);return}
   if(f==='egg'){const r=S*0.28,cy=sy-V*0.32;ctx.save();ctx.shadowColor='#ffb03d';ctx.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/200));const g=ctx.createRadialGradient(sx-r*0.3,cy-r*0.4,r*0.1,sx,cy,r*1.3);g.addColorStop(0,'#ffe0a8');g.addColorStop(0.6,'#ff8a3d');g.addColorStop(1,'#8a2a10');
     ctx.beginPath();ctx.ellipse(sx,cy,r,r*1.3,0,0,7);ctx.fillStyle=g;ctx.fill();ctx.restore();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;ctx.stroke();badge(sx+r*1.2,cy-r*1.1,Math.max(5,S*0.22),'#0b0e14','#ffb03d',p&&p.ttl);return}
@@ -5972,7 +6117,7 @@ const MODELS={// v78b (owner: 'too small, I want to see the detail'): real model
   'Warlord':{file:'models/warband_warlord.glb',h:3.1},'Captain':{file:'models/warband_captain.glb',h:3.0},'Shieldbearer':{file:'models/warband_shieldbearer.glb',h:2.9},'Spearman':{file:'models/warband_spearman.glb',h:2.9},'Swordsman':{file:'models/warband_swordsman.glb',h:3.0},// v83: Priests and Warband complete'Rift Sovereign':{file:'models/rift_rift-sovereign.glb',h:3.2},
   'Rampart':{file:'models/giants_rampart.glb',h:4.6},'Mountain King':{file:'models/giants_mountain-king.glb',h:4.8},
   'Boulder Hurler':{file:'models/giants_boulder-hurler.glb',h:4.6},'Cliff Breaker':{file:'models/giants_cliff-breaker.glb',h:4.0},'Titan':{file:'models/giants_titan.glb',h:4.8},// v87: all five giants are the owner's living landscapes
-  'Elder Drake':{file:'models/camps_elder-drake.glb',h:3.2},'Wanderer':{file:'models/camps_wanderer.glb',h:3.6},
+  'Elder Drake':{file:'models/camps_elder-drake.glb',h:3.2},'Wanderer':{file:'models/camps_wanderer.glb',h:3.6},'Old God':{file:'models/camps_wanderer.glb',h:3.8},'Rift Spawn':{file:'models/camps_rift-beast.glb',h:2.2},/* v98: the small Rift Beast as its spawn, the Wanderer as the Old God */
   'Rift Beast':{file:()=>G&&G.realm?'models/camps_rift-beast-city.glb':'models/camps_rift-beast.glb',h:()=>G&&G.realm?7.5:3.8}};// v82c (owner): on the Realm the Beast sprawled over the ruined city, elsewhere the creature alone// v82b: the Beast; on the Realm its body is scaled to sprawl over the whole Heart// v82: Frost, Priests, Rift, Giants leaders and the Realm's monsters
 const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'models/ice_base-glacier-keep.glb',h:5.0},warband:{file:'models/warband_base-iron-keep.glb',h:4.8},arcane:{file:'models/arcane_base-sun-temple.glb',h:5.2},giants:{file:'models/giants_base-waking-pits.glb',h:2.6,w:6.5}};// v87: Sun Temple and the Waking Pits (a flat diorama: capped by width, not height)
 /* v83b FOREST MODEL (owner's forest diorama): one instanced copy per forest hex, scaled to the hex, replacing the code trees; a copy shrinks
@@ -6207,12 +6352,29 @@ function glUnit(u,pts,x,z,now,spent){
   for(const o of ud.bob){if(o.userData.by===undefined)o.userData.by=o.position.y;o.position.y=o.userData.by+0.06*Math.sin(t*2.6+o.position.x*3);o.rotation.y=t*0.6}
   for(const w of ud.wings){w.rotation.y=w.userData.flap*(0.5+0.25*Math.sin(t*(ud.hover?7:2.5)))}
   if(ud.spin)ud.spin.rotation.y=t*18;
+  let mlift=0;if(ud.model)mlift=glMotion(u,fig,ud,now,t,x,z);
   glSpent(fig,!!spent);glSetGhost(fig,!!(u.st&&u.st.stealth));
   if(ud.model&&GL.occNow&&u.owner>=0&&G.players[u.owner])for(const [q,r] of cells(u))GL.occNow.set(key(q,r),G.players[u.owner].fac);// v78c: the hex under a real model takes the army's ground
-  return ud.top+lift}
+  return ud.top+lift+mlift}
+/* v101 MOTION PASS (real models only): walk with a hop per hex, face and lean the way it goes, a puff of dust on landing; a lunge toward its target;
+   a stagger and a red flash when hit; a small rise when casting; breathing, giants rocking, flyers hovering. Cues come from vfx.js MOTION. */
+function glMats(ud,fig){if(!ud.mats){ud.mats=[];fig.traverse(m=>{if(m.isMesh&&m.material&&m.material.emissive){ud.mats.push(m.material)}})}return ud.mats}
+function glMotion(u,fig,ud,now,t,x,z){let y=0,face=null,lean=0,off=[0,0];fig.rotation.order='YXZ';
+  const mv=typeof motionOf==='function'?motionOf(u,now):null;
+  if(mv){const ph=(mv.e*mv.n)%1;y+=Math.abs(Math.sin(Math.PI*ph))*(u.size===2?0.12:0.28);face=Math.atan2(mv.dx,mv.dz);lean=0.14;ud.walking=1}
+  else if(ud.walking){ud.walking=0;if(typeof ANIMS!=='undefined')ANIMS.push({ev:{k:'dust',at:[u.q,u.r]},t0:now})}
+  const L=typeof MOTION!=='undefined'&&MOTION.lunge.get(u.id);if(L){const k=(now-L.t0)/(L.ranged?300:380);if(k>=1||k<0){if(k>=1)MOTION.lunge.delete(u.id)}else{const [tx,tz]=world(L.to[0],L.to[1]);const dx=tx-x,dz=tz-z,d=Math.hypot(dx,dz)||1;const amp=(L.ranged?0.12:0.45)*Math.sin(Math.PI*k);off=[dx/d*amp,dz/d*amp];face=Math.atan2(dx,dz);lean=L.ranged?-0.06:0.2*Math.sin(Math.PI*k)}}
+  const H=typeof MOTION!=='undefined'&&MOTION.hit.get(u.id);if(H){const k=(now-H.t0)/320;if(k>=1){MOTION.hit.delete(u.id);for(const m of glMats(ud,fig)){m.emissive.setRGB(0,0,0);m.emissiveIntensity=0}}else if(k>=0){const [fx,fz]=world(H.from[0],H.from[1]);const dx=x-fx,dz=z-fz,d=Math.hypot(dx,dz)||1;const a=0.16*Math.sin(Math.PI*k);off=[off[0]+dx/d*a,off[1]+dz/d*a];lean-=0.12*Math.sin(Math.PI*k);const f=Math.max(0,1-k);for(const m of glMats(ud,fig)){m.emissive.setRGB(0.9*f,0.12*f,0.08*f);m.emissiveIntensity=1}}}
+  const C=typeof MOTION!=='undefined'&&MOTION.cast.get(u.id);if(C){const k=(now-C.t0)/600;if(k>=1)MOTION.cast.delete(u.id);else if(k>=0)y+=0.22*Math.sin(Math.PI*k)}
+  if(u.mt==='fly'&&!mv)y+=0.18+0.08*Math.sin(t*2.1);
+  fig.position.set(x+off[0],y,z+off[1]);if(face!==null)fig.rotation.y=face;
+  const br=1+0.014*Math.sin(t*1.7);fig.scale.set(1,br,1);fig.rotation.x=lean;fig.rotation.z=u.size===2?0.025*Math.sin(t*0.8):0;
+  return y}
 // after the units: drop the miniatures of units that are gone, then draw
 function glRender(){
-  for(const [k,f] of GL.figs)if(!GL.seen.has(k)){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose());GL.figs.delete(k)}
+  {const nowT=performance.now();for(const [k,f] of GL.figs)if(!GL.seen.has(k)){const id=+k.split('|')[0],ud=f.userData;/* v101: a real model whose unit died sinks into the ground instead of vanishing */
+    if(ud.model&&G&&!G.units.some(v=>v.id===id)){if(!ud.dying)ud.dying=nowT;const kk=(nowT-ud.dying)/750;if(kk<1){f.position.y=-kk*kk*1.6;f.rotation.x=0.35*kk;GL.dirty=true;continue}}
+    GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose());GL.figs.delete(k)}}
   {const sig=GL.occNow?[...GL.occNow.entries()].map(e=>e[0]+':'+e[1]).sort().join(';'):'';if(sig!==GL.occSig){GL.occSig=sig;GL.occ=GL.occNow;glPaintTiles()}}
   const t=performance.now()/1000;
   for(const m of GL.glow)m.material.emissiveIntensity=1.4+0.6*Math.sin(t*2.4);
@@ -6254,6 +6416,10 @@ function glPreviewFrame(still){if(!PV3.R||!PV3.fig)return;const t=(performance.n
 /* Hexmarch visual effects. The engine records events in G.fxLog; this plays any it hasn't shown yet,
    so effects also appear on other devices when an online game state arrives. */
 let fxSeen=0,annSeen=0;const ANIMS=[];let shakeUntil=0;
+// v101 motion pass: per-unit motion cues read by gl3d.js (lunge toward a target, a hit reaction, a casting rise, a landing puff)
+const MOTION={lunge:new Map(),hit:new Map(),cast:new Map(),landed:new Map()};
+function motionCue(ev,now){try{if((ev.k==='slash'||ev.k==='bolt'||ev.k==='lob')&&ev.from&&ev.to){const a=unitAt(ev.from[0],ev.from[1]),b=unitAt(ev.to[0],ev.to[1]);if(a)MOTION.lunge.set(a.id,{t0:now,to:ev.to,ranged:ev.k!=='slash'});if(b)MOTION.hit.set(b.id,{t0:now+(ev.k==='slash'?160:300),from:ev.from})}
+  if(ev.k==='ab'&&ev.from){const a=unitAt(ev.from[0],ev.from[1]);if(a)MOTION.cast.set(a.id,{t0:now});const imp=SIG_FX[ev.ab]?SIG_FX[ev.ab].impact:0.4;for(const [q,r] of (ev.cells&&ev.cells.length?ev.cells:[ev.to||ev.from])){const v=unitAt(q,r);if(v&&v!==a&&!ev.heal)MOTION.hit.set(v.id,{t0:now+imp*(SIG_FX[ev.ab]?SIG_FX[ev.ab].dur:700),from:ev.from})}}}catch(x){}}
 /* Synthesized sound for the big moments (no audio files). Off switch in the header, remembered per device. */
 /* Quiet by default (SND.vol scales every sound). Browsers allow sound only after the first tap or key press, so the audio
    context is opened on that first interaction and nothing plays before it. The switch lives in the header and the ☰ menu. */
@@ -6286,13 +6452,47 @@ function vUnit(){return VIEW==='3d'?CAM.S:SZ}
 // Canvas position of a hex centre at height h (in hex radii).
 function vPos(q,r,h){h=h||0;if(VIEW==='3d'){const [x,z]=world(q,r);const p=proj(x,z,h);return [p[0],p[1]]}const [x,y]=px(q,r);return [x,y-h*SZ*0.55]}
 const FLAVOR={fire:'#ffb347',ice:'#dff6ff',giants:'#f3d7a8',gnomes:'#ffd9a8',arcane:'#d9c8ff',warband:'#ffffff',rift:'#9ff5de',curse:'#f4f28a',chrono:'#eaa8ff',mage:'#c8ffd4'};
+
+let SIG_U=20;
+/* v101 SIGNATURE ABILITIES of the modelled armies, each in four beats: wind-up on the caster, travel, impact, aftermath.
+   Ember Fireball (the Hell Drake's too), Frost Ice Lance, Priests Mend / Lay on Hands, Warband Battle Cry, Giants Boulder. */
+const lerp=(a,b,k)=>a+(b-a)*k;
+function sigWind(x,y,col,k){ctx.save();ctx.globalAlpha=Math.min(1,k*1.4)*(1-k*0.3);const g=ctx.createRadialGradient(x,y,0,x,y,SIG_U*(0.5+0.4*k));g.addColorStop(0,'#ffffff');g.addColorStop(0.35,col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,SIG_U*(0.5+0.4*k),0,7);ctx.fill();ctx.restore()}
+function sigFlash(x,y,col,k,r){ctx.save();ctx.globalAlpha=Math.max(0,1-k);const g=ctx.createRadialGradient(x,y,0,x,y,SIG_U*r*(0.4+k));g.addColorStop(0,'#ffffff');g.addColorStop(0.3,col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,SIG_U*r*(0.4+k),0,7);ctx.fill();ctx.restore()}
+const SIG_FX={
+  fireball:{dur:1400,impact:0.5,draw(ev,t,now){const [cx,cy]=vPos(ev.from[0],ev.from[1],0.9),[tx,ty]=vPos(ev.to[0],ev.to[1],0.3);
+    if(t<0.18)sigWind(cx,cy,'#ff7a1a',t/0.18);
+    else if(t<0.5){const k=(t-0.18)/0.32;for(let i=6;i>=0;i--){const kk=Math.max(0,k-i*0.035);const x=lerp(cx,tx,kk),y=lerp(cy,ty,kk)-Math.sin(Math.PI*kk)*SIG_U*2.6;ctx.save();ctx.globalAlpha=(1-i/7)*0.9;ctx.fillStyle=i?'#ff6a1a':'#fff1b0';ctx.beginPath();ctx.arc(x,y,SIG_U*(0.32-i*0.03),0,7);ctx.fill();ctx.restore()}}
+    else{const k=(t-0.5)/0.5;if(k<0.08&&!ev.sh){ev.sh=1;shakeUntil=now+420}sigFlash(tx,ty,'#ff7a1a',Math.min(1,k*2.2),2.2);sparks(tx,ty,14,SIG_U*1.6,'#ffb347',Math.min(1,k*1.6),2);
+      for(const [q,r] of (ev.cells||[])){const [x,y]=vPos(q,r,0.1);for(let j=0;j<3;j++){const h=SIG_U*(0.35+0.25*Math.sin(now/90+q*3+r*5+j*2));ctx.save();ctx.globalAlpha=Math.max(0,0.85*(1-k));ctx.fillStyle=j?'#ff4a1a':'#ffd166';ctx.beginPath();ctx.moveTo(x+(j-1)*SIG_U*0.22-SIG_U*0.12,y);ctx.quadraticCurveTo(x+(j-1)*SIG_U*0.22,y-h*1.4,x+(j-1)*SIG_U*0.22+SIG_U*0.12,y);ctx.fill();ctx.restore()}}}}},
+  icelance:{dur:1100,impact:0.42,draw(ev,t,now){const [cx,cy]=vPos(ev.from[0],ev.from[1],0.8),[tx,ty]=vPos(ev.to[0],ev.to[1],0.6);
+    if(t<0.2)sigWind(cx,cy,'#5cc8ff',t/0.2);
+    else if(t<0.42){const k=(t-0.2)/0.22;const x=lerp(cx,tx,k),y=lerp(cy,ty,k),a=Math.atan2(ty-cy,tx-cx);ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#e8f8ff';ctx.strokeStyle='#5cc8ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(SIG_U*0.55,0);ctx.lineTo(-SIG_U*0.15,-SIG_U*0.12);ctx.lineTo(-SIG_U*0.45,0);ctx.lineTo(-SIG_U*0.15,SIG_U*0.12);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+      ctx.save();ctx.globalAlpha=0.5;ctx.strokeStyle='#bfefff';ctx.lineWidth=SIG_U*0.12;ctx.beginPath();ctx.moveTo(lerp(cx,tx,Math.max(0,k-0.35)),lerp(cy,ty,Math.max(0,k-0.35)));ctx.lineTo(x,y);ctx.stroke();ctx.restore()}
+    else{const k=(t-0.42)/0.58;sigFlash(tx,ty,'#9fe3ff',Math.min(1,k*2.5),1.4);ctx.save();ctx.strokeStyle='#e8f8ff';ctx.lineWidth=2;ctx.globalAlpha=Math.max(0,1-k);for(let i=0;i<9;i++){const a=i/9*Math.PI*2+0.3,r0=SIG_U*0.2,r1=SIG_U*(0.4+k*1.3);ctx.beginPath();ctx.moveTo(tx+Math.cos(a)*r0,ty+Math.sin(a)*r0);ctx.lineTo(tx+Math.cos(a)*r1,ty+Math.sin(a)*r1);ctx.stroke()}
+      const [gx,gy]=vPos(ev.to[0],ev.to[1],0.04);ctx.globalAlpha=Math.max(0,0.7*(1-k));ctx.fillStyle='#bfefff';ctx.beginPath();ctx.ellipse(gx,gy,SIG_U*0.9,SIG_U*0.45,0,0,7);ctx.fill();ctx.restore()}}},
+  mend:{dur:1300,impact:0.45,draw(ev,t,now){const [cx,cy]=vPos(ev.from[0],ev.from[1],0.8),[tx,ty]=vPos(ev.to[0],ev.to[1],0.5);
+    if(t<0.15)sigWind(cx,cy,'#ffe9a8',t/0.15);
+    if(t>=0.1&&t<0.55){const k=Math.min(1,(t-0.1)/0.35);ctx.save();ctx.lineWidth=SIG_U*0.1;ctx.strokeStyle='rgba(255,233,168,.9)';ctx.shadowColor='#ffe9a8';ctx.shadowBlur=12;ctx.beginPath();for(let i=0;i<=24;i++){const s=i/24*k;const x=lerp(cx,tx,s),y=lerp(cy,ty,s)+Math.sin(s*Math.PI*3+now/120)*SIG_U*0.25;if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)}ctx.stroke();ctx.restore()}
+    if(t>=0.45){const k=(t-0.45)/0.55;const [gx,gy]=vPos(ev.to[0],ev.to[1],0);ctx.save();ctx.globalAlpha=Math.max(0,Math.sin(Math.PI*Math.min(1,k*1.2)));const g=ctx.createLinearGradient(gx,gy-SIG_U*3,gx,gy);g.addColorStop(0,'rgba(255,233,168,0)');g.addColorStop(1,'rgba(255,233,168,.75)');ctx.fillStyle=g;ctx.fillRect(gx-SIG_U*0.55,gy-SIG_U*3,SIG_U*1.1,SIG_U*3);
+      ctx.fillStyle='#fff6d6';ctx.font=`900 ${Math.max(12,SIG_U*0.55)}px sans-serif`;ctx.textAlign='center';for(let i=0;i<4;i++){ctx.fillText('+',gx+Math.sin(i*2.1)*SIG_U*0.45,gy-SIG_U*(0.4+k*1.6+i*0.35))}ctx.restore();sparks(gx,gy-SIG_U*0.8,8,SIG_U*0.8,'#ffe9a8',k,1)}}},
+  battlecry:{dur:1200,impact:0.25,draw(ev,t,now){const [cx,cy]=vPos(ev.from[0],ev.from[1],0.15);if(t<0.06&&!ev.sh){ev.sh=1;shakeUntil=now+260}
+    ctx.save();for(let w=0;w<3;w++){const k=Math.max(0,Math.min(1,(t-w*0.12)/0.6));ctx.globalAlpha=Math.max(0,0.85*(1-k));ctx.strokeStyle=w===1?'#e8b84e':'#eef0f4';ctx.lineWidth=SIG_U*(0.16-w*0.04);ctx.beginPath();ctx.ellipse(cx,cy,SIG_U*(0.6+k*4.2),SIG_U*(0.3+k*2.3),0,0,7);ctx.stroke()}
+    const k=Math.min(1,t/0.7);for(let i=0;i<6;i++){const a=i/6*Math.PI*2;const x=cx+Math.cos(a)*SIG_U*(0.8+k*2.2),y=cy+Math.sin(a)*SIG_U*(0.4+k*1.1)-k*SIG_U*1.4;ctx.globalAlpha=Math.max(0,Math.sin(Math.PI*k));ctx.strokeStyle='#cfd3dc';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y+SIG_U*0.7);ctx.lineTo(x,y);ctx.stroke();ctx.fillStyle=i%2?'#e8b84e':'#eef0f4';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+SIG_U*0.45,y+SIG_U*0.14);ctx.lineTo(x,y+SIG_U*0.3);ctx.fill()}ctx.restore()}},
+  boulder:{dur:1300,impact:0.55,draw(ev,t,now){const [cx,cy]=vPos(ev.from[0],ev.from[1],1.4),[tx,ty]=vPos(ev.to[0],ev.to[1],0.25);
+    if(t<0.18)sigWind(cx,cy,'#bfae8a',t/0.18);
+    else if(t<0.55){const k=(t-0.18)/0.37;const x=lerp(cx,tx,k),y=lerp(cy,ty,k)-Math.sin(Math.PI*k)*SIG_U*3.2;ctx.save();ctx.translate(x,y);ctx.rotate(k*9);ctx.fillStyle='#8a7a62';ctx.strokeStyle='#3b3328';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<7;i++){const a=i/7*Math.PI*2,r=SIG_U*(0.42+0.08*Math.sin(i*3));if(i)ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);else ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+    else{const k=(t-0.55)/0.45;if(!ev.sh){ev.sh=1;shakeUntil=now+520}ctx.save();for(let i=0;i<10;i++){const a=i/10*Math.PI*2;ctx.globalAlpha=Math.max(0,0.6*(1-k));ctx.fillStyle='#a8977b';ctx.beginPath();ctx.ellipse(tx+Math.cos(a)*SIG_U*(0.3+k*1.4),ty+Math.sin(a)*SIG_U*(0.15+k*0.7)-k*SIG_U*0.4,SIG_U*(0.25+k*0.3),SIG_U*(0.16+k*0.2),0,0,7);ctx.fill()}ctx.restore();sparks(tx,ty,10,SIG_U*1.3,'#5a4a36',Math.min(1,k*1.4),3)}}}
+};
+SIG_FX.drakeball=SIG_FX.fireball;SIG_FX.layhands=SIG_FX.mend;SIG_FX.tend=SIG_FX.mend;
 function pumpVFX(now){
   if(!G)return;
   // Announcements (v24): each new one goes to the banner queue (ui.js annQueue), on this device and on every other device in an online game
   if(G.annLog)for(const e of G.annLog)if(e.id>annSeen){annSeen=e.id;if(typeof annQueue==='function')annQueue(e)}
   if(!G.fxLog)return;
-  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ANIMS.filter(a=>now-a.t0<0).length?0:0)});
+  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ANIMS.filter(a=>now-a.t0<0).length?0:0)});motionCue(ev,now);
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
+    if(ev.k==='thefall'&&typeof fitBoard==='function'){window.FALL_HOLD=Date.now()+4400;try{fitBoard()}catch(x){}setTimeout(()=>{try{fitBoard()}catch(x){}},150);setTimeout(()=>{try{if(G&&typeof frameArmy==='function'){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human')||{}).id;if(me!=null)frameArmy(me)}}catch(x){}},4500)}// v100: the whole board for the Fall, then back to your army
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
     if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')playSound('hit');if(ev.k==='crack')playSound('crack');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
     if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color;
@@ -6321,6 +6521,7 @@ function drawVFX(now){
   if(typeof stonesDraw==='function')stonesDraw();
   if(typeof phalanxDraw==='function')phalanxDraw();
   if(typeof kingZoneDraw==='function')kingZoneDraw(now);
+  if(typeof storyZoneDraw==='function')storyZoneDraw(now);
   if(typeof tutDraw==='function')tutDraw(now);
   pumpVFX(now);
   const U=vUnit();
@@ -6351,7 +6552,8 @@ function drawVFX(now){
         for(let s=0;s<segs;s++){const [ax,ay]=pts[s],[bx,by]=pts[s+1];const zig=[[ax,ay]];for(let j=1;j<6;j++){const f=j/6;zig.push([ax+(bx-ax)*f+(Math.random()-0.5)*U*0.5,ay+(by-ay)*f+(Math.random()-0.5)*U*0.5])}zig.push([bx,by]);
           glowLine(zig,'#e9ddff',Math.max(1.5,U*0.06),Math.max(0,1-el/dur))}
         break}
-      case 'ab':{dur=700;const t=el/dur;const [cx,cy]=vPos(ev.from[0],ev.from[1],0.6),[tx,ty]=vPos(ev.to[0],ev.to[1],0.2);
+      case 'dust':{dur=520;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.05);ctx.save();for(let i=0;i<7;i++){const a=i/7*Math.PI*2+0.4;ctx.globalAlpha=Math.max(0,0.45*(1-t));ctx.fillStyle=ev.col||'#c9b99a';ctx.beginPath();ctx.ellipse(x+Math.cos(a)*U*(0.25+t*0.55),y+Math.sin(a)*U*(0.12+t*0.25)-t*U*0.15,U*(0.12+t*0.12),U*(0.08+t*0.08),0,0,7);ctx.fill()}ctx.restore();break}
+      case 'ab':{if(SIG_FX[ev.ab]){const S=SIG_FX[ev.ab];dur=S.dur;SIG_U=U;S.draw(ev,el/dur,now);break}dur=700;const t=el/dur;const [cx,cy]=vPos(ev.from[0],ev.from[1],0.6),[tx,ty]=vPos(ev.to[0],ev.to[1],0.2);
         const A=ABIL[ev.ab]||{};
         if(ev.ab==='timewarp'||ev.ab==='quicken'||ev.ab==='rewind'||ev.ab==='clock'){const [x,y]=ev.ab==='timewarp'?[cx,cy]:vPos(ev.to[0],ev.to[1],0.6);
           ctx.save();ctx.globalAlpha=Math.max(0,1-t);ctx.strokeStyle='#ff9be8';ctx.lineWidth=Math.max(2,U*0.08);ctx.beginPath();ctx.arc(x,y,U*(0.5+t*0.5),-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,t*1.6));ctx.stroke();
@@ -6423,6 +6625,23 @@ function drawVFX(now){
           ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle=wc;ctx.lineWidth=2;ctx.stroke();ctx.restore()}
         break}
       // Act 1 (v23): the wall falls (dust over the grey ring), the Wellspring rises or is claimed, a flag changes hands, the Rift Beast appears and dies.
+      case 'thefall':{// v100 the opening scene: the Rift Beast drops out of a crack in the sky onto the city, the shockwave rolls out, then each army's portal tears open and the four stones glint on the roads
+        dur=4200;const t=el/dur;const [cx,cy]=vPos(0,0,0.4);ctx.save();
+        if(t<0.38){const k=t/0.38,y=cy-CH*0.75*(1-k*k);ctx.globalAlpha=0.9;ctx.strokeStyle='#d6b3ff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx-40,cy-CH*0.75);ctx.lineTo(cx+12,cy-CH*0.75+30);ctx.lineTo(cx-10,cy-CH*0.75+55);ctx.lineTo(cx+30,cy-CH*0.75+90);ctx.stroke();
+          const r=SZ*(1.2+k*2.4);const g=ctx.createRadialGradient(cx,y,r*0.1,cx,y,r);g.addColorStop(0,'#f2e2ff');g.addColorStop(0.35,'#9b5cff');g.addColorStop(1,'rgba(60,10,110,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,y,r,0,7);ctx.fill();
+          for(let i=0;i<10;i++){ctx.globalAlpha=0.5;ctx.fillStyle='#b06bff';ctx.beginPath();ctx.arc(cx+Math.sin(i*2.3+k*9)*r*0.9,y-r*(0.4+i*0.18),SZ*0.12,0,7);ctx.fill()}}
+        else{if(!ev.hit){ev.hit=1;shakeUntil=now+900}const k=Math.min(1,(t-0.38)/0.3);ctx.globalAlpha=Math.max(0,1-k);ctx.fillStyle='#ffffff';if(k<0.25){ctx.globalAlpha=0.55*(1-k*4);ctx.fillRect(0,0,CW,CH)}
+          for(let w=0;w<3;w++){const kk=Math.max(0,k-w*0.12);ctx.globalAlpha=Math.max(0,0.8*(1-kk));ctx.strokeStyle=w?'#b06bff':'#f2e2ff';ctx.lineWidth=6-w*1.5;ctx.beginPath();ctx.ellipse(cx,cy,SZ*(1+kk*14),SZ*(0.55+kk*8),0,0,7);ctx.stroke()}}
+        if(t>0.6){const k=Math.min(1,(t-0.6)/0.4);for(const p of ev.portals||[]){if(!p.at)continue;const [x,y]=vPos(p.at[0],p.at[1],0.3);ctx.globalAlpha=Math.max(0,Math.min(1,k*2)*(1-Math.max(0,k-0.7)/0.3));
+            const rr=SZ*(0.6+k*1.6);const g=ctx.createRadialGradient(x,y,rr*0.15,x,y,rr);g.addColorStop(0,'#ffffff');g.addColorStop(0.4,p.col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x,y,rr*0.75,rr*1.25,0,0,7);ctx.fill();
+            ctx.strokeStyle=p.col;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,rr*0.6,rr*1.05,0,0,7);ctx.stroke()}
+          for(const s of ev.stones||[]){const [x,y]=vPos(s[0],s[1],0.5);ctx.globalAlpha=Math.max(0,Math.sin(k*Math.PI));ctx.fillStyle='#ffd766';ctx.beginPath();ctx.arc(x,y,SZ*(0.3+0.4*k),0,7);ctx.fill()}}
+        if(t>0.15&&t<0.95){ctx.globalAlpha=Math.min(1,(t-0.15)*4,(0.95-t)*6);ctx.font=`900 ${Math.max(22,Math.min(CW/12,54))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';const tx=t<0.6?'The Rift Beast falls':'The portals open';ctx.strokeText(tx,CW/2,CH*0.16);ctx.fillStyle=t<0.6?'#d6b3ff':'#ffd766';ctx.fillText(tx,CW/2,CH*0.16)}
+        ctx.restore();break}
+      case 'rise':{// v100: a summoned giant (Archdemon, Elemental Lord) bursts up: a pillar of its colour and a ground ring, with the camera on it
+        dur=1800;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.2);if(el<30)shakeUntil=now+500;ctx.save();ctx.globalAlpha=Math.max(0,1-t);
+        const g=ctx.createLinearGradient(x,y-CH*0.5,x,y);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,ev.col);ctx.fillStyle=g;ctx.fillRect(x-SZ*(0.6+t),y-CH*0.5,SZ*(1.2+2*t),CH*0.5);
+        ctx.strokeStyle=ev.col;ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(x,y,SZ*(0.8+t*5),SZ*(0.45+t*2.8),0,0,7);ctx.stroke();sparks(x,y-SZ,16,SZ*2,ev.col,t,2);ctx.restore();break}
       case 'wallfall':{dur=1600;const t=el/dur;if(el<30)shakeUntil=now+600;
         for(const [q,r] of ringCells()){const d=hd(q,r,0,0);if(d>heartR()+1||d<=heartR())continue;const [x,y]=vPos(q,r,0.3+t*0.8);hexFlash(q,r,'#c9b894',0.5*(1-t));
           ctx.save();ctx.globalAlpha=Math.max(0,0.85-t);ctx.fillStyle='#a8977c';for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(x+(j-1)*U*0.35,y-j*U*0.12,Math.max(1.5,U*0.16*(1-t)),0,7);ctx.fill()}ctx.restore()}
@@ -7596,7 +7815,8 @@ function annText(e){
     case 'note':return {col:e.col||'#ffd766',t:annEsc(e.t||''),s:annEsc(e.s||'')+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'loot':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} brings home the ${annEsc(e.loot)}!`,s:annEsc(e.text)+(e.scores?`<br>${annStanding(e.team,e.scores)}`:'')};
     case 'chest':return {col:e.good?'#f2c75c':'#9a6bd0',t:e.good?`The Mystery Chest holds ${/^[AEIOU]/.test(e.loot||'')?'an':'a'} ${annEsc(e.loot)}!`:`The Mystery Chest curses the ${annEsc(e.unit)}!`,s:e.good?'Now carry it home.':'Plague and Wither. The chest is gone.'};
-    case 'demon':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} rises again!`,s:'The pit is fed: the Archdemon climbs out of the ashes (13 HP, its whip drags enemies to it).'};
+    case 'demon':return {col:FAC[e.fac].color,t:'The Archdemon rises!',s:`The pit is fed: the ${FAC[e.fac].name}'s Archdemon climbs out of the ashes (${e.hp||ARCHDEMON.hp} HP, ${e.atk||ARCHDEMON.atk} ATK; its whip drags enemies to it, and it grows with every victim it wounds).`};
+    case 'lord':return {col:FAC[e.fac].color,t:'The Elemental Lord walks the earth!',s:`All four elements of the ${FAC[e.fac].name} have ascended: the Elemental Lord rises (${e.hp} HP, ${e.atk} ATK) and grows with every Elemental spell.`};
     case 'wraith':return {col:FAC[e.fac].color,t:`${annFac(e.fac)} calls a Time Wraith!`,s:`Both Second Hands have fallen: the Wraith appears ${e.near?'beside the Chronarch':'at the army’s start'} (${WRAITH.hp} HP, ${WRAITH.atk} ATK, walks ${WRAITH.mov}).`};
     case 'beast':return {col:'#b06bff',t:'The Rift Beast awakens',s:`${G.map?'On the Throne.':'In no man’s land around the Heart.'} The killing blow wins ${warlord?RULES.BEAST_PTS+' points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge.`};
     case 'beastdown':return {col:FAC[e.fac].color,t:`The Rift Beast is slain by the ${annFac(e.fac)}!${e.pts?` +${e.pts} points`:''}`,s:e.pts&&e.scores?annStanding(e.team,e.scores):e.noPts?`No points: they have lost their Leader. +${RULES.BEAST_CHARGE} Ultimate charge.`:`+${RULES.BEAST_CHARGE} Ultimate charge.`};
@@ -7643,6 +7863,25 @@ function baseDraw(){if(!G||!G.map)return;ctx.save();for(const p of G.players){if
     // the base centre: a banner in the army colour (a themed building comes later)
     {const [cq,cr]=p.camp;let x,y;if(VIEW==='3d'){const t=hexTop(...world(cq,cr),0.5,0.03);x=t.reduce((a,b)=>a+b[0],0)/t.length;y=t.reduce((a,b)=>a+b[1],0)/t.length}else[x,y]=px(cq,cr);const h=vUnit()*1.1;ctx.globalAlpha=1;ctx.strokeStyle='#2a2116';ctx.lineWidth=Math.max(1.5,vUnit()*0.06);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-h);ctx.stroke();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+h*0.55,y-h*0.8);ctx.lineTo(x,y-h*0.6);ctx.closePath();ctx.fill()}}
   ctx.restore()}
+
+/* v98 story v2 on the board: the four sweep zones of the Rift Beast (always painted), a line from every Rift spawn to the stone it hunts,
+   and the Crown Stones drawn as gold diamonds. Called from drawVFX in both views. */
+function storyZoneDraw(now){if(!G||typeof STORY!=='function'||!STORY()||G.phase)return;const b=storyBeast();if(!b||!G.breaches)return;
+  const pk=0.5+0.5*Math.sin(now/700);ctx.save();
+  for(const br of G.breaches)for(const k of br.zone||[]){const [q,r]=k.split(',').map(Number);if(VIEW==='3d')polyPath(hexTop(...world(q,r),0.9,0.03));else{const [x,y]=px(q,r);hexPath(x,y,SZ*0.9)}
+    ctx.fillStyle=`rgba(255,90,70,${0.10+0.06*pk})`;ctx.fill();ctx.strokeStyle='rgba(255,90,70,.35)';ctx.lineWidth=1;ctx.stroke()}
+  const at=(q,r,h)=>VIEW==='3d'?proj(...world(q,r),h||0.4):px(q,r);
+  ctx.setLineDash([6,5]);ctx.lineWidth=2;ctx.strokeStyle='rgba(176,107,255,.8)';
+  for(const m of G.units){if(!m.spawnW||!alive(m))continue;const x=(G.loot||[]).find(l=>l.id===m.spawnStone);if(!x)continue;const c=x.carrier!=null?byId(x.carrier):null;const tq=c?c.q:x.q,tr=c?c.r:x.r;if(c===m)continue;
+    const [a,bb]=at(m.q,m.r),[c2,d2]=at(tq,tr);ctx.beginPath();ctx.moveTo(a,bb);ctx.lineTo(c2,d2);ctx.stroke()}
+  ctx.restore()}
+function drawStone(c,x,y,S,now){c.save();const g=0.6+0.4*Math.sin((now||0)/260);c.shadowColor='#ffd766';c.shadowBlur=S*0.9*g;c.beginPath();c.moveTo(x,y-S*0.55);c.lineTo(x+S*0.38,y);c.lineTo(x,y+S*0.55);c.lineTo(x-S*0.38,y);c.closePath();
+  c.fillStyle='#ffd766';c.fill();c.lineWidth=Math.max(1.5,S*0.08);c.strokeStyle='#5a3d05';c.stroke();c.beginPath();c.moveTo(x,y-S*0.55);c.lineTo(x,y+S*0.55);c.moveTo(x-S*0.38,y);c.lineTo(x+S*0.38,y);c.strokeStyle='rgba(90,61,5,.45)';c.lineWidth=1;c.stroke();c.restore()}
+function storyBeastCard(u){const pct=Math.max(0,u.hp/u.maxhp);const nx=REALM.waves.find(w=>w>G.round);const eaten=G.eaten||0;
+  return `<div class="label">The Rift Beast</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div>
+  <p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP</b> · its max HP falls ${REALM.beastDecay} every round (never below ${REALM.beastFloor}) · ${1+eaten>1?`${G.belly} stones`:'1 stone'} in its belly${eaten?` · +${eaten} damage from swallowed stones`:''}</p>
+  ${goalBox(`slay it. It never moves; once a round, after the last player, it makes one attack, the one that deals the most damage: <b>tentacle sweep</b> through a breach (the red cones: ${REALM.sweepDmg} minus DEF, shoved 1), <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes away (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours) or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back). ${nx?`Next wave of spawns: round ${nx}.`:'No more waves.'}`,
+    `${RULES.BEAST_PTS} points; the unit that lands the killing blow is crowned King on the spot and lifted onto the throne, and every stone in the belly goes into its crown (+1 ATK and +1 max HP each).`)}`}
 function kingZoneDraw(now){if(!G||G.mode!=="warlord"||G.phase||RULES.KING_ADJ!==1||oldCentre())return;const K=kingOf();if(!K||!onThrone(K))return;
   const pk=0.5+0.5*Math.sin(now/600);ctx.save();
   for(const [q,r] of DIRS){if(!inR(q,r))continue;const v=unitAt(q,r);if(v===K)continue;const foe=v&&v.kind!=='wall'&&!v.statue&&tm(v.owner)!==tm(K.owner);
@@ -7697,6 +7936,7 @@ function annFeedPlace(el){const bb=$('#boardbox');const r=bb&&bb.getBoundingClie
 function annFeedTick(){const el=$('#annFeed');if(!el||(el.hidden&&!ANN.feed.length))return;annFeedRender()}
 setInterval(annFeedTick,1000);
 function annQueue(e){
+  if(G&&e&&e.at&&(e.k==='demon'||e.k==='lord')&&typeof camPanTo==='function')setTimeout(()=>{try{camPanTo([e.at],false)}catch(x){}},150);// v100 (owner): the camera flies to where the giant rises, on every device
   if(!ANN.on||!G)return;
   annFeedAdd(e);
   // a newer score banner carries the full standings: drop older score banners still waiting, and never let the queue grow past 5
@@ -7721,7 +7961,7 @@ function annSet(on){ANN.on=on;try{localStorage.setItem('hexmarch.ann',on?'on':'o
 function syncAnnBtn(){const b=$('#annBtn');if(b){b.textContent=ANN.on?'Announcements on':'Announcements off';b.setAttribute('aria-pressed',ANN.on?'true':'false')}}
 function wildsSeats(){}// v50: the Riftwalkers play on the Crown Wilds too (they make their own holes), so no seat is swapped any more
 // v33: the King rules in one place, for texts. Crown Wilds: +2/+2 for life; random board: +1/+1 for life, +2/+2 on the Throne while challenged.
-function kingText(){return G&&G.map?`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. It scores 1 point at the start of its side's turn while it sits on the Throne. Whoever kills the King scores ${RULES.KING_KILL}.`
+function kingText(){return G&&G.map?`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. It scores 1 point at the start of its side's turn while it sits on the Throne. Whoever kills the King scores ${G.realm?REALM.kingPts:RULES.KING_KILL}.${G.realm&&RULES.STORY2?` Its crown holds ${G.crown||0} Crown Stone${(G.crown||0)===1?'':'s'} (+1 ATK and +1 max HP each), and stays on the throne for the next King.`:''}`
   :'+1 ATK and +1 DEF for as long as it lives. At the start of its side’s turn, sitting on the Throne scores 1 point, always. To stop it, kill the King (its killer scores '+RULES.KING_KILL+') or take the Throne: whoever sits on the Throne takes the crown, even from a living King who has stepped off it.'}
 function isHumanTurn(){if(!G||G.over)return false;const p=P(G.cur);if(p.ctrl!=='human')return false;return !netOnline()||p.uid===NET.me}
 function teamColor(t){return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t).fac].color}
@@ -7785,7 +8025,7 @@ function refresh(){
     ub.innerHTML=`⚡${team?'⚡':''} <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':G.ap>=RULES.ULT_COST?(team?'team ready':'ready'):'needs '+RULES.ULT_COST+' AP'):ch+'/'+need}</span>`;ub.title=U.text}}
   if(G.realm&&!G.phase)realmBar();
   if(G.phase==='deploy')$('#apBox').innerHTML=`<span class="aplabel"><b>Deployment</b> · ${G.players.filter(x=>x.deployed).length}/${G.players.length} ready</span>`;
-  const eb=$('#endBtn');eb.textContent=G.phase==='deploy'?'Done deploying':'End turn';eb.disabled=!isHumanTurn();eb.classList.toggle('pulse',isHumanTurn()&&!G.phase&&nothingLeft());
+  const eb=$('#endBtn');eb.textContent=G.phase==='deploy'?'Done deploying':'End turn';eb.disabled=!isHumanTurn();eb.classList.toggle('endglow',isHumanTurn()&&!G.phase&&nothingLeft());/* v99 (owner): the End turn button glows when every move and attack is done */
   const hs=G.holder!==null?`held by <b style="color:${teamColor(G.holder)}">${teamName(G.holder)}</b>`:G.contested?'<b>contested</b>':'unclaimed';
   let scores='';
   if(G.mode==='conquest'||G.mode==='warlord'){
@@ -7807,15 +8047,18 @@ function refresh(){
           else if(K){const on=K.q===0&&K.r===0,blocked=heartFoes(tm(K.owner));lines.push(`<b style="color:#ffd766">♛ King:</b> the <b style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name} ${K.name}</b> (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF). ${on?(blocked?'On the Throne, but enemies stand on the Heart: no point this turn.':'On the Throne: 1 point at the start of its turn.'):'Away from the Throne: no points.'}`)}
           else lines.push(`<b style="color:#ffd766">The Throne is free:</b> the first unit to sit on it is crowned King.`)}
         for(const p of G.players.filter(p=>p.fac==='fire'&&p.alive&&RULES.ARCHDEMON)){const nd=G.realm?REALM.demonSouls:RULES.DEMON_SOULS,n=p.souls||0;lines.push(p.demon?`<b style="color:#ff4a3d">🔥 ${FAC.fire.name}: the Archdemon has risen.</b>`:`<b style="color:#ff4a3d">🔥 ${FAC.fire.name} souls: ${Math.min(n,nd)} of ${nd}</b> <span class="soulbar"><i style="width:${Math.min(100,Math.round(100*n/Math.max(1,nd)))}%"></i></span> ${nd-n>0?`${nd-n} more and the Archdemon rises.`:'The Archdemon rises now.'}`)}// v89
+        if(typeof STORY==='function'&&STORY()){const b=storyBeast();const nx=REALM.waves.find(w=>w>G.round);const loose=(G.loot||[]).filter(x=>x.kind==='stone');const sp=G.units.filter(m=>m.spawnW&&alive(m)).length;
+          lines.push(b?`<b style="color:#c99bff">Rift Beast:</b> ${fmt(b.hp)}/${b.maxhp} HP, losing ${REALM.beastDecay} max HP a round. Belly: ${G.belly} stone${G.belly>1?'s':''}.${nx?` Next wave of spawns: round ${nx}.`:''}`:`<b style="color:#c99bff">The Rift Beast is dead.</b>`);
+          lines.push(`<b style="color:#ffd766">Crown Stones:</b> ${loose.length} on the map (${loose.filter(x=>x.carrier!=null).length} carried), ${G.belly||0} in the Beast, ${G.crown||0} in the crown.${sp?` ${sp} Rift spawn${sp>1?'s':''} hunting.`:''}`)}
         if(G.realm){const rs=G.rooms||[];const live=t=>G.units.filter(m=>m.monster&&m.owner<0&&!m.beast&&rs.find(R=>R.id===m.room&&R.tier===t)).length;lines.push(`<b style="color:#b9b3d6">Camps:</b> ${live(1)} valley camps, ${live(2)} edge lairs and ${live(3)} Drake lairs still held by monsters.`)}/* v82b: Realm-only side panel */
         else{const rs=G.rooms||[],seen=rs.filter(R=>R.seen).length,open=rs.filter(R=>R.state==='active'||R.state==='loot').length;lines.push(`<b style="color:#b9b3d6">Rooms:</b> ${seen} of ${rs.length} discovered, ${open} still hold a fight or a treasure.`);
         if(G.midUp){for(const R of rs.filter(R=>R.type==='lair')){const d=G.units.find(m=>m.monster==='dragon'&&m.room===R.id);lines.push(`<b style="color:#ff9a3d">Dragon’s Lair:</b> ${d?`the Dragon has ${fmt(d.hp)}/${d.maxhp} HP. Killing blow: +${WILDS.dragonPts} points.`:'the Dragon is slain.'}`)}
           for(const c of G.circles||[]){const n=c.team!=null?c.charge:0;lines.push(`<b style="color:#c8b6ff">Standing Stones:</b> ${G.round<c.dark?`asleep until round ${c.dark}.`:n?`<b style="color:${teamColor(c.team)}">${teamName(c.team)}</b> started the ritual (1/2).`:`hold all three runestones at the start of two turns in a row: +${WILDS.stonesPts} points.`}`)}}
         else lines.push(`<b style="color:#ff9a3d">Round ${WILDS.midAt}:</b> the Dragons wake (+${WILDS.dragonPts} points for the killing blow) and the Standing Stones glow (+${WILDS.stonesPts} points).`);}
-        {const wd=G.wander&&byId(G.wander.id);lines.push(`<b style="color:#b9a2ff">Wanderer:</b> ${wd?`${fmt(wd.hp)}/${wd.maxhp} HP, roaming. Its killing blow drops a Crown Shard.`:G.wander?'slain.':'levers of two different sides open its trap door (once per game).'}`)}
+        if(!(typeof STORY==='function'&&STORY()))/* v98: no levers or Wanderer in the story */{const wd=G.wander&&byId(G.wander.id);lines.push(`<b style="color:#b9a2ff">Wanderer:</b> ${wd?`${fmt(wd.hp)}/${wd.maxhp} HP, roaming. Its killing blow drops a Crown Shard.`:G.wander?'slain.':'levers of two different sides open its trap door (once per game).'}`)}
         for(const t of Object.keys(G.gems||{})){const g=G.gems[t];const list=GKEYS.filter(k=>g[k]).map(k=>`<b style="color:${GEMS[k].col}">${GEMS[k].name}${g[k]>1?' ×'+g[k]:''}</b>`);if(list.length)lines.push(`<b style="color:${teamColor(+t)}">${teamName(+t)} crown:</b> ${list.join(', ')}${kingOf()&&tm(kingOf().owner)===+t?' (powering their King)':' (no King yet: no effect)'}.`)}
-        for(const x of G.loot||[]){const c=x.carrier!=null?byId(x.carrier):null;lines.push(`<b style="color:${lootCol(x)}">${lootName(x)}:</b> ${c?`carried by the <b style="color:${FAC[P(c.owner).fac].color}">${FAC[P(c.owner).fac].name} ${c.name}</b>`:'on the ground'}.`)}
-        const bst=G.units.find(u=>u.beast);if(bst)lines.push(`<b style="color:#c99bff">Rift Beast:</b> ${fmt(bst.hp)}/${bst.maxhp} HP on the Throne. Killing blow: +${RULES.BEAST_PTS} points and +${RULES.BEAST_CHARGE} charge.`);
+        for(const x of G.loot||[]){if(x.kind==='stone')continue;/* v98: stones have their own line */const c=x.carrier!=null?byId(x.carrier):null;if(c&&!G.players[c.owner])continue;lines.push(`<b style="color:${lootCol(x)}">${lootName(x)}:</b> ${c?`carried by the <b style="color:${FAC[P(c.owner).fac].color}">${FAC[P(c.owner).fac].name} ${c.name}</b>`:'on the ground'}.`)}
+        const bst=!(typeof STORY==='function'&&STORY())&&G.units.find(u=>u.beast);if(bst)lines.push(`<b style="color:#c99bff">Rift Beast:</b> ${fmt(bst.hp)}/${bst.maxhp} HP on the Throne. Killing blow: +${RULES.BEAST_PTS} points and +${RULES.BEAST_CHARGE} charge.`);
         return `<div class="hint" style="margin-top:8px">${lines.join('<br>')}</div>`}
       if(centreWalled())lines.push(`<b style="color:#d8c8a4">⛫ The centre is walled</b> until round ${RULES.CENTRE_FROM}${G.round===RULES.CENTRE_FROM-1?' (it falls next round)':''}: nothing can enter the ring of wall around the Heart, or the Heart itself.`);
       const fl=G.players.filter(p=>p.alive).map(p=>[p,flagsOf(p.id)]).filter(x=>x[1]>0);lines.push(`<b>Flags owned:</b> ${fl.length?fl.map(([p,n])=>`<b style="color:${FAC[p.fac].color}">${FAC[p.fac].name} ${n}</b>`).join(' · '):'none yet'} (of ${(G.outposts||[]).filter(o=>solid(o[0],o[1])).length}).`);
@@ -8051,7 +8294,7 @@ setInterval(()=>{
   const left=Math.max(0,Math.ceil((turnClock.end-Date.now())/1000));el.hidden=false;el.textContent='⏱ '+left+'s';el.classList.toggle('low',left<=10);
   if(left<=0){turnClock.tok=null;toast('Time is up');if(G.phase==='deploy'){curtain=null;deployReady();refresh();netPush()}else endTurn()}
 },500);
-function nothingLeft(){const mine=G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall');if(G.ap<1)return !mine.some(u=>(u.freeAtk>0&&attackTargets(u).length)||(u.freeMove>0&&moveOpts(u).size));// a Quicken strike or Rewind move still costs nothing
+function nothingLeft(){const mine=G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u));if(G.realm){const p=P(G.cur);if(p&&!p.sumDone&&(p.reserve||[]).length)return false}// v99: on the Realm an uncalled unit is still a move leftif(G.ap<1)return !mine.some(u=>(u.freeAtk>0&&attackTargets(u).length)||(u.freeMove>0&&moveOpts(u).size));// a Quicken strike or Rewind move still costs nothing
   return !mine.some(u=>attackTargets(u).length||canAbil(u)||((!u.moved||u.freeMove>0)&&moveOpts(u).size))||(G.ap<2&&!mine.some(u=>(!u.moved||u.freeMove>0)&&moveOpts(u).size))}
 function statB(v,base){return `<b class="${v>base?'up':v<base?'down':''}">${fmt(v)}</b>`}
 function abilBlock(u,k){
@@ -8131,6 +8374,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u){
     el.innerHTML=`<div class="label">${isHumanTurn()?'Your move':'Bot turn'}</div><p class="hint" style="margin:0">${isHumanTurn()?'Tap one of your units to see where it can move (dots), what it can reach (red hexes) and who it can hit right now (crosshairs). Tap an enemy to see its reach too.':'A bot is playing. Tap any unit to see its moves and reach.'}</p>`;return;
   }
+  if(u.beast&&typeof STORY==='function'&&STORY()){el.innerHTML=storyBeastCard(u);return}
   if(u.beast){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">Neutral monster</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${u.def!=null?u.def:RULES.BEAST_DEF} DEF · fills 3 hexes</b></p>${goalBox(G.map?'slay the Rift Beast on the Throne (anyone may hit it).':'slay the Rift Beast.',`${G.map?'the Throne is revealed (the first unit to sit on it becomes King), ':''}${G.mode==='warlord'?'+'+RULES.BEAST_PTS+' Warlord points and ':''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands the killing blow.`,G.mode==='warlord'?'A side whose Leader has fallen scores no points for it (it still gets the charge).'+(myLeaderless()?' <b style="color:#ff6161">Your Leader has fallen: no points for you.</b>':''):'')}<p class="hint" style="margin:6px 0 0">It belongs to nobody and counts as an enemy for every army. ${G.map?`It sleeps on the Throne and never moves. It never attacks on its own, but at the start of every round it strikes the last unit that hit it for 1 damage plus 1 for every hit it took that round`:`It never attacks and never strikes back; at the start of every round it roams up to ${RULES.BEAST_MOVE} hexes in a random direction (never into the Heart, onto a flag, the Wellspring or a loose relic, or onto the ring about to fall)`}, and it can't be pushed, pulled or swapped${G&&G.map?'; it can be chilled, frozen, stunned and cursed (frozen or stunned, it skips its strike; curses tick on it each round)':', frozen, chilled, stunned or cursed'}. Basic attacks and damaging abilities can hit it; Ultimates pass it by.</p><p style="margin:6px 0 0;color:#ffd766"><b>Killing blow:</b> ${G.mode==='warlord'?`+${RULES.BEAST_PTS} Warlord points at once and `:''}+${RULES.BEAST_CHARGE} Ultimate charge for the side that lands it.</p>`;return}
   if(u.monster){const pct=Math.max(0,u.hp/u.maxhp);el.innerHTML=`<div class="label">${u.monster==='cracked'?'Obstacle':'Monster'}</div><h3 style="color:#c9b6ff">${u.name}</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div><p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP · ${u.def} DEF${u.atk?' · '+u.atk+' ATK':''}</b></p>${u.monster!=='cracked'?monsterGoal(u):''}${statusChips(u,true)}<p class="hint" style="margin:6px 0 0">${u.monster!=='crate'?'Cold and curses work on it: frozen or stunned it skips its strike-back, curses tick on it each round. ':''}${({crate:'A locked crate: smash it open to free the treasure inside.',cracked:'A cracked wall: anyone can smash it. Once broken the way stays open.',dragon:`It never leaves its lair. At the start of each round it breathes fire on the last unit that hit it. Its killing blow wins ${WILDS.dragonPts} points.`,wanderer:'It roams 3 hexes a round. At the start of each round it hits back at the last unit that hit it. Its killing blow drops a Crown Shard.'})[u.monster]||'It never leaves its room and never attacks first: at the start of each round it hits back at the last unit that hit it. Clear the room to free its treasure.'}</p>`;return}
   if(u.kind==='wall'){el.innerHTML=`<div class="label">Obstacle</div><h3>${u.name}</h3><p class="hint">${u.hp}/${u.maxhp} HP. Gone in ${u.ttl} turn${u.ttl>1?'s':''} of its maker.</p>`;return}
@@ -8257,7 +8501,20 @@ function closeModal(){$('#overlay').hidden=true;if(G&&G.over&&screen==='game')sh
 function rulesTop(){
   if((G&&G.realm)||(!G&&cfg.map==='realm'))return realmRules()+'<hr>'+rulesTop0();
   return rulesTop0()}
-function realmRules(){return `<h3>The Realm (test board)</h3><ul>
+
+function storyRules(){return `<h3>The Realm: the story</h3><ul>
+  <li><b>The Fall.</b> A peaceful planet kept its power in the five stones of its crown. One alien race sent the Rift Beast to take them; it fell on the city on the very first round, crushed the tower and broke the wall in four places, one breach facing each army. Four stones were thrown out onto the roads; the fifth is in its belly. The other races, your armies, come through their portals (your bases) to take the stones and the throne for themselves.</li>
+  <li><b>No AP.</b> Every unit may move once and act once each turn. Call one unit a turn from your reserve to your portal or a spawn site you own. The fallen are gone for good. Units in your home valley heal ${REALM.heal} a turn.</li>
+  <li><b>The Rift Beast</b> never moves. Its max HP starts at ${REALM.storyBeastHp} and falls ${REALM.beastDecay} every round as the Rift closes. Once a round, after the last player, it makes one attack, the one that deals the most damage: <b>tentacle sweep</b> through a breach (the red cones on the board: ${REALM.sweepDmg} minus DEF, shoved 1 hex), <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes from its body (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours), or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back).</li>
+  <li><b>The spawns.</b> In rounds ${REALM.waves.join(', ')} the Beast tears one spawn per player off its body, each bound to one Crown Stone. A spawn fetches its stone and runs it back; the Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP). Whoever carries a stone is hunted by its spawn. Each wave is harder: the first bites, the second roars, the third spits, the fourth sweeps. Waves 1 and 2 give nothing; a wave-3 spawn gives 1 point and +1 ATK to its killer; a wave-4 spawn 2 points and +2 max HP to the killer's whole army. Spawns never hunt the King and take double damage from him.</li>
+  <li><b>Crown Stones.</b> Walk onto one to carry it; it does nothing yet. A carrier that dies drops it. When one of your units is crowned, every stone your side carries goes into the crown: <b>+1 ATK and +1 max HP for the King per stone</b>, and stones your side picks up later go in too.</li>
+  <li><b>Slaying the Beast</b> scores ${RULES.BEAST_PTS} points, and the unit that lands the blow is crowned King on the spot, lifted onto the throne, with every stone in the belly in its crown. If the Beast dies before round ${REALM.waves[3]}, it explodes and flings the wave-4 spawns far across the land; after its death the spawns fear the King.</li>
+  <li><b>The King</b> (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF, plus the crown) scores 1 point at each of your turns on the throne. Kill the King: ${REALM.kingPts} points, and the crown stays on the throne with all its stones for the next unit that sits there.</li>
+  <li><b>The Old God</b> wakes beside the first King's portal and walks to him. Within 3 of the King it heals him ${REALM.godHeal} at the start of his turn, and every ${REALM.godEvery} rounds it roars ${REALM.godRoar} damage ignoring DEF at the King's enemies within 3. Kill it: 2 points; it never returns.</li>
+  <li><b>The land.</b> Valley Camps near your portal (the planet's own beasts): the killer gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK and the camp becomes your spawn site. Two Healing Springs, east and west: your army heals ${REALM.springHeal} and the Spring becomes your spawn site. Two Elder Drakes sleep at the north and south edges until round ${REALM.drakeAt}: they strike only the last unit that hit them; the killing blow scores ${REALM_MON.drake.pts} points and brings back your strongest fallen unit.</li>
+  <li><b>Points.</b> First to <b>${REALM.target}</b>: the King on the throne (1 a turn), the Beast (${RULES.BEAST_PTS}), the King (${REALM.kingPts}), an enemy Leader (${REALM.leaderPts}), a Drake (${REALM_MON.drake.pts}), a wave-4 spawn (2), a wave-3 spawn (1), the Old God (2). Ordinary units score nothing.</li>
+  <li><b>Light and fast, heavy and slow.</b> Units with no armour move 1 more, units with 2+ DEF move 1 less; giants walk 4 and never stop on mountains or rivers. Blows struck from next to the target deal 1 more; shots from afar deal 1 less.</li></ul>`}
+function realmRules(){if(typeof STORY==='function'&&RULES.STORY2)return storyRules();return `<h3>The Realm (test board)</h3><ul>
   <li><b>No AP.</b> Every unit may move once and act once (attack or ability) each turn. Abilities only rest.</li>
   <li><b>Your army grows.</b> You start with your Leader and ${REALM.start} units. Once per turn, tap a unit in the reserve bar (above the board) to call it into your base; if you forget, the first one comes at the end of your turn. The fallen are gone for good.</li>
   <li><b>Home valley.</b> Your base sits in a corner valley ringed by broken mountains. Units inside it heal ${REALM.heal} at the start of your turn. Two Valley Camps live there (tier 1): the unit that lands the killing blow gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good, so choose who strikes last, and the camp becomes your <b>spawn site</b>. Camps never come back.</li>
@@ -8733,7 +8990,7 @@ function drawMarkers2D(now){
   {const z=myDeployZone();if(z){const P0=P(G.cur);for(const k of z){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);hexPath(x,y,SZ*0.9);ctx.fillStyle=hexA(FAC[P0.fac].color,0.16+0.08*Math.sin(now/300));ctx.fill();ctx.strokeStyle=hexA(FAC[P0.fac].color,0.8);ctx.lineWidth=1.5;ctx.stroke()}}}
   for(const [k,c] of Object.entries(G.claim||{})){const [q,r]=k.split(',').map(Number);const [x,y]=px(q,r);ctx.save();ctx.setLineDash([4,3]);hexPath(x,y,SZ*0.8);ctx.strokeStyle=FAC[c.fac].color;ctx.lineWidth=Math.max(2,SZ*0.12);ctx.stroke();ctx.restore()}
   for(const x of G.relics||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);drawRelicGlyph(x.kind,a,b-SZ*0.05,SZ*0.95,now)}
-  for(const x of G.loot||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);drawChest(ctx,a,b,SZ*0.9,lootCol(x),now)}
+  for(const x of G.loot||[])if(x.carrier==null&&x.q!=null){const [a,b]=px(x.q,x.r);if(x.kind==='stone')drawStone(ctx,a,b,SZ*0.95,now);else drawChest(ctx,a,b,SZ*0.9,lootCol(x),now)}
   // flank road: dashed line along its inner edge
   ctx.save();ctx.setLineDash([Math.max(2,SZ*0.18),Math.max(2,SZ*0.14)]);ctx.strokeStyle='rgba(236,222,190,.55)';ctx.lineWidth=Math.max(1.2,SZ*0.07);
   for(const [q,r] of ringCells()){if(G.map||!isRoad(q,r))continue;const [x,y]=px(q,r);
@@ -8871,7 +9128,7 @@ function draw(now){
     sts.forEach((c,i)=>{ctx.beginPath();ctx.arc(mx+rad*0.75-i*SZ*0.3,my-rad*0.8,Math.max(2.5,SZ*0.14),0,7);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1;ctx.stroke()});
     const nc=curseCount(u);if(nc&&SZ>=10)badge(mx-rad*0.75,my-rad*0.75,Math.max(5,rad*0.36),'#e8e23a','#1b2008',nc);
     {const rl=relicOf(u);if(rl)drawRelicGlyph(rl.kind,mx+rad*0.95,my-rad*0.1,Math.max(8,rad*0.6),now)}
-    {const lt=lootOf(u);if(lt)drawChest(ctx,mx-rad*0.95,my-rad*0.2,Math.max(9,rad*0.7),lootCol(lt),now)}
+    {const lt=lootOf(u);if(lt){if(lt.kind==='stone')drawStone(ctx,mx-rad*0.95,my-rad*0.2,Math.max(10,rad*0.8),now);else drawChest(ctx,mx-rad*0.95,my-rad*0.2,Math.max(9,rad*0.7),lootCol(lt),now)}}
     if(u.king){ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=8;drawIcon(ctx,'crown',mx,my-rad*1.35-(SZ>=9?hpBarH(rad*0.34)+2:0),Math.max(12,rad*0.95),'#ffd766','#3a2a05');ctx.restore()}
     if(u.ability&&SZ>=9){const br=Math.max(5.5,rad*0.4),bx=mx-rad*0.72,by=my+rad*0.72;if(u.cd>0)badge(bx,by,br,'#3a2323','#ffb3b3',u.cd);else{ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=6;badge(bx,by,br,'#ffd766','#1a1206','⚡');ctx.restore()}}
     if(SZ>=9)hpBar(u,mx,my-rad-Math.max(4,rad*0.3)-hpBarH(rad*0.34)/2,rad*2.3,hpBarH(rad*0.34));// v90: the bar above the head
@@ -8952,7 +9209,7 @@ function centreOn(cx,cy,z){const box=$('#boardbox');if(z&&Math.abs(z-zoom)>0.001
    longer moves outside the mover's own start area. Tiny moves are skipped and nothing moves if the action is already well in view. Touching,
    dragging or zooming the board during someone else's turn stops the camera until your next turn. Switch: ☰ menu, saved as hexmarch.camfollow. */
 const CAMF={on:true,paused:false,seq:0,pos:new Map(),raf:0};try{CAMF.on=localStorage.getItem('hexmarch.camfollow')!=='off'}catch(e){}
-const CAM_KINDS=new Set(['trapdoor','slash','bolt','lob','ab','death','relic','beast','beastdown','chain','fall','ult','crack','flag','spring','well']);
+const CAM_KINDS=new Set(['rise','trapdoor','slash','bolt','lob','ab','death','relic','beast','beastdown','chain','fall','ult','crack','flag','spring','well']);
 function camWatching(){return CAMF.on&&!CAMF.paused&&G&&!G.over&&!G.phase&&screen==='game'&&!isHumanTurn()}
 function camSnap(){if(!G)return;CAMF.pos=new Map(G.units.map(u=>[u.id,[u.q,u.r]]));CAMF.seq=G.fxSeq||0}
 function camStop(){if(CAMF.raf){cancelAnimationFrame(CAMF.raf);CAMF.raf=0}}
@@ -8987,7 +9244,7 @@ function camStep(){
     const far=hd(o[0],o[1],u.q,u.r)>=2,home=p&&p.zone&&p.zone.includes(key(o[0],o[1]))&&p.zone.includes(key(u.q,u.r));if(far&&!home){pts.push(o,[u.q,u.r])}}
   camSnap();if(!pts.length)return 0;
   const moved=camPanTo(pts,true);return moved?(big?900:600):(big?350:0)}
-function frameArmy(pid){
+function frameArmy(pid){if(window.FALL_HOLD&&Date.now()<window.FALL_HOLD)return;/* v100: the camera stays on the whole board during the Fall */
   if(!G||screen!=='game')return;const box=$('#boardbox');if(!box||!box.clientWidth)return;
   const us=G.units.filter(u=>u.owner===pid&&u.kind!=='wall'&&visibleUnit(u));if(!us.length)return;
   const az=CAM.az;CAM.az=CAM.azT;zoom=1;layout();
@@ -9192,7 +9449,7 @@ function histArmyStats(){const out={};const S=G.stats&&G.stats.units||{};for(con
 function histSnap(){const K=kingOf&&kingOf();return {round:G.round,t:Date.now(),cur:G.cur,score:Object.assign({},G.score),king:K?{id:K.id,name:K.name,owner:K.owner,onThrone:K.q===0&&K.r===0}:null,
   players:G.players.map(p=>({id:p.id,fac:p.fac,alive:p.alive,team:p.team,ult:p.ult||0,souls:p.souls||0,faith:p.faith||0,ctrl:p.ctrl,units:G.units.filter(u=>u.owner===p.id&&u.kind!=='wall'&&u.hp>0).length,reserve:(p.reserve||[]).length,fallen:(p.fallen||[]).length})),
   units:G.units.filter(u=>u.hp>0&&(u.kind!=='wall'||u.monster||u.beast)).map(u=>({id:u.id,n:u.name,o:u.owner,q:u.q,r:u.r,hp:Math.round(u.hp*10)/10,mhp:u.maxhp,atk:u.atk,def:u.def,ld:u.leader?1:0,k:u.king?1:0,m:u.monster||(u.beast?'beast':undefined),st:Object.keys(u.st||{}).filter(k=>u.st[k]&&u.st[k]!==0)})),
-  armies:histArmyStats(),paint:Object.keys(G.paint||{}).length,loot:(G.loot||[]).length}}
+  armies:histArmyStats(),paint:Object.keys(G.paint||{}).length,loot:(G.loot||[]).map(x=>({k:x.kind,c:x.carrier,q:x.q,r:x.r})),story:{belly:G.belly,eaten:G.eaten,crown:G.crown,wave:G.waveN,beast:(G.units.find(u=>u.beast)||{}).hp,god:G.god},points:JSON.parse(JSON.stringify(G.stats&&G.stats.points||{}))}}
 function histStartMatch(){const seats=G.players.map(p=>({id:p.id,fac:p.fac,ctrl:p.ctrl,team:p.team}));
   if(!G.histId)G.histId='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   HIST.match={id:G.histId,started:Date.now(),version:(typeof VERSION!=='undefined'?VERSION:''),board:G.realm?'realm':(G.map||'random'),mode:G.mode,n:G.players.length,teams:!!G.teams,online:!!(typeof netOnline==='function'&&netOnline()),seats,rounds:[],log:[],photos:{},result:null,stats:null,device:(navigator.userAgent||'').slice(0,80)};
@@ -9231,6 +9488,38 @@ function showHistory(){const o=document.querySelector('#overlay');o.innerHTML=`<
 // the home page gets a Match history card under the learn card
 function histHomeCard(){const lc=document.querySelector('#learnCard');if(!lc||document.querySelector('#histCard'))return;const c=document.createElement('div');c.className='card';c.id='histCard';c.innerHTML='<div class="label">Match history</div><div id="histHome"><p class="hint">Loading…</p></div>';lc.after(c);histList(c.querySelector('#histHome'))}
 {const rs0=renderSetup;renderSetup=function(){rs0();histHomeCard()}}histHomeCard();
+
+/* v101 MOTION SHOWCASE (owner 19 Oct 2026): open the game with #motion at the end of the address (for example http://localhost:8765/plain.html#motion)
+   and a scripted scene plays the motion pass on the modelled armies, on a loop: walking, lunges, hits, a death, and the five signature abilities
+   (Fireball, Ice Lance, Mend, Battle Cry, Boulder). Nothing here runs in a normal game. */
+const SHOW={on:false,step:0,timer:null,u:{}};
+function showcaseScene(){
+  labClear();G.round=5;G.phase=null;G.over=null;G.ap=99;G.realm=false;
+  const put=(pid,name,q,r)=>{const u=labUnit(pid,name,q,r,{hp:60});u.moved=false;u.acted=false;return u};
+  SHOW.u={hound:put(0,'Hellhound',-4,1),drake:put(0,'Hell Drake',-5,3),pit:put(0,'Pit Lord',-6,2),
+    queen:put(1,'Ice Queen',4,-2),hail:put(1,'Hailcaller',4,0),knight:put(1,'Glacier Knight',2,0),
+    priest:put(2,'High Priest',-2,-4),cleric:put(2,'Cleric',-1,-4),seraph:put(2,'Seraph',0,-4),
+    captain:put(3,'Captain',1,3),sword:put(3,'Swordsman',0,2),shield:put(3,'Shieldbearer',1,2),spear:put(3,'Spearman',2,2),
+    hurler:put(4,'Boulder Hurler',-1,6),titan:put(4,'Titan',3,5)};
+  SHOW.u.seraph.hp=30;refresh();setTimeout(()=>{try{camPanTo(G.units.map(u=>[u.q,u.r]),false)}catch(e){}},200)}
+function showAct(u){G.cur=u.owner;G.ap=99;u.moved=false;u.acted=false;u.cd=0;u.cd2=0}
+function showMove(u,q,r){showAct(u);const o=[...moveOpts(u).values()].sort((a,b)=>hd(a.q,a.r,q,r)-hd(b.q,b.r,q,r))[0];if(o)doMove(u,o)}
+const SHOW_STEPS=[
+  ['The Hellhound runs in',()=>showMove(SHOW.u.hound,-1,2)],
+  ['The Hellhound bites the Swordsman',()=>{showAct(SHOW.u.hound);attack(SHOW.u.hound,SHOW.u.sword)}],
+  ['The Hell Drake hurls a Fireball',()=>{const u=SHOW.u.drake;showAct(u);useAbility(u,'drakeball',SHOW.u.shield.q,SHOW.u.shield.r)}],
+  ['The Hailcaller throws an Ice Lance',()=>{const u=SHOW.u.hail;showAct(u);useAbility(u,'icelance',SHOW.u.hound.q,SHOW.u.hound.r)}],
+  ['The Glacier Knight charges and strikes',()=>{showMove(SHOW.u.knight,SHOW.u.hound.q+1,SHOW.u.hound.r);showAct(SHOW.u.knight);setTimeout(()=>{try{attack(SHOW.u.knight,SHOW.u.hound);refresh()}catch(e){}},900)}],
+  ['The Cleric mends the Seraph',()=>{const u=SHOW.u.cleric;showAct(u);useAbility(u,'mend',SHOW.u.seraph.q,SHOW.u.seraph.r)}],
+  ['The Captain shouts the Battle Cry',()=>{const u=SHOW.u.captain;showAct(u);useAbility(u,'battlecry',u.q,u.r)}],
+  ['The Boulder Hurler throws a Boulder',()=>{const u=SHOW.u.hurler;showAct(u);useAbility(u,'boulder',SHOW.u.queen.q,SHOW.u.queen.r)}],
+  ['The Titan strides forward',()=>showMove(SHOW.u.titan,4,2)],
+  ['The Spearman falls',()=>{CUR_SRC=null;hurt(SHOW.u.spear,999)}],
+  ['Again from the start',()=>showcaseScene()]];
+function showcaseStep(){clearTimeout(SHOW.timer);if(!SHOW.on||!G)return;const [label,fn]=SHOW_STEPS[SHOW.step%SHOW_STEPS.length];SHOW.step++;try{fn();toast(label,2200)}catch(e){console.warn('showcase',label,e)}refresh();SHOW.timer=setTimeout(showcaseStep,label.startsWith('The Glacier')?3400:2600)}
+function startShowcase(){if(SHOW.on)return;SHOW.on=true;cfg.map='random';cfg.n=5;cfg.mode='warlord';cfg.collapse=false;cfg.deploy=false;cfg.relics=false;cfg.seats=cfg.seats.slice(0,5).map((s,i)=>({...s,ctrl:'human',fac:['fire','ice','arcane','warband','giants'][i]}));
+  newGameUI();G.phase=null;try{localStorage.setItem('hexmarch.camfollow','off')}catch(e){}CAMF.on=false;showcaseScene();SHOW.timer=setTimeout(showcaseStep,1800)}
+if(typeof location!=='undefined'&&location.hash==='#motion')setTimeout(startShowcase,900);
 
 </script>
 <script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
