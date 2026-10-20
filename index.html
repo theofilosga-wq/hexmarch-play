@@ -672,7 +672,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
 const RULES={STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
-const APV=0.35;
+const APV0=0.35,APV=APV0;
 let G=null,SIM=false,CUR_SRC=null,CUR_TAG=null,CUR_NAME=null;
 // The centre opens in round 5 on the random board and in round WILDS.open (10) on the Crown Wilds map (v30). A getter, so every rule and text follows the game in hand.
 {let base=RULES.CENTRE_FROM;delete RULES.CENTRE_FROM;Object.defineProperty(RULES,'CENTRE_FROM',{get(){return G&&G.map?(G.realm?(G.noWall?1:REALM.open):WILDS.open):base},set(v){base=v},enumerable:true})}
@@ -763,11 +763,11 @@ const ABIL={
   spin:{name:'Fire Frenzy',cost:2,cd:3,aim:'dir',shape:'line',size:3,hits:'foe',dmg:4,special:'frenzy',bot:'frenzy',
     desc:'The Hellhound charges up to 3 hexes in a straight line (it stops before anything in its way), then rakes the 3 hexes in front of it with flaming claws: 4 damage minus DEF to each enemy there. Its hex and the 3 clawed hexes burn red for 2 turns.'},// v77 (owner): a charge and a claw instead of the spin
   // v25 Salamander: a straight line of 3 hexes from it; every enemy on the line takes 3 minus DEF and is Seared; the line burns red for 2 turns.
-  hellwhip:{name:'Hellwhip',cost:2,cd:4,aim:'dir',shape:'line',size:3,hits:'foe',dmg:2,pull:2,bot:'hellwhip',
+  hellwhip:{name:'Hellwhip',cost:2,cd:4,aim:'dir',shape:'line',size:3,hits:'foe',dmg:2,pull:2,/* v105: no 'hellwhip' bot rule ever existed, so it was never cast; the lookahead judges it */
     desc:'The Archdemon lashes its whip in a straight line 3 hexes long: every enemy on it takes 2 damage minus DEF and is dragged toward the Archdemon.'},
   spitfire:{name:'Spit Fire',cost:2,cd:2,aim:'dir',shape:'line',size:3,hits:'foe',dmg:3,paint:'area',paintTtl:2,sear:1,
     desc:'Spit a stream of fire in a straight line 3 hexes long: every enemy on it takes 3 damage minus DEF and is Seared (it can’t be healed until the end of its next turn). The 3 hexes become red ground for 2 turns.'},
-  drakeball:{name:'Fireball',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:3,centre:1,paint:'area',paintTtl:3,sear:1,bot:'fireball',
+  drakeball:{name:'Fireball',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:3,centre:1,paint:'area',paintTtl:3,sear:1,/* v105: the lookahead judges it (the 'fireball' bot rule never existed: 0 casts in 318 chances) */
     desc:'The Hell Drake lobs a fireball 2 to 4 hexes away; it detonates on the target hex and the 6 around it: 3 damage minus DEF to every enemy there (4 on the centre hex), Seared (no healing until the end of its next turn). All 7 hexes burn red for 3 turns.'},// v77 (owner): a bomb, not another breath
   breath:{name:'Flame Breath',cost:2,cd:3,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:3,pierce:1,paint:'area',sear:1,
     desc:'Breathe a cone 2 hexes deep: 3 damage to each enemy in it, ignoring DEF, and it is Seared: it can’t be healed until the end of its next turn. The cone catches fire (the hexes burn red).'},// v77 (owner): 2 -> 3
@@ -2482,7 +2482,7 @@ function kill(t){
    Once per game (p.wraith). A normal unit: it can act at once, gives and takes charge, keeps its side alive. Tracked as 'Time Wraith|Summoned'. */
 // v75 Iron Warband veterans: XP ladder REALM.xp.steps; odd levels +1 ATK, even levels +2 max HP (and heal 2). Uncapped past the table (+10 each).
 // v75 Circle of Priests engine: 1 Faith per HP of priest healing that lands; at REALM.faith[n] the last fallen unit rises where it fell (nearest free hex).
-function faithGain(p,n){if(!p||!(n>0)||SIM)return;if(RULES.FAITH_FALLEN&&!(p.fallenAt||[]).length){if(!SIM&&trk()){const e=tFx('arcane','','Faith wasted (nobody fallen)');if(e)e.uses+=n}return}/* v94 (owner): no banking Faith while nobody is dead */p.faith=(p.faith||0)+n;const need=REALM.faith[p.faithN||0]!=null?REALM.faith[p.faithN||0]:REALM.faith[REALM.faith.length-1]+REALM.faithStep*((p.faithN||0)-REALM.faith.length+1);
+function faithGain(p,n){if(!p||!(n>0))return;if(SIM){if((p.fallenAt||[]).length)p.faith=(p.faith||0)+n;return}/* v105 bots: the lookahead sees Faith grow (no rise happens in it) */if(RULES.FAITH_FALLEN&&!(p.fallenAt||[]).length){if(!SIM&&trk()){const e=tFx('arcane','','Faith wasted (nobody fallen)');if(e)e.uses+=n}return}/* v94 (owner): no banking Faith while nobody is dead */p.faith=(p.faith||0)+n;const need=REALM.faith[p.faithN||0]!=null?REALM.faith[p.faithN||0]:REALM.faith[REALM.faith.length-1]+REALM.faithStep*((p.faithN||0)-REALM.faith.length+1);
   if(trk()){const e=tFx('arcane','','Faith gathered');if(e)e.uses+=n}
   if(p.faith<need)return;if(RULES.FAITH_FALLEN&&p.faithRound===G.round){p.faith=need;return}/* v94: one resurrection per round; the rest of the Faith waits */const fa=(p.fallenAt||[]).slice();const f=fa.pop();if(!f)return;const d=FAC[p.fac].units.find(x=>x.name===f.name);if(!d)return;
   const u=makeUnit(p,d);const m=occ();const c=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))).sort((a,b)=>hd(a[0],a[1],f.q,f.r)-hd(b[0],b[1],f.q,f.r))[0];if(!c)return;
@@ -3449,7 +3449,7 @@ function useAbility(u,k,q,r,dest){
       // Smash breaks walls: every wall in the sweep takes the spell damage times wallDmg.
       if(A.wallDmg){const m=occ(),seen=new Set();for(const [a,b] of area){const w=m.get(key(a,b));if(w&&w.kind==='wall'&&!w.beast&&!seen.has(w)){seen.add(w);hurt(w,(A.dmg||0)*A.wallDmg,F.color)}}}
       if(A.push){
-        const d=A.aim==='dir'?aimDir(u,q,r):null;
+        const d0=A.aim==='dir'?aimDir(u,q,r):null,d=d0!=null&&d0>=0?d0:null;/* v105 fix: a giant aiming from its second hex has no direction from its first; push each target straight away instead */
         const live=ts.filter(alive).sort((a,b)=>distUU(u,b)-distUU(u,a));
         for(const t of live){if(!alive(t))continue;const [cq,cr]=nearCell(u,t);pushUnit(t,d!=null?d:dirTo(cq,cr,t.q,t.r),A.push,u)}
       }
@@ -4631,7 +4631,8 @@ function evaluate(team){
     if(STORY()){for(const m of G.units)if(m.spawnW&&m.hp>0)s-=m.hp*0.7+(m.spawnW>=3?6:0);for(const x of G.loot||[])if(x.kind==='stone'&&x.carrier!=null){const c=G.units.find(v=>v.id===x.carrier);if(c&&c.kind!=='wall'&&tm(c.owner)===team)s+=5}}// v98 bots: spawns are worth killing, stones worth holding
     for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*(R.type==='lair'?0.8:0.5)+(left<=0?(R.type==='lair'?14:6):0)}
     if(G.midUp)for(const c of G.circles||[])if(G.round>=c.dark){let n=0;for(const [q,r] of c.stones){const o=unitAt(q,r);if(o&&o.kind!=='wall'&&tm(o.owner)===team)n++}s+=n*n*1.5}}
-  for(const v of G.units)if(v.st&&v.st.fb>0&&v.kind!=='wall'&&tm(v.owner)!==team)s+=v.st.fb*(v.leader?1.6:1.1);// Frostbite marks (v37)
+  for(const v of G.units)if(v.st&&v.st.fb>0&&v.kind!=='wall'&&tm(v.owner)!==team)s+=v.st.fb*(v.leader?1.6:1.1)+(G.realm?v.st.fb*v.st.fb*0.45:0);// Frostbite marks (v37); v105: on the Realm stacking marks on one enemy (toward a freeze) beats spreading them
+  if(G.realm)for(const p of G.players){if(!p.alive||p.fac!=='arcane'||!(p.fallenAt||[]).length)continue;const need=REALM.faith[p.faithN||0]!=null?REALM.faith[p.faithN||0]:20;s+=(tm(p.id)===team?1:-0.5)*Math.min(p.faith||0,need)*(28/Math.max(8,need))}// v105: Faith toward a rise is worth about a unit
   if(RULES.SHAMANS)for(const p of G.players){if(!p.alive||p.fac!=='mage')continue;let v=(p.evoN||0)*14+(p.lord?10:0);const need=elNeed(p);for(const k of EL_KEYS)if(!(p.evo&&p.evo[k]))v+=Math.min(need,(p.el&&p.el[k])||0)*2.2;s+=tm(p.id)===team?v:-v*0.5}
   for(const v of G.units)if(v.kind!=='wall'&&v.st){const mine=tm(v.owner)===team;if(v.st.ward>0)s+=mine?1.5:-1.5;if(v.st.skin>0)s+=(mine?1:-1)*v.st.skin*0.6;if(v.freeMove>0&&v.owner===G.cur)s+=(mine?0.6:0)}
   for(const p of G.players){if(!p.alive)s+=tm(p.id)===team?-150:150;else if(p.leaderless)s+=tm(p.id)===team?-90:90}
@@ -4704,7 +4705,13 @@ function heuristic(u,k,q,r,ctx,dest){
     // or one walk away with AP to spare) and comrades standing in contact who will strike back during the enemy turn.
     // It must outscore the first attack of the turn or it comes too late (units that have already struck gain nothing), so each strike it will sharpen
     // counts about what one extra damage point is worth in the lookahead; only strikes the AP left can still pay for are counted.
-    case 'rally':{const left=G.ap-abilCost(u,k);let ready=0,walk=0,contact=0;
+    case 'rally':{if(G.realm){/* v105 Realm: every comrade in the aura who can still strike, plus defence (Battle Cry) or healing (Hold Fast); cast first when 2+ can strike */
+        let s=0,ready=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v.summon||v.st.frozen||(k==='holdfast'&&v===u))continue;
+          const canHit=(!v.acted||v.freeAtk>0)&&countTargets(v,ctx.m)>0;if(canHit){ready++;s+=1.6}
+          const thr=ctx.foes.some(f=>f.owner>=0&&!inert(f)&&distUU(v,f)<=effMov(f)+effRng(f));
+          if(k==='holdfast')s+=Math.min(2,v.maxhp-v.hp)*0.7+(thr?0.4:0);else{if(thr)s+=1.4;if(!canHit&&!v.acted&&ctx.foes.some(f=>f.owner>=0&&distUU(v,f)<=effMov(v)+effRng(v)+1))s+=0.8}}
+        return s>=2.5?s+(ready>=2?2.5:0):0}
+      const left=G.ap-abilCost(u,k);let ready=0,walk=0,contact=0;
       for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.summon||v.st.frozen)continue;
         const tg=countTargets(v,ctx.m);const canHit=(!v.acted||v.freeAtk>0);
         if(canHit&&tg>0)ready++;else if(canHit&&!v.moved&&ctx.foes.some(f=>distUU(v,f)<=effMov(v)+effRng(v)))walk++;
@@ -4927,7 +4934,7 @@ if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&
   // Time Wraith (v28): a raider. It hunts the enemy it can finish or the one standing alone, and keeps off the enemy block.
   if(hasTrait(u,'wraith')&&!u.acted&&G.ap>=(u.freeMove>0?0:1)+atkCost(u)){const prey=x=>{let b=0;for(const f of foes){if(inert(f)||distUU(x,f)!==1)continue;const dmg=Math.max(1,afterDef(effAtk(u),effDef(f)));
       const lone=!G.units.some(w=>w!==f&&w.kind!=='wall'&&tm(w.owner)===tm(f.owner)&&distUU(w,f)===1);b=Math.max(b,(dmg>=f.hp?6+(f.leader?6:0):0)+(lone?2.5:0)+(f.leader?1.5:0))}return b};s+=prey(v)-prey(u)}
-  const frag=u.leader?1.4:(u.maxhp<=6?0.35:0.15);
+  const frag=(u.leader?1.4:(u.maxhp<=6?0.35:0.15))+(G.realm&&!u.summon&&u.owner>=0?(1-u.hp/u.maxhp)*0.7*(G.players[u.owner].fac==='giants'?2:1):0);/* v105 Realm: the more wounded a unit, the more it fears enemy reach (giants twice: one of five) */
   s-=(danger(v)-danger(u))*frag*0.5;
   if(u.leader)s+=(Math.min(d1,5)-Math.min(d0,5))*2.5;
   // Tempo Mages and Rewinders stay within 3 of a blade (Second Hand) so the chain can happen.
@@ -4999,8 +5006,32 @@ if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&
     const fc=ctx._foc=ctx._foc||{};if(!(u.id in fc))fc[u.id]=u.book.some(x=>ABIL[x].dmg&&canAbil(u,x)&&aimCells(u,x).some(([a,b])=>{const o=m.get(key(a,b));return o&&o.kind!=='wall'&&tm(o.owner)!==tm(u.owner)}));if(fc[u.id])s-=1.5}
   if(u.ability==='guard'){const ms=x=>G.units.filter(w=>w!==u&&w.owner===u.owner&&w.book&&distUU(w,x)===1).length;s+=(Math.min(2,ms(v))-Math.min(2,ms(u)))*1.2}  // Repulsor: step behind an enemy that one Repel would throw off the board or into a void.
   if(u.ability==='repel'&&u.cd<=0&&!u.acted&&G.ap>=1+abilCost(u,'repel')){const thr=x=>{let b=0;for(const f of foes)if(distUU(x,f)===1&&pushLethal(f,dirTo(x.q,x.r,f.q,f.r),ABIL.repel.push))b=Math.max(b,10+worth(f)*0.3+(f.leader?15:0));return b};s+=thr(v)-thr(u)}
+  if(G.realm&&!u.summon&&u.owner>=0&&G.players[u.owner])s+=realmCohesion(u,v,ctx)+realmPlan(u,v,ctx);
   return s+RNG()*0.6;
 }
+/* v105 BOT LAB (owner 20 Oct 2026: bots must play the armies' strategies on the Realm). Staying together: a unit values friends within 2 hexes,
+   much more when enemy units can reach it, and ending a move alone inside enemy reach is punished. The weight is per army: the five-giant army
+   dies when it spreads, healers must stay near the wounded, the Warband fights as a block, Ember's hounds and imps hit and run.
+   Warband: the Warlord is untouchable while 2 comrades touch him (Born for war), so he wants two at his side and comrades step in when he has fewer. */
+const COHESION={giants:2.4,arcane:1.5,warband:1.3,ice:1.1,fire:0.6};
+function realmCohesion(u,v,ctx){const fac=G.players[u.owner].fac,CW=COHESION[fac];if(CW==null)return 0;const foes=ctx.foes;let s=0;
+  const thr=x=>foes.some(f=>f.owner>=0&&!inert(f)&&distUU(x,f)<=effMov(f)+effRng(f)+1);
+  const pals=G.units.filter(w=>w.id!==u.id&&w.kind!=='wall'&&w.owner===u.owner&&!inert(w)&&!w.summon);
+  const sup=x=>{let n=0;for(const w of pals)if(distUU(w,x)<=2)n++;return Math.min(2,n)};
+  const tv=thr(v),tu=thr(u),sv=sup(v),su=sup(u);
+  s+=(sv-su)*CW*(tv||tu?1.5:0.4);if(tv&&sv===0)s-=CW*2;if(tu&&su===0&&!(tv&&sv===0))s+=CW*1.2;
+  if(fac==='warband'){const L=pals.find(w=>w.leader)||(u.leader?null:null);const adj=(x,c)=>{let n=0;for(const w of pals)if(w!==c&&distUU(w,x)===1)n++;return n};
+    if(u.leader)s+=(Math.min(2,adj(v,u))-Math.min(2,adj(u,u)))*4.5;
+    else if(L){const n=adj(L,u);if(n<2){const was=distUU(u,L)===1,now=distUU(v,L)===1;if(now&&!was)s+=4;if(was&&!now)s-=4}else if(n===2&&distUU(u,L)===1&&distUU(v,L)!==1)s-=4}}
+  return s}
+/* v105 army plans on the Realm. Frost: the melee units close in on frozen and chilled enemies (+2 per hit on the frozen, Shatter doubles);
+   Priests: a healer with its heal ready stays within reach of the most wounded ally. */
+const HEAL_REACH={mend:3,bless:3,layhands:1,surgery:1,tend:1};
+function realmPlan(u,v,ctx){const fac=G.players[u.owner].fac;let s=0;
+  if(fac==='ice'&&!u.acted&&meleeAt(u.at)){const cold=ctx.foes.filter(f=>alive(f)&&!inert(f)&&f.st&&(f.st.frozen>0||f.st.chill>0));if(cold.length){const d=x=>Math.min(...cold.map(f=>distUU(x,f)));const d0=d(u),d1=d(v);if(d0<=6)s+=(Math.min(d0,6)-Math.max(1,d1))*1.1;if(d1===1&&cold.some(f=>f.st.frozen>0&&distUU(v,f)===1))s+=2.5}}
+  if(fac==='arcane'){const k=abilsOf(u).find(x=>HEAL_REACH[x]!=null&&cdOf(u,x)<=0);if(k&&!u.acted){const R=HEAL_REACH[k];const hurtA=G.units.filter(w=>w.kind!=='wall'&&w.owner===u.owner&&w.id!==u.id&&!w.summon&&w.hp<=w.maxhp*0.7);
+    if(hurtA.length){const wv=w=>(w.maxhp-w.hp)+(w.leader?6:0);const best=hurtA.sort((a,b)=>wv(b)-wv(a))[0];const in0=distUU(u,best)<=R,in1=distUU(v,best)<=R;if(in1&&!in0)s+=3+wv(best)*0.1;if(in0&&!in1)s-=3}}}
+  return s}
 function botAims(u,k,ctx){
   const A=ABIL[k];let a=aimCells(u,k);
   if(A.bot==='riftmark')a=a.filter(([q,r])=>{const t=unitAt(q,r);return t&&t.kind!=='wall'&&tm(t.owner)!==tm(u.owner)});// v42: hexes under an enemy
@@ -5036,6 +5067,7 @@ function botStep(){
   let best=null;const consider=(s,fn)=>{if(s>0.3){cands.push({s,fn});if(!best||s>best.s)best={s,fn}}};
   // Banked Time (Hourglass, v28): while the combo is not ready this turn, every AP that would dip into the bank (up to 2, Deep Pockets 4) costs extra, so it carries over.
   const keep=bankKeep(pid,foes),bankPen=c=>keep?Math.max(0,Math.min(c,keep-(G.ap-c)))*1.6:0;
+  const APV=G.realm?0:APV0;/* v105 bots: the Realm has no AP, so acting costs nothing */
   for(const u of G.units.filter(u=>u.owner===pid&&u.kind!=='wall')){
     const uid=u.id;
     for(const t of attackTargets(u)){const tid=t.id;const barPen=hasBarrier(t)&&u.hp<=barrierDmg(u)+1?4:0;// a low-HP attacker keeps off a Barrier (the lookahead already counts the 2 back)
@@ -7493,8 +7525,11 @@ function shapeText(A){
 
 /* ---------- setup ---------- */
 // v46 (owner 3 Oct 2026): the Crown Wilds is the default board and mode
-let cfg={n:4,teams:false,mode:'warlord',map:'wilds',deploy:true,relics:true,seats:[
-  {fac:'warband',ctrl:'human'},{fac:'fire',ctrl:'bot'},{fac:'curse',ctrl:'bot'},{fac:'ice',ctrl:'bot'},{fac:'arcane',ctrl:'bot'},{fac:'rift',ctrl:'bot'}]};
+/* v106 (owner 20 Oct 2026: "the Realm is the mode"): the setup offers only the Realm; the Crown Wilds and the random board stay in the code (tests and old rooms use them) */
+const REALM_ONLY=true;
+const REALM_START=['warband','fire','ice','arcane'];// the main four (owner 18 Oct 2026)
+let cfg={n:4,teams:false,mode:'warlord',map:REALM_ONLY?'realm':'wilds',deploy:true,relics:true,seats:[
+  {fac:'warband',ctrl:'human'},{fac:'fire',ctrl:'bot'},{fac:'ice',ctrl:'bot'},{fac:'arcane',ctrl:'bot'},{fac:'curse',ctrl:'bot'},{fac:'rift',ctrl:'bot'}]};/* v106: the first four seats are the main four */
 let setupMore=false;// the 'More options' fold on the home page
 try{const bl=localStorage.getItem('hexmarch.bot');if(bl)cfg.botLevel=bl}catch(e){}
 let screen='setup',zoom=1,fxs=[],hl={moves:new Map(),atk:new Set(),aim:new Set(),range:new Set(),area:new Set(),hitIds:new Set(),ghost:false};
@@ -7683,7 +7718,7 @@ function renderSetup(){
    <div class="home-top">
     <div class="card" id="setupCard">${roomGuest?netRoomSummary():`
       <div class="label">Play on this device</div>
-      <div class="field"><div class="label">Board</div>${seg([['wilds','Crown Wilds'],['realm','The Realm (new)'],['random','Random board']],['wilds','realm'].includes(cfg.map)?cfg.map:'random','map')}
+      <div class="field"><div class="label">Board</div>${REALM_ONLY&&cfg.map==='realm'?'<div class="hint" style="margin:0"><b>The Realm</b> · 4 players, free for all</div>':seg([['wilds','Crown Wilds'],['realm','The Realm (new)'],['random','Random board']],['wilds','realm'].includes(cfg.map)?cfg.map:'random','map')}
         <div class="hint">${cfg.map==='realm'?REALM_HINT():cfg.map==='wilds'?'A hand-made map for 4 players: bases far apart on the edge, three roads each, twelve hidden rooms with monsters and treasure you must carry home, rivers, and a Throne Hall whose walls fall in round '+WILDS.open+' to wake the Rift Beast; slay it, sit the Throne and be crowned King. Warlord rules, first to '+WILDS.target+' points. No Collapse.':'A new round board every game, with flags, the Wellspring and the Rift Beast.'}</div></div>
       ${inRoom?'':'<button class="btn primary" id="startBtn" style="width:100%;padding:14px;font-size:17px;margin-bottom:16px">▶ Start the game</button>'}
       ${inRoom?`<div class="field"><div class="label">Seats</div><div class="hint">${roomHostLobby?'You are hosting room '+NET.code+'. The seats, their armies and who plays them are set in the Online game box; the settings above apply to the room.':'The online game is in progress; leave the room to set up a game on this device.'}</div></div>`:`<div class="field"><div class="label">Armies and players</div><div class="seats">${seats}</div>
@@ -7691,10 +7726,10 @@ function renderSetup(){
 `}
       <div class="field"><div class="label">Bot strength</div>${seg([['easy','Easy'],['normal','Normal'],['hard','Hard']],cfg.botLevel||'normal','bot')}
         <div class="hint">${({easy:'Bots play loosely and miss chances. Good for learning.',normal:'Bots are solid but not ruthless.',hard:'Bots always take their best move.'})[cfg.botLevel||'normal']}</div></div>
-      <details class="more" id="moreOpts" ${setupMore||cfg.map!=='wilds'?'open':''}><summary>More options</summary>
-      <div class="field"><div class="label">Players</div>${seg([[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6']],cfg.n,'n')}</div>
-      <div class="field"><div class="label">Sides</div>${seg([['0','Free for all'],['1','Teams of 2',!teamsAllowed()]],tOn?'1':'0','teams')}
-        <div class="hint">${teamsAllowed()?'Teammates start on neighbouring corners. Turns alternate between sides.':'Teams of 2 need 4 or 6 players.'}</div></div>
+      <details class="more" id="moreOpts" ${setupMore||(!REALM_ONLY&&cfg.map!=='wilds')?'open':''}><summary>More options</summary>
+      ${REALM_ONLY&&cfg.map==='realm'?'':`<div class="field"><div class="label">Players</div>${seg([[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6']],cfg.n,'n')}</div>`}
+      ${REALM_ONLY&&cfg.map==='realm'?'<!--':''}<div class="field"><div class="label">Sides</div>${seg([['0','Free for all'],['1','Teams of 2',!teamsAllowed()]],tOn?'1':'0','teams')}
+        <div class="hint">${teamsAllowed()?'Teammates start on neighbouring corners. Turns alternate between sides.':'Teams of 2 need 4 or 6 players.'}</div></div>${REALM_ONLY&&cfg.map==='realm'?'-->':''}
       ${cfg.map!=='random'?'':`<div class="field"><div class="label">Game mode</div>${seg(Object.keys(MODES).filter(m=>m!=='conquest').map(m=>[m,MODES[m].name]),cfg.mode,'mode')}
         <div class="hint">${MODES[cfg.mode].desc}</div></div>`}
       ${cfg.map!=='random'?'':`<div class="field"><div class="label">The Collapse</div>${COLLAPSE_START[cfg.mode]?seg([['1','On'],['0','Off']],cfg.collapse===false?'0':'1','col'):''}
@@ -8221,7 +8256,7 @@ function statusChips(u,long){const L=unitStatuses(u);if(!L.length)return '';
   const nTxt=n=>typeof n==='number'?(long?`${n} turn${n>1?'s':''}`:String(n)):n;
   return `<div class="schips">${L.map(x=>`<span class="schip ${x.good?'good':'bad'}" style="--c:${x.col}" title="${x.nm}: ${x.tip}"><i aria-hidden="true">${x.ic}</i>${x.nm}${x.n!=null?` <small>${nTxt(x.n)}</small>`:''}</span>`).join('')}</div>`}
 // v74 the Realm: no AP. The AP box shows the reserve instead: one button per unit type you can call into your base this turn.
-function REALM_HINT(){return `The big redesign, first test: 4 players, bases in the corners of a large board, everything else rolled every game and mirrored so it is fair. No AP: every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn from your reserve; the fallen are gone for good. Camps by tier around the map that never come back once taken (Valley Camps at home, the Healing Spring and the Ogre on the edges, Drakes in the wasteland), levers that wake the roaming Wanderer when two sides pull them, the Throne from round ${REALM.open}. Last hits score: first to ${REALM.target} points wins. Units have twice the HP. The four core armies are set; you may change them.`}
+function REALM_HINT(){return `Four armies arrive through their portals in the corners. At once the Rift Beast falls on the city in the middle, the land cracks into wasteland and four Crown Stones are flung onto the roads. No AP: every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn; the fallen are gone for good. Clear camps for buffs and heals, carry the stones, hunt the Beast's spawns, and kill the Beast to be crowned King on the Throne. Points come from the Throne, enemy Leaders and the King, the Elder Drakes, the late spawn waves and the Beast. First to ${REALM.target} wins.`}
 function realmBar(){const pp=P(G.cur),box=$('#apBox');if(!box||!pp)return;const can=isHumanTurn()&&realmCanSummon(pp),res=pp.reserve||[];
   const hpOf=d=>Math.round((d.hp||0)*REALM.hpMul),names=[...new Set(res)],btn=n=>{const d=FAC[pp.fac].units.find(x=>x.name===n)||{};const c=res.filter(x=>x===n).length;return `<button class="abtn" data-sum="${n}" style="padding:4px 9px;margin:2px;min-width:0" title="${hpOf(d)} HP, ${d.atk} ATK, ${d.def} DEF">${n}${c>1?' ×'+c:''}<small>${hpOf(d)} HP · ${d.atk} ATK</small></button>`};
   const scrapN=pp.fac==='gnomes'?`<span class="aplabel">Scrap: ${pp.scrap||0}</span>`:'';
