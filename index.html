@@ -4588,7 +4588,7 @@ function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.ma
   for(const [q,r] of G.outposts||[]){const o=flagOwner(q,r);if(o!=null&&o!==p.id&&!inValley(G.players[o],q,r))opts.push([q,r,1.5])}
   if(!G.wander&&u.id%5===2)for(const k of Object.keys(G.feat))if(G.feat[k]==='lever'&&G.levers[k]!==p.team){const [q,r]=k.split(',').map(Number);if(hd(q,r,p.camp[0],p.camp[1])<=16)opts.push([q,r,1.8])}
   {const L=lootOf(u);if(L&&L.kind==='stone')return G.beast&&G.beast.dead?[0,0,9]:[p.camp[0],p.camp[1],9]}// v98: a stone carrier keeps it safe until the throne is open
-  for(const x of G.loot||[]){if(x.carrier!=null)continue;if(x.kind==='stone'&&canCarry(u)&&!lootOf(u)&&!u.leader)opts.push([x.q,x.r,3.4]);if(x.kind==='remains'&&u.size===2&&tm(x.owner)===p.team)opts.push([x.q,x.r,3]);if(x.kind==='scrap'&&isGnome(u)&&tm(x.owner)===p.team)opts.push([x.q,x.r,u.walker?1.2:2.2])}// v75c bots: giants fetch their Remains, gnomes their scrap
+  for(const x of G.loot||[]){if(x.carrier!=null)continue;if(x.kind==='stone'&&canCarry(u)&&!lootOf(u)&&!u.leader)opts.push([x.q,x.r,3.4]);if(x.kind==='remains'&&u.size===2&&tm(x.owner)===p.team)opts.push([x.q,x.r,4])/* v108: the Remains heal, raise ATK and HP and teach an ability */;if(x.kind==='scrap'&&isGnome(u)&&tm(x.owner)===p.team)opts.push([x.q,x.r,u.walker?1.2:2.2])}// v75c bots: giants fetch their Remains, gnomes their scrap
   if(G.throneBeast){const k=kingOf();const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon).length;const late=Math.min(2,Math.max(0,(G.round-REALM.open)/6))+(mine<=4?1.5:0);{const sb=STORY()&&storyBeast();opts.push([0,0,sb&&sb.hp>30&&G.round<10?1.0:(G.throneOpen&&!k?3.8:k&&k.owner!==p.id?3.2:2.6)+late])}}else if(G.round>=REALM.open-2)opts.push([0,0,1.4]);
   let best=null,bs=1e9;for(const g of opts){const d=wildsDist(g,u.q,u.r,u);const sc=d/g[2]+(u.id%3)*0.7*(g[2]<1.5?1:0);if(sc<bs){bs=sc;best=g}}return best}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
@@ -4924,7 +4924,7 @@ if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&
       if(G.realm&&hasTrait(u,'tempo')){const pot=comboPotential(u,v);const kill=foes.some(f=>!inert(f)&&distUU(v,f)<=1&&f.hp<=pot);if(!kill)s-=5.5;else s+=3}}}// v75c: the blade commits only to a combo that can kill
   if(u.freeMove>0)s+=1.2;// a Rewind move costs no AP
   // v28 Hourglass: a Second Hand whose strikes are spent walks back to safety (Rewind or its own move): out of reach, next to friends, out of sight after a kill.
-  const spentBlade=hasTrait(u,'tempo')&&u.atkd&&(tempoSpent(u)||(u.acted&&!(u.freeAtk>0)));
+  const spentBlade=(hasTrait(u,'tempo')&&u.atkd&&(tempoSpent(u)||(u.acted&&!(u.freeAtk>0))))||(hasTrait(u,'hitrun')&&u.hr&&u.acted&&!(u.freeAtk>0));/* v108: a Hellhound that has struck uses its second move to run back to safety */
   const danger=x=>{let d=0;for(const f of foes){const reach=effMov(f)+effRng(f)+(f.mt==='knight'?2:0)+(f.mt==='fly'?1:0);if(distUU(x,f)<=reach)d+=effAtk(f)}return d};
   if(!u.leader&&!spentBlade){let bladeWait=false;if(G.realm&&hasTrait(u,'tempo')&&!u.atkd){const pot=comboPotential(u,v);bladeWait=!foes.some(f=>!inert(f)&&distUU(v,f)<=1&&f.hp<=pot)}
     const pref=bladeWait?3:(u.ability==='quicken'||u.ability==='rewind'||u.ability==='clock'||u.ability==='rewindwounds'||u.ability==='sand'||u.ability==='echo'||u.ability==='overwind')?3:u.at==='lob'?Math.min(effRng(u),u.rmin+1):u.at==='reach'?2:(u.at==='melee'||u.at==='fwd')?1:Math.min(effRng(u),3);s+=(Math.abs(d0-pref)-Math.abs(d1-pref))*2.2}
@@ -5029,6 +5029,12 @@ function realmCohesion(u,v,ctx){const fac=G.players[u.owner].fac,CW=COHESION[fac
 const HEAL_REACH={mend:3,bless:3,layhands:1,surgery:1,tend:1};
 function realmPlan(u,v,ctx){const fac=G.players[u.owner].fac;let s=0;
   if(fac==='ice'&&!u.acted&&meleeAt(u.at)){const cold=ctx.foes.filter(f=>alive(f)&&!inert(f)&&f.st&&(f.st.frozen>0||f.st.chill>0));if(cold.length){const d=x=>Math.min(...cold.map(f=>distUU(x,f)));const d0=d(u),d1=d(v);if(d0<=6)s+=(Math.min(d0,6)-Math.max(1,d1))*1.1;if(d1===1&&cold.some(f=>f.st.frozen>0&&distUU(v,f)===1))s+=2.5}}
+  // v108 Giants: a giant within 6 hexes of its army's Remains walks to them and steps on them
+  if(fac==='giants'&&u.size===2){const hot=(q,r)=>{let d=0;for(const f of ctx.foes)if(f.owner>=0&&!inert(f)&&distUC(f,q,r)<=effMov(f)+effRng(f))d+=effAtk(f);return d};/* v108b: only Remains the enemy cannot pile onto */const rs=(G.loot||[]).filter(x=>x.kind==='remains'&&x.carrier==null&&tm(x.owner)===tm(u.owner)&&hot(x.q,x.r)<u.hp*0.5);if(rs.length){const d=x=>Math.min(...rs.map(r=>distUC(x,r.q,r.r)));const d0=d(u),d1=d(v);if(d0<=6)s+=(d0-d1)*1.5;if(d1===0&&d0>0)s+=6}}
+  // v108 Priests: only the Seraph and the Hospitaller hold the front; the other priests keep a friend between themselves and the enemy
+  if(fac==='arcane'&&!meleeAt(u.at)){const fs=ctx.foes.filter(f=>f.owner>=0&&!inert(f));if(fs.length){const nd=x=>Math.min(...fs.map(f=>distUU(x,f)));const pals=G.units.filter(w=>w.id!==u.id&&w.kind!=='wall'&&w.owner===u.owner&&!inert(w));
+    const shield=x=>{const d=nd(x);return pals.some(w=>nd(w)<d&&distUU(w,x)<=2)};const d0=nd(u),d1=nd(v);
+    if(d1<=4&&!shield(v))s-=3.5;if(d0<=4&&!shield(u)&&(d1>4||shield(v)))s+=2.5;if(d1<=2)s-=2}}
   if(fac==='arcane'){const k=abilsOf(u).find(x=>HEAL_REACH[x]!=null&&cdOf(u,x)<=0);if(k&&!u.acted){const R=HEAL_REACH[k];const hurtA=G.units.filter(w=>w.kind!=='wall'&&w.owner===u.owner&&w.id!==u.id&&!w.summon&&w.hp<=w.maxhp*0.7);
     if(hurtA.length){const wv=w=>(w.maxhp-w.hp)+(w.leader?6:0);const best=hurtA.sort((a,b)=>wv(b)-wv(a))[0];const in0=distUU(u,best)<=R,in1=distUU(v,best)<=R;if(in1&&!in0)s+=3+wv(best)*0.1;if(in0&&!in1)s-=3}}}
   // v107 the Rift Beast: its roar hits everyone within REALM.roarReach of its body and its sweep cones lie in front of the breaches (+1 per swallowed stone);
