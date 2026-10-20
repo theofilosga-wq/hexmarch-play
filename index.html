@@ -2401,7 +2401,7 @@ function kill(t){
   if(false&&hasTrait(t,'tempo')){const op=G.players[t.owner];if(op&&!op.wraith&&!op.wraithDue&&!G.units.some(v=>v.kind!=='wall'&&hasTrait(v,'tempo')&&(v.poss?v.poss.owner:v.owner)===op.id)){op.wraithDue=1;if(SIM)addLog(t.owner,'Both Second Hands have fallen: a Time Wraith will answer at the start of the next Hourglass turn.');else spawnWraith(op)}}// v45: the Wraith answers at once, so a wiped-out Order still gets it
   vfx({k:'death',at:[t.q,t.r],icon:t.icon,col:facOf(t).color,big:t.size===2,leader:t.leader});
   const k=CUR_SRC;
-  if(trk()&&!SIM){const d=tStat(t);d.died=G.round;d.diedBy=k?(tm(k.owner)===tm(t.owner)?'self':k.name):(G.col&&G.col.justFell?'collapse':CUR_NAME===BEAST_SB?'beast':'other');
+  if(trk()&&!SIM){const d=tStat(t);d.died=G.round;d.diedBy=k?(tm(k.owner)===tm(t.owner)?'self':k.name):(G.col&&G.col.justFell?'collapse':CUR_NAME===BEAST_SB?'beast':CUR_NAME?CUR_NAME:'other');/* v107: name the effect when there is no killer (the Beast's attacks, burning ground, ticks) */
     const ks=k&&tm(k.owner)!==tm(t.owner)?tStat(k):null;if(ks){ks.kills++;if(t.leader)ks.leaderKills++;const e=srcFx();if(e){e.kills++;if(t.leader)e.lk++}if(ks.fac==='rift')tPlan('rift',0,1)}
     if(t.leader)trk().events.push({k:'leaderDown',round:G.round,fac:d.fac,by:ks?ks.fac:null,byUnit:ks?ks.name:null})}
   salvage(t);
@@ -5031,6 +5031,12 @@ function realmPlan(u,v,ctx){const fac=G.players[u.owner].fac;let s=0;
   if(fac==='ice'&&!u.acted&&meleeAt(u.at)){const cold=ctx.foes.filter(f=>alive(f)&&!inert(f)&&f.st&&(f.st.frozen>0||f.st.chill>0));if(cold.length){const d=x=>Math.min(...cold.map(f=>distUU(x,f)));const d0=d(u),d1=d(v);if(d0<=6)s+=(Math.min(d0,6)-Math.max(1,d1))*1.1;if(d1===1&&cold.some(f=>f.st.frozen>0&&distUU(v,f)===1))s+=2.5}}
   if(fac==='arcane'){const k=abilsOf(u).find(x=>HEAL_REACH[x]!=null&&cdOf(u,x)<=0);if(k&&!u.acted){const R=HEAL_REACH[k];const hurtA=G.units.filter(w=>w.kind!=='wall'&&w.owner===u.owner&&w.id!==u.id&&!w.summon&&w.hp<=w.maxhp*0.7);
     if(hurtA.length){const wv=w=>(w.maxhp-w.hp)+(w.leader?6:0);const best=hurtA.sort((a,b)=>wv(b)-wv(a))[0];const in0=distUU(u,best)<=R,in1=distUU(v,best)<=R;if(in1&&!in0)s+=3+wv(best)*0.1;if(in0&&!in1)s-=3}}}
+  // v107 the Rift Beast: its roar hits everyone within REALM.roarReach of its body and its sweep cones lie in front of the breaches (+1 per swallowed stone);
+  // a unit does not end its move where the Beast's next attack would kill it, and weighs the risk otherwise (less when the Beast is nearly dead)
+  if(typeof STORY==='function'&&STORY()){const b=storyBeast();if(b&&alive(b)){const up=G.eaten||0,low=b.hp<=b.maxhp*0.25?0.5:1;
+    const risk=x=>{let r=0;if(distUU(x,b)<=REALM.roarReach)r=Math.max(r,REALM.roarDmg+up);const ks=cells(x).map(([q,r2])=>key(q,r2));if((G.breaches||[]).some(br=>br.zone&&ks.some(k=>br.zone.includes(k))))r=Math.max(r,Math.max(1,REALM.sweepDmg+up-effDef(u)));return r};
+    const spit=x=>{const d=distUU(x,b);return d>=REALM.spitMin&&d<=REALM.spitMax&&u.hp<=REALM.spitDmg+up?2+worth(u)*0.05:0};s-=(spit(v)-spit(u))*low;/* the spit picks one unit 4-8 away: only a lethal one is worth avoiding */
+    const r0=risk(u),r1=risk(v);if(r1!==r0){const pen=x=>x<=0?0:(u.hp<=x?5+worth(u)*0.12:x*0.45);s-=(pen(r1)-pen(r0))*low}}}
   return s}
 function botAims(u,k,ctx){
   const A=ABIL[k];let a=aimCells(u,k);
