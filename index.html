@@ -574,6 +574,11 @@ body.focus .turnbar #apBox>*{flex:0 0 auto}/* the reserve strip's buttons keep t
 .xprow{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px}.xprow span{color:#c9c2a8}
 .xpbar{height:7px;background:rgba(8,10,16,.8);border-radius:4px;margin-top:5px;overflow:hidden}.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#c99a2e,#ffd766);border-radius:4px}
 
+/* v113 (owner): the call buttons glow on and off while a unit can be called this turn */
+@keyframes sumglow{0%,100%{box-shadow:0 0 0 1px rgba(255,215,102,.35),0 0 4px rgba(255,215,102,.15);border-color:rgba(255,215,102,.45)}50%{box-shadow:0 0 0 2px rgba(255,215,102,.95),0 0 16px 3px rgba(255,215,102,.6);border-color:#ffd766}}
+.abtn.sumglow{animation:sumglow 1.1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.abtn.sumglow{animation:none;box-shadow:0 0 0 2px #ffd766}}
+
 </style>
 
 <div class="wrap">
@@ -1826,6 +1831,15 @@ function phalanxGroup(u){if(!RULES.PHALANX2||!u||u.kind==='wall'||u.summon||u.ow
   const cs=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg);if(p&&p.hold)return cs.length?[u,...cs]:[];
   const seen=[u];for(let i=0;i<seen.length;i++){const x=seen[i];for(let j=cs.length-1;j>=0;j--)if(distUU(x,cs[j])===1){seen.push(cs[j]);cs.splice(j,1)}}return seen.length>=2?seen:[]}
 // v73b readability: how many phalanx comrades would join u's strike on t right now (+1 each)
+/* v113 (owner 22 Oct 2026): Move as One worked out in one place, so the aim preview shows exactly where the whole army lands. Units of the block that already
+   moved this turn are carried along with it (they get no move of their own back). Front units step first, every step; a unit that is blocked stays. */
+function blockPlan(u,d){const grp=phalanxGroup(u);const mover=grp.filter(v=>!v.st.frozen&&v.size!==2&&effMov(v)>0);if(!mover.length||d<0)return {grp,moves:[],steps:0};
+  const fresh=mover.filter(v=>!v.moved);const base=(fresh.length?fresh:mover);
+  const steps=G.realm?Math.max(1,Math.min(...base.map(v=>effMov(v)))-1+(grp.some(v=>v.leader||hasTrait(v,'captain'))?1:0)+(utal(u,'warchief')?1:0)):Math.max(1,Math.floor(Math.min(...base.map(v=>effMov(v)))/2));
+  const [dq,dr]=DIRS[d],[px,py]=pix(dq,dr);const pos=new Map(mover.map(v=>[v,[v.q,v.r]]));const m=occ();let live=mover.slice();
+  for(let st=0;st<steps&&live.length;st++){live.sort((a,b)=>{const [ax,ay]=pix(...pos.get(a)),[bx,by]=pix(...pos.get(b));return (bx*px+by*py)-(ax*px+ay*py)});const keep=[];
+    for(const v of live){const [cq,cr]=pos.get(v);const a=cq+dq,b=cr+dr;if(!passable(a,b)||m.get(key(a,b))||isTrap(a,b)||(G.voids&&G.voids[key(a,b)]))continue;m.delete(key(cq,cr));pos.set(v,[a,b]);m.set(key(a,b),v);keep.push(v)}live=keep}
+  const moves=[];for(const [v,[a,b]] of pos)if(a!==v.q||b!==v.r)moves.push([v,a,b]);return {grp,moves,steps}}
 function phalanxJoin(u,t){if(!RULES.PHALANX2||!u||!t)return 0;let n=0;for(const v of phalanxGroup(u)){if(v===u||v.jointT===G.tok||(v.st&&v.st.frozen))continue;const set=atkCells(v);if(cells(t).some(([a,b])=>set.has(key(a,b))))n++}return n}
 function phalanxSize(u){if(RULES.PHALANX2&&u&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].hold&&facOf(u).phalanx&&!u.summon&&u.kind!=='wall')return 99;if(!RULES.PHALANX||!u||u.kind==='wall'||u.summon||!facOf(u).phalanx)return 0;
   const cs=G.units.filter(v=>v.id!==u.id&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&!v.statue&&!v.egg);if(cs.length<RULES.PHALANX-1)return 1;
@@ -3198,7 +3212,7 @@ function canAbil(u,k){
   {const c=newCan(u,k);if(c!==null)return c}// v111
   if(A.special==='build'&&!RULES.FORTRESS&&machineCount(u.owner)>=machineCap(u.owner))return false;// the workshop is full
   if(A.special==='deploy'&&!u.wpn)return false;
-  if(A.special==='blockmove')return !u.moved&&phalanxGroup(u).filter(v=>!v.moved).length>=2;
+  if(A.special==='blockmove')return !u.moved&&phalanxGroup(u).length>=2;/* v113: comrades that already moved are carried along */
   if(A.special==='build2')return isGnome(u)&&!u.walker&&!u.build;
   if(A.special==='phaselink')return !u.moved&&u.size!==2&&G.units.some(v=>v!==u&&v.kind!=='wall'&&v.owner===u.owner&&!v.summon&&v.size!==2);
   if(A.special==='blackhole')return aimCells(u,k).some(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!(q===0&&r===0));
@@ -3509,11 +3523,9 @@ function useAbility(u,k,q,r,dest){
     case 'convergence':{const area=shapeCells(u,k,q,r);if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:'#2bff5a',cam:1});const m=occ();const seen=new Set();
       for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v)||v.kind==='wall')continue;seen.add(v);if(tm(v.owner)===tm(u.owner))healUnit(v,3,'#3fa8ff');else{hurt(v,3,'#2bff5a');if(alive(v)){if(v.size!==2)v.st.anchor=1;if(!(v.q===q&&v.r===r))pushUnit(v,dirTo(q,r,v.q,v.r),1,u)}}}break}
     // ---- v71 the Phalanx ----
-    case 'blockmove':{const d=aimDir(u,q,r);if(d<0)break;const grp=phalanxGroup(u).filter(v=>!v.moved);const mover=grp.filter(v=>!v.st.frozen&&v.size!==2&&effMov(v)>0);
-      const steps=G.realm?Math.max(1,Math.min(...mover.map(v=>effMov(v)))-1+(grp.some(v=>v.leader||hasTrait(v,'captain'))?1:0)+(utal(u,'warchief')?1:0)):Math.max(1,Math.floor(Math.min(...mover.map(v=>effMov(v)))/2));const [dq,dr]=DIRS[d],[px,py]=pix(dq,dr);let live=mover.slice(),moved=new Set();
-      for(let st=0;st<steps&&live.length;st++){live.sort((a,b)=>{const [ax,ay]=pix(a.q,a.r),[bx,by]=pix(b.q,b.r);return (bx*px+by*py)-(ax*px+ay*py)});const m=occ();const keep=[];
-        for(const v of live){const a=v.q+dq,b=v.r+dr;if(!passable(a,b)||m.get(key(a,b))||isTrap(a,b)||(G.voids&&G.voids[key(a,b)]))continue;if(!moved.has(v)&&!SIM)setAnim(v);m.delete(key(v.q,v.r));v.q=a;v.r=b;v.dir=d;m.set(key(a,b),v);moved.add(v);keep.push(v)}live=keep}
-      for(const v of grp)v.moved=true;tSup('moved',moved.size);if(!SIM){addLog(u.owner,`The phalanx moves as one: ${moved.size} unit${moved.size===1?'':'s'} advance ${steps} hex${steps===1?'':'es'}.`);for(const v of moved)braceCheck(v)}break}
+    case 'blockmove':{const d=aimDir(u,q,r);if(d<0)break;const P0=blockPlan(u,d);const moved=new Set();
+      for(const [v,a,b] of P0.moves){if(!SIM)setAnim(v);v.q=a;v.r=b;v.dir=d;moved.add(v)}
+      for(const v of P0.grp)v.moved=true;tSup('moved',moved.size);if(!SIM){addLog(u.owner,`The phalanx moves as one: ${moved.size} unit${moved.size===1?'':'s'} advance ${P0.steps} hex${P0.steps===1?'':'es'}.`);for(const v of moved)braceCheck(v)}break}
     case 'holdline':{G.players[u.owner].hold=1;if(!SIM){addLog(u.owner,'Hold the Line! The whole army stands as one phalanx until its next turn.');announce({k:'note',col:FAC.warband.color,t:'Hold the Line!',s:'The whole Warband stands as one phalanx until its next turn.'});for(const v of G.units)if(v.owner===u.owner&&v.kind!=='wall')fx(v,'hold!','#eef0f4')}break}
     case 'howl':{const vs=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&distUU(v,u)<=A.size);for(const v of vs)terrify(u,v);if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[u.q,u.r],cells:ringCells().filter(([a,b])=>hd(a,b,u.q,u.r)<=A.size),col:'#a24aff',cam:1});break}
     // ---- v73 ----
@@ -3560,7 +3572,7 @@ function useAbility(u,k,q,r,dest){
     case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
       for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
-    case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':newUse(u,k,A,tgt,q,r,dest);break;// v111
+    case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':newUse(u,k,A,tgt,q,r,dest);break;// v111
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
@@ -5345,17 +5357,17 @@ function riftCollapse(u){const ps=(G.portals||[]).slice();let n=0;const done=new
 const OOZE_CAP=3;/* v111d/e (owner): blobs merge only up to 3 parts; past that a blob grows only by its own kills */
 const OOZE_TIERS=[{n:1,name:'Droplet',mov:4},{n:3,name:'Slime',mov:3,trait:'sticky'},{n:5,name:'Ooze',mov:3,ab:'engulf',size:2},{n:7,name:'Huge Ooze',mov:3,ab:'acidsurge',size:2},{n:9,name:'Giga Ooze',mov:2,ab:'oozeburst',size:2},{n:11,name:'Colossal Ooze',mov:2,ab:'oozedevour',size:2},{n:13,name:'Titanic Ooze',mov:2,ab:null,trait:'budding',size:2},{n:15,name:'Primordial Ooze',mov:2,ab:'flood',size:2}];
 const oozeTier=n=>{let t=OOZE_TIERS[0];for(const x of OOZE_TIERS)if(n>=x.n)t=x;return t};
-const perPart=()=>G.realm?Math.round(4*(REALM.hpBy.ooze||REALM.hpMul)):4;
-function oozeSet(u,parts,hp){const T=oozeTier(parts);u.parts=parts;u.name=T.name;u.maxhp=parts*perPart()+(synB(u,'hp')||0);u.hp=Math.max(1,Math.min(u.maxhp,hp!=null?hp:u.hp));u.atk=Math.min(parts,OOZE_CAP)+Math.max(0,Math.floor((parts-OOZE_CAP)/3));/* v111d: ATK = parts up to the merge cap, then +1 per 3 parts grown by kills */u.mov=T.mov;u.ability=T.ab||null;u.ability2=parts>=2?'oozesplit':null;u.trait=T.trait||null;
+const perPart=()=>{const b=SLIME?SLIME.drop.hp:4;return G.realm?Math.round(b*(REALM.hpBy.ooze||REALM.hpMul)):b};
+function oozeSet(u,parts,hp){const T=oozeTier(parts);u.parts=parts;u.name=T.name;u.maxhp=parts*perPart()+(synB(u,'hp')||0);u.hp=Math.max(1,Math.min(u.maxhp,hp!=null?hp:u.hp));u.atk=(SLIME?SLIME.drop.atk:1)*(Math.min(parts,OOZE_CAP)+Math.max(0,Math.floor((parts-OOZE_CAP)/3)));/* v111d: ATK = parts up to the merge cap, then +1 per 3 parts grown by kills */u.mov=T.mov;u.ability=T.ab||null;u.ability2=parts>=2?'oozesplit':null;u.trait=T.trait||null;
   const want=T.size||1;if(want===2&&u.size!==2){const m=occ();m.delete(key(u.q,u.r));for(const c of cells(u))m.delete(key(c[0],c[1]));let ok=-1;for(let d=0;d<6;d++){const a=u.q+DIRS[d][0],b=u.r+DIRS[d][1];if(freeHex(a,b,m)){ok=d;break}}if(ok>=0){u.size=2;u.dir=ok}else u.size=1}
   else if(want===1)u.size=1;u.icon=parts>=12?'void':parts>=6?'wave':'drop'}
-function oozeHeart(p){if(!p||p.fac!=='ooze')return;const bs=G.units.filter(v=>v.owner===p.id&&isOoze(v)&&alive(v));if(!bs.length)return;const cur=bs.find(v=>v.leader);let best=bs.slice().sort((a,b)=>(b.parts||0)-(a.parts||0)||b.hp-a.hp||a.id-b.id)[0];if(cur&&(cur.parts||0)>=(best.parts||0))best=cur;for(const v of bs)v.leader=v===best;p.leaderless=false}
+function oozeHeart(p){if(!p||p.fac!=='ooze'||SLIME)return;const bs=G.units.filter(v=>v.owner===p.id&&isOoze(v)&&alive(v));if(!bs.length)return;const cur=bs.find(v=>v.leader);let best=bs.slice().sort((a,b)=>(b.parts||0)-(a.parts||0)||b.hp-a.hp||a.id-b.id)[0];if(cur&&(cur.parts||0)>=(best.parts||0))best=cur;for(const v of bs)v.leader=v===best;p.leaderless=false}
 function oozeGrow(u,n){if(!isOoze(u)||!alive(u))return;oozeSet(u,u.parts+n,u.hp+n*perPart());if(!SIM){fx(u,`+${n} part${n>1?'s':''}`,FAC.ooze.color);nTrk('ooze',u.name,'Parts eaten',e=>{e.uses+=n})}oozeHeart(G.players[u.owner])}
 /* v111c (owner): a merged blob is the sum of its parts. It has attacked (acted) / moved when at least half its parts had; the mover's parts count as moved; the ability rests follow the side with more parts (a tie keeps the longer rest). */
 function oozeMerge(u,t){if(!isOoze(u)||!isOoze(t)||u.owner!==t.owner||u.parts+t.parts>OOZE_CAP)return false;const hp=u.hp+t.hp,parts=u.parts+t.parts;const i=G.units.indexOf(u);if(i>=0)G.units.splice(i,1);{const pu=u.parts,pt=t.parts,big=pu>pt?u:t,tie=pu===pt;const usedA=(u.acted?pu:0)+(t.acted?pt:0),usedM=pu+(t.moved?pt:0);t.acted=usedA*2>=parts;t.atkd=t.atkd||t.acted;t.moved=usedM*2>=parts;t.freeAtk=0;t.cd=tie?Math.max(u.cd||0,t.cd||0):(big.cd||0);t.cd2=tie?Math.max(u.cd2||0,t.cd2||0):(big.cd2||0)}
   if(u.belly&&!t.belly)t.belly=u.belly;else if(u.belly)bellyRelease(u);oozeSet(t,parts,hp);if(G.sel===u.id)G.sel=t.id;if(!SIM){fx(t,`merged: ${parts} parts`,FAC.ooze.color);addLog(t.owner,`Two blobs merge into a ${t.name} (${parts} parts).`);nTrk('ooze','','Merges',e=>e.uses++)}oozeHeart(G.players[t.owner]);return true}
 function oozeSplit(u,dest){if(!isOoze(u)||u.parts<2||!dest)return;const n2=Math.floor(u.parts/2),n1=u.parts-n2;const hp1=Math.max(1,Math.round(u.hp*n1/u.parts)),hp2=Math.max(1,u.hp-hp1);
-  const p=G.players[u.owner];const b=makeUnit(p,FAC.ooze.units[0]);b.q=dest.q;b.r=dest.r;G.units.push(b);oozeSet(u,n1,hp1);oozeSet(b,n2,hp2);b.moved=true;b.acted=true;u.moved=true;
+  const p=G.players[u.owner];const b=SLIME?slimeDrop(p,dest.q,dest.r,1):makeUnit(p,FAC.ooze.units[0]);if(!SLIME){b.q=dest.q;b.r=dest.r;G.units.push(b)}oozeSet(u,n1,hp1);oozeSet(b,n2,hp2);b.moved=true;b.acted=true;u.moved=true;
   if(!SIM){tStat(b);fx(b,'split off','#6a5cff');addLog(u.owner,`The ${u.name} splits: ${n1} and ${n2} parts.`);nTrk('ooze','','Splits',e=>e.uses++)}oozeHeart(p)}
 function splitDest(u){const m=occ();const out=[];for(const [cq,cr] of cells(u))for(const [dq,dr] of DIRS){const a=cq+dq,b=cr+dr;if(freeHex(a,b,m)&&!out.some(([x,y])=>x===a&&y===b))out.push([a,b])}return out}
 function bellyRelease(u){const B=u.belly;if(!B)return;u.belly=null;const v=SIM&&B.unit?Object.assign({},B.unit,{st:Object.assign({},B.unit.st)}):B.unit;if(!v||!(v.hp>0))return;const m=occ();const c=nearFree(u.q,u.r,m,3);if(!c)return;v.q=c[0];v.r=c[1];v.size=v.size||1;G.units.push(v);if(!SIM){fx(v,'breaks free','#ffd766');addLog(v.owner,`The ${v.name} breaks out of the ${u.name}.`)}}
@@ -5364,7 +5376,7 @@ function oozeSwallow(u,t,grip){if(!t||u.belly||t.leader||t.king||t.beast||t.mons
 function bellyTick(p){for(const u of G.units){if(u.owner!==p.id||!u.belly)continue;const v=u.belly.unit;v.hp-=2;if(!SIM)nTrk('ooze',u.name,'Digested (damage)',e=>{e.dmg=(e.dmg||0)+2});if(v.hp<=0){u.belly=null;if(!SIM){addLog(u.owner,`The ${u.name} digests the ${v.name}.`);const s=tStat(v);if(s){s.died=G.round;s.diedBy=u.name}}oozeGrow(u,1)}}}
 function oozeBurst(u){if(!isOoze(u))return;const n=u.parts;const p=G.players[u.owner];const m=occ();for(const c of cells(u))m.delete(key(c[0],c[1]));const spots=allCells().filter(([q,r])=>hd(q,r,u.q,u.r)<=2&&freeHex(q,r,m)).sort((a,b)=>hd(a[0],a[1],u.q,u.r)-hd(b[0],b[1],u.q,u.r));
   const k=Math.min(n-1,spots.length);if(k<=0)return;const hpEach=Math.max(1,Math.floor(u.hp/n));bellyRelease(u);oozeSet(u,n-k,u.hp-hpEach*k);const hitT=new Set();
-  for(let i=0;i<k;i++){const b=makeUnit(p,FAC.ooze.units[0]);b.q=spots[i][0];b.r=spots[i][1];G.units.push(b);oozeSet(b,1,hpEach);b.moved=true;b.acted=true;if(!SIM)tStat(b);
+  for(let i=0;i<k;i++){const b=SLIME?slimeDrop(p,spots[i][0],spots[i][1],1):makeUnit(p,FAC.ooze.units[0]);if(!SLIME){b.q=spots[i][0];b.r=spots[i][1];G.units.push(b)}oozeSet(b,1,hpEach);b.moved=true;b.acted=true;if(!SIM)tStat(b);
     for(const f of G.units)if(alive(f)&&f.kind!=='wall'&&f.owner>=0&&tm(f.owner)!==tm(u.owner)&&distUC(f,b.q,b.r)===1){hurt(f,2,FAC.ooze.color);hitT.add(f.id)}}
   if(!SIM){addLog(u.owner,`The Giga Ooze bursts into ${k} droplets.`);nTrk('ooze','','Burst',e=>e.uses++)}oozeHeart(p)}
 function oozeFlood(u){for(const [q,r] of allCells())if(hd(q,r,u.q,u.r)<=2&&solid(q,r)&&!isHeart(q,r))G.paint[key(q,r)]={fac:'ooze',ttl:3,owner:u.owner};if(!SIM){addLog(u.owner,'The Flood: the ground turns to ooze.');nTrk('ooze',u.name,'The Flood',e=>e.uses++)}}
@@ -5375,7 +5387,7 @@ function oozeTurn(p){
   if(p.fac!=='ooze')return;bellyTick(p);
   for(const u of G.units.slice()){if(u.owner!==p.id||!isOoze(u))continue;if(talent(p,'regrowth'))healUnit(u,1,FAC.ooze.color,'Regrowth');if(u.trait==='budding'){const c=nearFree(u.q,u.r,occ(),2);if(c){const b=makeUnit(p,FAC.ooze.units[0]);b.q=c[0];b.r=c[1];G.units.push(b);oozeSet(b,1,perPart());if(!SIM){tStat(b);fx(b,'buds off',FAC.ooze.color);nTrk('ooze',u.name,'Budding',e=>e.uses++)}}}}
   oozeHeart(p)}
-function oozeKill(t,k){if(!G.realm)return;if(t.belly)bellyRelease(t);if(isOoze(t))setTimeout0(()=>oozeHeart(G.players[t.owner]));
+function oozeKill(t,k){if(!G.realm)return;if(SLIME&&k&&k.owner>=0&&G.players[k.owner]&&G.players[k.owner].fac==='ooze'&&!t.summon&&(t.kind!=='wall'||t.monster)){const M=G.units.find(v=>v.owner===k.owner&&v.leader&&alive(v));if(M&&SLIME.killHeal)healUnit(M,SLIME.killHeal,FAC.ooze.color,'Feeding');if(!SLIME.killGrow){if(t.belly)bellyRelease(t);return}}if(t.belly)bellyRelease(t);if(isOoze(t))setTimeout0(()=>oozeHeart(G.players[t.owner]));
   if(k&&isOoze(k)&&alive(k)&&!t.summon&&!t.statue&&!t.egg&&(t.kind!=='wall'||t.monster)){const p=G.players[k.owner];const n=(talent(p,'gluttony')?2:1)*(p.huTok===G.tok?2:1);oozeGrow(k,n)}}
 function setTimeout0(f){f()}
 // Sticky (Slime): an enemy next to it can only step 1 hex (like Hold the Line)
@@ -5401,7 +5413,9 @@ function newUse(u,k,A,tgt,q,r,dest){switch(A.special){
   case 'engulf':oozeSwallow(u,tgt,6);break;
   case 'devour2':oozeSwallow(u,tgt,8);break;
   case 'oozeburst':oozeBurst(u);break;
-  case 'flood':oozeFlood(u);break;}}
+  case 'flood':oozeFlood(u);break;
+  case 'slimespawn':slimeSpawn(u);break;
+  case 'acidflask':slimeFlask(u,A,q,r);break;}}
 function newCan(u,k){const A=ABIL[k];switch(A.special){
   case 'dashstrike':return aimCells(u,k).length>0;
   case 'stasisfield':return true;
@@ -5416,7 +5430,9 @@ function newCan(u,k){const A=ABIL[k];switch(A.special){
   case 'oozesplit':return isOoze(u)&&u.parts>=2&&!u.moved&&splitDest(u).length>0;
   case 'engulf':case 'devour2':return !u.belly&&aimCells(u,k).length>0;
   case 'oozeburst':return isOoze(u)&&u.parts>=3;
-  case 'flood':return true;}return null}
+  case 'flood':return true;
+  case 'slimespawn':return slimeParts(u.owner)<SLIME.cap&&u.hp>SLIME.spawnPrice&&!!nearFree(u.q,u.r,occ(),2);
+  case 'acidflask':return true;}return null}
 // which units an ability may aim at (extra filters), null = no opinion
 function newAimOk(u,A,v){switch(A.special){
   case 'decoy':return v!==u&&!v.summon&&!v.statue;
@@ -5449,6 +5465,8 @@ function newHeur(u,k,q,r,ctx,dest){const A=ABIL[k],team=tm(u.owner);const foesNe
     case 'abduct':{const t=unitAt(q,r);if(!t||!dest)return 0;const myN=G.units.filter(v=>v.owner===u.owner&&v.kind!=='wall'&&!inert(v)&&hd(v.q,v.r,dest.q,dest.r)<=2&&v.at!=='none').length;const theirN=G.units.filter(v=>v!==t&&v.kind!=='wall'&&v.owner===t.owner&&hd(v.q,v.r,dest.q,dest.r)<=2).length;return myN*1.6-theirN*1.5+(lootOf(t)?3:0)+(t.leader?2:0)+(t.king?3:0)+(t.hp<=6?1.5:0)}
     case 'collapse':{let n=0;for(const P of G.portals||[])for(const end of ['a','b'])n+=ctx.foes.filter(f=>f.owner>=0&&f.size!==2&&distUC(f,P[end][0],P[end][1])<=1).length;return n>=2?n*3:0}
     case 'oozesplit':return 0;
+    case 'slimespawn':{const fo=ctx.foes.filter(f=>f.owner>=0&&distUU(f,u)<=4).length;return 5+(u.hp>SLIME.spawnPrice*3?2:0)-fo*1.2}
+    case 'acidflask':{const f=foesNear(q,r,1);if(!f.length)return 0;return f.reduce((s,v)=>s+Math.min(SLIME.flask.dmg,v.hp)+(v.hp<=SLIME.flask.dmg?4:0),0)*1.1+(slimeParts(u.owner)<SLIME.cap?2:0)}
     case 'engulf':{const t=unitAt(q,r);if(!t||t.leader||t.king)return 0;return 6+Math.min(t.hp,20)*0.35+(lootOf(t)?3:0)}
     case 'oozeburst':{const n=foesNear(u.q,u.r,3).length;return n>=2?n*2.2:0}
     case 'flood':{const n=foesNear(u.q,u.r,3).length;return n>=1?2+n*1.5:0}
@@ -5480,6 +5498,27 @@ function newUltScore(p,foes){const mine=G.units.filter(v=>v.owner===p.id&&v.kind
   if(p.fac==='chrono'){const n=foes.filter(f=>f.owner>=0&&!f.summon&&mine.some(v=>!v.acted&&distUU(v,f)<=effMov(v)+1&&f.hp<=effAtk(v)+6)).length;return n?8+n*6:0}
   if(p.fac==='rift'){const n=(G.portals||[]).filter(P=>P.owner===p.id).length;return n>=2?6+n*3:0}
   if(p.fac==='ooze'){const n=mine.filter(isOoze).length;return n>=3?n*2.5:0}return 0}
+
+/* ===== SLIME CASTERS PROTOTYPE (owner 22 Oct 2026: fragile casters that spawn blobs which swarm and merge; tempo must be controlled). OFF in the game:
+   only the simulations switch it on with TWEAK "slimeOn({...})". It replaces The Ooze's roster: the Ooze Mother (Leader) spawns droplets (paying HP),
+   Acid Brewers throw flasks (damage + one droplet), Gel Wardens are plain fragile casters for now; droplets are summons that merge up to OOZE_CAP. ===== */
+let SLIME=null;
+const SLIME_DEF={mother:{hp:14,atk:2,mov:3},brewers:2,wardens:1,caster:{hp:8,atk:1,mov:3},drop:{hp:4,atk:1,mov:4},spawnN:2,spawnRest:2,spawnPrice:2,cap:6,ttl:0,flask:{dmg:2,rest:3,range:3},killHeal:3,killGrow:1,start:0};
+function slimeOn(o){SLIME=Object.assign({},SLIME_DEF,o||{});for(const k of ['mother','caster','drop','flask'])SLIME[k]=Object.assign({},SLIME_DEF[k],(o||{})[k]||{});
+  ABIL.slimespawn={name:'Spawn',cost:1,cd:SLIME.spawnRest,aim:'self',special:'slimespawn',bot:'slimespawn',desc:`Pay ${SLIME.spawnPrice} HP: ${SLIME.spawnN} droplets appear beside the Mother.`};
+  ABIL.acidflask={name:'Acid Flask',cost:1,cd:SLIME.flask.rest,aim:'hex',range:SLIME.flask.range,shape:'blast',size:1,hits:'foe',special:'acidflask',bot:'acidflask',desc:`Throw a flask: ${SLIME.flask.dmg} to every enemy on or next to the hex, and a droplet lands there.`};
+  const C=SLIME.caster;FAC.ooze.units=[{name:'Ooze Mother',icon:'drop',leader:1,hp:SLIME.mother.hp,atk:SLIME.mother.atk,def:0,mov:SLIME.mother.mov,mt:'walk',at:'melee',rng:1,ab:'slimespawn'}];
+  if(SLIME.brewers)FAC.ooze.units.push({name:'Acid Brewer',icon:'drop',n:SLIME.brewers,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1,ab:'acidflask'});
+  if(SLIME.wardens)FAC.ooze.units.push({name:'Gel Warden',icon:'drop',n:SLIME.wardens,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1});
+  REALM.startBy.ooze=SLIME.start;NEW_BOT.add('slimespawn');NEW_BOT.add('acidflask')}
+const SLIME_DROP=()=>({name:'Droplet',icon:'drop',hp:SLIME.drop.hp,atk:SLIME.drop.atk,def:0,mov:SLIME.drop.mov,mt:'walk',at:'melee',rng:1,parts:1});
+function slimeParts(pid){return G.units.filter(v=>v.owner===pid&&v.parts&&alive(v)).reduce((s,v)=>s+v.parts,0)}
+function slimeDrop(p,q,r,parts,hp){const b=makeUnit(p,SLIME_DROP());b.q=q;b.r=r;b.summon=true;b.ttl=SLIME.ttl||99999;G.units.push(b);oozeSet(b,parts||1,hp);b.moved=true;b.acted=true;if(!SIM)tStat(b);return b}
+function slimeSpawn(u){const p=G.players[u.owner];let n=Math.min(SLIME.spawnN,SLIME.cap-slimeParts(p.id));let made=0;
+  for(let i=0;i<n;i++){const c=nearFree(u.q,u.r,occ(),2);if(!c)break;slimeDrop(p,c[0],c[1],1);made++}
+  if(made){u.hp=Math.max(1,u.hp-SLIME.spawnPrice);if(!SIM){fx(u,`-${SLIME.spawnPrice} HP: ${made} droplets`,FAC.ooze.color);nTrk('ooze',u.name,'Droplets spawned',e=>{e.uses+=made})}}}
+function slimeFlask(u,A,q,r){for(const t of areaUnits(u,A,shapeCells(u,'acidflask',q,r)))applyHit(u,t,Object.assign({},A,{dmg:SLIME.flask.dmg}));
+  const p=G.players[u.owner];if(slimeParts(p.id)<SLIME.cap){const c=nearFree(q,r,occ(),1);if(c){slimeDrop(p,c[0],c[1],1);if(!SIM)nTrk('ooze',u.name,'Droplets spawned',e=>e.uses++)}}}
 
 const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
@@ -8456,6 +8495,7 @@ function computePreview(){
   const at=G.aim||G.hover;
   if(!u||!G.amode||!at)return;
   if(!hl.aim.has(key(at[0],at[1])))return;
+  if(ABIL[G.amode].special==='blockmove'){const P0=blockPlan(u,aimDir(u,at[0],at[1]));for(const [v,a,b] of P0.moves){hl.area.add(key(a,b));hl.hitIds.add(v.id)}return}
   if(ABIL[G.amode].special==='march'){for(const [v,a,b] of marchMoves(u,aimDir(u,at[0],at[1]))){hl.area.add(key(a,b));hl.hitIds.add(v.id)}return}
   if(twoTap(ABIL[G.amode])){if(G.blinkT!=null){const b0=blinkObj();if(ABIL[G.amode].special==='riftshot'&&riftPreview(u,b0,at,hl))return;hl.area.add(key(at[0],at[1]));if(b0&&b0.id!=null)hl.hitIds.add(b0.id)}else{const t=pick1(u,G.amode,at[0],at[1]);if(t){if(t.id!=null)hl.hitIds.add(t.id);for(const [a,b] of twoDest(u,G.amode,t))hl.area.add(key(a,b))}}return}
   for(const [a,b] of shapeCells(u,G.amode,at[0],at[1]))hl.area.add(key(a,b));
@@ -8627,7 +8667,7 @@ function statusChips(u,long){const L=unitStatuses(u);if(!L.length)return '';
 // v74 the Realm: no AP. The AP box shows the reserve instead: one button per unit type you can call into your base this turn.
 function REALM_HINT(){return `Four armies arrive through their portals in the corners. At once the Rift Beast falls on the city in the middle, the land cracks into wasteland and four Crown Stones are flung onto the roads. No AP: every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn; the fallen are gone for good. Clear camps for buffs and heals, carry the stones, hunt the Beast's spawns, and kill the Beast to be crowned King on the Throne. Points come from the Throne, enemy Leaders and the King, the Elder Drakes, the late spawn waves and the Beast. First to ${REALM.target} wins.`}
 function realmBar(){const pp=P(G.cur),box=$('#apBox');if(!box||!pp)return;const can=isHumanTurn()&&realmCanSummon(pp),res=pp.reserve||[];
-  const hpOf=d=>Math.round((d.hp||0)*REALM.hpMul),names=[...new Set(res)],btn=n=>{const d=FAC[pp.fac].units.find(x=>x.name===n)||{};const c=res.filter(x=>x===n).length;return `<button class="abtn" data-sum="${n}" style="padding:4px 9px;margin:2px;min-width:0" title="${hpOf(d)} HP, ${d.atk} ATK, ${d.def} DEF">${n}${c>1?' ×'+c:''}<small>${hpOf(d)} HP · ${d.atk} ATK</small></button>`};
+  const hpOf=d=>Math.round((d.hp||0)*REALM.hpMul),names=[...new Set(res)],btn=n=>{const d=FAC[pp.fac].units.find(x=>x.name===n)||{};const c=res.filter(x=>x===n).length;return `<button class="abtn sumglow" data-sum="${n}" style="padding:4px 9px;margin:2px;min-width:0" title="${hpOf(d)} HP, ${d.atk} ATK, ${d.def} DEF">${n}${c>1?' ×'+c:''}<small>${hpOf(d)} HP · ${d.atk} ATK</small></button>`};
   const scrapN=pp.fac==='gnomes'?`<span class="aplabel">Scrap: ${pp.scrap||0}</span>`:'';
   box.innerHTML=scrapN+(res.length?(can?`<span class="aplabel"><b>Call one unit to your base:</b></span>${names.map(btn).join('')}`:`<span class="aplabel">${pp.sumDone?'<b>Unit called this turn.</b> ':''}Reserve: ${res.length} still to come</span>`):`<span class="aplabel">Every unit has been called</span>`);
   const sites=realmSites(pp).filter(s=>realmSpots(pp,s).length);
