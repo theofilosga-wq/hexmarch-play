@@ -5430,7 +5430,7 @@ function newTwoDest(u,k,t){switch(ABIL[k].special){case 'stealtime':return steal
 // portals and merges as move targets (called at the end of moveOpts)
 function newMoveOpts(u,out){if(!G.realm)return;const m=occ();
   if(G.portals&&G.portals.length&&u.size!==2){const add=[];for(const [k,o] of out){const h=portalAt(o.q,o.r);if(!h||guarded(u,o.q,o.r))continue;const mm=new Map(m);mm.delete(key(u.q,u.r));const ex=portalExit(h.P,h.end);const c=nearFree(ex[0],ex[1],mm,1);if(c&&!out.has(key(c[0],c[1])))add.push([key(c[0],c[1]),{q:c[0],r:c[1],dir:u.dir||0,portal:h.P.id}])}for(const [k,o] of add)out.set(k,o)}
-  if(isOoze(u)){for(const b of G.units){if(b===u||!isOoze(b)||b.owner!==u.owner)continue;const near=cells(b).some(([a,c])=>out.has(key(a,c))||DIRS.some(([dq,dr])=>out.has(key(a+dq,c+dr))||(a+dq===u.q&&c+dr===u.r)));if(near)out.set('m'+b.id,{q:b.q,r:b.r,dir:b.dir||0,merge:b.id})}}}
+  if(isOoze(u)){for(const b of G.units){if(b===u||!isOoze(b)||b.owner!==u.owner)continue;const near=cells(b).some(([a,c])=>out.has(key(a,c))||DIRS.some(([dq,dr])=>out.has(key(a+dq,c+dr))||(a+dq===u.q&&c+dr===u.r)));if(near)for(const [cq,cr] of cells(b))out.set(key(cq,cr),{q:b.q,r:b.r,dir:b.dir||0,merge:b.id})}}}
 function newDoMove(u,o){if(o.merge!=null){const t=byId(o.merge);if(t){oozeMerge(u,t);return true}}if(o.portal!=null){const P=(G.portals||[]).find(x=>x.id===o.portal);if(P)portalUse(u,P)}return false}
 
 /* ---------- bots ---------- */
@@ -5641,7 +5641,7 @@ function draw3D(now){
       polyPath(hexTop(x,z,on?0.88:0.78,0));ctx.strokeStyle=on?'#fff3c4':'rgba(232,184,78,.95)';ctx.lineWidth=Math.max(1.5,CAM.S*(on?0.12:0.08));ctx.stroke()}
     if(hl.moves.has(k)){const mv=hl.moves.get(k);
       if(hl.ghost)groundRing(x,z,0.24,focusCol,2);
-      else{const dz=dangerHexes();groundRing(x,z,0.24,'#0b0e14',1.5,mv.gate?'#12d69a':mv.pilot!=null?'#ff6ec7':dz&&dz.has(k)?'#ff6b5b':'#ece8dd')}}
+      else{const dz=dangerHexes();groundRing(x,z,0.24,'#0b0e14',1.5,mv.gate?'#12d69a':mv.pilot!=null?'#ff6ec7':mv.merge!=null?'#6a5cff':dz&&dz.has(k)?'#ff6b5b':'#ece8dd')}}
   }
   // bold gold border around the whole Heart so it never reads as ordinary ground
   {ctx.strokeStyle='#ffd766';ctx.lineWidth=Math.max(2,CAM.S*0.09);ctx.lineCap='round';
@@ -9539,7 +9539,7 @@ function draw(now){
     const hc=homes.get(k);if(hc){hexPath(x,y,SZ*0.97);ctx.strokeStyle=hc;ctx.lineWidth=2;ctx.stroke()}
     if(hl.moves.has(k)){ctx.beginPath();ctx.arc(x,y,SZ*(window.innerWidth<700?0.36:0.3),0,7);
       if(hl.ghost){ctx.strokeStyle=focusCol;ctx.lineWidth=2;ctx.stroke()}
-      else{const dz=dangerHexes();ctx.fillStyle=hl.moves.get(k).gate?'#12d69a':hl.moves.get(k).pilot!=null?'#ff6ec7':dz&&dz.has(k)?'#ff6b5b':'#ece8dd';ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke()}}
+      else{const dz=dangerHexes();ctx.fillStyle=hl.moves.get(k).gate?'#12d69a':hl.moves.get(k).pilot!=null?'#ff6ec7':hl.moves.get(k).merge!=null?'#6a5cff':dz&&dz.has(k)?'#ff6b5b':'#ece8dd';ctx.fill();ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke()}}
     if(hl.aim.has(k)){const on=G.aim&&G.aim[0]===q&&G.aim[1]===r;hexPath(x,y,SZ*0.97);ctx.fillStyle=on?'rgba(255,243,196,.38)':`rgba(232,184,78,${0.18+0.1*flick})`;ctx.fill();
       hexPath(x,y,SZ*(on?0.9:0.8));ctx.strokeStyle=on?'#fff3c4':'rgba(232,184,78,.95)';ctx.lineWidth=Math.max(1.5,SZ*(on?0.14:0.09));ctx.stroke()}
   }
@@ -9802,7 +9802,7 @@ function clickCell(q,r){
     {const why=whyNoAim(selU,G.amode,q,r);if(why)toast(why,3200)}// v40: say why the tap did nothing
     G.amode=null;G.aim=null;
   }else if(acting){
-    if(hl.moves.has(k)&&(!hit||hl.moves.get(k).pilot!=null)){doMove(selU,hl.moves.get(k));return}// v48: a move onto your own machine = climb in
+    if(hl.moves.has(k)&&(!hit||(hl.moves.get(k).pilot!=null||hl.moves.get(k).merge!=null))){doMove(selU,hl.moves.get(k));return}// v48: a move onto your own machine = climb in
     if(hit&&hl.atk.has(hit.id)){attack(selU,hit);return}
     if(hit&&hit!==selU&&visibleUnit(hit)&&isFoe(selU,hit)){const why=whyNoAttack(selU,hit);if(why)toast(why,3200)}
     else if(!hit&&inR(q,r)&&selU.mov&&!(selU.freeMove>0)){if(selU.moved)toast(`The ${selU.name} has already moved this turn.`,2400);else if(G.ap<1)toast('No AP left to move.',2400)}
@@ -10056,11 +10056,11 @@ function uxDragUp(e){const d=UX.drag;UX.drag=null;if(!d||!d.on){UX.dragTo=null;r
   // a body under the finger counts too: dropping onto a tall enemy figure attacks it
   const rc=cv.getBoundingClientRect();let body=null;if(VIEW==='3d'){const b=hexAt3D(e.clientX-rc.left,e.clientY-rc.top);body=b&&unitAt(b[0],b[1])}
   const foe=[t,body].find(x=>x&&hl.atk.has(x.id));
-  if(hl.moves.has(k)&&(!t||hl.moves.get(k).pilot!=null)){clickCell(h[0],h[1]);return true}
+  if(hl.moves.has(k)&&(!t||(hl.moves.get(k).pilot!=null||hl.moves.get(k).merge!=null))){clickCell(h[0],h[1]);return true}
   if(foe){clickCell(foe.q,foe.r);return true}
   if(!(cells(u).some(([q,r])=>q===h[0]&&r===h[1])))toast('Drop it on a dot to move, or on an enemy with a red ring to attack.',2400);refresh();return true}
 function uxDragDraw(){const d=UX.drag;if(!d||!d.on||!UX.dragTo)return;const u=byId(d.id);if(!u)return;const [q,r]=UX.dragTo,k=key(q,r),t=unitAt(q,r);
-  const ok=hl.moves.has(k)&&(!t||hl.moves.get(k).pilot!=null),hit=t&&hl.atk.has(t.id);
+  const ok=hl.moves.has(k)&&(!t||(hl.moves.get(k).pilot!=null||hl.moves.get(k).merge!=null)),hit=t&&hl.atk.has(t.id);
   const [x0,y0]=vPos(u.q,u.r,0),[x1,y1]=vPos(q,r,0);ctx.save();ctx.setLineDash([6,5]);ctx.lineWidth=3;ctx.strokeStyle=ok?'rgba(110,230,150,.9)':hit?'rgba(255,97,97,.95)':'rgba(200,205,215,.6)';ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();ctx.setLineDash([]);
   uxOutline(q,r,ok?'#6ee696':hit?'#ff6161':'#8a8f9c',3,ok?'rgba(110,230,150,.25)':hit?'rgba(255,97,97,.25)':'rgba(140,145,156,.15)');ctx.restore()}
 
