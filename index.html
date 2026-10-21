@@ -9977,6 +9977,25 @@ function showHistory(){const o=document.querySelector('#overlay');o.innerHTML=`<
 // the home page gets a Match history card under the learn card
 function histHomeCard(){const lc=document.querySelector('#learnCard');if(!lc||document.querySelector('#histCard'))return;const c=document.createElement('div');c.className='card';c.id='histCard';c.innerHTML='<div class="label">Match history</div><div id="histHome"><p class="hint">Loading…</p></div>';lc.after(c);histList(c.querySelector('#histHome'))}
 {const rs0=renderSetup;renderSetup=function(){rs0();histHomeCard()}}histHomeCard();
+/* v112 (owner 22 Oct 2026: "when I export, the files should go straight to my match history folder"): Chrome and Edge on a computer let the page write into a folder
+   picked once (File System Access API). The folder handle is kept in its own IndexedDB ('hexmarch-folder'). Exports go there; every finished game is also saved there
+   on its own when the browser still allows writing (no prompt is possible without a click). Everything else (phones, Firefox, Safari) keeps the normal download. */
+const HFOLD={ok:typeof window!=='undefined'&&!!window.showDirectoryPicker,h:null,name:''};
+function hfDb(){return new Promise((res,rej)=>{const r=indexedDB.open('hexmarch-folder',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function hfGet(){return hfDb().then(db=>new Promise(res=>{const q=db.transaction('kv','readonly').objectStore('kv').get('dir');q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)})).catch(()=>null)}
+function hfSet(h){return hfDb().then(db=>new Promise(res=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(h,'dir');t.oncomplete=()=>res();t.onerror=()=>res()})).catch(()=>{})}
+async function hfLoad(){if(!HFOLD.ok)return null;if(!HFOLD.h){HFOLD.h=await hfGet();HFOLD.name=HFOLD.h?HFOLD.h.name:''}return HFOLD.h}
+async function hfPick(){try{const h=await window.showDirectoryPicker({id:'hexmarch-matches',mode:'readwrite',startIn:'desktop'});HFOLD.h=h;HFOLD.name=h.name;await hfSet(h);toast(`Matches will be saved in “${h.name}”.`,3000);return h}catch(e){return null}}
+// ask=true only from a click (the browser may then ask to allow editing the folder)
+async function hfWrite(m,ask){const h=await hfLoad();if(!h)return false;try{let p=await h.queryPermission({mode:'readwrite'});if(p!=='granted'&&ask)p=await h.requestPermission({mode:'readwrite'});if(p!=='granted')return false;
+  const f=await h.getFileHandle(histFile(m),{create:true});const w=await f.createWritable();await w.write(histBlob(m));await w.close();return true}catch(e){return false}}
+{const dl0=histDownload;histDownload=function(m){if(!HFOLD.ok){dl0(m);return}hfWrite(m,true).then(ok=>{if(ok)toast(`Saved in “${HFOLD.name}”: ${histFile(m)}`,3200);else dl0(m)})}}
+// the history list gets a folder line (computers with Chrome or Edge only)
+{const hl0=histList;histList=async function(el){await hl0(el);if(!HFOLD.ok||!el)return;await hfLoad();const d=document.createElement('p');d.className='hint';
+  d.innerHTML=HFOLD.h?`Exports and finished games are saved in the folder <b>${HFOLD.name.replace(/</g,'&lt;')}</b>. <button class="linkbtn" data-hf="1">Change folder</button>`:`<button class="linkbtn" data-hf="1">Choose a folder</button> for your exports (they then skip the Downloads folder, and every finished game is saved there too).`;
+  el.prepend(d);d.querySelector('[data-hf]').onclick=async()=>{if(await hfPick())histList(el)}}}
+// a finished game goes to the folder by itself, once its final photo is in
+{const ht0=histTick;histTick=function(){ht0();try{const m=HIST.match;if(HFOLD.ok&&m&&m.result&&!m.folderSaved&&!HIST.fsBusy&&(m.photos||{}).final){HIST.fsBusy=true;hfWrite(m,false).then(ok=>{HIST.fsBusy=false;if(ok){m.folderSaved=1;histSave();toast(`Match saved in “${HFOLD.name}”.`,2600)}else m.folderSaved=-1})}}catch(e){}}}
 
 /* v101 MOTION SHOWCASE (owner 19 Oct 2026): open the game with #motion at the end of the address (for example http://localhost:8765/plain.html#motion)
    and a scripted scene plays the motion pass on the modelled armies, on a loop: walking, lunges, hits, a death, and the five signature abilities
