@@ -1368,8 +1368,8 @@ FAC.rift={name:'Riftwalkers',color:'#12d69a',portals:1,
     {name:'Banisher',icon:'fist',n:2,hp:11,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,trait:'banish'},
     {name:'Rift Mender',icon:'wave',hp:8,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'lifegate'}]};
 FAC.ooze={name:'The Ooze',color:'#6a5cff',ooze:1,
-  theme:'One living mass that splits and merges as the fight needs. Small blobs are many and quick, big blobs are slow and terrible. It grows by eating.',
-  passive:'Merge and split: move a blob onto another of your blobs to merge them (HP, ATK and parts add up), up to 3 parts; Split breaks a blob in two. A merged blob that has at least half its parts already used (attacked, or moved) counts as used. Past 3 parts a blob grows only by eating: every enemy unit or camp monster it kills adds a part to it (to that blob only). The size of a blob decides what it is: 1-2 parts a Droplet (fast, no ability), 3-4 a Slime (sticky: an enemy next to it can only step 1 hex), 5-6 an Ooze (Engulf), 7-8 a Huge Ooze (Acid Surge), 9-10 a Giga Ooze (Burst), 11-12 a Colossal Ooze (Devour), 13-14 a Titanic Ooze (Budding), 15+ the Primordial Ooze (The Flood). Blobs of 5 parts or more fill 2 hexes. ATK equals the parts up to 3, then 1 more for every 3 parts past 3. The Heart: your biggest blob counts as your Leader.',
+  theme:'The Ooze Mother and her three fragile slime-casters. She pours out droplets that swarm the field and merge into bigger blobs; kill the casters and the tide stops.',
+  passive:'The Ooze Mother arrives alone; her three casters come from the reserve. Spawn: every other turn the Mother pays 2 HP and 2 droplets appear beside her (at most 10 droplet parts on the board). Droplets are summoned blobs: 9 HP and 2 ATK each, walk 4; move a blob onto another to merge them (HP and ATK add up) up to 3 parts; past 3 a blob grows only by its own kills. Every kill the army makes heals the Mother 3. Droplets never take the Throne, carry stones or score.',
   home:'No home ground.',homeRealm:'No home ground on the Realm.',
   units:[{name:'Droplet',icon:'drop',n:12,hp:4,atk:1,def:0,mov:4,mt:'walk',at:'melee',rng:1,parts:1}]};
 {const order=Object.keys(FAC);const want=order.filter(k=>k!=='ooze');const i=want.indexOf('chrono');want.splice(i+1,0,'ooze');const F2={};for(const k of want)F2[k]=FAC[k];F2.ooze=FAC.ooze;for(const k of Object.keys(FAC))delete FAC[k];Object.assign(FAC,F2)}
@@ -1421,7 +1421,7 @@ Object.assign(TRAITS,{
 Object.assign(ULTS,{
   chrono:{name:'Open Season',text:'For the rest of this turn, every enemy unit your crew kills counts as a collected contract.'},
   rift:{name:'Rift Surge',text:'Every open portal stays open 2 rounds longer, and for the rest of this turn every Riftwalker that comes out of a portal may move again, as often as it likes.'},
-  ooze:{name:'Hunger',text:'Every one of your blobs grows by 1 part at once, and for the rest of this turn every kill adds 2 parts instead of 1.'},
+  ooze:{name:'The Tide Rises',text:'For this turn and your next one, Spawn has no rest and costs no HP: the Mother may pour out droplets every turn (the 10-part limit still holds).'},
 });
 Object.assign(TALENTS,{
   chrono:[{k:'longcon',name:'Long Con',text:'Every contract lasts 7 of your turns instead of 5.'},
@@ -1430,9 +1430,9 @@ Object.assign(TALENTS,{
   rift:[{k:'widegates',name:'Wide Gates',text:'The far end of a Twin Gate may open up to 13 hexes away instead of 10.'},
         {k:'stablegates',name:'Stable Gates',text:'Gatekeeper gates last 4 rounds instead of 3.'},
         {k:'deepkick',name:'Deep Kick',text:'Banishers kick 4 hexes instead of 3.'}],
-  ooze:[{k:'gluttony',name:'Gluttony',text:'Every kill adds 2 parts to the blob instead of 1.'},
-        {k:'regrowth',name:'Regrowth',text:'Every blob heals 1 at the start of your turn.'},
-        {k:'acidic',name:'Acidic',text:'Droplets and Slimes deal 1 more with their basic attacks.'}],
+  ooze:[{k:'deeppool',name:'Deep Pool',text:'Up to 13 droplet parts may be on the board instead of 10.'},
+        {k:'motherblood',name:'Mother’s Blood',text:'Spawn costs the Mother 1 HP instead of 2.'},
+        {k:'corrosive',name:'Corrosive',text:'Acid Flask deals 3 instead of 2.'}],
 });
 const OLD_UNITS={"chrono":[{"name":"Chronarch","icon":"crown","leader":1,"hp":16,"atk":4,"def":1,"mov":1,"mt":"walk","at":"bolt","rng":3,"ab":"synchrony","ab2":"turnback","trait":"delaybolt"},{"name":"Second Hand","icon":"clock","hp":15,"atk":3,"def":0,"mov":3,"mt":"walk","at":"melee","rng":1,"trait":"tempo"},{"name":"Tempo Mage","icon":"hourglass","hp":8,"atk":0,"def":1,"mov":3,"mt":"walk","at":"none","rng":0,"ab":"quicken"},{"name":"Rewinder","icon":"rewind","hp":8,"atk":0,"def":1,"mov":3,"mt":"walk","at":"none","rng":0,"ab":"clock","ab2":"rewindwounds"},{"name":"Sand Weaver","icon":"hourglass","hp":8,"atk":0,"def":1,"mov":3,"mt":"walk","at":"none","rng":0,"ab":"sand"},{"name":"Echo Knight","icon":"clock","hp":9,"atk":0,"def":1,"mov":3,"mt":"walk","at":"none","rng":0,"ab":"echo"},{"name":"Tick","icon":"rewind","hp":8,"atk":0,"def":1,"mov":3,"mt":"walk","at":"none","rng":0,"ab":"overwind"}],"rift":[{"name":"Rift Sovereign","icon":"crown","leader":1,"hp":16,"atk":3,"def":1,"mov":2,"mt":"walk","at":"melee","rng":1,"ab":"blackhole","ab2":"anchor"},{"name":"Repulsor","icon":"burst","hp":13,"atk":2,"def":1,"mov":2,"mt":"blink","at":"melee","rng":1,"ab":"repel"},{"name":"Voidcaller","icon":"void","hp":11,"atk":2,"def":0,"mov":2,"mt":"blink","at":"bolt","rng":2,"ab":"cracks"},{"name":"Tidecaller","icon":"wave","hp":11,"atk":2,"def":0,"mov":2,"mt":"blink","at":"bolt","rng":3,"ab":"riptide"},{"name":"Gravity Singer","icon":"gravity","hp":11,"atk":2,"def":0,"mov":2,"mt":"blink","at":"bolt","rng":3,"ab":"well"}]};/* v111: the previous Hourglass Order and Riftwalker rosters, off the roster (labUnit / old playbooks only) */
 
@@ -3583,7 +3583,7 @@ function useAbility(u,k,q,r,dest){
     case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
       for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
-    case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':newUse(u,k,A,tgt,q,r,dest);break;// v111
+    case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':newUse(u,k,A,tgt,q,r,dest);break;// v111
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
@@ -5403,7 +5403,7 @@ function setTimeout0(f){f()}
 const stickyNear=u=>G.units.some(v=>v.kind!=='wall'&&hasTrait(v,'sticky')&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)===1);
 
 /* ---------- shared hooks ---------- */
-function newTurnStart(p){if(!G.realm)return;contractTick(p);fieldTick(p);portalTick(p);oozeTurn(p);if(p.fac==='ooze')oozeHeart(p)}
+function newTurnStart(p){if(!G.realm)return;if(p.tide>0)p.tide--;contractTick(p);fieldTick(p);portalTick(p);oozeTurn(p);if(p.fac==='ooze')oozeHeart(p)}
 function newTurnEnd(p){if(!G.realm)return;synSnapBack(p);revertRecord(p)}
 function newKill(t,k){if(!G.realm)return;synKill(t,k);oozeKill(t,k);if(G.players)for(const p of G.players)if(p.contract&&p.contract.id===t.id&&!(k&&isSyn(k)&&k.owner===p.id))p.contract=null}
 function newUse(u,k,A,tgt,q,r,dest){switch(A.special){
@@ -5424,6 +5424,7 @@ function newUse(u,k,A,tgt,q,r,dest){switch(A.special){
   case 'oozeburst':oozeBurst(u);break;
   case 'flood':oozeFlood(u);break;
   case 'slimespawn':slimeSpawn(u);break;
+  case 'coalesce':{const a=tgt,b=dest&&unitAt(dest.q,dest.r);if(a&&b&&a!==b&&a.parts&&b.parts&&a.parts+b.parts<=OOZE_CAP){a.moved=true;oozeMerge(a,b);if(!SIM)nTrk('ooze',u.name,'Coalesce',e=>e.uses++)}break}
   case 'acidflask':slimeFlask(u,A,q,r);break;}}
 function newCan(u,k){const A=ABIL[k];switch(A.special){
   case 'dashstrike':return aimCells(u,k).length>0;
@@ -5440,10 +5441,12 @@ function newCan(u,k){const A=ABIL[k];switch(A.special){
   case 'engulf':case 'devour2':return !u.belly&&aimCells(u,k).length>0;
   case 'oozeburst':return isOoze(u)&&u.parts>=3;
   case 'flood':return true;
-  case 'slimespawn':return slimeParts(u.owner)<SLIME.cap&&u.hp>SLIME.spawnPrice&&!!nearFree(u.q,u.r,occ(),2);
+  case 'slimespawn':return slimeParts(u.owner)<slimeCap(u.owner)&&(slimeTide(G.players[u.owner])||u.hp>SLIME.spawnPrice)&&!!nearFree(u.q,u.r,occ(),2);
+  case 'coalesce':return aimCells(u,k).length>0&&G.units.filter(v=>v.owner===u.owner&&v.parts&&distUU(u,v)<=3).length>=2;
   case 'acidflask':return true;}return null}
 // which units an ability may aim at (extra filters), null = no opinion
 function newAimOk(u,A,v){switch(A.special){
+  case 'coalesce':return !!v.parts&&v.owner===u.owner&&v.parts<OOZE_CAP;
   case 'decoy':return v!==u&&!v.summon&&!v.statue;
   case 'stealtime':return v!==u&&!!restingAbil(v);
   case 'snatch':return !!lootOf(v);
@@ -5453,7 +5456,7 @@ function newAimOk(u,A,v){switch(A.special){
   case 'devour2':return !v.leader&&!v.king&&!v.beast&&v.monster!=='oldgod'&&!v.statue&&!v.egg;
   case 'dashstrike':return cells(v).some(([a,b])=>DIRS.some(([dq,dr])=>freeHex(a+dq,b+dr)||(a+dq===u.q&&b+dr===u.r)));}return true}
 const NEW_TWO=new Set(['stealtime','twingates','lifegate','riftshot','abduct']);
-function newTwoDest(u,k,t){switch(ABIL[k].special){case 'stealtime':return stealDest(u);case 'twingates':case 'lifegate':return gateDest(u,k,t);case 'riftshot':return lanceDest(u);case 'abduct':return abductDest(u)}return []}
+function newTwoDest(u,k,t){switch(ABIL[k].special){case 'coalesce':return G.units.filter(v=>v!==t&&v.owner===u.owner&&v.parts&&distUU(u,v)<=3&&t&&v.parts+t.parts<=OOZE_CAP).map(v=>[v.q,v.r]);case 'stealtime':return stealDest(u);case 'twingates':case 'lifegate':return gateDest(u,k,t);case 'riftshot':return lanceDest(u);case 'abduct':return abductDest(u)}return []}
 // portals and merges as move targets (called at the end of moveOpts)
 function newMoveOpts(u,out){if(!G.realm)return;const m=occ();
   if(G.portals&&G.portals.length&&u.size!==2){const add=[];for(const [k,o] of out){const h=portalAt(o.q,o.r);if(!h||guarded(u,o.q,o.r))continue;const mm=new Map(m);mm.delete(key(u.q,u.r));const ex=portalExit(h.P,h.end);const c=nearFree(ex[0],ex[1],mm,1);if(c&&!out.has(key(c[0],c[1])))add.push([key(c[0],c[1]),{q:c[0],r:c[1],dir:u.dir||0,portal:h.P.id}])}for(const [k,o] of add)out.set(k,o)}
@@ -5474,7 +5477,8 @@ function newHeur(u,k,q,r,ctx,dest){const A=ABIL[k],team=tm(u.owner);const foesNe
     case 'abduct':{const t=unitAt(q,r);if(!t||!dest)return 0;const myN=G.units.filter(v=>v.owner===u.owner&&v.kind!=='wall'&&!inert(v)&&hd(v.q,v.r,dest.q,dest.r)<=2&&v.at!=='none').length;const theirN=G.units.filter(v=>v!==t&&v.kind!=='wall'&&v.owner===t.owner&&hd(v.q,v.r,dest.q,dest.r)<=2).length;return myN*1.6-theirN*1.5+(lootOf(t)?3:0)+(t.leader?2:0)+(t.king?3:0)+(t.hp<=6?1.5:0)}
     case 'collapse':{let n=0;for(const P of G.portals||[])for(const end of ['a','b'])n+=ctx.foes.filter(f=>f.owner>=0&&f.size!==2&&distUC(f,P[end][0],P[end][1])<=1).length;return n>=2?n*3:0}
     case 'oozesplit':return 0;
-    case 'slimespawn':{const fo=ctx.foes.filter(f=>f.owner>=0&&distUU(f,u)<=4).length;return 5+(u.hp>SLIME.spawnPrice*3?2:0)-fo*1.2}
+    case 'coalesce':{const a=unitAt(q,r),b=dest&&unitAt(dest.q,dest.r);if(!a||!b)return 0;const near=ctx.foes.some(f=>f.owner>=0&&distUU(f,b)<=4);return near?3+a.parts+b.parts:0}
+    case 'slimespawn':{if(SLIME.greedy)return 60;const fo=ctx.foes.filter(f=>f.owner>=0&&distUU(f,u)<=4).length;return 5+(u.hp>SLIME.spawnPrice*3?2:0)-fo*1.2}
     case 'acidflask':{const f=foesNear(q,r,1);if(!f.length)return 0;return f.reduce((s,v)=>s+Math.min(SLIME.flask.dmg,v.hp)+(v.hp<=SLIME.flask.dmg?4:0),0)*1.1+(slimeParts(u.owner)<SLIME.cap?2:0)}
     case 'engulf':{const t=unitAt(q,r);if(!t||t.leader||t.king)return 0;return 6+Math.min(t.hp,20)*0.35+(lootOf(t)?3:0)}
     case 'oozeburst':{const n=foesNear(u.q,u.r,3).length;return n>=2?n*2.2:0}
@@ -5482,6 +5486,7 @@ function newHeur(u,k,q,r,ctx,dest){const A=ABIL[k],team=tm(u.owner);const foesNe
   }return 0}
 // two-tap aims for the bots: a short list of sensible pairs per ability (the full lists would be thousands)
 function newBotTwo(u,k,ctx){const A=ABIL[k],sp=A.special,out=[];
+  if(sp==='coalesce'){for(const [q,r] of aimCells(u,k)){const a=unitAt(q,r);if(!a)continue;for(const [dq,dr] of newTwoDest(u,k,a))out.push([a.q,a.r,dq,dr])}return out}
   if(sp==='stealtime'){const ds=stealDest(u);for(const [q,r] of aimCells(u,k)){const a=unitAt(q,r);if(!a||!restingAbil(a))continue;for(const [dq,dr] of ds)out.push([a.q,a.r,dq,dr])}return out}
   if(sp==='abduct'){const ds=abductDest(u);for(const [q,r] of aimCells(u,k)){const t=unitAt(q,r);if(!t)continue;const best=ds.map(([a,b])=>({a,b,s:G.units.filter(v=>v.owner===u.owner&&v.kind!=='wall'&&hd(v.q,v.r,a,b)===1).length*2-G.units.filter(v=>v!==t&&v.owner===t.owner&&hd(v.q,v.r,a,b)<=2).length})).sort((x,y)=>y.s-x.s).slice(0,2);for(const b of best)out.push([t.q,t.r,b.a,b.b])}return out}
   if(sp==='riftshot'){for(const [q,r] of aimCells(u,k)){for(const [a,b] of lanceDest(u))out.push([q,r,a,b])}return out}
@@ -5501,6 +5506,7 @@ function blinkObj(){if(G.blinkT==null)return null;if(typeof G.blinkT==='string')
 function newUlt(p){const F=FAC[p.fac];
   if(p.fac==='chrono'&&G.realm){p.osTok=G.tok;if(!SIM){addLog(p.id,'Open Season: every enemy the crew kills this turn pays a bounty.');announce({k:'note',col:F.color,t:'Open Season',s:'Every kill the Chrono Syndicate makes this turn collects a bounty.'})}return true}
   if(p.fac==='rift'&&G.realm){G.portals=(G.portals||[]).map(P=>P.owner===p.id?Object.assign({},P,{ttl:P.ttl+2}):P);p.rsTok=G.tok;for(const v of G.units)if(v.owner===p.id)v.riftRe=null;if(!SIM){addLog(p.id,'Rift Surge: the portals hold 2 rounds longer and every Riftwalker coming out of one may move again this turn.');announce({k:'note',col:F.color,t:'Rift Surge',s:'The Riftwalker portals hold longer and the crossings are free this turn.'})}return true}
+  if(p.fac==='ooze'&&SLIME){p.tide=2;for(const v of G.units)if(v.owner===p.id&&v.ability==='slimespawn')setCd(v,'slimespawn',0);if(!SIM){addLog(p.id,'The Tide Rises: Spawn has no rest and no price this turn and the next.');announce({k:'note',col:F.color,t:'The Tide Rises',s:'The Ooze Mother pours out droplets every turn for two turns.'})}return true}
   if(p.fac==='ooze'){p.huTok=G.tok;for(const v of G.units.slice())if(v.owner===p.id&&isOoze(v))oozeGrow(v,1);if(!SIM){addLog(p.id,'Hunger: every blob grows a part, and kills feed double this turn.');announce({k:'note',col:F.color,t:'Hunger',s:'The Ooze swells; every kill this turn adds 2 parts.'})}return true}
   return false}
 function newUltScore(p,foes){const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall');
@@ -5512,22 +5518,29 @@ function newUltScore(p,foes){const mine=G.units.filter(v=>v.owner===p.id&&v.kind
    only the simulations switch it on with TWEAK "slimeOn({...})". It replaces The Ooze's roster: the Ooze Mother (Leader) spawns droplets (paying HP),
    Acid Brewers throw flasks (damage + one droplet), Gel Wardens are plain fragile casters for now; droplets are summons that merge up to OOZE_CAP. ===== */
 let SLIME=null;
-const SLIME_DEF={mother:{hp:14,atk:2,mov:3},brewers:2,wardens:1,caster:{hp:8,atk:1,mov:3},drop:{hp:4,atk:1,mov:4},spawnN:2,spawnRest:2,spawnPrice:2,cap:6,ttl:0,flask:{dmg:2,rest:3,range:3},killHeal:3,killGrow:1,start:0};
+const SLIME_DEF={mother:{hp:14,atk:2,mov:3},brewers:2,wardens:0,shapers:1,caster:{hp:8,atk:1,mov:3},drop:{hp:4,atk:1,mov:4},spawnN:2,spawnRest:2,spawnPrice:2,cap:6,ttl:0,flask:{dmg:2,rest:3,range:3},killHeal:3,killGrow:1,start:0};
 function slimeOn(o){SLIME=Object.assign({},SLIME_DEF,o||{});for(const k of ['mother','caster','drop','flask'])SLIME[k]=Object.assign({},SLIME_DEF[k],(o||{})[k]||{});
   ABIL.slimespawn={name:'Spawn',cost:1,cd:SLIME.spawnRest,aim:'self',special:'slimespawn',bot:'slimespawn',desc:`Pay ${SLIME.spawnPrice} HP: ${SLIME.spawnN} droplets appear beside the Mother.`};
   ABIL.acidflask={name:'Acid Flask',cost:1,cd:SLIME.flask.rest,aim:'hex',range:SLIME.flask.range,shape:'blast',size:1,hits:'foe',special:'acidflask',bot:'acidflask',desc:`Throw a flask: ${SLIME.flask.dmg} to every enemy on or next to the hex, and a droplet lands there.`};
   const C=SLIME.caster;FAC.ooze.units=[{name:'Ooze Mother',icon:'drop',leader:1,hp:SLIME.mother.hp,atk:SLIME.mother.atk,def:0,mov:SLIME.mother.mov,mt:'walk',at:'melee',rng:1,ab:'slimespawn'}];
   if(SLIME.brewers)FAC.ooze.units.push({name:'Acid Brewer',icon:'drop',n:SLIME.brewers,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1,ab:'acidflask'});
   if(SLIME.wardens)FAC.ooze.units.push({name:'Gel Warden',icon:'drop',n:SLIME.wardens,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1});
+  if(SLIME.shapers)FAC.ooze.units.push({name:'Gel Shaper',icon:'drop',n:SLIME.shapers,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1,ab:'coalesce'});
+  ABIL.coalesce={name:'Coalesce',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,special:'coalesce',bot:'coalesce',desc:'Pick one of your blobs within 3, then another within 3: they flow together into the second one wherever they stand (up to 3 parts; the first counts as moved).'};NEW_BOT.add('coalesce');NEW_TWO.add('coalesce');
   REALM.startBy.ooze=SLIME.start;NEW_BOT.add('slimespawn');NEW_BOT.add('acidflask')}
 const SLIME_DROP=()=>({name:'Droplet',icon:'drop',hp:SLIME.drop.hp,atk:SLIME.drop.atk,def:0,mov:SLIME.drop.mov,mt:'walk',at:'melee',rng:1,parts:1});
+const slimeCap=pid=>SLIME.cap+(talent(G.players[pid],'deeppool')?3:0);
+const slimeTide=p=>!!p&&p.tide>0;
 function slimeParts(pid){return G.units.filter(v=>v.owner===pid&&v.parts&&alive(v)).reduce((s,v)=>s+v.parts,0)}
 function slimeDrop(p,q,r,parts,hp){const b=makeUnit(p,SLIME_DROP());b.q=q;b.r=r;b.summon=true;b.ttl=SLIME.ttl||99999;G.units.push(b);oozeSet(b,parts||1,hp);b.moved=true;b.acted=true;if(!SIM)tStat(b);return b}
-function slimeSpawn(u){const p=G.players[u.owner];let n=Math.min(SLIME.spawnN,SLIME.cap-slimeParts(p.id));let made=0;
+function slimeSpawn(u){const p=G.players[u.owner];let n=Math.min(SLIME.spawnN,slimeCap(p.id)-slimeParts(p.id));let made=0;
   for(let i=0;i<n;i++){const c=nearFree(u.q,u.r,occ(),2);if(!c)break;slimeDrop(p,c[0],c[1],1);made++}
-  if(made){u.hp=Math.max(1,u.hp-SLIME.spawnPrice);if(!SIM){fx(u,`-${SLIME.spawnPrice} HP: ${made} droplets`,FAC.ooze.color);nTrk('ooze',u.name,'Droplets spawned',e=>{e.uses+=made})}}}
-function slimeFlask(u,A,q,r){for(const t of areaUnits(u,A,shapeCells(u,'acidflask',q,r)))applyHit(u,t,Object.assign({},A,{dmg:SLIME.flask.dmg}));
-  const p=G.players[u.owner];if(slimeParts(p.id)<SLIME.cap){const c=nearFree(q,r,occ(),1);if(c){slimeDrop(p,c[0],c[1],1);if(!SIM)nTrk('ooze',u.name,'Droplets spawned',e=>e.uses++)}}}
+  const price=slimeTide(p)?0:talent(p,'motherblood')?1:SLIME.spawnPrice;if(made&&slimeTide(p))setCd(u,'slimespawn',0);
+  if(made){u.hp=Math.max(1,u.hp-price);if(!SIM){fx(u,`-${price} HP: ${made} droplets`,FAC.ooze.color);nTrk('ooze',u.name,'Droplets spawned',e=>{e.uses+=made})}}}
+function slimeFlask(u,A,q,r){for(const t of areaUnits(u,A,shapeCells(u,'acidflask',q,r)))applyHit(u,t,Object.assign({},A,{dmg:SLIME.flask.dmg+(talent(G.players[u.owner],'corrosive')?1:0)}));
+  const p=G.players[u.owner];if(slimeParts(p.id)<slimeCap(p.id)){const c=nearFree(q,r,occ(),1);if(c){slimeDrop(p,c[0],c[1],1);if(!SIM)nTrk('ooze',u.name,'Droplets spawned',e=>e.uses++)}}}
+/* v115 (owner 22 Oct 2026: 'do that and I will test it tomorrow'): the slime casters ARE The Ooze now, with the stat line of docs/TEMPO_STUDY.md. */
+RULES.SLIME=1;slimeOn({drop:{hp:6,atk:2},spawnRest:1,cap:10,spawnPrice:2,killHeal:3});
 
 const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
@@ -10240,15 +10253,15 @@ FAC.ooze.color=ARMY_COLORS.ooze='#6a5cff';
 Object.assign(PASSIVE_SHORT,{
   chrono:'Phase Walk: every unit teleports when it moves. Contracts: the weakest enemy or camp monster near your crew is marked for 5 turns; kill it to climb the bounty ladder (+HP, +ATK, +move, shorter rests...) for the whole crew, for good.',
   rift:'Portals: step on one end, come out of the other. A Riftwalker coming out of a portal may move again (once a turn). An enemy next to a portal end blocks the way in. Every portal is open to everyone.',
-  ooze:'One mass of 12 droplets: merge blobs up to 3 parts, Split to break them. Past 3 a blob grows only by its own kills, and every 2 kills bring a new power (Ooze 5, Huge 7, Giga 9...). Your biggest blob is your Leader.'});
+  ooze:'The Ooze Mother starts alone and pays 2 HP every other turn to pour out 2 droplets (9 HP, 2 ATK). Droplets merge up to 3 parts and grow past that only by their own kills. Acid Brewers throw flasks that also make droplets; the Gel Shaper pulls blobs together. Kills heal the Mother.'});
 Object.assign(LOSE_LINES,{
   chrono:'Fragile thieves that grow with every bounty: kill the crew early, keep your weak units out of their reach, and run from the stasis device before it goes off.',
   rift:'Stand next to their portal ends to shut them, never fight beside an open portal when the Rift Sovereign can Collapse it, and catch the thin Lancers on their own.',
-  ooze:'Hit the big blob hard and often to free what it swallowed; kill droplets before they merge; area damage hurts the many small ones.'});
+  ooze:'Go for the Mother: she pays HP for every spawn and starts alone, so pressure her early. Kill the casters and the tide stops; droplets are only 9 HP each, so area damage clears them.'});
 Object.assign(LOOK,{
   'The Broker':{body:'hourglass',head:'clockmask',hand:'hourstaff',cape:1},'Phase Blade':LOOK['Second Hand']||{body:'slim',head:'hood',hand:'dagger'},
   'Field Engineer':{body:'robe',head:'clockmask',hand:'orb'},'Holo-Tech':{body:'robe',head:'halo',hand:'orb'},'Chrono Thief':{body:'slim',head:'halo',hand:'rewind'},
-  'Pickpocket':{body:'slim',head:'hood',hand:'dagger'},'Timekeeper':{body:'robe',head:'clockmask',hand:'hourstaff'},'Accelerator':{body:'robe',head:'halo',hand:'orb'},
+  'Pickpocket':{body:'slim',head:'hood',hand:'dagger'},'Ooze Mother':{body:'gown',head:'hood',hand:'orb',cape:1},'Acid Brewer':{body:'robe',head:'hood',hand:'orb'},'Gel Shaper':{body:'robe',head:'halo',hand:'orb'},'Timekeeper':{body:'robe',head:'clockmask',hand:'hourstaff'},'Accelerator':{body:'robe',head:'halo',hand:'orb'},
   'Gatekeeper':LOOK['Voidcaller'],'Rift Lancer':LOOK['Tidecaller'],'Abductor':LOOK['Gravity Singer'],'Banisher':LOOK['Repulsor'],'Rift Mender':{body:'robe',head:'hood',hand:'orb'}});
 for(const T of OOZE_TIERS)LOOK[T.name]={body:'egg'};
 if(typeof MODELS!=='undefined'&&MODELS['Second Hand'])MODELS['Phase Blade']=MODELS['Second Hand'];
@@ -10285,7 +10298,8 @@ if(typeof ANN_SHORT!=='undefined')Object.assign(ANN_SHORT,{chrono:'Syndicate',oo
   <li><b>Portals</b> (Riftwalkers). A unit that walks onto a portal end may come out of the other end; anyone may use any portal. A Riftwalker that comes out of a portal may move again, once per turn. An enemy standing next to a portal end shuts that door. Gatekeeper gates last 3 rounds, a Lifegate 2 (allies passing heal 3, enemies take 2), a Rift Lancer's own pair until its next turn. A Banisher's basic attack kicks the enemy 3 hexes; a kick that crosses a portal end sends it through.</li>
   <li><b>Rift Shot</b>: the Lancer opens its own pair and fires out of the far end; every other portal in the bullet's way sends it out of its twin and splits it in two (at most 4 bullets, 4 minus DEF each, the first unit in the path, friend or foe).</li>
   <li><b>Formation</b> (Iron Warband, Move as One). The block faces the way it last moved (at first toward the Throne). Turning costs moves while it has a Shieldbearer, because the shields walk to the new front: a 60° turn costs nothing, 120° costs 1 hex, 180° costs 2 (never below 1). As it moves the block re-forms in the same shape: Shieldbearers in front, Spearmen and Swordsmen in the middle, the Warlord and the Captain at the back. The aim preview shows where every unit will stand.</li>
-  <li><b>Blobs</b> (The Ooze). Move a blob onto another of your blobs to merge them (HP and parts add up), as long as the result has at most 3 parts; Split breaks a blob in two. A merged blob is the sum of its parts: if at least half of its parts have already attacked this turn it cannot attack, if at least half have moved (the blob that walked in counts as moved) it cannot move, and its ability rest is the one of the bigger side (a tie keeps the longer rest). Past 3 parts a blob grows only by eating: each kill it makes adds a part to that blob. Sizes: Droplet 1-2, Slime 3-4 (sticky: an enemy next to it steps only 1 hex), Ooze 5-6 (Engulf), Huge Ooze 7-8 (Acid Surge), Giga 9-10 (Burst), Colossal 11-12 (Devour), Titanic 13-14 (buds a droplet every turn), Primordial 15+ (The Flood). Blobs of 5 parts or more fill 2 hexes. ATK equals the parts up to 3, then 1 more for every 3 parts past 3. The biggest blob is the Leader: when it dies the next biggest takes over (its killer still scores).</li>
+  <li><b>The Ooze.</b> The Ooze Mother (Leader) arrives alone; the Acid Brewers and the Gel Shaper come from the reserve. <b>Spawn</b>: every other turn she pays 2 HP and 2 droplets appear beside her; at most 10 droplet parts can be on the board. <b>Acid Flask</b> (Brewer): 2 to every enemy on or next to the hex, and a droplet lands there. <b>Coalesce</b> (Shaper): two of your blobs within 3 of it flow together into the second one. Every kill the army makes heals the Mother 3. <b>The Tide Rises</b> (Ultimate): this turn and the next, Spawn has no rest and costs nothing.</li>
+  <li><b>Blobs</b>. A droplet is a summon: 9 HP, 2 ATK, walks 4; it never takes the Throne, carries stones or scores. Move a blob onto another of your blobs to merge them (HP, ATK and parts add up) as long as the result has at most 3 parts. A merged blob is the sum of its parts: if at least half of its parts have already attacked this turn it cannot attack, if at least half have moved it cannot move, and it keeps the ability rest of the bigger side. Past 3 parts a blob grows only by its own kills (Ooze 5 with Engulf, Huge 7, Giga 9, Colossal 11, Titanic 13, Primordial 15); 5 parts or more fill 2 hexes.</li>
   <li><b>Swallowed</b>: a unit inside a blob takes 2 at the start of each Ooze turn and cannot act; 6 damage to the blob (8 for Devour) spits it out; if it dies inside, the blob grows a part.</li></ul>`}}
 
 </script>
