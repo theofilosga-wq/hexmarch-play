@@ -5736,6 +5736,7 @@ function draw3D(now){
   for(const it of list){
     const {u,pts,x,z}=it;const [sx,sy]=proj(x,z,0);
     if(u.kind==='prop'){drawProp3D(u.feat,x,z,sx,sy,s,c,u,now);continue}
+    if(u.beast&&fallPre())continue;/* v116: not there until it lands */
     if(u.beast){drawBeast3D(u,pts,x,z,sx,sy,now);queueStatusBadges(ctx,u,sx,sy-CAM.S*0.6,CAM.S*0.5,CAM.S*0.5);continue}
     if(u.monster&&GLON){const top=glUnit(u,pts,x,z,now,false);const [tx,ty]=proj(x,z,top+0.15);drawMonster2D(ctx,u,tx,ty-CAM.S*0.32,CAM.S*0.5,now);queueStatusBadges(ctx,u,sx,sy-CAM.S*0.5,CAM.S*0.4,CAM.S*0.45);
       if(hl.atk.has(u.id))groundRing(x,z,0.8,'#ff6161',Math.max(2,CAM.S*0.1));drawnUnits.push({u,rect:[sx-0.6*CAM.S,ty-CAM.S*0.9,sx+0.6*CAM.S,sy+0.4*CAM.S],cell:[u.q,u.r]});continue}
@@ -6650,6 +6651,7 @@ const MODELS={// v78b (owner: 'too small, I want to see the detail'): real model
   'Warlord':{file:'models/warband_warlord.glb',h:3.1},'Captain':{file:'models/warband_captain.glb',h:3.0},'Shieldbearer':{file:'models/warband_shieldbearer.glb',h:2.9},'Spearman':{file:'models/warband_spearman.glb',h:2.9},'Swordsman':{file:'models/warband_swordsman.glb',h:3.0},// v83: Priests and Warband complete'Rift Sovereign':{file:'models/rift_rift-sovereign.glb',h:3.2},
   'Rampart':{file:'models/giants_rampart.glb',h:4.6},'Mountain King':{file:'models/giants_mountain-king.glb',h:4.8},
   'Boulder Hurler':{file:'models/giants_boulder-hurler.glb',h:4.6},'Cliff Breaker':{file:'models/giants_cliff-breaker.glb',h:4.0},'Titan':{file:'models/giants_titan.glb',h:4.8},// v87: all five giants are the owner's living landscapes
+  'Valley Brute':{file:'models/camps_valley-brute.glb',h:2.0},/* v116: the owner's mossy war beast */
   'Elder Drake':{file:'models/camps_elder-drake.glb',h:3.2},'Wanderer':{file:'models/camps_wanderer.glb',h:3.6},'Old God':{file:'models/camps_wanderer.glb',h:3.8},'Rift Spawn':{file:'models/camps_rift-beast.glb',h:2.2},/* v98: the small Rift Beast as its spawn, the Wanderer as the Old God */
   'Rift Beast':{file:()=>G&&G.realm?'models/camps_rift-beast-city.glb':'models/camps_rift-beast.glb',h:()=>G&&G.realm?7.5:3.8}};// v82c (owner): on the Realm the Beast sprawled over the ruined city, elsewhere the creature alone// v82b: the Beast; on the Realm its body is scaled to sprawl over the whole Heart// v82: Frost, Priests, Rift, Giants leaders and the Realm's monsters
 const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'models/ice_base-glacier-keep.glb',h:5.0},warband:{file:'models/warband_base-iron-keep.glb',h:4.8},arcane:{file:'models/arcane_base-sun-temple.glb',h:5.2},giants:{file:'models/giants_base-waking-pits.glb',h:2.6,w:6.5}};// v87: Sun Temple and the Waking Pits (a flat diorama: capped by width, not height)
@@ -6659,7 +6661,7 @@ const FOREST_MODEL='models/tile_forest-meadow.glb';let FOREST_GEO=null;
 // v88: the owner's city wall (one whole hexagonal ring) stands on the Realm's wall ring until the Beast falls; then the code wall blocks and rubble return (the ruined ring will replace them when he makes it)
 const CITY_WALL_MODEL='models/camps_city-wall.glb';let CITY_WALL=null;
 function glCityWallLoad(){if(CITY_WALL!==null)return;CITY_WALL=false;glModel(CITY_WALL_MODEL).then(src=>{CITY_WALL={src,bb:src.userData.bb};GL.sig='';GL.dirty=true}).catch(()=>{})}
-const cityWallUp=()=>!!(G&&G.realm&&CITY_WALL&&!G.cityDown);
+const cityWallUp=()=>!!(G&&G.realm&&CITY_WALL&&(!G.cityDown||(typeof fallPre==='function'&&fallPre())));/* v116: the wall stands until the Beast lands */
 function glForestLoad(){if(FOREST_GEO!==null)return;FOREST_GEO=false;glModel(FOREST_MODEL).then(src=>{let mesh=null;src.traverse(m=>{if(m.isMesh&&!mesh)mesh=m});if(!mesh)return;const bb=src.userData.bb;FOREST_GEO={geo:mesh.geometry,mat:mesh.material,bb};GL.sig='';GL.dirty=true}).catch(()=>{})}// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
 const GLM={};
 function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
@@ -6849,7 +6851,7 @@ function glSetGhost(fig,on){if(fig.userData.ghost===on)return;fig.userData.ghost
 function glSpent(fig,on){if(fig.userData.spent===on)return;fig.userData.spent=on;fig.traverse(o=>{if(o.userData&&o.userData.rim){o.userData.rimMat=o.userData.rimMat||o.material;o.material=on?gMat('#3a3a3a'):o.userData.rimMat}
   else if(fig.userData.model&&o.isMesh&&o.material&&o.material.color){if(!o.userData.col0)o.userData.col0=o.material.color.clone();o.material.color.copy(o.userData.col0).multiplyScalar(on?0.5:1);if(o.material.emissiveIntensity!=null){if(o.userData.em0==null)o.userData.em0=o.material.emissiveIntensity;o.material.emissiveIntensity=on?o.userData.em0*0.4:o.userData.em0}}})}// v78c: a spent real model darkens (it has no rim)
 function glStaticSig(){let n=(G.midUp?1000:0)+(G.throneBeast?3000:0)+(G.cityDown?7000:0),f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
-function glTerrSig(){let h=(typeof window!=='undefined'&&window.QUAKE&&G&&G.realm)?Math.floor(Math.min(1.05,Math.max(-0.05,(Date.now()-window.QUAKE.t0)/window.QUAKE.dur))*24):0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
+function glTerrSig(){let h=(typeof fallPre==='function'&&fallPre())?977:0;h+=(typeof window!=='undefined'&&window.QUAKE&&G&&G.realm)?Math.floor(Math.min(1.05,Math.max(-0.05,(Date.now()-window.QUAKE.t0)/window.QUAKE.dur))*24):0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
 function glProps(){if(GL.props)GL.scene.remove(GL.props);const g=new THREE.Group();GL.props=g;GL.scene.add(g);if(!G.realm||!G.players)return;
   for(const p of G.players){const MD=BASE_MODELS[p.fac];if(!MD||!p.base||!p.base.length)continue;const c=p.base.map(k=>k.split(',').map(Number)).sort((a,b)=>hd(b[0],b[1],0,0)-hd(a[0],a[1],0,0))[0];
     glModel(MD.file).then(src=>{if(GL.props!==g)return;const o=src.clone();const bb=src.userData.bb;let sc=MD.h/bb.h;if(MD.w)sc=Math.min(sc,MD.w/Math.max(bb.w||1,bb.d||1));o.scale.setScalar(sc);const [x,z]=world(c[0],c[1]);o.position.set(x-bb.cx*sc,0.03-bb.y0*sc,z-bb.cz*sc);o.rotation.y=Math.atan2(-x,-z)+(MD.rot||0);
@@ -6946,6 +6948,8 @@ function glPreview(holder,d,fac,big){const R=pvGL();if(!R||!holder)return false;
 function glPreviewFrame(still){if(!PV3.R||!PV3.fig)return;const t=(performance.now()-PV3.t0)/1000;
   PV3.turn.rotation.y=still?0.35:0.35+t*0.45;glAnimFig(PV3.fig,t);PV3.R.render(PV3.scene,PV3.cam)}
 
+/* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
+const FALL_WAIT=5000;const fallPre=()=>!!(window.FALL_LAND&&Date.now()<window.FALL_LAND);
 /* Hexmarch visual effects. The engine records events in G.fxLog; this plays any it hasn't shown yet,
    so effects also appear on other devices when an online game state arrives. */
 let fxSeen=0,annSeen=0;const ANIMS=[];let shakeUntil=0;
@@ -7023,9 +7027,9 @@ function pumpVFX(now){
   // Announcements (v24): each new one goes to the banner queue (ui.js annQueue), on this device and on every other device in an online game
   if(G.annLog)for(const e of G.annLog)if(e.id>annSeen){annSeen=e.id;if(typeof annQueue==='function')annQueue(e)}
   if(!G.fxLog)return;
-  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ANIMS.filter(a=>now-a.t0<0).length?0:0)});motionCue(ev,now);
+  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ev.k==='thefall'?FALL_WAIT:0)});motionCue(ev,now);
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
-    if(ev.k==='thefall'&&typeof fitBoard==='function'){window.FALL_HOLD=Date.now()+4400;try{fitBoard()}catch(x){}setTimeout(()=>{try{fitBoard()}catch(x){}},150);setTimeout(()=>{try{if(G&&typeof frameArmy==='function'){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human')||{}).id;if(me!=null)frameArmy(me)}}catch(x){}},4500)}// v100: the whole board for the Fall, then back to your army
+    if(ev.k==='thefall'&&typeof fitBoard==='function'){window.FALL_HOLD=Date.now()+FALL_WAIT+4400;window.FALL_LAND=Date.now()+FALL_WAIT+4200*0.38;{const rd=()=>{try{if(typeof GL!=='undefined'&&GL)GL.sig='';if(typeof refresh==='function')refresh()}catch(x){}};setTimeout(rd,30);setTimeout(rd,FALL_WAIT+4200*0.38+40)}try{if(typeof glModel==='function'&&typeof MODELS!=='undefined'&&MODELS['Rift Beast']){const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?f():f).catch(()=>{})}}catch(x){}try{fitBoard()}catch(x){}setTimeout(()=>{try{fitBoard()}catch(x){}},150);setTimeout(()=>{try{if(G&&typeof frameArmy==='function'){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human')||{}).id;if(me!=null)frameArmy(me)}}catch(x){}},FALL_WAIT+4500)}// v100: the whole board for the Fall, then back to your army
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
     if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')playSound('hit');if(ev.k==='crack')playSound('crack');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
     if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color;
@@ -7158,7 +7162,7 @@ function drawVFX(now){
           ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle=wc;ctx.lineWidth=2;ctx.stroke();ctx.restore()}
         break}
       // Act 1 (v23): the wall falls (dust over the grey ring), the Wellspring rises or is claimed, a flag changes hands, the Rift Beast appears and dies.
-      case 'thefall':{// v100 the opening scene: the Rift Beast drops out of a crack in the sky onto the city, the shockwave rolls out, then each army's portal tears open and the four stones glint on the roads
+      case 'thefall':{if(el<0){/* v116 (owner): the city stands for a few seconds before the Beast falls */const k=Math.min(1,(el+FALL_WAIT)/900,-el/600);ctx.save();ctx.globalAlpha=Math.max(0,k);ctx.font=`900 ${Math.max(20,Math.min(CW/14,46))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('The Crown City',CW/2,CH*0.16);ctx.fillStyle='#ffe3a3';ctx.fillText('The Crown City',CW/2,CH*0.16);ctx.restore();dur=1;break}// v100 the opening scene: the Rift Beast drops out of a crack in the sky onto the city, the shockwave rolls out, then each army's portal tears open and the four stones glint on the roads
         dur=4200;const t=el/dur;const [cx,cy]=vPos(0,0,0.4);ctx.save();
         if(!ev.qk){ev.qk=1;window.QUAKE={t0:Date.now()+dur*0.38,dur:2300}}/* v104: the field stays green until the Beast lands, then the quake wave turns it to wasteland */
         if(t>0.38&&!ev.snd){ev.snd=1;try{playSound('ult');setTimeout(()=>playSound('death'),350);setTimeout(()=>playSound('hit'),700)}catch(e){}}
@@ -8305,7 +8309,7 @@ function showPause(){
 }
 function botLoop(tok){
   if(!G||G.over||tok!==G.tok||screen!=='game')return;
-  if(G.paused){setTimeout(()=>botLoop(tok),500);return}
+  if(G.paused||(window.FALL_HOLD&&Date.now()<window.FALL_HOLD)){setTimeout(()=>botLoop(tok),500);return}/* v116: nobody moves while the opening scene plays */
   if(G.phase==='deploy'){botDeploy();return}
   if(G.tutorial){endTurn();return}// the tutorial's enemy never acts
   if(!botStep()){endTurn();return}
@@ -9622,6 +9626,7 @@ function draw(now){
   for(const u of G.units){
     if(!visibleUnit(u))continue;
     const pts=unitPos(u,now);
+    if(u.beast&&fallPre())continue;
     if(u.beast){const [bx,by]=drawBeastBody(ctx,pts,SZ,now,u,hl.hitIds.has(u.id),G.inspect===u.id);if(hl.atk.has(u.id))crosshair(bx,by,SZ*0.95);queueStatusBadges(ctx,u,bx,by,SZ*0.8,SZ*0.8);continue}
     if(u.monster){const [x,y]=pts[0];drawMonster2D(ctx,u,x,y,SZ,now);if(hl.atk.has(u.id))crosshair(x,y,SZ*0.8);queueStatusBadges(ctx,u,x,y,SZ*0.7,SZ*0.7);continue}
     if(u.kind==='wall'&&u.wall==='light'){const [x,y]=pts[0];ctx.save();ctx.shadowColor='#fff3a8';ctx.shadowBlur=SZ*0.6;hexPath(x,y,SZ*0.8);ctx.fillStyle='rgba(255,243,168,.45)';ctx.fill();ctx.restore();hexPath(x,y,SZ*0.8);ctx.strokeStyle='#fff3a8';ctx.lineWidth=2;ctx.stroke();
@@ -10301,6 +10306,8 @@ if(typeof ANN_SHORT!=='undefined')Object.assign(ANN_SHORT,{chrono:'Syndicate',oo
   <li><b>The Ooze.</b> The Ooze Mother (Leader) arrives alone; the Acid Brewers and the Gel Shaper come from the reserve. <b>Spawn</b>: every other turn she pays 2 HP and 2 droplets appear beside her; at most 10 droplet parts can be on the board. <b>Acid Flask</b> (Brewer): 2 to every enemy on or next to the hex, and a droplet lands there. <b>Coalesce</b> (Shaper): two of your blobs within 3 of it flow together into the second one. Every kill the army makes heals the Mother 3. <b>The Tide Rises</b> (Ultimate): this turn and the next, Spawn has no rest and costs nothing.</li>
   <li><b>Blobs</b>. A droplet is a summon: 9 HP, 2 ATK, walks 4; it never takes the Throne, carries stones or scores. Move a blob onto another of your blobs to merge them (HP, ATK and parts add up) as long as the result has at most 3 parts. A merged blob is the sum of its parts: if at least half of its parts have already attacked this turn it cannot attack, if at least half have moved it cannot move, and it keeps the ability rest of the bigger side. Past 3 parts a blob grows only by its own kills (Ooze 5 with Engulf, Huge 7, Giga 9, Colossal 11, Titanic 13, Primordial 15); 5 parts or more fill 2 hexes.</li>
   <li><b>Swallowed</b>: a unit inside a blob takes 2 at the start of each Ooze turn and cannot act; 6 damage to the blob (8 for Devour) spits it out; if it dies inside, the blob grows a part.</li></ul>`}}
+// v116 (owner: "it looks like the old version before the new figure steps in"): fetch the city wall and the Beast models while the home page is open
+setTimeout(()=>{try{if(typeof THREE==='undefined'||typeof glModel!=='function')return;glCityWallLoad();const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?'models/camps_rift-beast-city.glb':f).catch(()=>{});for(const n of ['Valley Brute','Elder Drake','Spring Warden'])if(MODELS[n])glModel(MODELS[n].file).catch(()=>{})}catch(e){}},1500);
 
 </script>
 <script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
