@@ -10378,6 +10378,27 @@ function acamScan(){if(!G||!ACAM.on||screen!=='game'||G.phase)return;const evs=(
 {const dv0=drawVFX;drawVFX=function(now){try{acamScan()}catch(e){}return dv0.call(this,acamClock(now))}}
 // the bots wait for a slow-motion moment to finish
 {const cs0=camStep;camStep=function(){const w=cs0.apply(this,arguments);const left=ACAM.on?Math.max(0,ACAM.slowUntil-performance.now()):0;return Math.max(w,left)}}
+/* v120 ACTION CAMERA stage 2: the impact punch. When a blow lands the view zooms quickly toward the target (both board canvases scale together, so nothing
+   is laid out again), holds, and eases back; a kill zooms deeper and freezes the effects for a heartbeat at the moment of impact. Taps are ignored during a punch. */
+const PUNCH={t0:0,dur:0,depth:0,ox:0,oy:0,freezeUntil:0};
+function punchAt(q,r,depth,dur){if(!ACAM.on||acamReduce())return;const now=performance.now();if(now<PUNCH.t0+PUNCH.dur*0.6&&depth<=PUNCH.depth)return;
+  const [x,y]=vPos(q,r,0.6);const rc=cv.getBoundingClientRect();PUNCH.ox=x*rc.width/cv.width;PUNCH.oy=y*rc.height/cv.height;PUNCH.t0=now;PUNCH.dur=dur;PUNCH.depth=depth}
+function punchApply(now){const els=[cv];if(typeof GL!=='undefined'&&GL&&GL.cv)els.push(GL.cv);const k=(now-PUNCH.t0)/PUNCH.dur;
+  const strip=t=>(t||'').replace(/\s*scale\([^)]*\)/g,'').trim();
+  if(!(PUNCH.dur>0)||k>=1||k<0){if(PUNCH.on){for(const e of els){e.style.transform=strip(e.style.transform);e.style.transformOrigin=''}PUNCH.on=false}return}
+  const e=k<0.22?Math.sin(k/0.22*Math.PI/2):k<0.5?1:Math.cos((k-0.5)/0.5*Math.PI/2);const s=1+PUNCH.depth*e;
+  for(const el of els){el.style.transformOrigin=`${PUNCH.ox}px ${PUNCH.oy}px`;el.style.transform=(strip(el.style.transform)+` scale(${s.toFixed(4)})`).trim()}PUNCH.on=true}
+// the punch follows the same events the camera watches: a hit lands at its target, a kill lands harder
+{const sc0=acamScan;acamScan=function(){const before=ACAM.seen;sc0();if(!G||!ACAM.on)return;for(const ev of (G.fxLog||[]).filter(e=>e.id>before&&e.id<=ACAM.seen)){
+    if(ev.k==='death'&&ev.at){punchAt(ev.at[0],ev.at[1],ev.leader||ev.big?0.3:0.2,950);PUNCH.freezeUntil=performance.now()+120}
+    else if((ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')&&ev.to)punchAt(ev.to[0],ev.to[1],0.09,520)
+    else if(ev.k==='ult')punchAt((ev.at||[0,0])[0],(ev.at||[0,0])[1],0.14,1100)}}}
+// the effects clock stops for a heartbeat on a kill, and the punch is drawn every frame
+{const clk0=acamClock;acamClock=function(now){const v=clk0(now);if(now<PUNCH.freezeUntil){ACAM.v-=Math.min(now-(ACAM.fz||now),40);}ACAM.fz=now;return ACAM.v}}
+/* the punch goes on top of whatever the effects layer did this frame (the screen shake also moves the canvas) */
+{const dv1=drawVFX;drawVFX=function(now){const r=dv1.apply(this,arguments);try{punchApply(now)}catch(e){}return r}}
+// no taps on a board that is zoomed for a moment
+['pointerdown','click'].forEach(t=>cv.addEventListener(t,e=>{if(PUNCH.on){e.stopImmediatePropagation();e.preventDefault()}},true));
 
 </script>
 <script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
