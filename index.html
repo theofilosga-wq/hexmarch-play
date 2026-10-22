@@ -9971,7 +9971,7 @@ function clickCell(q,r){
     {const why=whyNoAim(selU,G.amode,q,r);if(why)toast(why,3200)}// v40: say why the tap did nothing
     G.amode=null;G.aim=null;
   }else if(acting){
-    if(hl.moves.has(k)&&(!hit||(hl.moves.get(k).pilot!=null||hl.moves.get(k).merge!=null))){doMove(selU,hl.moves.get(k));return}// v48: a move onto your own machine = climb in
+    if(hl.moves.has(k)&&(!hit||(hl.moves.get(k).pilot!=null||hl.moves.get(k).merge!=null))){if(selU.size===2&&typeof UX!=='undefined'&&UX.ptype&&UX.ptype!=='mouse'&&(UX.pend!==k||UX.pendSel!==selU.id)){UX.pend=k;UX.pendSel=selU.id;refresh();return}if(typeof UX!=='undefined')UX.pend=null;doMove(selU,hl.moves.get(k));return}/* v125: on touch a giant's first tap shows its two landing hexes */// v48: a move onto your own machine = climb in
     if(hit&&hl.atk.has(hit.id)){attack(selU,hit);return}
     if(hit&&hit!==selU&&visibleUnit(hit)&&isFoe(selU,hit)){const why=whyNoAttack(selU,hit);if(why)toast(why,3200)}
     else if(!hit&&inR(q,r)&&selU.mov&&!(selU.freeMove>0)){if(selU.moved)toast(`The ${selU.name} has already moved this turn.`,2400);else if(G.ap<1)toast('No AP left to move.',2400)}
@@ -10348,9 +10348,25 @@ function kbDraw(now){if(!KB.on||!KB.cur||!G)return;const p=0.55+0.45*Math.sin(no
 
 /* ---------- hooks ---------- */
 // drawn on the board after the effects, in both views
-function uxDraw(now){if(!G)return;try{uxDragDraw();uxAimTags();kbDraw(now);uxRingPlace()}catch(e){}}
+function uxDraw(now){if(!G)return;try{uxDragDraw();uxGiantFoot();uxAimTags();kbDraw(now);uxRingPlace()}catch(e){}}
 {const r0=refresh;refresh=function(){r0.apply(this,arguments);try{uxRingBuild()}catch(e){}}}
 {const a0=aimAbil;aimAbil=function(u,k){a0(u,k);try{uxAutoAim(u,k);refresh()}catch(e){}}}
+
+/* ---------- v125 giant footprint (owner 23 Oct 2026: "for giants I want to see in which 2 hexes they will land when I move them") ----------
+   Pointing at a move hex with the mouse, dragging the giant, or a first tap on a phone lights up BOTH hexes the body will cover;
+   on touch a second tap on the same hex makes the move (clickCell checks UX.pend). */
+addEventListener('pointerdown',e=>{UX.ptype=e.pointerType},true);
+UX.mvHover=null;UX.pend=null;
+cv.addEventListener('mousemove',e=>{const u=uxSel();UX.mvHover=u&&u.size===2&&typeof hexAt==='function'?hexAt(e):null});
+cv.addEventListener('mouseleave',()=>{UX.mvHover=null});
+function uxGiantFoot(){const u=uxSel();if(!u||u.size!==2||!isHumanTurn()||G.amode){UX.pend=null;return}
+  const h=UX.drag&&UX.drag.on&&UX.dragTo?UX.dragTo:UX.pend?UX.pend.split(',').map(Number):UX.mvHover;if(!h)return;
+  if(UX.pend&&UX.pendSel!==u.id)UX.pend=null;const o=hl.moves.get(key(h[0],h[1]));if(!o)return
+  const cs=cells({q:o.q,r:o.r,dir:o.dir,size:2}),[ax,ay]=vPos(cs[0][0],cs[0][1],0),[bx,by]=vPos(cs[1][0],cs[1][1],0);
+  ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=10;for(const [q,r] of cs)uxOutline(q,r,'#ffd766',3,'rgba(255,215,102,.30)');
+  ctx.shadowBlur=0;ctx.lineCap='round';ctx.strokeStyle='rgba(255,215,102,.85)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+  if(UX.pend){const fs=Math.max(11,(VIEW==='3d'?CAM.S:SZ)*0.36);uxPill((ax+bx)/2,(ay+by)/2-fs*1.4,'tap again to move','#ffd766','#1a1206',fs)}
+  ctx.restore()}
 
 
 /* v111 THE THREE NEW ARMIES on screen: Chrono Syndicate (contracts, stasis fields, holograms), Riftwalkers (portals and the Rift Shot path), The Ooze (blobs).
