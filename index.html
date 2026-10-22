@@ -586,6 +586,16 @@ body.focus .turnbar #apBox>*{flex:0 0 auto}/* the reserve strip's buttons keep t
 /* v122: modals sit above the announcement feed */
 .overlay{z-index:60}
 
+/* v123 full screen on a laptop or desktop: a wider column, bigger type, the unit card under the actions, big readable rests */
+body.focus.fwide .game>div:first-child{grid-template-columns:minmax(0,1fr) clamp(360px,24vw,480px)}
+@media (min-width:1600px){body.focus.fwide .game>div:first-child{grid-template-columns:minmax(0,1fr) clamp(400px,25vw,520px)}}
+body.focus.fwide .dock{font-size:15px;display:flex;flex-direction:column;gap:10px}
+body.focus.fwide .dock #unitCard{margin:0;font-size:14.5px}
+body.focus.fwide .dock .abtn{font-size:15px;padding:9px 10px}
+body.focus.fwide .dock .abtn small{font-size:12.5px}
+body.focus.fwide .uchip{width:72px;font-size:13px}body.focus.fwide .uchip img{width:42px;height:42px}body.focus.fwide .uchip .hp{width:56px;height:5px}
+body.focus.fwide .ab-head h3,body.focus.fwide .uhead h3{font-size:20px}
+
 </style>
 
 <div class="wrap">
@@ -685,7 +695,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={TERRAIN2:1,FORMATION:1,STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={NO_CALL_R1:1,BASE_EDGE:1,TERRAIN2:1,FORMATION:1,STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV0=0.35,APV=APV0;
@@ -4561,7 +4571,7 @@ function genRealm(){
   const W=REALM,HW=W.HW,HH=W.HH,VR=W.VR,cellsAll=ringCells(),T={},LOOK3={};
   const put=(q,r,t,force)=>{for(const [a,b] of wildsMirrors(q,r))if(inR(a,b)&&(force||!T[key(a,b)]||T[key(a,b)]==='wood'))T[key(a,b)]=t};
   const edgeD=(q,r)=>{const [x,y]=pix(q,r);return Math.min(HW-Math.abs(x),HH-Math.abs(y))};
-  const b0=hexRound(HW-5,HH-4.5),bases=wildsMirrors(...b0);
+  const b0=RULES.BASE_EDGE?hexRound(HW-2.2,HH-1.6):hexRound(HW-5,HH-4.5),bases=wildsMirrors(...b0);/* v123 (owner): the base in the very corner, nothing behind it */
   const nearBase=(q,r)=>Math.min(...bases.map(b=>hd(q,r,b[0],b[1])));
   const inQ=(q,r)=>{const [x,y]=pix(q,r);return x>=-0.01&&y>=-0.01};
   const ang=(q,r,c)=>{const [x,y]=pix(q,r),[cx,cy]=pix(...c);return Math.atan2(y-cy,x-cx)};
@@ -4622,7 +4632,9 @@ function genRealm(){
   const place=(test,t,n,rad,gap)=>{let tries=0;while(n>0&&tries++<1500){const c=cellsAll[Math.floor(RNG()*cellsAll.length)];if(!test(...c)||!clear(c[0],c[1],rad))continue;if(lists[t].some(o=>hd(o[0],o[1],c[0],c[1])<gap))continue;const s=stamp(c,t,rad);if(sets[t])sets[t].push(s);n--}};
   // tier 2: the middle of each edge (exactly on the mirror lines), shared by the two corner bases on that edge
   const rB=2*Math.floor((HH-2.2)/3);stamp(hexRound(HW-2.2,0),'camp2',1);stamp([-rB/2,rB],'camp3',1);/* v85 (owner): the Drake Lair sits at the top and bottom EDGE */
-  place((q,r)=>inQ(q,r)&&nearBase(q,r)>=3&&nearBase(q,r)<=VR-2,'camp1',2,1,4);
+  if(RULES.BASE_EDGE){/* v123 (owner): the home camps sit on the board's outermost hexes, along the two edges away from the base */
+    for(const [e,lo,hi] of [[1.6,3,VR],[2.2,3,VR+1],[3,3,VR+2]]){if(lists.camp1.length>=2*4)break;place((q,r)=>inQ(q,r)&&edgeD(q,r)<e&&nearBase(q,r)>=lo&&nearBase(q,r)<=hi,'camp1',2-Math.floor(lists.camp1.length/4),1,4)}}
+  else place((q,r)=>inQ(q,r)&&nearBase(q,r)>=3&&nearBase(q,r)<=VR-2,'camp1',2,1,4);
   const off=(q,r)=>{const [x,y]=pix(q,r);return x>=2&&y>=2};// off the mirror lines, so there are always four copies
   if(!RULES.STORY2){const rr=[6,8][Math.floor(RNG()*2)];stamp([-rr/2,rr],'camp2',1)}/* v98: no Ogre Lair *//* v85 (owner): the Ogre Lair (a spawn site) sits CLOSE TO THE CENTRE, between the two bases of each half; before v85 the Drake stood here and the Ogre at the edge */
   if(!RULES.STORY2)for(const [e,nb,g] of [[3,VR+2,5],[4,VR+1,4],[6,VR,3]]){if(lists.ruin.length)break;place((q,r)=>off(q,r)&&out(q,r)&&edgeD(q,r)<e&&edgeD(q,r)>1.2&&nearBase(q,r)>nb&&[...lists.camp2,...lists.camp3].every(o=>hd(o[0],o[1],q,r)>=g),'ruin',1,0,6)}
@@ -4697,7 +4709,7 @@ function realmSites(p){return (G.outposts||[]).filter(([q,r])=>flagOwner(q,r)===
 function realmSpots(p,at){const m=occ();const cand=at?allCells().filter(([q,r])=>hd(q,r,at[0],at[1])<=1):p.zone.map(k=>k.split(',').map(Number));
   return cand.filter(([q,r])=>!m.get(key(q,r))&&passable(q,r)).sort((a,b)=>(at?hd(a[0],a[1],at[0],at[1])-hd(b[0],b[1],at[0],at[1]):0)||hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0)||a[0]-b[0]||a[1]-b[1])}
 function realmPlace(p,u,at){const m=occ();for(const [q,r] of realmSpots(p,at)){if(u.size===2){for(let d=0;d<6;d++){const a=q+DIRS[d][0],b=r+DIRS[d][1];if(passable(a,b)&&!m.get(key(a,b))){u.q=q;u.r=r;u.dir=d;return true}}continue}u.q=q;u.r=r;return true}return false}
-function realmCanSummon(p){return !!(G&&G.realm&&p&&p.reserve&&p.reserve.length&&!p.sumDone&&p.id===G.cur&&!G.over&&!G.phase)}
+function realmCanSummon(p){return !!(G&&G.realm&&p&&p.reserve&&p.reserve.length&&!p.sumDone&&p.id===G.cur&&!G.over&&!G.phase&&!(RULES.NO_CALL_R1&&G.round<=1))}/* v123 (owner): round 1 is the opening units only; calling starts in round 2 */
 // Summon one unit from the reserve into the base (once per turn). It may move and act at once.
 function realmSummon(p,name,quiet,at){if(!realmCanSummon(p))return null;const i=p.reserve.indexOf(name);if(i<0)return null;const d=FAC[p.fac].units.find(x=>x.name===name);if(!d)return null;
   if(at&&!realmSites(p).some(s=>s[0]===at[0]&&s[1]===at[1]))return null;
@@ -6398,7 +6410,7 @@ function tokenPath(fac,x,y,r){
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up (same as world() in view3d.js). */
 const GL={pref:'on',ok:null,cv:null,R:null,scene:null,cam:null,sig:'',terrSig:'',tick:0,figs:new Map(),statics:null,terrDeco:null,tileSets:null,tileIdx:null,occ:null,occNow:null,occSig:'',water:[],glow:[],sun:null,last:0};
 try{GL.pref=localStorage.getItem('hexmarch.gl')||'on'}catch(e){}
-function glActive(){return VIEW==='3d'&&GL.pref!=='off'&&GL.ok!==false&&typeof THREE!=='undefined'&&!!G&&screen==='game'}
+function glActive(){return VIEW==='3d'&&GL.pref!=='off'&&GL.ok!==false&&!GL.lost&&typeof THREE!=='undefined'&&!!G&&screen==='game'}
 function glSetPref(on){GL.pref=on?'on':'off';try{localStorage.setItem('hexmarch.gl',GL.pref)}catch(e){}if(GL.cv)GL.cv.hidden=!glActive()}
 function glInit(){
   if(GL.ok!==null)return GL.ok;
@@ -6407,6 +6419,9 @@ function glInit(){
     c.style.cssText='position:absolute;left:0;top:0;pointer-events:none;z-index:0';
     const box=$('#boardbox');box.style.position='relative';box.insertBefore(c,cv);cv.style.position='relative';cv.style.zIndex='1';
     const R=new T.WebGLRenderer({canvas:c,antialias:true,alpha:true,powerPreference:'high-performance'});
+    /* v123: if the browser drops the 3D surface (too much graphics memory), fall back to the drawn tabletop at once and come back when it is restored */
+    c.addEventListener('webglcontextlost',ev=>{ev.preventDefault();GL.lost=true;c.hidden=true;try{toast('The 3D view paused to save memory: the board is drawn flat until it comes back.',4000)}catch(x){}},false);
+    c.addEventListener('webglcontextrestored',()=>{GL.lost=false;c.hidden=false;GL.sig='';GL.dirty=true;try{GL.figs&&GL.figs.clear&&GL.figs.forEach(f=>GL.scene.remove(f));GL.figs.clear()}catch(x){}},false);
     R.setClearColor(0x000000,0);R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;
     const scene=new T.Scene();
     scene.add(new T.HemisphereLight('#d6e2ff','#3a2c22',0.5));
@@ -6426,7 +6441,7 @@ function glCamera(){
         -st*s/K,-ct/K,-st*c/K,0,
         0,0,0,1);
   GL.cam.projectionMatrixInverse.copy(m).invert();GL.cam.matrixWorld.identity();GL.cam.matrixWorldInverse.identity()}
-function glLayout(){if(!glActive()||!glInit())return;const dpr=Math.max(0.5,Math.min(safeDpr(),1.75,Math.sqrt(8e6/(CW*CH)),4096/Math.max(CW,CH)));GL.R.setPixelRatio(dpr);GL.R.setSize(CW,CH,false);GL.cv.style.width=CW+'px';GL.cv.style.height=CH+'px';GL.cv.style.left=cv.offsetLeft+'px';GL.cv.style.top=cv.offsetTop+'px'}
+function glLayout(){if(!glActive()||!glInit())return;const dpr=Math.max(0.3,Math.min(safeDpr(),1.5,Math.sqrt(5e6/(CW*CH)),4096/Math.max(CW,CH)));/* v123: a tighter budget for the 3D layer (it also carries depth and anti-aliasing) */GL.R.setPixelRatio(dpr);GL.R.setSize(CW,CH,false);GL.cv.style.width=CW+'px';GL.cv.style.height=CH+'px';GL.cv.style.left=cv.offsetLeft+'px';GL.cv.style.top=cv.offsetTop+'px'}
 
 /* ---------- shared geometry and material caches ---------- */
 const GLC={geo:{},mat:{}};
@@ -8904,7 +8919,9 @@ function placeDock(){const d=$('#dock'),side=$('aside.side'),bb=$('#boardbox');i
   const wide=WIDE()&&!document.body.classList.contains('focus');
   if(wide){if(d.parentElement!==side)side.insertBefore(d,$('#unitCard'))}else if(d.previousElementSibling!==bb)bb.insertAdjacentElement('afterend',d);
   document.body.classList.toggle('wide',wide);
-  document.body.classList.toggle('fwide',WIDE()&&document.body.classList.contains('focus'))}// full-screen play on a laptop: dock in a column right of the board
+  document.body.classList.toggle('fwide',WIDE()&&document.body.classList.contains('focus'));
+  /* v123 (owner: "make it easy to see ability rests and info about the unit in full screen"): in laptop full screen the unit card moves into the column under the action dock */
+  {const uc=$('#unitCard');if(uc){if(!placeDock.home)placeDock.home=uc.parentElement;const fw=document.body.classList.contains('fwide');if(fw&&uc.parentElement!==d)d.appendChild(uc);else if(!fw&&uc.parentElement!==placeDock.home)placeDock.home.appendChild(uc)}}}// full-screen play on a laptop: dock in a column right of the board
 /* Turn timer: counts down on the device of the player whose turn it is. */
 let turnClock={tok:null,end:0};
 setInterval(()=>{
@@ -9436,7 +9453,7 @@ function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTu
 // to the middle of the screen (the owner's army usually starts at the edge).
 function boardPad(box){if(zoom<=1.02)return [0,0];return [Math.round(box.clientWidth*0.3),Math.round(box.clientHeight*0.3)]}
 // Keep the canvas inside what phones can draw (about 4096 px a side and 16 million pixels): a big zoom lowers the pixel density instead of failing.
-function safeDpr(){const d=window.devicePixelRatio||1;return Math.max(1,Math.min(d,4000/Math.max(CW,CH),Math.sqrt(15e6/(CW*CH))))}
+function safeDpr(){const d=window.devicePixelRatio||1;return Math.max(0.4,Math.min(d,4096/Math.max(CW,CH),Math.sqrt(10e6/(CW*CH))))}/* v123: the whole board is drawn at the zoomed size; zoomed in on a big screen it can reach tens of millions of pixels and crash the graphics card, so the resolution drops instead (the pieces are big then anyway) */
 // Board coordinates (hex units from the board's centre point on the canvas) under a screen point, and back.
 function boardPt(cx,cy){const rc=cv.getBoundingClientRect();return VIEW==='3d'?[(cx-rc.left-CAM.cx)/CAM.S,(cy-rc.top-CAM.cy)/CAM.S]:[(cx-rc.left-CW/2)/SZ,(cy-rc.top-CH/2)/SZ]}
 function ptScreen(b){const rc=cv.getBoundingClientRect();return VIEW==='3d'?[rc.left+CAM.cx+b[0]*CAM.S,rc.top+CAM.cy+b[1]*CAM.S]:[rc.left+CW/2+b[0]*SZ,rc.top+CH/2+b[1]*SZ]}
@@ -9793,7 +9810,9 @@ function zoomAt(z,cx,cy){
   box.scrollLeft+=dx;if(canScrollY(box))box.scrollTop+=dy;else window.scrollBy(0,dy);
 }
 cv.addEventListener('pointerdown',e=>{camUserTook();
-  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  /* v123 (owner: the drag stayed stuck and the game crashed): a mouse is one pointer, never a pinch; the board keeps the press until it is released anywhere */
+  if(e.pointerType==='mouse'){for(const [id,v] of [...ptrs])if(v.mouse)ptrs.delete(id);pinch=null}try{cv.setPointerCapture(e.pointerId)}catch(x){}
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,mouse:e.pointerType==='mouse'});
   if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:zoom};drag=null;if(typeof UX!=='undefined'){UX.drag=null;UX.dragTo=null}return}
   drag={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,az:CAM.az,moved:false,id:e.pointerId};if(typeof uxDragDown==='function')uxDragDown(e);/* v103 drag to move */
   clearTimeout(lpTimer);const d0=drag;
@@ -9806,7 +9825,9 @@ function lpInspect(u){if(navigator.vibrate)try{navigator.vibrate(15)}catch(e){}
   G.inspect=u.id;lpInsp=true;if(document.body.classList.contains('focus'))document.body.classList.add('drawer');else{refresh();$('#unitCard')&&$('#unitCard').scrollIntoView({behavior:'smooth',block:'center'});return}
   refresh()}
 cv.addEventListener('pointermove',e=>{
-  if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(!ptrs.has(e.pointerId))return;
+  if(e.pointerType==='mouse'&&e.buttons===0){ptrRelease(e.pointerId);return}/* the button came up somewhere we did not hear: stop panning */
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,mouse:e.pointerType==='mouse'});
   if(pinch&&ptrs.size>=2){const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch.d>10)zoomAt(pinch.z*d/pinch.d,(a.x+b.x)/2,(a.y+b.y)/2);return}
   if(!drag||drag.id!==e.pointerId)return;
   if(typeof UX!=='undefined'&&UX.drag){if(uxDragMove(e)){drag.moved=true;clearTimeout(lpTimer)}return}/* v103: a press on your own unit drags the unit, not the board */
@@ -9819,6 +9840,11 @@ cv.addEventListener('pointermove',e=>{
   box.scrollLeft-=ddx;if(canScrollY(box))box.scrollTop-=ddy;else window.scrollBy(0,-ddy);
 });
 function endPtr(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null}
+function ptrRelease(id){ptrs.delete(id);if(ptrs.size<2)pinch=null;if(drag&&(id==null||drag.id===id)){drag=null;clearTimeout(lpTimer)}if(typeof UX!=='undefined'&&UX.drag&&!UX.drag.on){UX.drag=null;UX.dragTo=null}}
+/* a release or a lost window anywhere ends every press, so nothing stays stuck */
+window.addEventListener('pointerup',e=>{if(ptrs.has(e.pointerId)&&e.target!==cv)setTimeout(()=>{if(ptrs.has(e.pointerId))ptrRelease(e.pointerId)},0)});
+window.addEventListener('blur',()=>{ptrs.clear();pinch=null;drag=null;clearTimeout(lpTimer)});
+cv.addEventListener('lostpointercapture',e=>{if(ptrs.has(e.pointerId))setTimeout(()=>{if(ptrs.has(e.pointerId))ptrRelease(e.pointerId)},0)});
 cv.addEventListener('pointerup',e=>{
   const wasPinch=!!pinch||ptrs.size>1;endPtr(e);
   if(!G||!drag||drag.id!==e.pointerId){drag=null;return}
