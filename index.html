@@ -678,7 +678,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={FORMATION:1,STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={TERRAIN2:0,FORMATION:1,STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:2,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV0=0.35,APV=APV0;
@@ -4550,7 +4550,7 @@ function realmBoard(){const W=REALM;G.rect={hw:W.HW,hh:W.HH};let R=0;for(let q=-
   G.Rv=Math.max((2*W.HW+2)/(2*S3)-0.5,(2*W.HH)/3)}// the 2D/3D layout fits this "view radius" (a hexagon of radius G.R would leave wide empty margins)
 const inValley=(p,q,r)=>!!(p&&p.camp&&hd(q,r,p.camp[0],p.camp[1])<REALM.VR);
 function genRealm(){
-  const W=REALM,HW=W.HW,HH=W.HH,VR=W.VR,cellsAll=ringCells(),T={};
+  const W=REALM,HW=W.HW,HH=W.HH,VR=W.VR,cellsAll=ringCells(),T={},LOOK3={};
   const put=(q,r,t,force)=>{for(const [a,b] of wildsMirrors(q,r))if(inR(a,b)&&(force||!T[key(a,b)]||T[key(a,b)]==='wood'))T[key(a,b)]=t};
   const edgeD=(q,r)=>{const [x,y]=pix(q,r);return Math.min(HW-Math.abs(x),HH-Math.abs(y))};
   const b0=hexRound(HW-5,HH-4.5),bases=wildsMirrors(...b0);
@@ -4572,6 +4572,7 @@ function genRealm(){
      four rivers run out from the city along the lines between neighbouring bases, two fords each, so neighbours meet at the fords;
      one lake and one short ridge per quarter beside the road to the stone make two narrow passes; the board's edge is forest and mountain;
      the middle stays open field (the camps' ground). Only small things (single trees and hills) change from game to game. */
+  G.tph=RULES.TERRAIN2?RNG()*6.28:0;/* only the new layout draws it: the seeded sims of the old map stay the same */
   if(RULES.REALM_SHAPE&&RULES.STORY2){const R0=G.heartR+3;
     const water=(q,r)=>{if(!T[key(q,r)]||T[key(q,r)]==='wood')put(q,r,'river',true)};
     // the rivers: along the horizontal mirror line (row r=0) and the vertical one (|x| under one hex), from 3 rings out of the city to a few hexes short of the edge camps
@@ -4581,9 +4582,14 @@ function genRealm(){
     // a lake and a ridge in each quarter, either side of the base's road to the city
     const [bx,by]=pix(...b0),L=Math.hypot(bx,by),ux=bx/L,uy=by/L,vx=uy,vy=-ux;const at=(f,o)=>hexRound(bx*f+vx*o*S3,by*f+vy*o*S3);
     {const c=at(0.56,3.2);put(...c,'river',true);let n=0;for(const d of [0,1,2,3,4,5].sort(()=>RNG()-0.5)){if(n>=4)break;const a=c[0]+DIRS[d][0],b=c[1]+DIRS[d][1];if(inR(a,b)&&inQ(a,b)&&(!T[key(a,b)]||T[key(a,b)]==='wood')){put(a,b,'river',true);n++}}}
-    {const c=at(0.5,-3.4),[cx0,cy0]=pix(...c);for(let i=-2;i<=2;i++){const h=hexRound(cx0+ux*i*S3,cy0+uy*i*S3);if(inR(...h)&&inQ(...h)&&!T[key(...h)]&&Math.abs(i)<2+RNG())put(...h,'mount')}}
+    if(!RULES.TERRAIN2){const c=at(0.5,-3.4),[cx0,cy0]=pix(...c);for(let i=-2;i<=2;i++){const h=hexRound(cx0+ux*i*S3,cy0+uy*i*S3);if(inR(...h)&&inQ(...h)&&!T[key(...h)]&&Math.abs(i)<2+RNG())put(...h,'mount')}}
+    else{/* v119 TERRAIN2 (owner: "mountains spawn in no formation; use other things to block hexes and make a passage, a corridor or shape a camp site"): a long ridge on each side of the base's road to the city,
+      each broken by a 2-hex pass, so the road is a corridor with two ways out to the flanks */
+      for(const [o,f0,f1,gap] of [[-4.6,0.28,0.86,0.58],[5.8,0.36,0.8,0.6]]){for(let f=f0;f<=f1;f+=0.045){if(Math.abs(f-gap)<0.07)continue;const h=at(f,o);if(inR(...h)&&inQ(...h)&&(!T[key(...h)]||T[key(...h)]==='wood')){put(...h,'mount');LOOK3[key(...h)]='ridge'}}}}
     // the edge band: forest with mountains, thick on the outermost ring, outside the home valleys
     for(const [q,r] of cellsAll){if(!inQ(q,r)||T[key(q,r)])continue;const e=edgeD(q,r);if(e>=2.7||!out(q,r)||nearBase(q,r)<=VR)continue;const x=RNG();
+      if(RULES.TERRAIN2){const [px0,py0]=pix(q,r),a=Math.atan2(py0,px0),run=Math.sin(a*13+G.tph)+0.55*Math.sin(a*29+G.tph*1.7);/* mountains in runs along the edge, never one peak alone */
+        if(e<1.3){if(run>0.75)put(q,r,'mount');else if(x<0.9)put(q,r,'wood')}else if(run>1.15)put(q,r,'mount');else if(x<0.65)put(q,r,'wood');continue}
       if(e<1.3){if(x<0.3)put(q,r,'mount');else if(x<0.92)put(q,r,'wood')}else if(x<0.12)put(q,r,'mount');else if(x<0.7)put(q,r,'wood')}
     // the field: open, a couple of copses and one hill per quarter
     for(let k=0;k<2;k++){const s=pickC((q,r)=>!T[key(q,r)]&&hd(q,r,0,0)>G.heartR+3&&out(q,r)&&inQ(q,r)&&edgeD(q,r)>3);if(!s)continue;put(...s,'wood');for(const [dq,dr] of DIRS)if(RNG()<0.35){const a=s[0]+dq,b=s[1]+dr;if(inR(a,b)&&inQ(a,b)&&!T[key(a,b)])put(a,b,'wood')}}
@@ -4613,6 +4619,11 @@ function genRealm(){
   if(!RULES.STORY2){const rr=[6,8][Math.floor(RNG()*2)];stamp([-rr/2,rr],'camp2',1)}/* v98: no Ogre Lair *//* v85 (owner): the Ogre Lair (a spawn site) sits CLOSE TO THE CENTRE, between the two bases of each half; before v85 the Drake stood here and the Ogre at the edge */
   if(!RULES.STORY2)for(const [e,nb,g] of [[3,VR+2,5],[4,VR+1,4],[6,VR,3]]){if(lists.ruin.length)break;place((q,r)=>off(q,r)&&out(q,r)&&edgeD(q,r)<e&&edgeD(q,r)>1.2&&nearBase(q,r)>nb&&[...lists.camp2,...lists.camp3].every(o=>hd(o[0],o[1],q,r)>=g),'ruin',1,0,6)}
   if(!RULES.STORY2){for(const [lo,hi,gap] of [[8,13,4],[6,16,3],[5,20,2]]){if(lists.lever.length)break;place((q,r)=>off(q,r)&&out(q,r)&&hd(q,r,0,0)>=lo&&hd(q,r,0,0)<=hi&&edgeD(q,r)>2&&[...lists.camp3,...lists.ruin].every(o=>hd(o[0],o[1],q,r)>=gap),'lever',1,0,6)}}
+  if(RULES.TERRAIN2&&RULES.REALM_SHAPE&&RULES.STORY2){/* v119: the Spring and the Drake Lair sit in a horseshoe of cliffs open toward the city; broken walls ring the city's approaches, open on the roads */
+    for(const c of [...lists.camp2,...lists.camp3]){if(!inQ(...c)&&!(c[1]===0&&c[0]>0)&&!(c[0]===-c[1]/2))continue;const [cx,cy]=pix(...c),L0=Math.hypot(cx,cy)||1;
+      for(const [q,r] of cellsAll){if(hd(q,r,c[0],c[1])!==2)continue;const [x,y]=pix(q,r),dx=x-cx,dy=y-cy,dl=Math.hypot(dx,dy)||1;const inward=-(dx*cx+dy*cy)/(dl*L0);if(inward>0.25)continue;const t=T[key(q,r)];if(t&&t!=='wood')continue;put(q,r,'mount');LOOK3[key(q,r)]='cliff'}}
+    const RR=G.heartR+3;const [bx2,by2]=pix(...b0),L2=Math.hypot(bx2,by2);const ring=cellsAll.filter(([q,r])=>hd(q,r,0,0)===RR&&inQ(q,r)).map(([q,r])=>{const [x,y]=pix(q,r);return {q,r,a:Math.atan2(y,x),side:(x*by2-y*bx2)/L2}}).sort((u,v)=>u.a-v.a);
+    ring.forEach((c,i)=>{const [x,y]=pix(c.q,c.r);if(Math.abs(c.side)<2.2*S3||Math.abs(y)<1.2||Math.abs(x)<1.6)return;if(i%4===3)return;const t=T[key(c.q,c.r)];if(t&&t!=='wood')return;put(c.q,c.r,'mount');LOOK3[key(c.q,c.r)]='ruinwall'})}
   // every base must reach the Heart and every camp: carve straight passes (mirrored) through mountains, rivers and the Heart's wall
   const pass=t=>t!=='mount'&&t!=='river'&&t!=='wall';
   const bfs=s=>{const D={};D[key(...s)]=0;const qu=[s];for(let i=0;i<qu.length;i++){const [q,r]=qu[i];for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(!inR(a,b)||k in D||!pass(T[k]))continue;D[k]=D[key(q,r)]+1;qu.push([a,b])}}return D};
@@ -4621,6 +4632,7 @@ function genRealm(){
   for(const g of goals){for(let it=0;it<3;it++){const D=bfs(b0);const own=wildsMirrors(...g).filter(c=>inR(c[0],c[1]));if(own.every(c=>key(c[0],c[1]) in D))break;
     const c=own.filter(c=>!(key(c[0],c[1]) in D)).sort((x,y)=>hd(x[0],x[1],b0[0],b0[1])-hd(y[0],y[1],b0[0],b0[1]))[0];carve(b0,c)}}
   G.feat={};G.roads={};G.terr={};G.wallLook={};G.decor={};
+  for(const [k,lk] of Object.entries(LOOK3)){const [q,r]=k.split(',').map(Number);for(const [a,b] of wildsMirrors(q,r)){const kk=key(a,b);if(T[kk]==='mount')G.wallLook[kk]=lk}}
   for(const [k,t] of Object.entries(T)){if(t==='mount'||t==='wall')G.feat[k]='rock';else if(t==='river')G.feat[k]='river';else if(t==='wood')G.feat[k]='forest';else if(t==='hill')G.feat[k]='hill';else if(t==='ford')G.roads[k]=1;else if(t==='lever')G.feat[k]='lever'}
   // the camps: one record per copy, the monster sits on the centre hex; tier-1 boons are rolled per mirror set so every valley gets the same ones
   const pick=a=>a[Math.floor(RNG()*a.length)];const rooms=[];
@@ -4629,7 +4641,7 @@ function genRealm(){
   const item=pick(Object.keys(SUIT_ITEMS));
   for(const c of lists.camp2){const heal=c[1]===0;mk(heal?'heal':'ogre',c,heal?'warden':'ogre',heal?{respawn:W.respawn||0}:{item})}
   for(const c of lists.camp3)mk('t3',c,'drake');
-  for(const c of [...lists.camp1,...lists.camp2].filter(c=>inQ(c[0],c[1])))dress(c);
+  for(const c of [...lists.camp1,...lists.camp2].filter(c=>inQ(c[0],c[1])))if(!RULES.TERRAIN2)dress(c);
   for(const c of lists.ruin)mk('ruin',c,'chest');
   G.rooms=rooms;G.circles=[];G.cracks=[];G.levers={};G.gems={};G.wander=null;G.midUp=false;
   for(const R of G.rooms){if(RULES.STORY2&&R.enc==='drake'){R.state='sleeping';continue}/* v98: the Drakes sleep until REALM.drakeAt */const m=makeMonster(R.enc,R.c[0],R.c[1],R.id);m.tier=R.tier;if(R.enc==='drake'){const m0=occ();for(let d=0;d<6;d++){const a=R.c[0]+DIRS[d][0],b=R.c[1]+DIRS[d][1];if(passable(a,b)&&!m0.get(key(a,b))){m.size=2;m.dir=d;break}}}G.units.push(m);R.monMax=m.maxhp}// v76 (owner): the Drake stands on 2 hexes
@@ -6461,8 +6473,9 @@ function glBuildStatics(){
       L.trunk.push([tx,tall*0.22,tz,0,1,tall,0,0,1,q,r]);
       if((i+q)%2)L.pine.push([tx,tall*0.62,tz,h(i+9)*3,1,tall,0,0,1,q,r]);else{L.crown.push([tx,tall*0.62,tz,h(i)*3,1+h(i+2)*0.3,0,0,0,0,q,r]);L.crown2.push([tx+0.16,tall*0.8,tz-0.1,h(i+1)*3,0.7,0,0,0,0,q,r])}}
     else if(f==='rock'){
-      const lk=G.map&&G.wallLook?G.wallLook[k]:null;
-      if(lk&&lk!=='cliff')(WLK[lk]=WLK[lk]||[]).push([x,0,z,h(4)*6.28,1]);
+      const lk=(G.map||G.realm)&&G.wallLook?G.wallLook[k]:null;
+      if(lk==='ridge'){const hgt=1.9+h(1)*1.0;L.peak.push([x,hgt/2,z,h(2)*3,1.05,hgt]);L.snow.push([x,hgt*0.83,z,h(2)*3,1.05,hgt]);L.peak2.push([x+0.42,hgt*0.3,z-0.3,h(3)*3,1,hgt*0.6])}
+      else if(lk&&lk!=='cliff')(WLK[lk]=WLK[lk]||[]).push([x,0,z,h(4)*6.28,1]);
       else if(lk==='cliff'){const hgt=1.3+h(1)*0.8;L.peak.push([x,hgt/2,z,h(2)*3,1,hgt]);L.peak2.push([x+0.4,hgt*0.25,z-0.3,h(3)*3,1,hgt*0.5])}
       else if(G.map&&(!G.realm||hd(q,r,0,0)<=G.heartR+1)){if(!cityWallUp()){L.wall.push([x,0,z,0,1,1]);for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;L.merlon.push([x+Math.cos(a)*0.72,1.16,z+Math.sin(a)*0.72,a,1])}}}
       else{const hgt=1.6+h(1)*0.9;L.peak.push([x,hgt/2,z,h(2)*3,1,hgt]);L.snow.push([x,hgt*0.83,z,h(2)*3,1,hgt]);L.peak2.push([x+0.42,hgt*0.25,z-0.3,h(3)*3,1,hgt*0.5])}}
@@ -6522,11 +6535,12 @@ function glBuildStatics(){
     clockwall:()=>{const t=new T.TorusGeometry(0.35,0.06,6,16);t.translate(0,0.75,0.47);return glMerge([box(1.5,1.2,0.9,0,0,0),t])},
     bluestone:()=>glMerge([box(1.5,1.1,0.9,0,0,0),box(0.4,0.3,0.92,-0.45,1.1,0),box(0.4,0.3,0.92,0.45,1.1,0)]),
     tomb:()=>{const a=box(0.3,0.35,0.12,0,0,0),b=new T.CylinderGeometry(0.15,0.15,0.12,10,1,false,0,Math.PI);b.rotateX(Math.PI/2);b.rotateZ(Math.PI/2);b.translate(0,0.35,0);return glMerge([a,b])},
-    lava:()=>{const g=new T.CylinderGeometry(0.8,0.85,0.06,6);g.translate(0,0.03,0);return g}};
+    lava:()=>{const g=new T.CylinderGeometry(0.8,0.85,0.06,6);g.translate(0,0.03,0);return g},
+    ruinwall:()=>glMerge([box(1.5,0.95,0.55,0,0,0),box(0.5,0.45,0.56,-0.45,0.95,0),box(0.3,0.25,0.56,0.35,0.95,0),box(0.35,0.3,0.35,0.55,0,0.55),box(0.28,0.22,0.3,-0.5,0,-0.55)])};/* v119: a broken stretch of the old city's outer wall */
    const M3D={fence:gMat('#3a3a44',{metalness:0.6,roughness:0.4}),gravefence:gMat('#2c2e26'),mausoleum:gMat('#4a4650'),arch:gMat('#b0a58e'),boulder:gMat('#6b625a'),palisade:gMat('#7a5232'),
     icespire:gMat('#dff3ff',{transparent:true,opacity:0.85,roughness:0.2,emissive:'#5cc8ff',emissiveIntensity:0.25}),obsidian:gMat('#151012',{roughness:0.3,metalness:0.4,emissive:'#5a1a08',emissiveIntensity:0.4}),
     menhir:gMat('#8f8a80'),scrap:gMat('#8a6a42',{metalness:0.3}),marble:gMat('#e9e4d8'),crystal:gMat('#7ff5dc',{emissive:'#12d69a',emissiveIntensity:0.6,transparent:true,opacity:0.9}),
-    clockwall:gMat('#4a2468',{metalness:0.4}),bluestone:gMat('#2a4a8a'),tomb:gMat('#8f8b97'),lava:gMat('#ff6a1a',{emissive:'#ff4a00',emissiveIntensity:1.6})};
+    clockwall:gMat('#4a2468',{metalness:0.4}),bluestone:gMat('#2a4a8a'),tomb:gMat('#8f8b97'),ruinwall:gMat('#a29a88',{roughness:0.95}),lava:gMat('#ff6a1a',{emissive:'#ff4a00',emissiveIntensity:1.6})};
    for(const [k2,v] of Object.entries(G.decor||{})){const [q,r]=k2.split(',').map(Number);const [x,z]=world(q,r);(WLK[v]=WLK[v]||[]).push(v==='tomb'?[x+0.25,0,z-0.2,hexRand(q,r,3)*0.6,1]:[x,0,z,0,1])}
    for(const [lk,list] of Object.entries(WLK)){const geo=gGeo('wl_'+lk,B3D[lk]||B3D.menhir);const m=glInst(list,geo,M3D[lk]||M3D.menhir,lk!=='lava');if(m){add(m);if(lk==='lava')GL.glow.push(m)}}}
   add(glInst(L.cwall,gGeo('cwall',()=>{const g=new T.CylinderGeometry(0.97,0.99,0.85,6);g.translate(0,0.42,0);return g}),gMat('#9a8a70')));
@@ -8667,6 +8681,7 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
    the matching overlays (vfx.js drawStatusFX). When the engine gets a new temporary state, add it here too. */
 function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn and stays frozen until the end of the freezer’s next turn; any Frost Hold hit on it deals double (Shatter)')}
+  if(u.kind!=='wall'&&typeof inForest==='function'&&inForest(u))add('cover','🌲','In cover',null,'#6fbf73',1,`+1 DEF, and it cannot be targeted from more than ${RULES.FOREST_HIDE} hexes away while it stays in the forest`);/* v119 (owner: shade units that have cover) */
   if(s.chill>0)add('chill','❄️','Chilled',s.chill,'#5cc8ff',0,'1 less move; Ice Lance deals double');
   if(s.tslow)add('tslow','⌛','Time drags',1,'#c81ca6',0,'time broke beside a Second Hand’s kill (Shattered Time): 1 less move and no free moves on its next turn');
   if(s.fb>0)add('frostbite','❄','Frostbite '+s.fb+'/'+frostNeed(),s.fbT,'#bfefff',0,'at '+frostNeed()+' frost marks it freezes; marks fade after 2 of its turns without a new one');
@@ -10333,6 +10348,12 @@ if(typeof ANN_SHORT!=='undefined')Object.assign(ANN_SHORT,{chrono:'Syndicate',oo
   <li><b>Swallowed</b>: a unit inside a blob takes 2 at the start of each Ooze turn and cannot act; 6 damage to the blob (8 for Devour) spits it out; if it dies inside, the blob grows a part.</li></ul>`}}
 // v116 (owner: "it looks like the old version before the new figure steps in"): fetch the city wall and the Beast models while the home page is open
 setTimeout(()=>{try{if(typeof THREE==='undefined'||typeof glModel!=='function')return;glCityWallLoad();const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?'models/camps_rift-beast-city.glb':f).catch(()=>{});for(const n of ['Valley Brute','Elder Drake','Spring Warden'])if(MODELS[n])glModel(MODELS[n].file).catch(()=>{})}catch(e){}},1500);
+
+// v119 (owner: "units step into the forest and get cover; shade the unit as a mark it has cover"): a dark leafy shade under every unit standing in a forest, and a leaf marker
+function coverDraw(now){if(!G)return;const R=hexPx()*0.78;for(const u of G.units){if(!alive(u)||u.kind==='wall'||!inForest(u))continue;
+  for(const [q,r] of cells(u)){const [x,y]=vPos(q,r,0);ctx.save();ctx.translate(x,y);ctx.scale(1,VIEW==='3d'?0.55:0.8);const g=ctx.createRadialGradient(0,0,R*0.1,0,0,R);g.addColorStop(0,'rgba(10,40,16,0.32)');g.addColorStop(1,'rgba(10,40,16,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.fill();ctx.restore()}
+  const [hx,hy]=uxHead(u);const fs=Math.max(9,hexPx()*0.28);ctx.save();ctx.font=`${fs}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.globalAlpha=0.95;ctx.fillText('🌲',hx+fs*1.6,hy-fs*0.2);ctx.restore()}}
+{const ud1=uxDraw;uxDraw=function(now){ud1(now);try{coverDraw(now)}catch(e){}}}
 
 /* v117 ACTION CAMERA, stage 1 (owner 23 Oct 2026: "watch attacks and abilities happen, with a camera that follows the attack or the projectile").
    1. On EVERY turn (yours too) an attack, ability or death that happens off screen pulls the camera there; a long shot (5+ hexes) is followed from shooter to target.
