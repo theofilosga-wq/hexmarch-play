@@ -1210,7 +1210,7 @@ const P_=(o)=>Object.assign({pawn:1,mt:'march',at:'fwd',rng:1,mov:3,def:0},o);
 const FAC={
   fire:{name:'Ember Court',color:'#ff4a3d',
     theme:'Demons and fire. Rogue demons that do not buff each other or work as a team: each one uses fire to kill and torment, and every death, theirs or their enemies’, is a soul. In the end they are sacrificed to summon the Archdemon: the Court’s carry and its only sure way to victory.',// owner's words, 17 Oct 2026
-    passive:'Souls: every Ember unit that falls and every enemy the Court kills is a soul (a Sacrificed Imp and a death next to the Soul Devourer count 2; a Phoenix that leaves an egg counts 0). At 10 souls the Archdemon rises next to the Pit Lord (2 hexes, 18 HP, 4 ATK, Hellwhip), or at once if the whole Court falls. The Archdemon FEEDS: whenever a unit it has wounded dies, it gains +1 ATK and heals 2, with no limit. Hellspawn: a dying Ember unit bursts for 2 ignoring DEF on every adjacent enemy and its hex burns red. Seared targets can’t be healed until the end of their next turn.',
+    passive:'Souls: every Ember unit that falls and every enemy the Court kills is a soul (a Sacrificed Imp and a death next to the Soul Devourer count 2; a Phoenix that leaves an egg counts 0). At 10 souls the Archdemon rises next to the Pit Lord (2 hexes, 18 HP, 4 ATK, Hellwhip), or at once if the whole Court falls. The Archdemon FEEDS: whenever a unit it has wounded dies, it gains +1 ATK and heals 2, with no limit. Hellspawn: a dying Ember unit bursts for 1 ignoring DEF on every adjacent enemy and its hex burns red. Seared targets can’t be healed until the end of their next turn.',
     home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage, and Crown Wilds monsters on it burn for 1 each round. An enemy standing on red ground moves 1 less.',homeAtk:1,
     homeRealm:'Burning ground: there is no home ground on the Realm, only the fire you make. Hexes set alight by Kindle, the breaths, the Fireball, Fire Frenzy, Hellspawn, Scorched Earth or the Pit Lord’s trail are red while they burn: fire units on them get +1 ATK, any other unit that starts its turn on one takes 1 damage, and enemies on them move 1 less.',
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
@@ -1757,7 +1757,9 @@ function gated(m,q,r){let walls=0,hard=0;for(const [dq,dr] of DIRS){const a=q+dq
 // squeezing costs double). A giant may enter a gate hex (between two wall pieces, or a wall and a rock), but in moveOpts that step costs 2 moves.
 // RULES.SQUEEZE 0 = the old hard block. freeFor(...,squeeze=true) skips the gate test; squeezeCost tells moveOpts what a step costs.
 const giantPass=(u,q,r)=>!!(G&&G.realm&&u&&((u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock)||u.burrow)&&solid(q,r)&&(featAt(q,r)==='rock'||featAt(q,r)==='river')&&hd(q,r,0,0)>G.heartR+1);// v75 (brief): giants walk over mountains and rivers, not through the Heart's wall
-function freeFor(m,u,q,r,squeeze){if(!passable(q,r)&&!giantPass(u,q,r)&&!(u&&u.mt==='fly'&&u.size!==2&&solid(q,r)&&featAt(q,r)==='rock')&&!(voidWalk(u)&&u.size!==2&&holeAt(q,r)&&!isCentreWall(q,r)))return false;const o=m.get(key(q,r));if(o&&o!==u)return false;if(!(squeeze&&RULES.SQUEEZE)&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r))return false;return true}
+/* v118 (owner): a fallen giant's remains block their 2 hexes like rocks, for everyone but the giants of its army */
+function remainsBlock(u,q,r){if(!G||!G.realm||!G.loot||!G.loot.length)return false;const x=G.loot.find(l=>l.kind==='remains'&&l.carrier==null&&l.q===q&&l.r===r);if(!x)return false;return !(u&&u.size===2&&u.kind!=='wall'&&G.players[u.owner]&&G.players[u.owner].fac==='giants'&&tm(u.owner)===tm(x.owner))}
+function freeFor(m,u,q,r,squeeze){if(remainsBlock(u,q,r))return false;if(!passable(q,r)&&!giantPass(u,q,r)&&!(u&&u.mt==='fly'&&u.size!==2&&solid(q,r)&&featAt(q,r)==='rock')&&!(voidWalk(u)&&u.size!==2&&holeAt(q,r)&&!isCentreWall(q,r)))return false;const o=m.get(key(q,r));if(o&&o!==u)return false;if(!(squeeze&&RULES.SQUEEZE)&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r))return false;return true}
 const squeezeCost=(m,u,q,r)=>RULES.SQUEEZE&&u&&u.size===2&&u.kind!=='wall'&&facOf(u).gateBlock&&gated(m,q,r)?2:1;
 function fitDir(m,u,q,r){
   if(!freeFor(m,u,q,r,true))return -1;
@@ -2566,7 +2568,7 @@ function kill(t){
     addLog(k.owner,`Leader takedown! ${teamName(kt)} scores ${LP}: ${G.score[kt]}/${heartTarget()}.`);
     if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}
   // v40b Kingslayer (owner 3 Oct 2026: "when someone kills the King they get a point"): on top of a Leader takedown if the King also leads.
-  if(G.mode==='warlord'&&(G.realm?REALM.kingPts>0&&!t.leader:RULES.KING_KILL>0)&&t.king&&k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner].alive&&!G.over){const kt=tm(k.owner),n=G.realm?REALM.kingPts:RULES.KING_KILL;/* v96: on the Realm the King's crown is a prize too (a Leader-King pays the Leader points only, never both) */G.score[kt]=(G.score[kt]||0)+n;tPts(k.owner,'kingslayer',n);
+  if(G.mode==='warlord'&&(G.realm?REALM.kingPts>0&&(!t.leader||REALM.kingPts>REALM.leaderPts):RULES.KING_KILL>0)&&t.king&&k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner].alive&&!G.over){const kt=tm(k.owner),n=G.realm?(t.leader?REALM.kingPts-REALM.leaderPts:REALM.kingPts):RULES.KING_KILL;/* v118: a Leader who is King pays the King's price in all (Leader 1 + the rest) *//* v96: on the Realm the King's crown is a prize too (a Leader-King pays the Leader points only, never both) */G.score[kt]=(G.score[kt]||0)+n;tPts(k.owner,'kingslayer',n);
     addLog(k.owner,`Kingslayer! ${teamName(kt)} scores ${n} for killing the King: ${G.score[kt]}/${heartTarget()}.`);
     if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}
   if(t.leader&&!SIM){const kk=k&&k.kind!=='wall'&&G.players[k.owner]?k:null,foe=kk&&tm(kk.owner)!==tm(t.owner);
@@ -2581,7 +2583,7 @@ function kill(t){
     const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Death blast';for(const v of near)if(tm(v.owner)!==tm(t.owner))hurt(v,afterDef(2,effDef(v)),'#ff9a3d');CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
   // v37 Hellspawn (Ember Court passive, owner 2 Oct 2026): a dying Ember Court unit bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.
   if(G.players[t.owner]&&G.players[t.owner].fac==='fire'&&!t.summon&&!t.egg&&!(t.sacrificed&&!(G.realm&&REALM.sacStack))){const ring=cells(t);if(!SIM)vfx({k:'ab',ab:'kindle',shape:'nova',from:[t.q,t.r],to:[t.q,t.r],cells:DIRS.map(([a,b])=>[t.q+a,t.r+b]),col:'#ff5a1a',cam:1});
-    const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Hellspawn (death burst)';let hit=0;for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner)){hurt(v,2,'#ff5a1a');hit++}
+    const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Hellspawn (death burst)';let hit=0;for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner)){hurt(v,REALM.burst,'#ff5a1a');hit++}
     for(const [a,b] of ring)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:t.owner};
     if(trk()&&!SIM){const e=tFx('fire',t.name,'Hellspawn (death burst)');if(e)e.uses++}if(!SIM&&hit)addLog(t.owner,`The ${t.name} bursts in hellfire as it dies.`);CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
   // v37 Last of the Old Ones (Stone Giants passive): when a giant falls, every surviving giant of its army heals 3 and gains +1 ATK for the rest of the game (u.oldAtk).
@@ -3333,7 +3335,7 @@ function pushUnit(t,d,n,src,quiet,mom0,noMark){
     if(G.realm&&!(o&&o!==t)){// v75 (brief): a mountain or wall stops the unit on the hex before it, unhurt; a river sweeps it to the far bank
       if(featAt(q,r)==='river'&&t.mt!=='fly'&&t.size!==2){let q2=q+DIRS[d][0],r2=r+DIRS[d][1];while(inR(q2,r2)&&featAt(q2,r2)==='river'){q2+=DIRS[d][0];r2+=DIRS[d][1]}
         if(solid(q2,r2)&&passable(q2,r2)&&!unitAt(q2,r2)&&!isCentreWall(q2,r2)){setAnim(t);t.q=q2;t.r=r2;fx(t,'swept across','#5cc8ff');continue}fx(t,'stops at the bank','#5cc8ff');break}
-      if(isBlock(q,r)||isCentreWall(q,r)){fx(t,'stopped','#9a9283');break}}
+      if(isBlock(q,r)||isCentreWall(q,r)||remainsBlock(t,q,r)){fx(t,'stopped','#9a9283');break}}
     if(o&&o!==t&&RULES.RIFTKIT&&isRiftSrc(src)&&o.kind!=='wall'&&tm(o.owner)!==tm(src.owner)&&!o.statue){// v54 COLLISION (owner: "I love the collision rule"):
       // an enemy thrown into another enemy: both take the slam, and the one it hits is knocked 1 hex the same way
       const sl=slamOf(src);if(!SIM&&trk()){const e=tFx('rift','','Collision (both hurt, the other knocked back)');if(e){e.uses++;e.dmg+=sl}}
@@ -4528,7 +4530,7 @@ function kingScore(p){
    Points: last hits (an enemy unit 1, a Leader 3, camps by tier) and the King on the Throne (1 a turn); first to REALM.target wins.
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
-const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:2,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,suitHp:12,
+const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:1,burst:1,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
@@ -9118,7 +9120,7 @@ function rulesTop0(){
   ${row('Your unit lands the killing blow on a Dragon',WILDS.dragonPts+' points')}
   ${row('Your unit lands the killing blow on the Rift Beast',RULES.BEAST_PTS+' points')}
   ${row('You hold all three Standing Stones for two turns',WILDS.stonesPts+' points')}
-  ${row('You kill an enemy Leader','2 points')}
+  ${row('You kill an enemy Leader',G&&G.realm||(!G&&cfg.map==='realm')?REALM.leaderPts+' point'+(REALM.leaderPts>1?'s':''):'2 points')}
   </table>
   <h3>Your turn</h3><ul>
   <li>You get <b>action points (AP)</b>: ${RULES.BASE_AP}, plus ${RULES.LEADER_AP} while your Leader lives (plus ${RULES.LEADERLESS_AP} if it has fallen).</li>
