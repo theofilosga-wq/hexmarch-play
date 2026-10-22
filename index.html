@@ -6984,7 +6984,7 @@ function glMats(ud,fig){if(!ud.mats){ud.mats=[];fig.traverse(m=>{if(m.isMesh&&m.
 function glMotion(u,fig,ud,now,t,x,z){let y=0,face=null,lean=0,off=[0,0];fig.rotation.order='YXZ';
   const mv=typeof motionOf==='function'?motionOf(u,now):null;
   if(mv){const ph=(mv.e*mv.n)%1;y+=Math.abs(Math.sin(Math.PI*ph))*(u.size===2?0.12:0.28);face=Math.atan2(mv.dx,mv.dz);lean=0.14;ud.walking=1}
-  else if(ud.walking){ud.walking=0;if(typeof ANIMS!=='undefined')ANIMS.push({ev:{k:'dust',at:[u.q,u.r]},t0:now})}
+  else if(ud.walking){ud.walking=0;if(typeof ANIMS!=='undefined')ANIMS.push({ev:{k:'dust',at:[u.q,u.r]},t0:(typeof ACAM!=='undefined'&&ACAM.v)?ACAM.v:now})}/* v126c: effects run on the action camera's slowed clock; the real clock drifts ahead of it by ACAM_LAG, and a real-clock stamp gave the dust a negative age (negative ellipse radii that threw every frame and never expired) */
   const L=typeof MOTION!=='undefined'&&MOTION.lunge.get(u.id);if(L){const k=(now-L.t0)/(L.ranged?300:380);if(k>=1||k<0){if(k>=1)MOTION.lunge.delete(u.id)}else{const [tx,tz]=world(L.to[0],L.to[1]);const dx=tx-x,dz=tz-z,d=Math.hypot(dx,dz)||1;const amp=(L.ranged?0.12:0.45)*Math.sin(Math.PI*k);off=[dx/d*amp,dz/d*amp];face=Math.atan2(dx,dz);lean=L.ranged?-0.06:0.2*Math.sin(Math.PI*k)}}
   const H=typeof MOTION!=='undefined'&&MOTION.hit.get(u.id);if(H){const k=(now-H.t0)/320;if(k>=1){MOTION.hit.delete(u.id);for(const m of glMats(ud,fig)){m.emissive.setRGB(0,0,0);m.emissiveIntensity=0}}else if(k>=0){const [fx,fz]=world(H.from[0],H.from[1]);const dx=x-fx,dz=z-fz,d=Math.hypot(dx,dz)||1;const a=0.16*Math.sin(Math.PI*k);off=[off[0]+dx/d*a,off[1]+dz/d*a];lean-=0.12*Math.sin(Math.PI*k);const f=Math.max(0,1-k);for(const m of glMats(ud,fig)){m.emissive.setRGB(0.9*f,0.12*f,0.08*f);m.emissiveIntensity=1}}}
   const C=typeof MOTION!=='undefined'&&MOTION.cast.get(u.id);if(C){const k=(now-C.t0)/600;if(k>=1)MOTION.cast.delete(u.id);else if(k>=0)y+=0.22*Math.sin(Math.PI*k)}
@@ -7176,7 +7176,7 @@ function drawVFX(now){
         for(let s=0;s<segs;s++){const [ax,ay]=pts[s],[bx,by]=pts[s+1];const zig=[[ax,ay]];for(let j=1;j<6;j++){const f=j/6;zig.push([ax+(bx-ax)*f+(Math.random()-0.5)*U*0.5,ay+(by-ay)*f+(Math.random()-0.5)*U*0.5])}zig.push([bx,by]);
           glowLine(zig,'#e9ddff',Math.max(1.5,U*0.06),Math.max(0,1-el/dur))}
         break}
-      case 'dust':{dur=520;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.05);ctx.save();for(let i=0;i<7;i++){const a=i/7*Math.PI*2+0.4;ctx.globalAlpha=Math.max(0,0.45*(1-t));ctx.fillStyle=ev.col||'#c9b99a';ctx.beginPath();ctx.ellipse(x+Math.cos(a)*U*(0.25+t*0.55),y+Math.sin(a)*U*(0.12+t*0.25)-t*U*0.15,U*(0.12+t*0.12),U*(0.08+t*0.08),0,0,7);ctx.fill()}ctx.restore();break}
+      case 'dust':{dur=520;const t=Math.max(0,el/dur);const [x,y]=vPos(ev.at[0],ev.at[1],0.05);ctx.save();for(let i=0;i<7;i++){const a=i/7*Math.PI*2+0.4;ctx.globalAlpha=Math.max(0,0.45*(1-t));ctx.fillStyle=ev.col||'#c9b99a';ctx.beginPath();ctx.ellipse(x+Math.cos(a)*U*(0.25+t*0.55),y+Math.sin(a)*U*(0.12+t*0.25)-t*U*0.15,U*(0.12+t*0.12),U*(0.08+t*0.08),0,0,7);ctx.fill()}ctx.restore();break}
       case 'ab':{if(SIG_FX[ev.ab]){const S=SIG_FX[ev.ab];dur=S.dur;SIG_U=U;S.draw(ev,el/dur,now);break}dur=700;const t=el/dur;const [cx,cy]=vPos(ev.from[0],ev.from[1],0.6),[tx,ty]=vPos(ev.to[0],ev.to[1],0.2);
         const A=ABIL[ev.ab]||{};
         if(ev.ab==='timewarp'||ev.ab==='quicken'||ev.ab==='rewind'||ev.ab==='clock'){const [x,y]=ev.ab==='timewarp'?[cx,cy]:vPos(ev.to[0],ev.to[1],0.6);
