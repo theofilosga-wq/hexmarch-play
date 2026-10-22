@@ -10497,6 +10497,78 @@ function punchApply(now){const els=[cv];if(typeof GL!=='undefined'&&GL&&GL.cv)el
 // no taps on a board that is zoomed for a moment
 ['pointerdown','click'].forEach(t=>cv.addEventListener(t,e=>{if(PUNCH.on){e.stopImmediatePropagation();e.preventDefault()}},true));
 
+/* v126 GUARD (owner 23 Oct 2026: "the game crashed again while I was trying to play; do whatever it takes to make it not glitch all the time").
+   Two jobs. (1) RECORD: every error, every frame stall, the player's last actions and the device state go into a ring buffer in localStorage,
+   and a heartbeat marks the game as alive every 2 s; a page that closed without a clean goodbye (browser killed the tab, a freeze the player
+   had to kill) is noticed at the next start and offered as a crash report, saved to the match folder or downloaded. (2) HEAL: a bot turn that
+   throws is ended for the bot instead of hanging the game; a human action that throws is taken back from the undo snapshot; a drawing error
+   that keeps repeating switches the 3D models off, then the flat map on, so the board never stays frozen. Loaded last in the UI slot. */
+const GUARD={errs:[],acts:[],lastFrame:0,drawFail:0,botFail:0,vis:0,max:30,crash:null};
+try{GUARD.errs=JSON.parse(localStorage.getItem('hexmarch.errs')||'[]').slice(-GUARD.max)}catch(e){}
+function guardState(){try{const cv=document.getElementById('board'),gl=typeof GL!=='undefined'?GL:null,mem=performance&&performance.memory?Math.round(performance.memory.usedJSHeapSize/1048576):null;
+  const p=G&&G.players&&G.players[G.cur];
+  return {t:Date.now(),ver:typeof VERSION!=='undefined'?VERSION:'',round:G?G.round:null,cur:G?G.cur:null,fac:p?p.fac:null,ctrl:p?p.ctrl:null,sel:G?G.sel:null,amode:G?G.amode:null,phase:G?G.phase||'':null,
+    view:typeof VIEW!=='undefined'?VIEW:'',gl:gl?(gl.lost?'lost':gl.cv&&!gl.cv.hidden?'on':'off'):'none',cv:cv?cv.width+'x'+cv.height:'',win:innerWidth+'x'+innerHeight,dpr:+devicePixelRatio.toFixed(2),
+    zoom:typeof zoom!=='undefined'?+(+zoom).toFixed(2):null,focus:document.body.classList.contains('focus'),fwide:document.body.classList.contains('fwide'),mem,units:G?G.units.length:0,over:!!(G&&G.over),
+    hist:G?G.histId||null:null,screen:typeof screen==='string'?screen:'',hidden:document.hidden}}catch(e){return {t:Date.now(),bad:String(e)}}}
+function guardLog(kind,msg,stack){try{const e=Object.assign({k:kind,msg:String(msg||'').slice(0,300),stack:String(stack||'').replace(/https?:\/\/\S+\//g,'').slice(0,700),
+  acts:GUARD.acts.slice(-12),log:G&&G.log?G.log.slice(0,8).map(l=>(l&&l.text?l.text:String(l)).slice(0,120)):[]},guardState());
+  GUARD.errs.push(e);if(GUARD.errs.length>GUARD.max)GUARD.errs.shift();localStorage.setItem('hexmarch.errs',JSON.stringify(GUARD.errs));
+  if(typeof console!=='undefined')console.warn('[guard]',kind,msg)}catch(x){}}
+function guardAct(name,a){try{const u=a&&a[0]&&a[0].name?a[0].name:'';GUARD.acts.push({t:Date.now(),a:name,u,q:a&&a[1]&&a[1].q!=null?a[1].q:(a&&typeof a[2]==='number'?a[2]:null),r:a&&a[1]&&a[1].r!=null?a[1].r:(a&&typeof a[3]==='number'?a[3]:null),k:a&&typeof a[1]==='string'?a[1]:''});if(GUARD.acts.length>40)GUARD.acts.shift()}catch(e){}}
+addEventListener('error',e=>guardLog('error',e.message||e,e.error&&e.error.stack));
+addEventListener('unhandledrejection',e=>guardLog('promise',e.reason&&(e.reason.message||e.reason),e.reason&&e.reason.stack));
+document.addEventListener('visibilitychange',()=>{GUARD.vis=performance.now()});
+
+/* ---------- heartbeat: 'hexmarch.alive' is rewritten every 2 s during a game and marked clean when the page goes away properly ---------- */
+function guardBeat(clean){try{const s=guardState();s.clean=!!clean;s.errsN=GUARD.errs.length;s.inGame=!!(G&&s.screen==='game'&&!G.over);s.acts=GUARD.acts.slice(-8);localStorage.setItem('hexmarch.alive',JSON.stringify(s))}catch(e){}}
+setInterval(()=>{if(G&&typeof screen==='string'&&screen==='game')guardBeat(false)},2000);
+addEventListener('pagehide',()=>guardBeat(true));addEventListener('beforeunload',()=>guardBeat(true));
+/* at start: a game that was alive and never said goodbye = the browser killed the page or the player had to kill a frozen tab */
+try{const a=JSON.parse(localStorage.getItem('hexmarch.alive')||'null');
+  if(a&&!a.clean&&a.inGame&&Date.now()-a.t<48*3600e3){GUARD.crash={found:Date.now(),alive:a,errs:GUARD.errs.filter(e=>e.t>=a.t-30*60e3),ua:navigator.userAgent,ver:typeof VERSION!=='undefined'?VERSION:''};try{localStorage.setItem('hexmarch.crash',JSON.stringify(GUARD.crash))}catch(e){}}
+  localStorage.setItem('hexmarch.alive','null')}catch(e){}
+function guardReportFile(){const d=new Date(GUARD.crash?GUARD.crash.alive.t:Date.now()),z=n=>String(n).padStart(2,'0');return `hexmarch-crash-${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}.json`}
+async function guardSaveReport(){const c=GUARD.crash;if(!c)return;let match=null;try{if(c.alive.hist&&typeof histGet==='function')match=await histGet(c.alive.hist)}catch(e){}
+  const rep=Object.assign({},c,{match});const blob=new Blob([JSON.stringify(rep)],{type:'application/json'}),name=guardReportFile();
+  let ok=false;try{if(typeof hfLoad==='function'){const h=await hfLoad();if(h){let p=await h.queryPermission({mode:'readwrite'});if(p!=='granted')p=await h.requestPermission({mode:'readwrite'});if(p==='granted'){const f=await h.getFileHandle(name,{create:true});const w=await f.createWritable();await w.write(blob);await w.close();ok=true;toast(`Crash report saved in “${HFOLD.name}”: ${name}`,4000)}}}}catch(e){}
+  if(!ok){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast('Crash report downloaded: '+name,4000)}
+  return ok}
+function guardHomeBox(){const c=GUARD.crash;const old=document.querySelector('#crashCard');if(old)old.remove();if(!c)return;const lc=document.querySelector('#learnCard')||document.querySelector('#setupView .card');if(!lc)return;
+  const a=c.alive,F=typeof FAC!=='undefined'&&a.fac&&FAC[a.fac]?FAC[a.fac].name:(a.fac||'');const when=new Date(a.t).toLocaleString();const why=c.errs.length?`${c.errs.length} error${c.errs.length>1?'s':''} were recorded before it stopped.`:'No script error was recorded: the browser most likely ran out of memory and closed the page.';
+  const d=document.createElement('div');d.className='card';d.id='crashCard';d.style.borderColor='#ff6161';
+  d.innerHTML=`<div class="label" style="color:#ff6161">Your last game stopped unexpectedly</div><p class="hint">${when}: round ${a.round}, ${F}’s turn, ${a.view==='3d'?'3D view':'flat map'}${a.focus?', full screen':''}, window ${a.win}. ${why} A report with what happened just before is ready; it is the fastest way to get the crash fixed.</p>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="abtn" id="crashSave">Save crash report</button><button class="abtn" id="crashDrop">Dismiss</button></div>`;
+  lc.before(d);d.querySelector('#crashSave').onclick=()=>guardSaveReport();d.querySelector('#crashDrop').onclick=()=>{GUARD.crash=null;try{localStorage.removeItem('hexmarch.crash')}catch(e){}d.remove()}}
+{const r0=renderSetup;renderSetup=function(){r0.apply(this,arguments);try{guardHomeBox()}catch(e){}}}
+try{guardHomeBox()}catch(e){}/* the home page was drawn before this file loaded */
+/* a crash report is also saved on its own when the folder is already allowed, so a lost game costs nothing */
+setTimeout(()=>{try{if(GUARD.crash&&typeof hfLoad==='function')hfLoad().then(h=>h&&h.queryPermission({mode:'readwrite'})).then(p=>{if(p==='granted')guardSaveReport()}).catch(()=>{})}catch(e){}},1500);
+
+/* ---------- heal 1: the frame loop never dies; a repeating drawing error drops 3D, then the tabletop view ---------- */
+{const d0=draw;draw=function(now){const g=GUARD;
+  if(g.lastFrame&&now-g.lastFrame>4000&&G&&typeof screen==='string'&&screen==='game'&&!document.hidden&&g.vis<g.lastFrame)guardLog('stall',`frame gap ${Math.round(now-g.lastFrame)} ms`);
+  g.lastFrame=now;
+  try{d0(now);g.drawFail=0}catch(e){g.drawFail++;if(g.drawFail===1||g.drawFail%300===0)guardLog('draw',e.message,e.stack);
+    try{if(g.drawFail===90&&typeof VIEW!=='undefined'&&VIEW==='3d'&&typeof GL!=='undefined'&&GL.pref!=='off'){glSetPref(false);layout();toast('A drawing error kept repeating: 3D models switched off to keep the game running.',5000)}
+      else if(g.drawFail===400&&typeof VIEW!=='undefined'&&VIEW==='3d'){VIEW='2d';layout();refresh();toast('Switched to the flat map to keep the game running.',5000)}}catch(x){}}}}
+
+/* ---------- heal 2: a bot turn that throws is ended for the bot; three failures in a row and the turn is skipped by force ---------- */
+{const b0=botLoop;botLoop=function(tok){try{b0(tok);GUARD.botFail=0}catch(e){GUARD.botFail++;guardLog('bot',e.message,e.stack);if(!G||G.over||tok!==G.tok)return;
+  try{for(const u of G.units)if(u.owner===G.cur&&u.kind!=='wall'){u.moved=true;u.acted=true}G.amode=null;G.aim=null;endTurn();toast('A bot stumbled on an error; its turn was ended for it.',3500);return}catch(e2){guardLog('bot-end',e2.message,e2.stack)}
+  if(GUARD.botFail<4){setTimeout(()=>botLoop(tok),1500);return}
+  try{const n=G.players.length;let k=0;do{G.cur=(G.cur+1)%n;k++}while(k<n&&!(G.players[G.cur].alive!==false));G.ap=0;refresh();toast('The game skipped a stuck turn. Save the crash report from the home page later, please.',6000)}catch(e3){guardLog('bot-skip',e3.message,e3.stack)}}}}
+
+/* ---------- heal 3: a human action that throws is taken back from its undo snapshot; the player can go on ---------- */
+for(const nm of ['doMove','attack','useAbility','useUlt','castAt','clickCell']){const f=window[nm];if(typeof f!=='function')continue;
+  window[nm]=function(){const human=typeof isHumanTurn==='function'&&isHumanTurn()&&!SIM;const n=UNDO.stack.length,tag=UNDO.tag;if(human&&nm!=='clickCell')guardAct(nm,arguments);
+    try{return f.apply(this,arguments)}catch(e){if(SIM)throw e;guardLog('act:'+nm,e.message,e.stack);
+      try{if(human&&((UNDO.tag===tag&&UNDO.stack.length>n)||(UNDO.tag!==tag&&UNDO.stack.length>=1))){/* the snapshot pushed for this action (a new turn starts a fresh stack) */const s=JSON.parse(UNDO.stack.pop());const fxSeq=G.fxSeq;G=s;G.fxSeq=Math.max(G.fxSeq||0,fxSeq||0);computeHolder()}G.amode=null;G.aim=null;fxs=[];refresh()}catch(x){}
+      toast('That action hit an error and was taken back. You can carry on.',4000)}}}
+{const e0=$('#endBtn').onclick;$('#endBtn').onclick=function(ev){if(typeof isHumanTurn==='function'&&isHumanTurn())guardAct('endTurn',[]);try{return e0.call(this,ev)}catch(e){guardLog('act:endTurn',e.message,e.stack);
+  try{for(const u of G.units)if(u.owner===G.cur&&u.kind!=='wall'){u.moved=true;u.acted=true}G.amode=null;G.aim=null;endTurn()}catch(e2){guardLog('end-retry',e2.message,e2.stack);toast('End turn hit an error twice. Try once more, or use Undo.',4000);return}
+  toast('End turn hit an error; the turn was closed anyway.',3500)}}}
+
 </script>
 <script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
 (function(){
