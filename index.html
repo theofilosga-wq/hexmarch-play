@@ -578,6 +578,13 @@ body.focus .turnbar #apBox>*{flex:0 0 auto}/* the reserve strip's buttons keep t
 @keyframes sumglow{0%,100%{box-shadow:0 0 0 1px rgba(255,215,102,.35),0 0 4px rgba(255,215,102,.15);border-color:rgba(255,215,102,.45)}50%{box-shadow:0 0 0 2px rgba(255,215,102,.95),0 0 16px 3px rgba(255,215,102,.6);border-color:#ffd766}}
 .abtn.sumglow{animation:sumglow 1.1s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.abtn.sumglow{animation:none;box-shadow:0 0 0 2px #ffd766}}
+/* v122 the opening choice */
+.modal.opening{max-width:720px}.modal.opening h3{margin:12px 0 6px;font-size:15px}
+.op-tal,.op-units{display:flex;flex-wrap:wrap;gap:8px}.op-tal .abtn{flex:1 1 200px;text-align:left}.op-units .abtn{flex:0 1 auto;min-width:0}
+.op-units .abtn[aria-disabled="true"]{opacity:.45}
+
+/* v122: modals sit above the announcement feed */
+.overlay{z-index:60}
 
 </style>
 
@@ -2004,6 +2011,7 @@ function makeUnit(p,d){
     mov:d.mov,mt:d.mt,at:d.at,aoe:d.aoe||null,rng:d.rng,rmin:d.rmin||(d.at==='lob'?2:1),size:d.size||F.size||1,dir:0,q:0,r:0,moved:false,acted:false,cd:0,mom:false,rage:!!d.rage,
     stars:0,st:{chill:0,frozen:0,fimm:0,emp:0,shield:0,curses:{}},ability:d.ab||null,ability2:d.book?null:(d.ab2||null),cd2:0,book:d.book?d.book.slice():null,trait:d.trait||null,trait2:d.trait2||null,home:p.home,wpn:d.wpn||null,wpnHome:d.wpn||null,el:d.el||null,mach:d.mach||null};
   if(G&&G.realm)u.hp=u.maxhp=Math.round(u.hp*(REALM.hpBy[p.fac]||REALM.hpMul));
+  if(G&&RULES.SHAMANS&&p.fac==='mage'&&d.el&&!d.leader&&p.evo&&p.evo[d.el]&&ELEMENTALS[d.el]){const D=ELEMENTALS[d.el];Object.assign(u,{name:D.name,icon:D.icon,hp:D.hp,maxhp:D.hp,atk:D.atk,def:D.def,mov:D.mov,mt:D.mt,at:D.at,rng:D.rng,rmin:1,book:D.book.slice(),ability:D.book[0],trait:D.trait,elemental:1,cd:0});u.el=d.el;if(talent(p,'ascension')&&typeof surgeOf==='function')surgeOf(u,d.el)}/* v122 (owner): once an element has ascended, its shamans arrive as Elementals */
   if(d.parts)u.parts=d.parts;if(G&&G.realm&&p.sb&&p.sb.hp){u.hp+=p.sb.hp;u.maxhp+=p.sb.hp}/* v111: Ooze parts; Syndicate bounty max HP for later arrivals */// v74 the Realm: every unit has twice the HP (no AP: every unit acts every turn)
   return u;
 }
@@ -4750,7 +4758,7 @@ function realmGoalText(m){if(m.spawnW)return {todo:`kill this wave-${m.spawnW} R
   if(m.god)return {todo:`the Old God serves the King: within 3 of him it heals him ${REALM.godHeal} each turn, and every ${REALM.godEvery} rounds it roars at his enemies within 3 for ${REALM.godRoar} ignoring DEF.`,get:'2 points for the killing blow. It never returns.'};if(m.monster==='wanderer')return {todo:`land the killing blow on the Wanderer (${m.maxhp} HP). It roams 3 hexes a round and strikes back at the last unit that hit it.`,get:`${REALM.wanderPts} points and +${REALM.charge.w} Ultimate charge.`};const R=(G.rooms||[]).find(r=>r.id===m.room);const M=REALM_MON[m.monster];if(!M)return null;
   const hits=m.tier>=2?'At each round start it strikes every unit next to it, and the last unit that hit it if that unit is within 3.':m.atk?'At each round start it strikes the last unit that hit it, if that unit is within 2.':'It never strikes back.';
   const back=` Every ${REALM.dmgCharge} damage your side deals to it earns +1 Ultimate charge, whoever lands the last hit.`,site=' The camp becomes your spawn site: you may call units next to it (it stays yours until an enemy unit stands on it).';
-  const get=m.monster==='brute'?`the unit that lands the killing blow gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good (choose who strikes last), +${REALM.charge[1]} Ultimate charge.${site}`
+  const get=m.monster==='brute'?`the unit that lands the killing blow gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good (choose who strikes last), +${REALM.charge[1]} Ultimate charge.${site} It also becomes your WATCH FIRE: at the start of your turn every unit of yours within ${REALM.watchR||3} hexes of it heals ${REALM.watchHeal||2}.`
     :m.monster==='warden'?`every unit of your army heals ${REALM.springHeal}, +${REALM.charge[2]} Ultimate charge.${site}`
     :m.monster==='ogre'?`the unit that lands the killing blow gains +${REALM.ogreAtk} ATK for good, +${REALM.charge[2]} Ultimate charge.${site}`
     :m.monster==='drake'?`${M.pts} points, +${REALM.charge[3]} Ultimate charge, and your strongest fallen unit returns to your base (if none has fallen, every unit of yours gains +3 max HP).`
@@ -5579,6 +5587,28 @@ function slimeFlask(u,A,q,r){for(const t of areaUnits(u,A,shapeCells(u,'acidflas
   const p=G.players[u.owner];if(slimeParts(p.id)<slimeCap(p.id)){const c=nearFree(q,r,occ(),1);if(c){slimeDrop(p,c[0],c[1],1);if(!SIM)nTrk('ooze',u.name,'Droplets spawned',e=>e.uses++)}}}
 /* v115 (owner 22 Oct 2026: 'do that and I will test it tomorrow'): the slime casters ARE The Ooze now, with the stat line of docs/TEMPO_STUDY.md. */
 RULES.SLIME=1;slimeOn({drop:{hp:6,atk:2},spawnRest:1,cap:10,spawnPrice:2,killHeal:3});
+
+/* v122 THE OPENING CHOICE (owner 23 Oct 2026: "choose which units spawn along with the Leader, and the Leader ability, as the first thing each player decides").
+   realmOpening(p,talentKey,names): before its first action on the Realm a side may pick its Leader talent and which units start beside the Leader;
+   the units placed by default go back to the reserve and the chosen ones take their place in the base. */
+function realmStartN(p){return REALM.startBy[p.fac]!=null?REALM.startBy[p.fac]:REALM.start}
+function realmOpening(p,tk,names){if(!G.realm||!p||p.opened)return false;p.opened=1;
+  if(tk&&(TALENTS[p.fac]||[]).some(t=>t.k===tk))p.talent=tk;
+  const n=realmStartN(p);names=(names||[]).slice(0,n);if(names.length!==n)return true;
+  const starters=G.units.filter(u=>u.owner===p.id&&u.kind!=='wall'&&!u.leader&&!u.summon&&!u.moved&&!u.acted);
+  const pool=p.reserve.concat(starters.map(u=>u.name));for(const nm of names){const i=pool.indexOf(nm);if(i<0)return true;pool.splice(i,1)}// every pick must exist
+  for(const u of starters){const i=G.units.indexOf(u);if(i>=0)G.units.splice(i,1)}
+  p.reserve=pool;let placed=0;for(const nm of names){const d=FAC[p.fac].units.find(x=>x.name===nm);if(!d)continue;const u=makeUnit(p,d);if(realmPlace(p,u)){G.units.push(u);placed++;if(!SIM)tStat(u)}else p.reserve.push(nm)}
+  p.longhand=talent(p,'longhand');if(!SIM)addLog(p.id,`${FAC[p.fac].name} open with ${names.join(' and ')}${p.talent?` and the ${(TALENTS[p.fac].find(t=>t.k===p.talent)||{}).name} talent`:''}.`);return true}
+
+/* v122 WATCH FIRE (owner: "watch fire is an awesome idea"): a home camp (Valley camp) that a side holds is a beacon: at the start of that side's turn every unit
+   of it within REALM.watchR hexes heals REALM.watchHeal. An enemy unit standing on it takes it over (as with every spawn site). */
+REALM.watchR=3;REALM.watchHeal=2;
+function watchFires(p){if(!G.realm||!G.rooms)return [];return G.rooms.filter(R=>R.type==='t1'&&R.state!=='active'&&flagOwner(R.c[0],R.c[1])===p.id).map(R=>R.c)}
+function watchFireTick(p){const fires=watchFires(p);if(!fires.length)return;let n=0;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Watch fire';
+  for(const u of G.units){if(u.owner!==p.id||u.kind==='wall'||u.statue||u.egg||!alive(u)||u.hp>=u.maxhp)continue;if(fires.some(([q,r])=>distUC(u,q,r)<=REALM.watchR)){const h=healUnit(u,REALM.watchHeal,'#ffb347','Watch fire');if(h)n++}}
+  [CUR_SRC,CUR_TAG,CUR_NAME]=o;if(n&&!SIM&&trk()){const e=tFx(p.fac,'','Watch fire (units healed)');if(e)e.uses+=n}}
+{const nts0=newTurnStart;newTurnStart=function(p){nts0(p);if(G.realm)watchFireTick(p)}}
 
 const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
@@ -8310,6 +8340,7 @@ HOOKS.turn=()=>{
   const p=P(G.cur);
   if(isHumanTurn()&&CAM.follow)faceHome(p.id);
   if(isHumanTurn()){const pid=G.cur;setTimeout(()=>{if(G&&G.cur===pid&&isHumanTurn())frameArmy(pid)},120);recapShow(pid)}
+  if(isHumanTurn()&&typeof openingShow==='function'){const pid=G.cur;setTimeout(()=>{try{openingShow(pid)}catch(e){}},200)}/* v122 the opening choice */
   setTimeout(()=>{if(G&&screen==='game')camTurnStart()},130);
   netPush();
   if(p.ctrl==='bot'){if(netRunsBots()){const t=G.tok;setTimeout(()=>botLoop(t),netOnline()?600:350)}}
@@ -8735,7 +8766,7 @@ function statusChips(u,long){const L=unitStatuses(u);if(!L.length)return '';
 // v74 the Realm: no AP. The AP box shows the reserve instead: one button per unit type you can call into your base this turn.
 function REALM_HINT(){return `Four armies arrive through their portals in the corners. At once the Rift Beast falls on the city in the middle, the land cracks into wasteland and four Crown Stones are flung onto the roads. No AP: every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn; the fallen are gone for good. Clear camps for buffs and heals, carry the stones, hunt the Beast's spawns, and kill the Beast to be crowned King on the Throne. Points come from the Throne, enemy Leaders and the King, the Elder Drakes, the late spawn waves and the Beast. First to ${REALM.target} wins.`}
 function realmBar(){const pp=P(G.cur),box=$('#apBox');if(!box||!pp)return;const can=isHumanTurn()&&realmCanSummon(pp),res=pp.reserve||[];
-  const hpOf=d=>Math.round((d.hp||0)*REALM.hpMul),names=[...new Set(res)],btn=n=>{const d=FAC[pp.fac].units.find(x=>x.name===n)||{};const c=res.filter(x=>x===n).length;return `<button class="abtn sumglow" data-sum="${n}" style="padding:4px 9px;margin:2px;min-width:0" title="${hpOf(d)} HP, ${d.atk} ATK, ${d.def} DEF">${n}${c>1?' ×'+c:''}<small>${hpOf(d)} HP · ${d.atk} ATK</small></button>`};
+  const hpOf=d=>Math.round((d.hp||0)*REALM.hpMul),names=[...new Set(res)],btn=n=>{const d=FAC[pp.fac].units.find(x=>x.name===n)||{};const c=res.filter(x=>x===n).length;return `<button class="abtn sumglow" data-sum="${n}" style="padding:4px 9px;margin:2px;min-width:0" title="${hpOf(d)} HP, ${d.atk} ATK, ${d.def} DEF">${n}${c>1?' ×'+c:''}${pp.fac==='mage'&&d.el&&pp.evo&&pp.evo[d.el]&&typeof ELEMENTALS!=='undefined'&&ELEMENTALS[d.el]?' → '+ELEMENTALS[d.el].name:''}<small>${hpOf(d)} HP · ${d.atk} ATK</small></button>`};
   const scrapN=pp.fac==='gnomes'?`<span class="aplabel">Scrap: ${pp.scrap||0}</span>`:'';
   box.innerHTML=scrapN+(res.length?(can?`<span class="aplabel"><b>Call one unit to your base:</b></span>${names.map(btn).join('')}`:`<span class="aplabel">${pp.sumDone?'<b>Unit called this turn.</b> ':''}Reserve: ${res.length} still to come</span>`):`<span class="aplabel">Every unit has been called</span>`);
   const sites=realmSites(pp).filter(s=>realmSpots(pp,s).length);
@@ -10357,6 +10388,26 @@ function coverDraw(now){if(!G)return;const R=hexPx()*0.78;for(const u of G.units
   for(const [q,r] of cells(u)){const [x,y]=vPos(q,r,0);ctx.save();ctx.translate(x,y);ctx.scale(1,VIEW==='3d'?0.55:0.8);const g=ctx.createRadialGradient(0,0,R*0.1,0,0,R);g.addColorStop(0,'rgba(10,40,16,0.32)');g.addColorStop(1,'rgba(10,40,16,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.fill();ctx.restore()}
   const [hx,hy]=uxHead(u);const fs=Math.max(9,hexPx()*0.28);ctx.save();ctx.font=`${fs}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.globalAlpha=0.95;ctx.fillText('🌲',hx+fs*1.6,hy-fs*0.2);ctx.restore()}}
 {const ud1=uxDraw;uxDraw=function(now){ud1(now);try{coverDraw(now)}catch(e){}}}
+/* v122 THE OPENING CHOICE: on a side's first turn on the Realm (before it acts) the player picks the Leader talent and the units that start beside the Leader. */
+function openingShow(pid){if(!G||!G.realm||G.over||G.round!==1)return;const p=G.players[pid];if(!p||p.opened||p.ctrl!=='human'||!isHumanTurn()||G.cur!==pid)return;
+  if(window.FALL_HOLD&&Date.now()<window.FALL_HOLD){setTimeout(()=>openingShow(pid),500);return}/* after the city and the Fall */
+  if(G.units.some(u=>u.owner===pid&&(u.moved||u.acted))||p.sumDone){p.opened=1;return}/* already playing: keep what is on the board */
+  const F=FAC[p.fac],n=realmStartN(p),starters=G.units.filter(u=>u.owner===pid&&u.kind!=='wall'&&!u.leader&&!u.summon);const L=G.units.find(u=>u.owner===pid&&u.leader);
+  const avail={};for(const nm of p.reserve.concat(starters.map(u=>u.name)))avail[nm]=(avail[nm]||0)+1;
+  let pick=starters.map(u=>u.name).slice(0,n),tk=p.talent||(TALENTS[p.fac]&&TALENTS[p.fac][0].k);
+  const o=$('#overlay');const hp=d=>Math.round(d.hp*(REALM.hpBy[p.fac]||REALM.hpMul));
+  const draw=()=>{const used={};for(const nm of pick)used[nm]=(used[nm]||0)+1;
+    o.innerHTML=`<div class="modal opening"><div class="label">Your opening · ${esc0(F.name)}</div><h2>Who marches out with the ${esc0(L?L.name:'Leader')}?</h2>
+    <p class="hint">Pick the Leader's talent and ${n===1?'the unit':`${n} units`} that start in your base. Everyone else waits in the reserve: you call one a turn.</p>
+    ${TALENTS[p.fac]?`<h3>Leader talent</h3><div class="op-tal">${TALENTS[p.fac].map(t=>`<button class="abtn ${t.k===tk?'go':''}" data-tk="${t.k}" type="button">♚ ${esc0(t.name)}<small>${esc0(t.text)}</small></button>`).join('')}</div>`:''}
+    ${n>0?`<h3>Starting units <span class="hint">(${pick.length} of ${n})</span></h3><div class="op-units">${Object.keys(avail).map(nm=>{const d=F.units.find(x=>x.name===nm)||{};const k=used[nm]||0,left=avail[nm]-k;
+      return `<button class="abtn ${k?'go':''}" data-u="${esc0(nm)}" type="button" ${!k&&pick.length>=n?'aria-disabled="true"':''}>${esc0(nm)}${k?` ×${k}`:''}<small>${hp(d)} HP · ${d.atk} ATK${d.ab&&ABIL[d.ab]?' · '+esc0(ABIL[d.ab].name):''}${left<=0&&!k?'':''}</small></button>`}).join('')}</div>`:''}
+    <div class="row" style="margin-top:14px"><button class="btn primary" id="opGo" type="button" ${pick.length===n?'':'disabled'}>March out</button><span class="hint">${pick.length===n?'':'Tap a unit to add it; tap a chosen one to take it out.'}</span></div></div>`;o.hidden=false;
+    o.querySelectorAll('[data-tk]').forEach(b=>b.onclick=()=>{tk=b.dataset.tk;draw()});
+    o.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{const nm=b.dataset.u;const k=pick.filter(x=>x===nm).length;if(k&&(pick.length>=n||k>=avail[nm])){pick.splice(pick.lastIndexOf(nm),1)}else if(pick.length<n&&k<avail[nm])pick.push(nm);else if(k)pick.splice(pick.lastIndexOf(nm),1);draw()});
+    o.querySelector('#opGo').onclick=()=>{if(pick.length!==n)return;try{pushUndo&&0}catch(e){}realmOpening(p,tk,pick);o.hidden=true;refresh();try{netPush()}catch(e){};try{frameArmy(pid)}catch(e){}}};
+  draw()}
+function esc0(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
 
 /* v117 ACTION CAMERA, stage 1 (owner 23 Oct 2026: "watch attacks and abilities happen, with a camera that follows the attack or the projectile").
    1. On EVERY turn (yours too) an attack, ability or death that happens off screen pulls the camera there; a long shot (5+ hexes) is followed from shooter to target.
