@@ -2735,6 +2735,7 @@ function hurt(t,n,col,tick){
   const hpB=t.hp;
   if(t.beast)beastHurt(t,n,tick,hpB);
   t.hp=r2(t.hp-n);fx(t,'−'+n,col||'#ff6161');
+  if(G.realm&&t.monster&&t.hp>0&&!t.enraged&&REALM.phase2[t.monster]&&t.hp*2<=t.maxhp)realmEnrage(t);// v117 two-phase camps
   if(hostile&&t.kind!=='wall'&&hasTrait(t,'bloodbond')&&G.players[t.owner]){const eff=Math.min(n,Math.max(0,hpB));const L=G.units.find(v=>v.owner===t.owner&&v.leader&&v.kind!=='wall'&&v!==t&&alive(v));if(L&&eff>=2){const h=Math.floor(eff/2);const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=t;CUR_TAG='Abil';CUR_NAME='Blood Bond (trait)';healUnit(L,h,'#e8e23a','Blood Bond (trait)',t.id);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[L.q,L.r]],col:'#e8e23a'})}}// v77 (owner): the Knight's pain feeds the Lich King
   if(hostile&&CUR_SRC&&CUR_SRC.kind!=='wall'&&CUR_SRC.name==='Archdemon'&&t.kind!=='wall')t.demonHit=CUR_SRC.owner;// v75: the Archdemon remembers whom it wounded
   // v50 Frost Hold: a hit on a frozen enemy thaws it (it was shattered for double); any other hit chills it and leaves a frost mark (3 marks freeze)
@@ -4438,7 +4439,16 @@ function storySpawns(){const b=storyBeast(),K=kingOf(),col='#b06bff';
     const x=(G.loot||[]).find(l=>l.id===m.spawnStone)||null,carry=!!(x&&x.carrier===m.id);let goal=null,prey=null;
     if(b&&carry)goal=ringOf(b,1);
     else if(b&&x&&x.carrier==null)goal=new Set([key(x.q,x.r)]);
-    else{const c=b&&x&&x.carrier!=null?byId(x.carrier):null;prey=c&&storyLive(c)&&!c.king?c:G.units.filter(v=>storyLive(v)&&!v.king&&!fear(v.q,v.r)).sort((u,v)=>distUU(m,u)-distUU(m,v)||u.id-v.id)[0]||null;if(prey)goal=ringOf(prey,1)}
+    else{const c=b&&x&&x.carrier!=null?byId(x.carrier):null;
+      if(c&&storyLive(c)&&!c.king)prey=c;
+      else{/* v117 (owner): a spawn with no stone to fetch ROAMS; a unit that comes within 3 hexes draws it, and it hunts that unit until it dies or gets more than 8 away */
+        let a=m.aggro!=null?byId(m.aggro):null;if(a&&!(storyLive(a)&&!a.king&&distUU(m,a)<=8&&!fear(a.q,a.r)))a=null;
+        if(!a)a=G.units.filter(v=>storyLive(v)&&!v.king&&distUU(m,v)<=3&&!fear(v.q,v.r)).sort((u,v)=>distUU(m,u)-distUU(m,v)||u.id-v.id)[0]||null;
+        if(a&&m.aggro!==a.id&&!SIM){fx(m,'hunts!','#b06bff');addLog(a.owner,`A Rift Spawn catches the scent of the ${a.name} and hunts it.`)}
+        m.aggro=a?a.id:null;prey=a;
+        if(!prey){if(!m.roam||(m.q===m.roam[0]&&m.r===m.roam[1])||G.round-(m.roamR||0)>4){const h=(i)=>((m.id*73856093)^(G.round*19349663)^(i*83492791))>>>0;const cand=allCells().filter(([q,r])=>passable(q,r)&&!unitAt(q,r)&&hd(q,r,m.q,m.r)>=4&&hd(q,r,m.q,m.r)<=8&&!fear(q,r)&&hd(q,r,0,0)>G.heartR+2);
+            m.roam=cand.length?cand[h(cand.length)%cand.length]:null;m.roamR=G.round}if(m.roam)goal=new Set([key(m.roam[0],m.roam[1])])}}
+      if(prey)goal=ringOf(prey,1)}
     const reach=m.spawnW===3?3:1;if(!(prey&&distUU(m,prey)<=reach&&!carry))storyWalk(m,goal||new Set(),m.mov||3,fear);
     if(b&&carry&&distUU(b,m)<=1){G.loot.splice(G.loot.indexOf(x),1);G.eaten=(G.eaten||0)+1;b.maxhp+=REALM.stoneHp;b.hp=Math.min(b.maxhp,b.hp+REALM.stoneHp);G.units.splice(G.units.indexOf(m),1);
       if(!SIM){addLog(null,`A spawn brings a Crown Stone back: the Rift Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP; ${G.eaten} eaten).`);vfx({k:'buff',at:[0,0],col,cam:1});announce({k:'note',col,t:'The Beast swallows a Crown Stone',s:`+1 damage on all its attacks and +${REALM.stoneHp} HP. Its belly now holds ${1+G.eaten} stones, and they all spill out for its killer.`});const O=tObj();if(O&&O.story)O.story.eaten++}G.belly=(G.belly||0)+1;continue}
@@ -4518,14 +4528,14 @@ function kingScore(p){
    Points: last hits (an enemy unit 1, a Leader 3, camps by tier) and the King on the Throne (1 a turn); first to REALM.target wins.
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
-const REALM={HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:2,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,suitHp:12,
+const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:2,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:0},
   warden:{name:'Spring Warden',icon:'golem',hp:20,atk:4,def:0,tier:2,pts:0},
   ogre:{name:'Ogre Warlord',icon:'golem',hp:24,atk:5,def:0,tier:2,pts:0},
-  drake:{name:'Elder Drake',icon:'drake',hp:36,atk:6,def:0,tier:3,pts:3},
+  drake:{name:'Elder Drake',icon:'drake',hp:30,atk:4,def:0,tier:3,pts:3},
   spawn1:{name:'Rift Spawn',icon:'skull',hp:10,atk:2,def:0,mov:3,tier:'s',pts:0},spawn2:{name:'Rift Spawn',icon:'skull',hp:16,atk:3,def:0,mov:3,tier:'s',pts:0},
   spawn3:{name:'Rift Spawn',icon:'skull',hp:24,atk:4,def:1,mov:3,tier:'s',pts:1},spawn4:{name:'Rift Spawn',icon:'skull',hp:32,atk:5,def:1,mov:4,tier:'s',pts:2},
   oldgod:{name:'Old God',icon:'crown',hp:30,atk:0,def:1,mov:3,tier:'g',pts:2},/* v98 story v2 *//* v96 (owner): camps are quick to clear; the real fights are army against army */
@@ -4680,7 +4690,7 @@ function realmSlain(t,R,k){
   const M=t.monster==='wanderer'?{pts:REALM.wanderPts,tier:'w'}:REALM_MON[t.monster]||{pts:0};if(!k||!G.players[k.owner]){addLog(null,`The ${t.name} falls, but no army lands the blow.`);return}
   const p=G.players[k.owner],F=FAC[p.fac];let what='';
   if(t.monster==='brute'){k.maxhp+=REALM.t1Hp;k.hp+=REALM.t1Hp;k.forgeAtk=(k.forgeAtk||0)+REALM.t1Atk;what=`the ${k.name} gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good, and the camp becomes a ${F.name} spawn site`}
-  else if(t.monster==='warden'){let n=0;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&v.hp<v.maxhp&&healUnit(v,REALM.springHeal,'#9ff0c0','Healing Spring'))n++;what=`every ${F.name} unit heals ${REALM.springHeal} (${n} healed), and the Spring becomes a ${F.name} spawn site`}
+  else if(t.monster==='warden'){if(t.halfBy!=null)what=`the Spring becomes a ${F.name} spawn site`;else{let n=0;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&v.hp<v.maxhp&&healUnit(v,REALM.springHeal,'#9ff0c0','Healing Spring'))n++;what=`every ${F.name} unit heals ${REALM.springHeal} (${n} healed), and the Spring becomes a ${F.name} spawn site`}}
   else if(t.monster==='wanderer'){addCharge(p.id,REALM.charge.w);what=`the Wanderer is slain`}
   else if(t.monster==='ogre'){k.forgeAtk=(k.forgeAtk||0)+REALM.ogreAtk;what=`the ${k.name} takes the Ogre's strength: +${REALM.ogreAtk} ATK for good, and the lair becomes a ${F.name} spawn site`}
   else if(t.monster==='drake'){const fl=(p.fallen||[]).map(n=>FAC[p.fac].units.find(d=>d.name===n)).filter(Boolean).sort((a,b)=>b.hp-a.hp)[0];
@@ -4696,9 +4706,18 @@ function realmSlain(t,R,k){
   announce({k:'note',col:F.color,t:R?`${F.name} clear the ${ROOM_NAMES[R.type]}`:`${F.name} slay the ${t.name}`,s:what.charAt(0).toUpperCase()+what.slice(1)+'.'});
   vfx({k:'buff',at:[k.q,k.r],col:F.color,cam:1});
   if(R&&(R.tier===1||R.tier===2)){G.outposts=G.outposts||[];if(!G.outposts.some(o=>o[0]===R.c[0]&&o[1]===R.c[1]))G.outposts.push([R.c[0],R.c[1]]);G.flagOwner=G.flagOwner||{};G.flagOwner[key(R.c[0],R.c[1])]=p.id}
-  {const ch=REALM.charge[M.tier];if(ch)addCharge(p.id,ch)}
+  {const ch=REALM.charge[M.tier]-(t.halfCh||0);if(ch>0)addCharge(p.id,ch)}
   if(trk()){const O=tObj();if(O){O.realm=O.realm||[];O.realm.push({m:t.monster,pid:p.id,round:G.round})}}
-  realmPts(p.id,M.pts,'camp'+M.tier,`${F.name} take the ${t.name}`)}
+  realmPts(p.id,Math.max(0,M.pts-(t.halfPts||0)),'camp'+M.tier,`${F.name} take the ${t.name}`)}
+/* v117 (owner: "camps have 2 phases like some Elden Ring bosses, and drop half the reward at half HP and the rest when they die"): at half HP a tier-2/3 camp ENRAGES
+   (REALM.phase2: +ATK, the Drake also strikes everyone next to it) and the side whose hit broke it takes half the reward at once: the Spring's heal and half its charge,
+   the Drake's first point and half its charge. The killing blow takes the rest (the spawn site; the Drake's other points and the fallen unit back). */
+function realmEnrage(t){const P2=REALM.phase2[t.monster];t.enraged=1;t.atk+=P2.atk||0;const k=CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]?CUR_SRC:null;
+  if(!SIM){fx(t,'enraged!','#ff5a3c');vfx({k:'buff',at:[t.q,t.r],col:'#ff5a3c',cam:1});addLog(null,`The ${t.name} is wounded and ENRAGED: it hits ${P2.atk} harder${P2.around?' and strikes everyone next to it':''}.`)}
+  if(!k)return;const p=G.players[k.owner],F=FAC[p.fac];t.halfBy=p.id;const M=REALM_MON[t.monster]||{};const tier=M.tier;const ch=Math.floor((REALM.charge[tier]||0)/2);t.halfCh=ch;if(ch)addCharge(p.id,ch);let what='';
+  if(t.monster==='warden'){let n=0;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&v.hp<v.maxhp&&healUnit(v,REALM.springHeal,'#9ff0c0','Healing Spring'))n++;what=`every ${F.name} unit heals ${REALM.springHeal} (${n} healed)`}
+  else if(M.pts){const h=Math.floor(M.pts/2)||1;t.halfPts=h;realmPts(p.id,h,'camp'+tier,`${F.name} break the ${t.name}`);what=`${h} point${h>1?'s':''} now; ${M.pts-h} more for the killing blow`}
+  if(!SIM){addLog(p.id,`The ${k.name} breaks the ${t.name}: ${what}.`);announce({k:'note',col:F.color,t:`${F.name} break the ${t.name}`,s:`Half the reward: ${what}. It is enraged now; the killing blow takes the rest.`});if(trk()){const e=tFx(p.fac,k.name,'Camp broken at half HP ('+t.name+')');if(e)e.uses++}}}
 // Round start: camps that come back (Valley Camps and the Healing Spring) wake again.
 function realmRound(){if(!G.realm)return;
   for(const R of G.rooms||[]){if(R.state!=='down'||G.round<R.back)continue;const c=unitAt(R.c[0],R.c[1])?roomFree(R)[0]:R.c;if(!c)continue;
@@ -4706,7 +4725,7 @@ function realmRound(){if(!G.realm)return;
     addLog(null,`The ${ROOM_NAMES[R.type]} stirs again: a new ${m.name}.`);vfx({k:'buff',at:c,col:'#b9b3d6'})}}
 // A camp monster's strike at the round start (it never moves).
 function realmStrike(m){if(!m.atk){m.lastBy=null;return}const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME=m.name;
-  const hit=new Set();if(m.tier>=2&&!(STORY()&&m.monster==='drake'))for(const v of G.units)if(v.kind!=='wall'&&!v.statue&&distUU(m,v)===1)hit.add(v);
+  const hit=new Set();if(m.tier>=2&&(!(STORY()&&m.monster==='drake')||m.enraged))for(const v of G.units)if(v.kind!=='wall'&&!v.statue&&distUU(m,v)===1)hit.add(v);
   const a=m.lastBy!=null?byId(m.lastBy):null;m.lastBy=null;if(a&&alive(a)&&a.kind!=='wall'&&distUU(m,a)<=(m.tier>=2?3:2))hit.add(a);
   for(const v of hit){if(!alive(v))continue;const d=Math.max(1,m.atk-effDef(v));addLog(v.owner,`The ${m.name} strikes the ${v.name} for ${d}.`);vfx({k:'slash',from:[m.q,m.r],to:[v.q,v.r],col:m.monster==='drake'?'#ff7a1a':'#b9b3d6'});hurt(v,d,m.monster==='drake'?'#ff7a1a':'#b9b3d6')}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o}
@@ -4720,6 +4739,9 @@ function realmGoalText(m){if(m.spawnW)return {todo:`kill this wave-${m.spawnW} R
     :m.monster==='ogre'?`the unit that lands the killing blow gains +${REALM.ogreAtk} ATK for good, +${REALM.charge[2]} Ultimate charge.${site}`
     :m.monster==='drake'?`${M.pts} points, +${REALM.charge[3]} Ultimate charge, and your strongest fallen unit returns to your base (if none has fallen, every unit of yours gains +3 max HP).`
     :`the opener takes an Ancient Relic.`;
+  const P2=G&&G.realm&&REALM.phase2[m.monster];if(P2){const half=m.monster==='warden'?`every unit of your army heals ${REALM.springHeal} and +${Math.floor(REALM.charge[2]/2)} charge`:`${Math.floor(M.pts/2)||1} point and +${Math.floor(REALM.charge[3]/2)} charge`;
+    const rest=m.monster==='warden'?`the spawn site and the rest of the charge`:`the other ${M.pts-(Math.floor(M.pts/2)||1)} points, the rest of the charge and your strongest fallen unit back`;
+    return {todo:`two phases. Bring it to half HP (${Math.ceil(m.maxhp/2)}): it ENRAGES (+${P2.atk} ATK${P2.around?', strikes everyone next to it':''}) ${m.enraged?'(it is enraged now)':''}. Then land the killing blow. ${hits}${back}`,get:`HALF when your hit breaks it: ${half}. THE KILL: ${rest}.`}}
   return {todo:`land the killing blow on the ${m.name} (${m.maxhp} HP${m.def?', '+m.def+' DEF':''}). ${hits}${back}`,get}}
 // Bots: where a unit heads on the Realm when no fight is close.
 function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.machine)return null;
@@ -7027,7 +7049,7 @@ function pumpVFX(now){
   // Announcements (v24): each new one goes to the banner queue (ui.js annQueue), on this device and on every other device in an online game
   if(G.annLog)for(const e of G.annLog)if(e.id>annSeen){annSeen=e.id;if(typeof annQueue==='function')annQueue(e)}
   if(!G.fxLog)return;
-  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ev.k==='thefall'?FALL_WAIT:0)});motionCue(ev,now);
+  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ev.k==='thefall'?FALL_WAIT:0)});motionCue(ev,now+(window.ACAM_LAG||0));/* v117: figure motions run on the real clock, effects on the action camera's clock */
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
     if(ev.k==='thefall'&&typeof fitBoard==='function'){window.FALL_HOLD=Date.now()+FALL_WAIT+4400;window.FALL_LAND=Date.now()+FALL_WAIT+4200*0.38;{const rd=()=>{try{if(typeof GL!=='undefined'&&GL)GL.sig='';if(typeof refresh==='function')refresh()}catch(x){}};setTimeout(rd,30);setTimeout(rd,FALL_WAIT+4200*0.38+40)}try{if(typeof glModel==='function'&&typeof MODELS!=='undefined'&&MODELS['Rift Beast']){const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?f():f).catch(()=>{})}}catch(x){}try{fitBoard()}catch(x){}setTimeout(()=>{try{fitBoard()}catch(x){}},150);setTimeout(()=>{try{if(G&&typeof frameArmy==='function'){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human')||{}).id;if(me!=null)frameArmy(me)}}catch(x){}},FALL_WAIT+4500)}// v100: the whole board for the Fall, then back to your army
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
@@ -8807,10 +8829,10 @@ let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e
 let MENU_RESET=0;
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button>${VIEW==='3d'?`<button class="btn sm" data-m="topv">${TOPVIEW?'🎯 Top view when a unit is selected: on':'🎯 Top view when a unit is selected: off'}</button>`:''}<button class="btn sm" data-m="ring">${UX.ring?'🔘 Buttons beside the unit: on':'🔘 Buttons beside the unit: off'}</button><button class="btn sm" data-m="kb">⌨ Keyboard keys</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button>${VIEW==='3d'?`<button class="btn sm" data-m="topv">${TOPVIEW?'🎯 Top view when a unit is selected: on':'🎯 Top view when a unit is selected: off'}</button>`:''}<button class="btn sm" data-m="ring">${UX.ring?'🔘 Buttons beside the unit: on':'🔘 Buttons beside the unit: off'}</button><button class="btn sm" data-m="kb">⌨ Keyboard keys</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="acam">${typeof ACAM!=='undefined'&&ACAM.on?'🎬 Action camera on':'🎬 Action camera off'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
-    if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='acam'&&typeof ACAM!=='undefined'){ACAM.on=!ACAM.on;try{localStorage.setItem('hexmarch.actioncam',ACAM.on?'on':'off')}catch(e){}toast(ACAM.on?'Action camera on: the view follows attacks, with slow motion on kills.':'Action camera off.',2600)}if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
@@ -10252,6 +10274,7 @@ function uxDraw(now){if(!G)return;try{uxDragDraw();uxAimTags();kbDraw(now);uxRin
 {const r0=refresh;refresh=function(){r0.apply(this,arguments);try{uxRingBuild()}catch(e){}}}
 {const a0=aimAbil;aimAbil=function(u,k){a0(u,k);try{uxAutoAim(u,k);refresh()}catch(e){}}}
 
+
 /* v111 THE THREE NEW ARMIES on screen: Chrono Syndicate (contracts, stasis fields, holograms), Riftwalkers (portals and the Rift Shot path), The Ooze (blobs).
    Loaded after ui.js, uxkit.js: it chains uxDraw (both board views), adds looks and the home-page text. Rules live in engine.js. */
 FAC.ooze.color=ARMY_COLORS.ooze='#6a5cff';
@@ -10308,6 +10331,30 @@ if(typeof ANN_SHORT!=='undefined')Object.assign(ANN_SHORT,{chrono:'Syndicate',oo
   <li><b>Swallowed</b>: a unit inside a blob takes 2 at the start of each Ooze turn and cannot act; 6 damage to the blob (8 for Devour) spits it out; if it dies inside, the blob grows a part.</li></ul>`}}
 // v116 (owner: "it looks like the old version before the new figure steps in"): fetch the city wall and the Beast models while the home page is open
 setTimeout(()=>{try{if(typeof THREE==='undefined'||typeof glModel!=='function')return;glCityWallLoad();const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?'models/camps_rift-beast-city.glb':f).catch(()=>{});for(const n of ['Valley Brute','Elder Drake','Spring Warden'])if(MODELS[n])glModel(MODELS[n].file).catch(()=>{})}catch(e){}},1500);
+
+/* v117 ACTION CAMERA, stage 1 (owner 23 Oct 2026: "watch attacks and abilities happen, with a camera that follows the attack or the projectile").
+   1. On EVERY turn (yours too) an attack, ability or death that happens off screen pulls the camera there; a long shot (5+ hexes) is followed from shooter to target.
+   2. Slow motion: a kill, a big hit or an Ultimate plays its effects at a third of the speed for a moment (the effects clock, not the rules: nothing waits but the eye).
+   3. The bots wait for the slow motion to end before their next step.
+   Switch: ☰ menu "Action camera", saved as hexmarch.actioncam. Later stages: a real 3D camera that dives toward the action, attack and cast poses, hit reactions. */
+const ACAM={on:true,seen:0,slowUntil:0,rate:1,lastReal:0,v:0};try{ACAM.on=localStorage.getItem('hexmarch.actioncam')!=='off'}catch(e){}
+const ACAM_KINDS=new Set(['slash','bolt','lob','ab','chain','death','ult','beastdown','rise']);
+function acamReduce(){return !!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
+// the effects clock: real time, slowed while a slow-motion moment runs
+function acamClock(now){if(!ACAM.lastReal){ACAM.lastReal=now;ACAM.v=now}const dt=now-ACAM.lastReal;ACAM.lastReal=now;const slow=ACAM.on&&now<ACAM.slowUntil&&!acamReduce();ACAM.v+=dt*(slow?0.33:1);window.ACAM_LAG=now-ACAM.v;return ACAM.v}
+function acamScan(){if(!G||!ACAM.on||screen!=='game'||G.phase)return;const evs=(G.fxLog||[]).filter(ev=>ev.id>ACAM.seen);if(!evs.length)return;ACAM.seen=Math.max(...evs.map(e=>e.id));
+  const pts=[];let slow=0;
+  for(const ev of evs){if(!ACAM_KINDS.has(ev.k))continue;for(const c of [ev.from,ev.to,ev.at])if(c&&c.length===2)pts.push(c);
+    if(ev.k==='death')slow=Math.max(slow,ev.leader||ev.big?1300:850);if(ev.k==='ult')slow=Math.max(slow,1200);if(ev.k==='beastdown'||ev.k==='rise')slow=Math.max(slow,1300)}
+  if(slow){const now=performance.now();ACAM.slowUntil=Math.max(ACAM.slowUntil,now+slow)}
+  if(!pts.length)return;
+  // a human player's own action: move only when it is off screen; everyone else's: the follow camera (camStep) already pans while it watches
+  const watching=typeof camWatching==='function'&&camWatching();if(watching)return;
+  if(CAMF&&CAMF.raf)return;try{camPanTo(pts,true)}catch(e){}}
+// hook the effects layer (both views call drawVFX from their draw loop)
+{const dv0=drawVFX;drawVFX=function(now){try{acamScan()}catch(e){}return dv0.call(this,acamClock(now))}}
+// the bots wait for a slow-motion moment to finish
+{const cs0=camStep;camStep=function(){const w=cs0.apply(this,arguments);const left=ACAM.on?Math.max(0,ACAM.slowUntil-performance.now()):0;return Math.max(w,left)}}
 
 </script>
 <script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
