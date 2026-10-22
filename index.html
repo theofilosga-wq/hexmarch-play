@@ -1833,7 +1833,7 @@ function phalanxGroup(u){if(!RULES.PHALANX2||!u||u.kind==='wall'||u.summon||u.ow
 // v73b readability: how many phalanx comrades would join u's strike on t right now (+1 each)
 /* v113 (owner 22 Oct 2026): Move as One worked out in one place, so the aim preview shows exactly where the whole army lands. Units of the block that already
    moved this turn are carried along with it (they get no move of their own back). Front units step first, every step; a unit that is blocked stays. */
-function blockPlan(u,d){const grp=phalanxGroup(u);const mover=grp.filter(v=>!v.st.frozen&&v.size!==2&&effMov(v)>0);if(!mover.length||d<0)return {grp,moves:[],steps:0};
+function blockPlan(u,d){const grp=phalanxGroup(u);const mover=grp.filter(v=>!v.st.frozen&&v.size!==2&&effMov(v)>0&&v.blockT!==G.tok);/* v117b: a unit rides one block move a turn at most */if(!mover.length||d<0)return {grp,moves:[],steps:0};
   const fresh=mover.filter(v=>!v.moved);const base=(fresh.length?fresh:mover);
   const full=G.realm?Math.max(1,Math.min(...base.map(v=>effMov(v)))-1+(grp.some(v=>v.leader||hasTrait(v,'captain'))?1:0)+(utal(u,'warchief')?1:0)):Math.max(1,Math.floor(Math.min(...base.map(v=>effMov(v)))/2));
   const face=blockFace(u),turn=face==null?0:Math.min((d-face+6)%6,(face-d+6)%6),shields=grp.some(v=>hasTrait(v,'shieldwall'));const cost=RULES.FORMATION&&shields?(turn<=1?0:turn-1):0;const steps=Math.max(1,full-cost);
@@ -3224,7 +3224,7 @@ function canAbil(u,k){
   {const c=newCan(u,k);if(c!==null)return c}// v111
   if(A.special==='build'&&!RULES.FORTRESS&&machineCount(u.owner)>=machineCap(u.owner))return false;// the workshop is full
   if(A.special==='deploy'&&!u.wpn)return false;
-  if(A.special==='blockmove')return !u.moved&&phalanxGroup(u).length>=2;/* v113: comrades that already moved are carried along */
+  if(A.special==='blockmove')return !u.moved&&u.blockT!==G.tok&&phalanxGroup(u).length>=2;/* v113: comrades that already moved are carried along */
   if(A.special==='build2')return isGnome(u)&&!u.walker&&!u.build;
   if(A.special==='phaselink')return !u.moved&&u.size!==2&&G.units.some(v=>v!==u&&v.kind!=='wall'&&v.owner===u.owner&&!v.summon&&v.size!==2);
   if(A.special==='blackhole')return aimCells(u,k).some(([q,r])=>passable(q,r)&&!unitAt(q,r)&&!(q===0&&r===0));
@@ -3536,7 +3536,7 @@ function useAbility(u,k,q,r,dest){
       for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v)||v.kind==='wall')continue;seen.add(v);if(tm(v.owner)===tm(u.owner))healUnit(v,3,'#3fa8ff');else{hurt(v,3,'#2bff5a');if(alive(v)){if(v.size!==2)v.st.anchor=1;if(!(v.q===q&&v.r===r))pushUnit(v,dirTo(q,r,v.q,v.r),1,u)}}}break}
     // ---- v71 the Phalanx ----
     case 'blockmove':{const d=aimDir(u,q,r);if(d<0)break;const P0=blockPlan(u,d);const moved=new Set();
-      for(const [v,a,b] of P0.moves){if(!SIM)setAnim(v);v.q=a;v.r=b;v.dir=d;moved.add(v)}for(const v of P0.grp)if(v.kind!=='wall'&&v.size!==2)v.dir=d;G.players[u.owner].face=d;if(P0.cost&&!SIM)addLog(u.owner,`The block turns ${P0.turn*60}°: the shields walk to the new front, ${P0.cost} hex${P0.cost>1?'es':''} lost.`);
+      for(const [v,a,b] of P0.moves){if(!SIM)setAnim(v);v.q=a;v.r=b;v.dir=d;moved.add(v)}for(const v of P0.grp)v.blockT=G.tok;for(const v of P0.grp)if(v.kind!=='wall'&&v.size!==2)v.dir=d;G.players[u.owner].face=d;if(P0.cost&&!SIM)addLog(u.owner,`The block turns ${P0.turn*60}°: the shields walk to the new front, ${P0.cost} hex${P0.cost>1?'es':''} lost.`);
       for(const v of P0.grp)v.moved=true;tSup('moved',moved.size);if(!SIM){addLog(u.owner,`The phalanx moves as one: ${moved.size} unit${moved.size===1?'':'s'} advance ${P0.steps} hex${P0.steps===1?'':'es'}.`);for(const v of moved)braceCheck(v)}break}
     case 'holdline':{G.players[u.owner].hold=1;if(!SIM){addLog(u.owner,'Hold the Line! The whole army stands as one phalanx until its next turn.');announce({k:'note',col:FAC.warband.color,t:'Hold the Line!',s:'The whole Warband stands as one phalanx until its next turn.'});for(const v of G.units)if(v.owner===u.owner&&v.kind!=='wall')fx(v,'hold!','#eef0f4')}break}
     case 'howl':{const vs=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&distUU(v,u)<=A.size);for(const v of vs)terrify(u,v);if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[u.q,u.r],cells:ringCells().filter(([a,b])=>hd(a,b,u.q,u.r)<=A.size),col:'#a24aff',cam:1});break}
