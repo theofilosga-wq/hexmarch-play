@@ -99,7 +99,10 @@ select{background:var(--ink);color:var(--text);border:1px solid var(--line);bord
 .boardbox{background:#0a0d12;border:1px solid var(--line);border-radius:12px;overflow:auto;touch-action:manipulation;max-height:calc(100vh - 190px)}
 @media (min-width:1000px){.boardbox{max-height:none}}
 @media (max-width:980px){.boardbox{max-height:none}}
-#board{display:block;margin:0 auto;cursor:pointer;touch-action:none}
+#board{display:block;margin:0;cursor:pointer;touch-action:none;position:absolute;left:0;top:0;z-index:1}
+/* v127 viewport renderer: #boardspace is the whole board's size (it gives the box its scroll extent), #boardview sticks to the visible part and holds the canvases, which are only as big as what is on screen */
+#boardspace{position:relative;margin:0 auto}
+#boardview{position:sticky;top:0;left:0;overflow:visible}
 .keyrow{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
 .keyrow span{display:inline-flex;align-items:center;gap:6px}
 .side{display:flex;flex-direction:column;gap:12px}
@@ -639,7 +642,7 @@ body.focus.fwide .ab-head h3,body.focus.fwide .uhead h3{font-size:20px}
         <div class="menupanel" id="menuPanel" hidden></div>
         <div id="doomBanner" class="doom" role="status" hidden></div>
         <div class="scorestrip" id="scoreStrip" aria-label="Score"></div>
-        <div class="boardbox" id="boardbox"><canvas id="board"></canvas></div>
+        <div class="boardbox" id="boardbox"><div id="boardspace"><div id="boardview"><canvas id="board"></canvas></div></div></div>
         <div class="dock" id="dock"><div class="actionbar" id="actionBar"></div><div class="unitstrip" id="unitStrip" aria-label="Your units"></div></div>
         <div class="keyrow" aria-label="Board key">
           <span><b style="color:var(--text)">Pinch, scroll or + to zoom, drag to pan, double-tap to centre.</b></span>
@@ -5651,9 +5654,7 @@ function layout3D(){
   CW=Math.ceil(2*Rw*CAM.S)+8+2*padX;CH=Math.ceil(CAM.Hmax)+8+2*padY;
   CAM.cx=CW/2;camCyFix();
   SZ=CAM.S;
-  const dpr=safeDpr();
-  cv.width=CW*dpr;cv.height=CH*dpr;cv.style.width=CW+'px';cv.style.height=CH+'px';
-  ctx.setTransform(dpr,0,0,dpr,0,0);
+  vpApply(safeDpr());
   if(typeof glLayout==='function')glLayout();
 }
 function faceHome(pid){const p=G.players[pid];if(!p||!p.home)return;const [hx,hz]=world(p.home[0],p.home[1]);CAM.azT=Math.atan2(hx,hz)}
@@ -5726,7 +5727,7 @@ function draw3D(now){
   CAM.tiltT=tiltWanted();tiltStep();
   const moving=angleStep();
   if(moving&&Math.abs(CAM.azT-CAM.az)<0.002)moving;
-  ctx.clearRect(0,0,CW,CH);
+  vpFrame();ctx.clearRect(0,0,CW,CH);
   // v35 real 3D: ground, terrain and miniatures come from the WebGL scene under this canvas (gl3d.js); this canvas keeps the overlays
   const GLON=glActive()&&glFrame();window.GLON_NOW=GLON;/* v82b: drawBeast3D reads it */if(GL.cv)GL.cv.hidden=!GLON;
   const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
@@ -5741,7 +5742,7 @@ function draw3D(now){
   const homes=new Map();for(const p of G.players)if(p.alive&&p.home)homes.set(key(p.home[0],p.home[1]),FAC[p.fac].color);
   const tiles=ringCells().map(([q,r])=>{const [x,z]=world(q,r);return {q,r,x,z,d:x*s+z*c}}).sort((a,b)=>a.d-b.d);
   for(const t of tiles){
-    const {q,r,x,z}=t,k=key(q,r);
+    const {q,r,x,z}=t,k=key(q,r);{const p0=proj(x,z,0);if(!vpSees(p0[0],p0[1],CAM.S*3))continue}/* v127c: off-screen tiles are skipped */
     if(G.voids[k]){const p=hexTop(x,z,0.98,-TILE_H);polyPath(p);ctx.fillStyle='#000';ctx.fill();ctx.strokeStyle='rgba(63,224,184,.35)';ctx.lineWidth=1;ctx.stroke();
       if(hl.area.has(k)){ctx.fillStyle='rgba(255,170,60,.25)';ctx.fill()}continue}
     if(G.traps&&G.traps[k]){// Void Trap: a black pit with a pulsing teal rim and the turns it stays open
@@ -6417,7 +6418,7 @@ function glInit(){
   try{
     const T=THREE;const c=document.createElement('canvas');c.id='board3d';c.setAttribute('aria-hidden','true');
     c.style.cssText='position:absolute;left:0;top:0;pointer-events:none;z-index:0';
-    const box=$('#boardbox');box.style.position='relative';box.insertBefore(c,cv);cv.style.position='relative';cv.style.zIndex='1';
+    const vw=$('#boardview')||$('#boardbox');vw.insertBefore(c,cv);/* v127: inside the sticky view, under the 2D canvas */
     const R=new T.WebGLRenderer({canvas:c,antialias:true,alpha:true,powerPreference:'high-performance'});
     /* v123: if the browser drops the 3D surface (too much graphics memory), fall back to the drawn tabletop at once and come back when it is restored */
     c.addEventListener('webglcontextlost',ev=>{ev.preventDefault();GL.lost=true;c.hidden=true;try{toast('The 3D view paused to save memory: the board is drawn flat until it comes back.',4000)}catch(x){}},false);
@@ -6434,14 +6435,14 @@ function glInit(){
   return GL.ok}
 // The tabletop projection as a matrix: screen x = cx + S(xc - zs), y = cy + S·cos(t)(xs + zc) - S·sin(t)·y; depth = nearness to the viewer.
 function glCamera(){
-  const T=THREE,c=Math.cos(CAM.az),s=Math.sin(CAM.az),ct=Math.cos(CAM.tilt),st=Math.sin(CAM.tilt),S=CAM.S,W=CW,H=CH,K=80;
+  const T=THREE,c=Math.cos(CAM.az),s=Math.sin(CAM.az),ct=Math.cos(CAM.tilt),st=Math.sin(CAM.tilt),S=CAM.S,W=VP.W||CW,H=VP.H||CH,cx=CAM.cx-VP.sx,cy=CAM.cy-VP.sy,K=80;/* v127: the viewport's size and scroll offset */
   const m=GL.cam.projectionMatrix;
-  m.set(2*S*c/W,0,-2*S*s/W,2*CAM.cx/W-1,
-        -2*S*ct*s/H,2*S*st/H,-2*S*ct*c/H,1-2*CAM.cy/H,
+  m.set(2*S*c/W,0,-2*S*s/W,2*cx/W-1,
+        -2*S*ct*s/H,2*S*st/H,-2*S*ct*c/H,1-2*cy/H,
         -st*s/K,-ct/K,-st*c/K,0,
         0,0,0,1);
   GL.cam.projectionMatrixInverse.copy(m).invert();GL.cam.matrixWorld.identity();GL.cam.matrixWorldInverse.identity()}
-function glLayout(){if(!glActive()||!glInit())return;const dpr=Math.max(0.3,Math.min(safeDpr(),1.5,Math.sqrt(5e6/(CW*CH)),4096/Math.max(CW,CH)));/* v123: a tighter budget for the 3D layer (it also carries depth and anti-aliasing) */GL.R.setPixelRatio(dpr);GL.R.setSize(CW,CH,false);GL.cv.style.width=CW+'px';GL.cv.style.height=CH+'px';GL.cv.style.left=cv.offsetLeft+'px';GL.cv.style.top=cv.offsetTop+'px'}
+function glLayout(){if(!glActive()||!glInit())return;const W=VP.W||CW,H=VP.H||CH;const dpr=Math.max(0.3,Math.min(safeDpr(),1.5,Math.sqrt(5e6/(W*H)),4096/Math.max(W,H)));/* v123: a tighter budget for the 3D layer (it also carries depth and anti-aliasing); v127: only the visible part */GL.R.setPixelRatio(dpr);GL.R.setSize(W,H,false);GL.cv.style.width=W+'px';GL.cv.style.height=H+'px';GL.cv.style.left='0px';GL.cv.style.top='0px'}
 
 /* ---------- shared geometry and material caches ---------- */
 const GLC={geo:{},mat:{}};
@@ -7139,6 +7140,8 @@ function burst(x,y,rad,col,alpha,fill){ctx.save();ctx.globalAlpha=alpha;ctx.begi
   if(fill){ctx.fillStyle=col;ctx.fill()}else{ctx.strokeStyle=col;ctx.lineWidth=Math.max(2,rad*0.12);ctx.stroke()}ctx.restore()}
 function sparks(x,y,n,rad,col,t,seed){ctx.save();ctx.fillStyle=col;for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+seed,d=rad*(0.3+t);ctx.globalAlpha=Math.max(0,1-t);ctx.beginPath();ctx.arc(x+Math.cos(a)*d,y+Math.sin(a)*d*0.8-t*rad*0.6,Math.max(1.2,rad*0.07*(1-t)),0,7);ctx.fill()}ctx.restore()}
 function hexFlash(q,r,col,alpha){const U=vUnit();if(VIEW==='3d'){polyPath(hexTop(...world(q,r),0.95,0.02))}else{const [x,y]=px(q,r);hexPath(x,y,SZ*0.95)}ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=col;ctx.fill();ctx.restore()}
+/* v127: screen-anchored banners: the visible part of the board (VP in ui.js), not the whole board, which may be scrolled away when zoomed in */
+function SW(){return (typeof VP!=='undefined'&&VP.on)?VP.W:CW}function SH(){return (typeof VP!=='undefined'&&VP.on)?VP.H:CH}function SX(f){return ((typeof VP!=='undefined'&&VP.on)?VP.sx:0)+SW()*(f==null?0.5:f)}function SY(f){return ((typeof VP!=='undefined'&&VP.on)?VP.sy:0)+SH()*(f==null?0.5:f)}
 function drawVFX(now){
   if(typeof baseDraw==='function')baseDraw();
   if(typeof elHexDraw==='function')elHexDraw();
@@ -7220,8 +7223,8 @@ function drawVFX(now){
           for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(x+(j-1)*U*0.3,y+j*U*0.1,Math.max(1.5,U*0.12*(1-t)),0,7);ctx.fill()}ctx.restore()}break}
       case 'ult':{dur=ev.team?2400:1900;const t=el/dur;if(el<30)shakeUntil=now+(ev.team?700:450);const k=t<0.12?t/0.12:Math.max(0,1-(t-0.12)/0.88);
         ctx.save();if(ev.team){const g=ctx.createLinearGradient(0,0,CW,CH);g.addColorStop(0,col);g.addColorStop(1,ev.col2||col);ctx.globalAlpha=0.34*k;ctx.fillStyle=g}else{ctx.globalAlpha=0.28*k;ctx.fillStyle=col}ctx.fillRect(0,0,CW,CH);
-        ctx.globalAlpha=0.6*k;ctx.strokeStyle='#ffffff';ctx.lineWidth=3;for(let i=0;i<3;i++){const rr=(t*1.4+i*0.22)%1;ctx.beginPath();ctx.arc(CW/2,CH/2,rr*Math.max(CW,CH)*0.7,0,7);ctx.stroke()}ctx.globalAlpha=k;ctx.font=`900 ${Math.max(22,Math.min(CW/10,64))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('⚡ '+ev.name,CW/2,CH*0.42-t*20);ctx.fillStyle=fl;ctx.fillText('⚡ '+ev.name,CW/2,CH*0.42-t*20);ctx.restore();break}
+        ctx.globalAlpha=0.6*k;ctx.strokeStyle='#ffffff';ctx.lineWidth=3;for(let i=0;i<3;i++){const rr=(t*1.4+i*0.22)%1;ctx.beginPath();ctx.arc(SX(),SY(),rr*Math.max(SW(),SH())*0.7,0,7);ctx.stroke()}ctx.globalAlpha=k;ctx.font=`900 ${Math.max(22,Math.min(SW()/10,64))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('⚡ '+ev.name,SX(),SY(0.42)-t*20);ctx.fillStyle=fl;ctx.fillText('⚡ '+ev.name,SX(),SY(0.42)-t*20);ctx.restore();break}
       case 'relic':{// the relic drops out of the sky onto its hex, then a ring of light spreads from where it landed (both views)
         dur=1700;const T=560;const rl=(G.relics||[]).find(x=>x.q===ev.at[0]&&x.r===ev.at[1]);const kind=rl?rl.kind:null;
         if(el<T){const k=el/T,e=k*k;const [x,y]=vPos(ev.at[0],ev.at[1],3.4*(1-e)+0.5),[gx,gy]=vPos(ev.at[0],ev.at[1],0);
@@ -7238,7 +7241,7 @@ function drawVFX(now){
         ctx.restore();
         if(t>0.25){const k=(t-0.25)/0.75;burst(x,y,U*(0.5+2.6*k),'#b9a2ff',Math.max(0,0.7-k));burst(x,y,U*(0.3+1.6*k),'#8a7a66',Math.max(0,0.8-k),true);sparks(x,y,16,U*1.6,'#d8cfc0',k,1.3)}
         break}
-      case 'reveal':{dur=1300;const t=el/dur;ctx.save();ctx.globalAlpha=Math.max(0,0.5*(1-t));ctx.fillStyle='#ffffff';ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=Math.max(0,1-t);ctx.font=`900 ${Math.max(22,Math.min(CW/9,60))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('To battle!',CW/2,CH*0.42);ctx.fillStyle='#ffd766';ctx.fillText('To battle!',CW/2,CH*0.42);ctx.restore();break}
+      case 'reveal':{dur=1300;const t=el/dur;ctx.save();ctx.globalAlpha=Math.max(0,0.5*(1-t));ctx.fillStyle='#ffffff';ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=Math.max(0,1-t);ctx.font=`900 ${Math.max(22,Math.min(SW()/9,60))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('To battle!',SX(),SY(0.42));ctx.fillStyle='#ffd766';ctx.fillText('To battle!',SX(),SY(0.42));ctx.restore();break}
       case 'well':{// Gravity Well pull: a teal streak from where each unit stood to where it was dragged, an arrowhead, and rings closing in on the centre
         dur=1100;const t=Math.min(1,el/dur),wc=ev.col||'#12d69a';const [cx,cy]=vPos(ev.at[0],ev.at[1],0.05);
         for(let k=0;k<3;k++){const tk=((t*1.4+k/3)%1);burst(cx,cy,U*2.6*(1-tk)+U*0.2,wc,Math.max(0,0.8*(1-t))*(tk),false)}
@@ -7249,7 +7252,7 @@ function drawVFX(now){
           ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle=wc;ctx.lineWidth=2;ctx.stroke();ctx.restore()}
         break}
       // Act 1 (v23): the wall falls (dust over the grey ring), the Wellspring rises or is claimed, a flag changes hands, the Rift Beast appears and dies.
-      case 'thefall':{if(el<0){/* v116 (owner): the city stands for a few seconds before the Beast falls */const k=Math.min(1,(el+FALL_WAIT)/900,-el/600);ctx.save();ctx.globalAlpha=Math.max(0,k);ctx.font=`900 ${Math.max(20,Math.min(CW/14,46))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('The Crown City',CW/2,CH*0.16);ctx.fillStyle='#ffe3a3';ctx.fillText('The Crown City',CW/2,CH*0.16);ctx.restore();dur=1;break}// v100 the opening scene: the Rift Beast drops out of a crack in the sky onto the city, the shockwave rolls out, then each army's portal tears open and the four stones glint on the roads
+      case 'thefall':{if(el<0){/* v116 (owner): the city stands for a few seconds before the Beast falls */const k=Math.min(1,(el+FALL_WAIT)/900,-el/600);ctx.save();ctx.globalAlpha=Math.max(0,k);ctx.font=`900 ${Math.max(20,Math.min(SW()/14,46))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';ctx.strokeText('The Crown City',SX(),SY(0.16));ctx.fillStyle='#ffe3a3';ctx.fillText('The Crown City',SX(),SY(0.16));ctx.restore();dur=1;break}// v100 the opening scene: the Rift Beast drops out of a crack in the sky onto the city, the shockwave rolls out, then each army's portal tears open and the four stones glint on the roads
         dur=4200;const t=el/dur;const [cx,cy]=vPos(0,0,0.4);ctx.save();
         if(!ev.qk){ev.qk=1;window.QUAKE={t0:Date.now()+dur*0.38,dur:2300}}/* v104: the field stays green until the Beast lands, then the quake wave turns it to wasteland */
         if(t>0.38&&!ev.snd){ev.snd=1;try{playSound('ult');setTimeout(()=>playSound('death'),350);setTimeout(()=>playSound('hit'),700)}catch(e){}}
@@ -7267,7 +7270,7 @@ function drawVFX(now){
             const rr=SZ*(0.6+k*1.6);const g=ctx.createRadialGradient(x,y,rr*0.15,x,y,rr);g.addColorStop(0,'#ffffff');g.addColorStop(0.4,p.col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x,y,rr*0.75,rr*1.25,0,0,7);ctx.fill();
             ctx.strokeStyle=p.col;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,rr*0.6,rr*1.05,0,0,7);ctx.stroke()}
           for(const s of ev.stones||[]){const [x,y]=vPos(s[0],s[1],0.5);ctx.globalAlpha=Math.max(0,Math.sin(k*Math.PI));ctx.fillStyle='#ffd766';ctx.beginPath();ctx.arc(x,y,SZ*(0.3+0.4*k),0,7);ctx.fill()}}
-        if(t>0.15&&t<0.95){ctx.globalAlpha=Math.min(1,(t-0.15)*4,(0.95-t)*6);ctx.font=`900 ${Math.max(22,Math.min(CW/12,54))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';const tx=t<0.6?'The Rift Beast falls':'The portals open';ctx.strokeText(tx,CW/2,CH*0.16);ctx.fillStyle=t<0.6?'#d6b3ff':'#ffd766';ctx.fillText(tx,CW/2,CH*0.16)}
+        if(t>0.15&&t<0.95){ctx.globalAlpha=Math.min(1,(t-0.15)*4,(0.95-t)*6);ctx.font=`900 ${Math.max(22,Math.min(SW()/12,54))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';const tx=t<0.6?'The Rift Beast falls':'The portals open';ctx.strokeText(tx,SX(),SY(0.16));ctx.fillStyle=t<0.6?'#d6b3ff':'#ffd766';ctx.fillText(tx,SX(),SY(0.16))}
         ctx.restore();break}
       case 'rise':{// v100: a summoned giant (Archdemon, Elemental Lord) bursts up: a pillar of its colour and a ground ring, with the camera on it
         dur=1800;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.2);if(el<30)shakeUntil=now+500;ctx.save();ctx.globalAlpha=Math.max(0,1-t);
@@ -7287,9 +7290,9 @@ function drawVFX(now){
         const [x,y]=vPos(ev.at[0],ev.at[1],0.5);for(let k=0;k<3;k++){const tk=((t*1.3+k/3)%1);burst(x,y,U*3.2*(1-tk)+U*0.3,'#b06bff',Math.max(0,0.9*(1-t))*tk)}break}
       case 'beastdown':{dur=2200;const t=el/dur;if(el<30)shakeUntil=now+700;const k=t<0.12?t/0.12:Math.max(0,1-(t-0.12)/0.88);
         for(const [q,r] of ev.cells||[]){const [x,y]=vPos(q,r,0.4+t);burst(x,y,U*(0.3+2*t),'#b06bff',Math.max(0,1-t),true);sparks(x,y,14,U*1.5,col,t,q*2+r)}
-        ctx.save();ctx.globalAlpha=0.22*k;ctx.fillStyle='#b06bff';ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=k;ctx.font=`900 ${Math.max(20,Math.min(CW/12,54))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';const tx='Rift Beast slain!';ctx.strokeText(tx,CW/2,CH*0.4-t*20);ctx.fillStyle=col;ctx.fillText(tx,CW/2,CH*0.4-t*20);
-        if(ev.name){ctx.font=`800 ${Math.max(13,Math.min(CW/26,24))}px Oxanium, sans-serif`;const s2=`${ev.name}${ev.pts?' +'+ev.pts+' points':''} +${RULES.BEAST_CHARGE} charge`;ctx.strokeText(s2,CW/2,CH*0.4+Math.max(26,Math.min(CW/12,54))-t*20);ctx.fillStyle='#ffffff';ctx.fillText(s2,CW/2,CH*0.4+Math.max(26,Math.min(CW/12,54))-t*20)}
+        ctx.save();ctx.globalAlpha=0.22*k;ctx.fillStyle='#b06bff';ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=k;ctx.font=`900 ${Math.max(20,Math.min(SW()/12,54))}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.lineWidth=6;ctx.strokeStyle='#0b0e14';const tx='Rift Beast slain!';ctx.strokeText(tx,SX(),SY(0.4)-t*20);ctx.fillStyle=col;ctx.fillText(tx,SX(),SY(0.4)-t*20);
+        if(ev.name){ctx.font=`800 ${Math.max(13,Math.min(SW()/26,24))}px Oxanium, sans-serif`;const s2=`${ev.name}${ev.pts?' +'+ev.pts+' points':''} +${RULES.BEAST_CHARGE} charge`;ctx.strokeText(s2,SX(),SY(0.4)+Math.max(26,Math.min(SW()/12,54))-t*20);ctx.fillStyle='#ffffff';ctx.fillText(s2,SX(),SY(0.4)+Math.max(26,Math.min(SW()/12,54))-t*20)}
         ctx.restore();break}
       case 'buff':{dur=600;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.5);sparks(x,y,8,U*0.6,ev.col||'#9ff0c0',t,1);break}
       case 'soul':{// v89: a soul rises from the dead unit toward the pit, with the Ember Court's count in big letters
@@ -8896,10 +8899,10 @@ let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e
 let MENU_RESET=0;
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button>${VIEW==='3d'?`<button class="btn sm" data-m="topv">${TOPVIEW?'🎯 Top view when a unit is selected: on':'🎯 Top view when a unit is selected: off'}</button>`:''}<button class="btn sm" data-m="ring">${UX.ring?'🔘 Buttons beside the unit: on':'🔘 Buttons beside the unit: off'}</button><button class="btn sm" data-m="kb">⌨ Keyboard keys</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="acam">${typeof ACAM!=='undefined'&&ACAM.on?'🎬 Action camera on':'🎬 Action camera off'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="vp">${VP.on?'🖼 Board drawing: on-screen part only':'🖼 Board drawing: classic (whole board)'}</button><button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button>${VIEW==='3d'?`<button class="btn sm" data-m="topv">${TOPVIEW?'🎯 Top view when a unit is selected: on':'🎯 Top view when a unit is selected: off'}</button>`:''}<button class="btn sm" data-m="ring">${UX.ring?'🔘 Buttons beside the unit: on':'🔘 Buttons beside the unit: off'}</button><button class="btn sm" data-m="kb">⌨ Keyboard keys</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="acam">${typeof ACAM!=='undefined'&&ACAM.on?'🎬 Action camera on':'🎬 Action camera off'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
-    if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='acam'&&typeof ACAM!=='undefined'){ACAM.on=!ACAM.on;try{localStorage.setItem('hexmarch.actioncam',ACAM.on?'on':'off')}catch(e){}toast(ACAM.on?'Action camera on: the view follows attacks, with slow motion on kills.':'Action camera off.',2600)}if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='vp'){VP.on=!VP.on;try{localStorage.setItem('hexmarch.vp',VP.on?'on':'off')}catch(e){}layout();toast(VP.on?'Only the visible part of the board is drawn (sharp and light).':'Classic drawing: the whole board is drawn at once.',3000)}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='acam'&&typeof ACAM!=='undefined'){ACAM.on=!ACAM.on;try{localStorage.setItem('hexmarch.actioncam',ACAM.on?'on':'off')}catch(e){}toast(ACAM.on?'Action camera on: the view follows attacks, with slow motion on kills.':'Action camera off.',2600)}if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
 function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
@@ -9454,10 +9457,24 @@ function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTu
 // to the middle of the screen (the owner's army usually starts at the edge).
 function boardPad(box){if(zoom<=1.02)return [0,0];return [Math.round(box.clientWidth*0.3),Math.round(box.clientHeight*0.3)]}
 // Keep the canvas inside what phones can draw (about 4096 px a side and 16 million pixels): a big zoom lowers the pixel density instead of failing.
-function safeDpr(){const d=window.devicePixelRatio||1;return Math.max(0.4,Math.min(d,4096/Math.max(CW,CH),Math.sqrt(10e6/(CW*CH))))}/* v123: the whole board is drawn at the zoomed size; zoomed in on a big screen it can reach tens of millions of pixels and crash the graphics card, so the resolution drops instead (the pieces are big then anyway) */
+/* v127 VIEWPORT RENDERER (owner 23 Oct 2026, the priority after the crashes): the canvases are only as big as the visible part of the board.
+   Board space (px, proj, vPos, drawnUnits) is unchanged: the whole board is still CW x CH, #boardspace has that size so the box scrolls as before,
+   and every frame the drawing is shifted by the box's scroll (VP.sx, VP.sy) onto a canvas of VP.W x VP.H. cvRect() is the old canvas rectangle
+   (where the board's 0,0 would be on screen) for every pointer and screen calculation. Menu switch 'Classic board drawing' = VP.on false:
+   the view is the whole board again (old behaviour, blurry when zoomed on a big screen). */
+const VP={on:true,sx:0,sy:0,W:0,H:0,dpr:1};try{VP.on=localStorage.getItem('hexmarch.vp')!=='off'}catch(e){}
+function vpSize(){const box=$('#boardbox'),sp=$('#boardspace'),vw=$('#boardview');sp.style.width=CW+'px';sp.style.height=CH+'px';
+  if(VP.on){VP.W=Math.max(1,Math.min(CW,box.clientWidth));VP.H=Math.max(1,Math.min(CH,box.clientHeight))}else{VP.W=CW;VP.H=CH}
+  vw.style.width=VP.W+'px';vw.style.height=VP.H+'px';vpScroll();return [VP.W,VP.H]}
+function vpScroll(){if(!VP.on){VP.sx=0;VP.sy=0;return}const box=$('#boardbox');VP.sx=Math.max(0,Math.min(CW-VP.W,box.scrollLeft));VP.sy=Math.max(0,Math.min(CH-VP.H,box.scrollTop))}
+function vpApply(dpr){const [W,H]=vpSize();VP.dpr=dpr;if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}cv.style.width=W+'px';cv.style.height=H+'px';vpFrame()}
+function vpSees(x,y,m){return !VP.on||(x>=VP.sx-m&&x<=VP.sx+VP.W+m&&y>=VP.sy-m&&y<=VP.sy+VP.H+m)}/* v127c: is this board point on screen (with a margin)? tiles off screen are skipped */
+function vpFrame(){vpScroll();ctx.setTransform(VP.dpr,0,0,VP.dpr,-VP.sx*VP.dpr,-VP.sy*VP.dpr)}/* called at the start of every frame: the scroll may have moved */
+function cvRect(){const rc=cv.getBoundingClientRect();vpScroll();return {left:rc.left-VP.sx,top:rc.top-VP.sy,width:CW,height:CH,right:rc.left-VP.sx+CW,bottom:rc.top-VP.sy+CH}}
+function safeDpr(){const d=window.devicePixelRatio||1;const W=VP.on?Math.min(CW,$('#boardbox').clientWidth||CW):CW,H=VP.on?Math.min(CH,$('#boardbox').clientHeight||CH):CH;return Math.max(0.4,Math.min(d,4096/Math.max(W,H),Math.sqrt(10e6/(W*H))))}/* v123: the whole board is drawn at the zoomed size; zoomed in on a big screen it can reach tens of millions of pixels and crash the graphics card, so the resolution drops instead (the pieces are big then anyway) */
 // Board coordinates (hex units from the board's centre point on the canvas) under a screen point, and back.
-function boardPt(cx,cy){const rc=cv.getBoundingClientRect();return VIEW==='3d'?[(cx-rc.left-CAM.cx)/CAM.S,(cy-rc.top-CAM.cy)/CAM.S]:[(cx-rc.left-CW/2)/SZ,(cy-rc.top-CH/2)/SZ]}
-function ptScreen(b){const rc=cv.getBoundingClientRect();return VIEW==='3d'?[rc.left+CAM.cx+b[0]*CAM.S,rc.top+CAM.cy+b[1]*CAM.S]:[rc.left+CW/2+b[0]*SZ,rc.top+CH/2+b[1]*SZ]}
+function boardPt(cx,cy){const rc=cvRect();return VIEW==='3d'?[(cx-rc.left-CAM.cx)/CAM.S,(cy-rc.top-CAM.cy)/CAM.S]:[(cx-rc.left-CW/2)/SZ,(cy-rc.top-CH/2)/SZ]}
+function ptScreen(b){const rc=cvRect();return VIEW==='3d'?[rc.left+CAM.cx+b[0]*CAM.S,rc.top+CAM.cy+b[1]*CAM.S]:[rc.left+CW/2+b[0]*SZ,rc.top+CH/2+b[1]*SZ]}
 function layout(){
   if(!G)return;
   placeDock();
@@ -9468,9 +9485,7 @@ function layout(){
   SZ=base*zoom;
   const [padX,padY]=boardPad(box);
   CW=Math.ceil(S3*SZ*(2*VR+1))+8+2*padX;CH=Math.ceil(SZ*(3*VR+2))+8+2*padY;
-  const dpr=safeDpr();
-  cv.width=CW*dpr;cv.height=CH*dpr;cv.style.width=CW+'px';cv.style.height=CH+'px';
-  ctx.setTransform(dpr,0,0,dpr,0,0);
+  vpApply(safeDpr());
 }
 function px(q,r){return [SZ*S3*(q+r/2)+CW/2,SZ*1.5*r+CH/2]}
 function hexPath(x,y,s){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30);const X=x+s*Math.cos(a),Y=y+s*Math.sin(a);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.closePath()}
@@ -9664,13 +9679,13 @@ function draw(now){
   if(!G||screen!=='game')return;
   if(typeof GL!=='undefined'&&GL.cv&&VIEW!=='3d')GL.cv.hidden=true;
   if(VIEW==='3d')return draw3D(now);
-  ctx.clearRect(0,0,CW,CH);
+  vpFrame();ctx.clearRect(0,0,CW,CH);
   const homes=new Map();for(const p of G.players)if(p.alive&&p.home)homes.set(key(p.home[0],p.home[1]),FAC[p.fac].color);
   const focus=G.inspect!=null?byId(G.inspect):G.sel!=null?byId(G.sel):null;
   const focusCol=focus&&focus.kind!=='wall'?FAC[P(focus.owner).fac].color:'#ece8dd';
   const flick=0.5+0.5*Math.sin(now/260);
   for(const [q,r] of ringCells()){
-    const [x,y]=px(q,r);const k=key(q,r);
+    const [x,y]=px(q,r);const k=key(q,r);if(!vpSees(x,y,SZ*2))continue;
     if(G.voids[k]){
       hexPath(x,y,SZ*0.97);const g=ctx.createRadialGradient(x,y,SZ*0.1,x,y,SZ);g.addColorStop(0,'#000');g.addColorStop(1,'#101826');ctx.fillStyle=g;ctx.fill();
       hexPath(x,y,SZ*0.97);ctx.strokeStyle='rgba(63,224,184,.45)';ctx.lineWidth=1.2;ctx.stroke();
@@ -9790,7 +9805,7 @@ function draw(now){
     ctx.lineWidth=3;ctx.strokeStyle='#0b0e14';ctx.strokeText(f.text,x,y-SZ*0.6-t*SZ*1.2);ctx.fillStyle=f.color;ctx.fillText(f.text,x,y-SZ*0.6-t*SZ*1.2);ctx.globalAlpha=1}
 }
 function hexAt(e){
-  const rc=cv.getBoundingClientRect();
+  const rc=cvRect();
   if(VIEW==='3d')return hexAt3D(e.clientX-rc.left,e.clientY-rc.top);
   const x=e.clientX-rc.left-CW/2,y=e.clientY-rc.top-CH/2;
   let qf=(S3/3*x-y/3)/SZ,rf=(2/3*y)/SZ,sf=-qf-rf;let q=Math.round(qf),r=Math.round(rf),s=Math.round(sf);
@@ -9917,7 +9932,7 @@ cv.addEventListener('pointercancel',e=>{endPtr(e);drag=null;clearTimeout(lpTimer
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('wheel',e=>{camUserTook();if(e.shiftKey)return;const own=e.ctrlKey||document.body.classList.contains('focus')||document.body.classList.contains('wide');if(!own)return;e.preventDefault();zoomAt(zoom*(e.deltaY>0?0.88:1.14),e.clientX,e.clientY)},{passive:false});
 // Screen position of a hex centre, in client coordinates.
-function screenOf(q,r){const rc=cv.getBoundingClientRect();if(VIEW==='3d'){const [x,z]=world(q,r);const [a,b]=proj(x,z,0);return [rc.left+a,rc.top+b]}const [a,b]=px(q,r);return [rc.left+a,rc.top+b]}
+function screenOf(q,r){const rc=cvRect();if(VIEW==='3d'){const [x,z]=world(q,r);const [a,b]=proj(x,z,0);return [rc.left+a,rc.top+b]}const [a,b]=px(q,r);return [rc.left+a,rc.top+b]}
 // Fat-finger help: if the tap lands on nothing useful, use the nearest thing you could act on.
 function snapTap(e){
   const h=hexAt(e);
@@ -9929,7 +9944,7 @@ function snapTap(e){
   if(!G.amode)for(const u of G.units)if(u.kind!=='wall')for(const [q,r] of cells(u))cand.add(key(q,r));
   if(h&&(cand.has(key(h[0],h[1]))||unitAt(h[0],h[1])))return h;
   // v26: a generous radius; a piece counts by its hex centre (flat map) or by its upright figure (tabletop), whichever is nearer.
-  const tol=tapTol();let best=null,bd=tol;const rc=cv.getBoundingClientRect();
+  const tol=tapTol();let best=null,bd=tol;const rc=cvRect();
   for(const k of cand){const [q,r]=k.split(',').map(Number);const [sx,sy]=screenOf(q,r);const d=Math.hypot(sx-e.clientX,sy-e.clientY);if(d<bd){bd=d;best=[q,r]}}
   if(VIEW==='3d'&&typeof drawnUnits!=='undefined')for(const d of drawnUnits){if(!d.ax||!alive(d.u)||d.u.kind==='wall')continue;const k=key(d.cell[0],d.cell[1]);if(!cand.has(k))continue;
     const dd=axisDist(d,e.clientX-rc.left,e.clientY-rc.top);if(dd<bd){bd=dd;best=d.cell}}
@@ -10217,7 +10232,7 @@ function uxSel(){const u=G&&G.sel!=null?byId(G.sel):null;return u&&isHumanTurn()
 function uxHead(u){if(VIEW==='3d'&&typeof drawnUnits!=='undefined'){const d=drawnUnits.find(d=>d.u===u);if(d)return [(d.rect[0]+d.rect[2])/2,d.rect[1]]}const [x,y]=vPos(u.q,u.r,0);return [x,y-(VIEW==='3d'?CAM.S*1.4:SZ*0.95)]}
 function uxPill(x,y,txt,bg,fg,fs){ctx.save();ctx.font=`800 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(txt).width+fs*0.8,h=fs*1.3;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-h/2,w,h,h/2);else ctx.rect(x-w/2,y-h/2,w,h);ctx.fillStyle=bg;ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#0b0e14';ctx.stroke();ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,x,y+0.5);ctx.restore()}
 // the hex on the ground under a screen point, ignoring figures (drag targets)
-function uxGround(e){const rc=cv.getBoundingClientRect();if(VIEW!=='3d')return hexAt(e);const save=drawnUnits;drawnUnits=[];try{return hexAt3D(e.clientX-rc.left,e.clientY-rc.top)}finally{drawnUnits=save}}
+function uxGround(e){const rc=cvRect();if(VIEW!=='3d')return hexAt(e);const save=drawnUnits;drawnUnits=[];try{return hexAt3D(e.clientX-rc.left,e.clientY-rc.top)}finally{drawnUnits=save}}
 // v103: in a crowd, prefer the ground hex when it is somewhere the selected unit can go or aim, and the figure in front is not a target
 function uxPreferGround(g,bodyU){if(!g||!G)return false;const k=key(g[0],g[1]);if(unitAt(g[0],g[1]))return false;const u=uxSel();if(!u)return false;
   if(G.amode)return hl.aim.has(k)&&!cells(bodyU).some(([q,r])=>hl.aim.has(key(q,r)));
@@ -10242,7 +10257,7 @@ function uxDragMove(e){const d=UX.drag;if(!d)return false;if(!d.on){if(Math.hypo
 function uxDragUp(e){const d=UX.drag;UX.drag=null;if(!d||!d.on){UX.dragTo=null;return false}const h=uxGround(e)||UX.dragTo;UX.dragTo=null;const u=byId(d.id);if(!u||!h)return true;
   const k=key(h[0],h[1]),t=unitAt(h[0],h[1]);
   // a body under the finger counts too: dropping onto a tall enemy figure attacks it
-  const rc=cv.getBoundingClientRect();let body=null;if(VIEW==='3d'){const b=hexAt3D(e.clientX-rc.left,e.clientY-rc.top);body=b&&unitAt(b[0],b[1])}
+  const rc=cvRect();let body=null;if(VIEW==='3d'){const b=hexAt3D(e.clientX-rc.left,e.clientY-rc.top);body=b&&unitAt(b[0],b[1])}
   const foe=[t,body].find(x=>x&&hl.atk.has(x.id));
   if(hl.moves.has(k)&&(!t||(hl.moves.get(k).pilot!=null||hl.moves.get(k).merge!=null))){clickCell(h[0],h[1]);return true}
   if(foe){clickCell(foe.q,foe.r);return true}
@@ -10299,7 +10314,7 @@ function uxRingBuild(){const el=uxRingEl(),u=uxSel();
     else if(r==='x'){G.sel=null;G.amode=null;G.aim=null;refresh()}})}
 // every frame: keep the buttons just above the selected unit's head, hidden while it is off screen or being dragged
 function uxRingPlace(){const el=document.getElementById('uxRing');if(!el||el.hidden)return;const u=uxSel();if(!u||UX.drag&&UX.drag.on){el.style.visibility='hidden';return}
-  const [x,y]=uxHead(u),rc=cv.getBoundingClientRect(),bx=$('#boardbox').getBoundingClientRect();const cx=rc.left+x,cy=rc.top+y-(SHOW_HP?14:6);
+  const [x,y]=uxHead(u),rc=cvRect(),bx=$('#boardbox').getBoundingClientRect();const cx=rc.left+x,cy=rc.top+y-(SHOW_HP?14:6);
   const on=cx>bx.left+10&&cx<bx.right-10&&cy>bx.top+30&&cy<bx.bottom;el.style.visibility=on?'visible':'hidden';if(!on)return;
   const w=el.offsetWidth,hh=el.offsetHeight;const L=Math.max(bx.left+4,Math.min(bx.right-w-4,cx-w/2)),T=Math.max(bx.top+4,cy-hh-6);
   const s=`${Math.round(L)}px,${Math.round(T)}px`;if(el.dataset.at!==s){el.dataset.at=s;el.style.transform=`translate(${Math.round(L)}px,${Math.round(T)}px)`}}
@@ -10479,7 +10494,7 @@ function acamScan(){if(!G||!ACAM.on||screen!=='game'||G.phase)return;const evs=(
    is laid out again), holds, and eases back; a kill zooms deeper and freezes the effects for a heartbeat at the moment of impact. Taps are ignored during a punch. */
 const PUNCH={t0:0,dur:0,depth:0,ox:0,oy:0,freezeUntil:0};
 function punchAt(q,r,depth,dur){if(!ACAM.on||acamReduce())return;const now=performance.now();if(now<PUNCH.t0+PUNCH.dur*0.6&&depth<=PUNCH.depth)return;
-  const [x,y]=vPos(q,r,0.6);const rc=cv.getBoundingClientRect();PUNCH.ox=x*rc.width/cv.width;PUNCH.oy=y*rc.height/cv.height;PUNCH.t0=now;PUNCH.dur=dur;PUNCH.depth=depth}
+  const [x,y]=vPos(q,r,0.6);vpScroll();PUNCH.ox=x-VP.sx;PUNCH.oy=y-VP.sy;/* v127: CSS px on the viewport canvas */PUNCH.t0=now;PUNCH.dur=dur;PUNCH.depth=depth}
 function punchApply(now){const els=[cv];if(typeof GL!=='undefined'&&GL&&GL.cv)els.push(GL.cv);const k=(now-PUNCH.t0)/PUNCH.dur;
   const strip=t=>(t||'').replace(/\s*scale\([^)]*\)/g,'').trim();
   if(!(PUNCH.dur>0)||k>=1||k<0){if(PUNCH.on){for(const e of els){e.style.transform=strip(e.style.transform);e.style.transformOrigin=''}PUNCH.on=false}return}
