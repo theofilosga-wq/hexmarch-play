@@ -10569,6 +10569,12 @@ for(const nm of ['doMove','attack','useAbility','useUlt','castAt','clickCell']){
   try{for(const u of G.units)if(u.owner===G.cur&&u.kind!=='wall'){u.moved=true;u.acted=true}G.amode=null;G.aim=null;endTurn()}catch(e2){guardLog('end-retry',e2.message,e2.stack);toast('End turn hit an error twice. Try once more, or use Undo.',4000);return}
   toast('End turn hit an error; the turn was closed anyway.',3500)}}}
 
+/* ---------- heal 0: canvas circles never throw. A negative radius (seen in a 1920x1080 3D stress game: "The radius provided is negative")
+   is drawn as nothing, and the first one is logged with its stack so the report names the drawing code at fault. ---------- */
+{const P=CanvasRenderingContext2D.prototype,a0=P.arc,e0=P.ellipse;let said=0;
+  P.arc=function(x,y,r,s,e,ccw){if(!(r>=0)){if(said++<2)guardLog('arc',`radius ${r}`,new Error().stack);r=0}return a0.call(this,x,y,r,s,e,ccw)};
+  P.ellipse=function(x,y,rx,ry,rot,s,e,ccw){if(!(rx>=0)||!(ry>=0)){if(said++<2)guardLog('ellipse',`radii ${rx} ${ry}`,new Error().stack);rx=Math.max(0,rx||0);ry=Math.max(0,ry||0)}return e0.call(this,x,y,rx,ry,rot,s,e,ccw)}}
+
 </script>
 <script>// Installable app: registers the offline worker and shows an "Install app" button when the browser offers the install.
 (function(){
