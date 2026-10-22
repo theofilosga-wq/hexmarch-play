@@ -1239,7 +1239,7 @@ const FAC={
       {name:'Glacier Knight',icon:'shield',n:2,hp:14,atk:3,def:1,mov:3,mt:'line',at:'melee',rng:1,ab:'shatterstrike',trait:'deepcold'}]},
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
     theme:'Five walking fortresses that start strong: they stride over mountains and rivers and leave stones for their kin.',
-    passive:'Giants fill two hexes, move 3 (4 on the Realm) and walk over mountains and rivers (never through the Heart’s wall). Pushes and pulls move them half as far; they fall only into two holes in a row. Giant Remains: a fallen giant leaves 2 stones on its hexes; a giant of its army that steps on one heals 6, gains +2 max HP and +1 ATK, and the first stone also teaches it the fallen giant’s ability (it keeps its own rests; one action a turn still). An enemy standing on a stone crushes it. Lone Giants: a giant with no other giant of yours within 3 has +1 ATK and +1 DEF. Last of the Old Ones: when a giant falls, every giant still standing heals 3 and gains +1 ATK. Swarmed: +1 damage taken from melee while 2 or more enemies stand next to it.',gateBlock:1,swarmed:1,
+    passive:'Giants fill two hexes, move 3 (4 on the Realm) and walk over mountains and rivers (never through the Heart’s wall). Pushes and pulls move them half as far; they fall only into two holes in a row. Giant Remains: a fallen giant leaves 2 stones on its hexes; a giant of its army that steps on one heals 6, gains +2 max HP and +1 ATK, and the first stone also teaches it the fallen giant’s ability (it keeps its own rests; one action a turn still). Only giants can touch the stones. Lone Giants: a giant with no other giant of yours within 3 has +1 ATK and +1 DEF. Last of the Old Ones: when a giant falls, every giant still standing heals 3 and gains +1 ATK. Swarmed: +1 damage taken from melee while 2 or more enemies stand next to it.',gateBlock:1,swarmed:1,
     home:'Stone ground: giants can’t be chilled, frozen or mired there.',homeRealm:'No home ground on the Realm.',stoneFoot:1,
     units:[
       {name:'Mountain King',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'mountainfall'},
@@ -1249,7 +1249,7 @@ const FAC={
       {name:'Titan',icon:'fist',hp:14,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'crush',trait:'unstoppable'}]},
   gnomes:{name:'Gnome Tinkers',color:'#ff6ec7',
     theme:'Pilots: every gnome builds and climbs into its own machine. On foot it is weak; inside it is strong and has one extra trick. Wrecks become scrap, and scrap builds a Behemoth.',
-    passive:'Build: use Build (you may move first), stand still through your next turn, and you climb in for free at the start of the turn after. Inside, the machine’s HP take every hit; when they are gone the pilot is thrown clear, alive, and the wreck stays as scrap on its hex. Any gnome that walks onto scrap collects it; an enemy standing on it crushes it. Behemoth: 3 scrap raise a 2-hex Behemoth (30 HP, 6 ATK, shoots 4) that fires with 1 gnome on foot inside and moves with 3; one at a time, rebuildable. Overdrive (Ultimate): every machine is repaired and acts again.',
+    passive:'Build: use Build (you may move first), stand still through your next turn, and you climb in for free at the start of the turn after. Inside, the machine’s HP take every hit; when they are gone the pilot is thrown clear, alive, and the wreck stays as scrap on its hex. Any gnome that walks onto scrap collects it Behemoth: 3 scrap raise a 2-hex Behemoth (30 HP, 6 ATK, shoots 4) that fires with 1 gnome on foot inside and moves with 3; one at a time, rebuildable. Overdrive (Ultimate): every machine is repaired and acts again.',
     home:'Pink ground: +1 move for gnomes (machines get nothing).',homeRealm:'No home ground on the Realm.',homeMov:1,
     units:[
       // v67 Gnome Fortress (owner 6 Oct 2026). bare = the gnome's stats after it sets its weapon down.
@@ -3972,8 +3972,8 @@ const GEMS={
 const GKEYS=Object.keys(GEMS);
 const SUIT_ITEMS={boots:{name:'Boots',text:'+1 move'},club:{name:'Ogre Club',text:'+1 ATK'},shield:{name:'Tower Shield',text:'+1 DEF'}};
 const LOOT={
-  scrap:{name:'Scrap',text:'the wreck of a gnome machine: a gnome that walks onto it collects it (3 scrap build a Behemoth); an enemy standing here crushes it',col:'#ff6ec7'},
-  remains:{name:'Giant Remains',text:'the stones of a fallen giant: a giant of its army that steps here heals 6 and gains +2 max HP and +1 ATK for good; an enemy standing here crushes them',col:'#b9a98c'},
+  scrap:{name:'Scrap',text:'the wreck of a gnome machine: a gnome that walks onto it collects it (3 scrap build a Behemoth); only giants can touch it',col:'#ff6ec7'},
+  remains:{name:'Giant Remains',text:'the stones of a fallen giant: a giant of its army that steps here heals 6 and gains +2 max HP and +1 ATK for good; only giants can touch them',col:'#b9a98c'},
   gem:{name:'Crown Shard',text:'a gem for your crown: it powers your King',col:'#f2c75c'},
   stone:{name:'Crown Stone',text:'one of the five stones of the old crown: carry it (it does nothing yet); when a unit of your side is crowned, every stone your side carries goes into the crown: +1 ATK and +1 max HP for the King each. A carrier that dies drops it, and the Rift spawns hunt whoever holds it',col:'#ffd766'},
   suit:{name:'War Suit',text:`a unit that steps on it climbs in: ${8} extra HP that take every hit first, plus its item`,col:'#c9a24a'},
@@ -4156,7 +4156,7 @@ function pickupLoot(){
     if(x.kind==='remains'){if(!G.loot.includes(x))continue;/* v98: already taken with its twin */const u=unitAt(x.q,x.r);if(!u||u.kind==='wall')continue;if(u.size===2&&G.players[u.owner]&&G.players[u.owner].fac==='giants'&&tm(u.owner)===tm(x.owner)){G.loot.splice(G.loot.indexOf(x),1);if(x.gid!=null&&RULES.STORY2)G.loot=G.loot.filter(y=>!(y.kind==='remains'&&y.gid===x.gid));/* v98 (owner): one reward per fallen giant */u.maxhp+=2;u.oldAtk=(u.oldAtk||0)+1;healUnit(u,6,'#b9a98c','Giant Remains');if(!SIM){fx(u,'+2 HP, +1 ATK','#b9a98c');addLog(u.owner,`The ${u.name} takes up its fallen kin's stones: heals 6, +2 max HP, +1 ATK.`);if(trk()){const e=tFx('giants','','Giant Remains taken');if(e)e.uses++}}
       /* v79 OLD ONES' LEGACY (owner 18 Oct 2026): the first stone of a fallen giant also hands its ability to the giant that takes it (one per fallen giant, never a duplicate of its own); inherited abilities keep their own rests in u.cdx */
       if(x.ab&&ABIL[x.ab]&&x.ab!==u.ability&&x.ab!==u.ability2&&!(u.inh||[]).includes(x.ab)){u.inh=(u.inh||[]).concat([x.ab]);u.cdx=Object.assign({},u.cdx||{});u.cdx[x.ab]=0;if(!SIM){fx(u,'learns '+ABIL[x.ab].name,'#ffd766');addLog(u.owner,`${u.name} learns the ${x.from}'s ${ABIL[x.ab].name}.`);if(trk()){const e=tFx('giants',u.name,'Old Ones’ legacy (abilities inherited)');if(e)e.uses++}}}}
-      else if(tm(u.owner)!==tm(x.owner)&&!u.summon){G.loot.splice(G.loot.indexOf(x),1);if(!SIM){addLog(u.owner,`The ${u.name} crushes the Giant Remains.`);if(trk()){const e=tFx(G.players[u.owner].fac,'','Giant Remains crushed');if(e)e.uses++}}}continue}
+      /* v118 (owner): nobody but the giants can touch their remains: enemies no longer crush them */continue}
     const u=unitAt(x.q,x.r);if(!canCarry(u))continue;const p=G.players[u.owner],F=FAC[p.fac],R=(G.rooms||[]).find(r=>r.id===x.room);
     if(x.kind==='suit'){if(u.suitHp>0||u.machine)continue;G.loot.splice(G.loot.indexOf(x),1);if(R)R.state='done';
       u.suitHp=u.suitMax=u.size===2?WILDS.plateHp:WILDS.suitHp;u.suitItem=x.item||'boots';const I=SUIT_ITEMS[u.suitItem];
@@ -8033,7 +8033,7 @@ function unitRow(F,d,k,i){
 const LOSE_LINES={
   fire:'Kill the Imps from range so their deaths feed nobody nearby; when the Archdemon rises, gang up on it before it feeds; keep your wounded away from it.',
   ice:'Hit softly early, strong once the cold builds: keep moving, spread the marks, and kill the Hailcallers and Glacier Knights before a freeze lands. Never die frozen.',
-  giants:'Only five bodies. Shoot from afar and walk away; never stand next to two of them; stand on their remains before another giant does.',
+  giants:'Only five bodies. Shoot from afar and walk away; never stand next to two of them; kill a giant far from its kin, so no other giant can reach its remains.',
   gnomes:'Catch them on foot: rush them while they build, kill the pilots when a machine breaks, and stand on their scrap so no Behemoth is ever built.',
   arcane:'Their damage comes from healing units that are already full: keep them wounded and spread out, burst one priest down in a turn, and block the healing with Decay or fire.',
   warband:'Strong only in formation: hit the block with area damage, drag one warrior out, and never feed them kills.',
