@@ -1251,7 +1251,6 @@ const ULTS={
 };
 
 /* ---------- armies (10 slots each; a giant takes 2) ---------- */
-const P_=(o)=>Object.assign({pawn:1,mt:'march',at:'fwd',rng:1,mov:3,def:0},o);
 const FAC={
   fire:{name:'Ember Court',color:'#ff4a3d',
     theme:'Demons and fire. Rogue demons that do not buff each other or work as a team: each one uses fire to kill and torment, and every death, theirs or their enemies’, is a soul. In the end they are sacrificed to summon the Archdemon: the Court’s carry and its only sure way to victory.',// owner's words, 17 Oct 2026
@@ -5792,50 +5791,7 @@ function faceHome(pid){const p=G.players[pid];if(!p||!p.home)return;const [hx,hz
 function angleStep(){let d=CAM.azT-CAM.az;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;if(Math.abs(d)<0.002){CAM.az=CAM.azT;return false}CAM.az+=d*0.14;return true}
 
 /* ---------- figure profiles: [radius, height] pairs from the collar up ---------- */
-const PROFILES={
-  pawn:  {h:0.72,body:[[0.3,0],[0.24,0.06],[0.13,0.36],[0.2,0.4],[0.13,0.44]],head:{r:0.17,y:0.58}},
-  rook:  {h:0.86,body:[[0.32,0],[0.27,0.06],[0.24,0.62],[0.33,0.66],[0.33,0.8]],crenel:true},
-  bishop:{h:0.98,body:[[0.32,0],[0.25,0.06],[0.13,0.5],[0.21,0.55],[0.12,0.6]],mitre:{rx:0.16,ry:0.2,y:0.78}},
-  queen: {h:0.98,body:[[0.33,0],[0.26,0.06],[0.12,0.62],[0.22,0.66],[0.12,0.7]],head:{r:0.14,y:0.8},coronet:true},
-  king:  {h:1.18,body:[[0.34,0],[0.27,0.06],[0.13,0.74],[0.24,0.78],[0.15,0.83],[0.2,0.97]],cross:true},
-  knight:{h:0.98,body:[[0.32,0],[0.26,0.06],[0.2,0.36],[0.25,0.4]],horse:true},
-};
 function archOf(u){return u.leader?'king':u.mt==='line'?'rook':u.mt==='diag'?'bishop':u.mt==='knight'?'knight':u.mt==='march'?'pawn':'queen'}
-function drawFigure(u,sx,sy,sc,col,spent,face){
-  const S=CAM.S*sc,ct=Math.cos(CAM.tilt),V=CAM.S*Math.sin(CAM.tilt)*sc,baseH=0.14*V;
-  const light=mix(col,'#ffffff',0.38),dark=mix(col,'#000000',0.5),mid=col;
-  const A=PROFILES[archOf(u)];
-  const top=sy-baseH;
-  const grad=(y0,y1,r)=>{const g=ctx.createLinearGradient(sx-r*S,0,sx+r*S,0);g.addColorStop(0,light);g.addColorStop(0.45,mid);g.addColorStop(1,dark);return g};
-  ctx.save();if(spent)ctx.globalAlpha*=0.55;
-  // wings behind flyers
-  if(u.mt==='fly'){for(const s of [-1,1]){ctx.beginPath();ctx.ellipse(sx+s*0.26*S,top-0.55*V,0.3*S,0.14*S,s*-0.6,0,7);ctx.fillStyle=mix(col,'#ffffff',0.55);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=1;ctx.stroke()}}
-  // body silhouette (lathe profile seen from the side)
-  const pts=A.body;
-  ctx.beginPath();
-  pts.forEach(([r,y],i)=>{const X=sx-r*S,Y=top-y*V;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});
-  for(let i=pts.length-1;i>=0;i--){const [r,y]=pts[i];ctx.lineTo(sx+r*S,top-y*V)}
-  ctx.closePath();ctx.fillStyle=grad(0,0,0.34);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=1;ctx.stroke();
-  // collars give the lathe a round, 3D read
-  for(const [r,y] of pts)if(r>=0.2&&y>0.05){ctx.beginPath();ctx.ellipse(sx,top-y*V,r*S,r*S*ct*0.55,0,0,Math.PI);ctx.strokeStyle='rgba(0,0,0,.35)';ctx.stroke()}
-  const sphere=(cx,cy,r)=>{const g=ctx.createRadialGradient(cx-r*0.35,cy-r*0.35,r*0.1,cx,cy,r);g.addColorStop(0,light);g.addColorStop(0.6,mid);g.addColorStop(1,dark);ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.stroke()};
-  if(A.head)sphere(sx,top-A.head.y*V,A.head.r*S);
-  if(A.coronet){for(const dx of [-0.1,0,0.1]){ctx.beginPath();ctx.arc(sx+dx*S,top-(A.head.y+0.14)*V,0.045*S,0,7);ctx.fillStyle=light;ctx.fill()}}
-  if(A.mitre){const my=top-A.mitre.y*V;ctx.beginPath();ctx.ellipse(sx,my,A.mitre.rx*S,A.mitre.ry*S*1.1,0,0,7);const g=ctx.createLinearGradient(sx-A.mitre.rx*S,0,sx+A.mitre.rx*S,0);g.addColorStop(0,light);g.addColorStop(1,dark);ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.stroke();
-    ctx.beginPath();ctx.moveTo(sx+0.04*S,my-A.mitre.ry*S*0.8);ctx.lineTo(sx-0.05*S,my+0.02*S);ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=Math.max(1,S*0.03);ctx.stroke();sphere(sx,my-A.mitre.ry*S*1.15,0.045*S)}
-  if(A.crenel){const y=top-0.8*V,w=0.33*S;ctx.fillStyle=ctx.strokeStyle='rgba(0,0,0,.55)';for(const i of [-1,0,1]){ctx.clearRect(0,0,0,0);ctx.fillRect(sx+i*w*0.62-w*0.12,y-0.001,w*0.24,0.09*V)}
-    ctx.beginPath();ctx.ellipse(sx,y,0.33*S,0.33*S*ct*0.55,0,0,7);ctx.fillStyle=mix(col,'#000000',0.25);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.stroke()}
-  if(A.cross){const cy=top-1.02*V;ctx.fillStyle=light;ctx.strokeStyle='rgba(0,0,0,.6)';
-    ctx.beginPath();ctx.rect(sx-0.035*S,cy-0.18*V,0.07*S,0.2*V);ctx.rect(sx-0.1*S,cy-0.12*V,0.2*S,0.06*V);ctx.fill();ctx.stroke()}
-  if(A.horse){const f=face||1,X=v=>sx+v*f*S,Y=v=>top-v*V;
-    ctx.beginPath();ctx.moveTo(X(-0.22),Y(0.38));ctx.lineTo(X(-0.24),Y(0.62));ctx.quadraticCurveTo(X(-0.2),Y(0.92),X(-0.06),Y(0.98));
-    ctx.lineTo(X(-0.02),Y(1.08));ctx.lineTo(X(0.06),Y(0.97));ctx.quadraticCurveTo(X(0.22),Y(0.9),X(0.33),Y(0.7));ctx.lineTo(X(0.3),Y(0.6));
-    ctx.quadraticCurveTo(X(0.18),Y(0.6),X(0.08),Y(0.66));ctx.quadraticCurveTo(X(0.1),Y(0.5),X(0.24),Y(0.38));ctx.closePath();
-    const g=ctx.createLinearGradient(X(-0.25),0,X(0.33),0);g.addColorStop(0,f>0?light:dark);g.addColorStop(1,f>0?dark:light);ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=1;ctx.stroke();
-    ctx.beginPath();ctx.arc(X(0.1),Y(0.83),Math.max(1,0.03*S),0,7);ctx.fillStyle='#10131a';ctx.fill()}
-  ctx.restore();
-  return top-A.h*V;
-}
 function drawBase(sx,sy,sc,col,home,u,c2){
   const ctx=c2||boardCtx();
   const S=CAM.S*sc,ct=Math.cos(CAM.tilt),V=CAM.S*Math.sin(CAM.tilt)*sc,rx=0.6*S,ry=rx*ct,h=0.14*V;
@@ -6585,16 +6541,6 @@ const hexRand=(q,r,i)=>{let x=Math.imul((q*73856093)^(r*19349663)^((i||0)*834927
 
 /* ---------- the ground: one instanced mesh of hex tiles, coloured per terrain every few frames ---------- */
 const GROUND={base:['#5b6150','#565c4c','#606656'],nomans:'#4b4b4e',heart:'#8a6f34',throne:'#b8913c',road:'#9c8a62',river:'#2f6c9e',hidden:'#1e1c2a'};
-function glTileColor(q,r,k){
-  const T=THREE;const col=new T.Color(G.realm?realmTile(q,r):GROUND.base[((q-r)%3+3)%3]);
-  const f=featAt(q,r);
-  if(f==='river')return col.set(GROUND.river);
-  if(isHeart(q,r))return col.set(q===0&&r===0?GROUND.throne:GROUND.heart).lerp(new T.Color('#000000'),isCentreWall(q,r)?0.45:0);
-  if(isNoMans(q,r)&&!G.map)col.lerp(new T.Color(GROUND.nomans),0.6);
-  if(G.map){if(isRoad(q,r))col.lerp(new T.Color(GROUND.road),0.55);const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k))return col.set(GROUND.hidden)}
-  const tf=terrAt(q,r);if(tf){const fc=new T.Color(FAC[tf].color);col.lerp(fc,G.paint[k]?0.72:0.3)}
-  if(isDoomed(q,r))col.lerp(new T.Color('#ff3c28'),0.35);
-  return col}
 /* v78c TEXTURED TILES (owner's tile art, 17 Oct 2026: ten ChatGPT hex renders, their top faces warped into top-down textures by
    tests/net/tilewarp.html, saved as models/tiles/<kind>.jpg). One InstancedMesh per kind (meadow, dry, waste, lava, heart, river), every
    cell assigned to a kind by glTileKind and tinted by instanceColor (army claims, roads, doomed hexes, hidden rooms). A hex under a
@@ -6672,8 +6618,14 @@ function glBuildStatics(){
     // v80 the Realm's city: houses inside the Heart until the Beast falls, then rubble
     if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast||(typeof fallPre==='function'&&fallPre())){/* v121: the houses stand during the city moment before the Fall */if(!cityUp()&&h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
-  if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5);const fm=new T.InstancedMesh(FOREST_GEO.geo,FOREST_GEO.mat,L.fmodel.length);fm.castShadow=innerWidth>=1000;/* phones skip the forests' shadow pass: 29k triangles x ~100 forests */fm.receiveShadow=true;const o=new T.Object3D();
-    L.fmodel.forEach((t,i)=>{o.position.set(t[0],0.02-bb.y0*sc,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc);o.updateMatrix();fm.setMatrixAt(i,o.matrix)});fm.userData.forest={sc,y0:bb.y0};grp.add(fm);GL.forestMesh=fm;GL.forestList=L.fmodel}else{GL.forestMesh=null;GL.forestList=null}
+  if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5);const o=new T.Object3D();
+    /* v142: the forests go in CHUNKS of about 6 x 6 scene units, each its own InstancedMesh with a bounding sphere, so three skips the chunks outside the camera when the board is zoomed in (one mesh for ~100 forests drew 2 million triangles every frame). glNoCull must not touch them: see below */
+    const CH=6,chunks={};L.fmodel.forEach(t=>{const k=Math.floor(t[0]/CH)+','+Math.floor(t[2]/CH);(chunks[k]=chunks[k]||[]).push(t)});GL.forestMeshes=[];
+    /* the forests themselves cast no shadow (29k triangles x ~100 forests in the shadow pass every frame): an invisible cone per forest hex casts it instead (colorWrite off: nothing in the main pass, still drawn into the shadow map). Phones have no forest shadows at all */
+    const PH=Math.max(0.3,(bb.h||1)*sc*0.85),proxyGeo=innerWidth>=1000?new T.CylinderGeometry(0.32,0.72,PH,6):null,proxyMat=proxyGeo&&new T.MeshBasicMaterial({colorWrite:false,depthWrite:false});
+    for(const k in chunks){const list=chunks[k];const fm=new T.InstancedMesh(FOREST_GEO.geo,FOREST_GEO.mat,list.length);fm.castShadow=false;fm.receiveShadow=true;
+      list.forEach((t,i)=>{o.position.set(t[0],0.02-bb.y0*sc,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc);o.updateMatrix();fm.setMatrixAt(i,o.matrix)});fm.userData.forest={sc,y0:bb.y0,list,PH};fm.computeBoundingSphere();grp.add(fm);GL.forestMeshes.push(fm);
+      if(proxyGeo){const pm=new T.InstancedMesh(proxyGeo,proxyMat,list.length);pm.castShadow=true;pm.receiveShadow=false;list.forEach((t,i)=>{o.position.set(t[0],0.02+PH/2,t[2]);o.rotation.set(0,0,0);o.scale.setScalar(1);o.updateMatrix();pm.setMatrixAt(i,o.matrix)});pm.userData.forest={proxy:1};pm.computeBoundingSphere();grp.add(pm);fm.userData.forest.proxy=pm}}}else GL.forestMeshes=null
   if(cityWallUp()){const bb=CITY_WALL.bb,o=CITY_WALL.src.clone();const target=2*(G.heartR+1)*S3+1.3;const sc=target/Math.max(bb.w||1,bb.d||1);o.scale.setScalar(sc);o.position.set(-bb.cx*sc,0.03-bb.y0*sc,-bb.cz*sc);
     o.traverse(m=>{if(m.isMesh){m.castShadow=innerWidth>=1000;m.receiveShadow=true}});const pv=new T.Group();pv.rotation.y=bb.w<bb.d?Math.PI/6:0;/* the ring's corners must lie on the x axis, like the hex ring's */pv.add(o);grp.add(pv);GL.cityWall=pv}else GL.cityWall=null
   if(cityUp()){const bb=CITY.bb,o=CITY.src.clone();const target=2*G.heartR*S3-0.4;const sc=target/Math.max(bb.w||1,bb.d||1);o.scale.setScalar(sc);o.position.set(-bb.cx*sc,0.03-bb.y0*sc,-bb.cz*sc);o.traverse(m=>{if(m.isMesh){m.castShadow=innerWidth>=1000;m.receiveShadow=true}});grp.add(o);GL.city=o}else GL.city=null
@@ -6734,8 +6686,9 @@ function glBuildStatics(){
    th.add(gMesh(gGeo('thgem',()=>new T.OctahedronGeometry(0.09,0)),gMat('#ff6b6b',{emissive:'#ff3d3d',emissiveIntensity:0.8}),0,0.8,-0.22));th.visible=!unitAt(0,0);GL.throne=th;grp.add(th)}
   GL.statics=grp;GL.scene.add(grp)}
 // trees on a hex with a unit on it step back to the rim of the hex and shrink, so the miniature stays visible
-function glForestOcc(){const fm=GL.forestMesh;if(!fm||!GL.forestList)return;const occ=new Set();for(const t of GL.forestList){const k=t[5]+','+t[6];if(unitAt(t[5],t[6]))occ.add(k)}const sig=[...occ].sort().join(';');if(sig===GL.forestSig)return;GL.forestSig=sig;
-  const o=new THREE.Object3D();const {sc,y0}=fm.userData.forest;GL.forestList.forEach((t,i)=>{const k=occ.has(t[5]+','+t[6])?0.45:1;o.position.set(t[0],0.02-y0*sc*k,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc*k);o.updateMatrix();fm.setMatrixAt(i,o.matrix)});fm.instanceMatrix.needsUpdate=true;GL.dirty=true}
+function glForestOcc(){const FMs=GL.forestMeshes;if(!FMs||!FMs.length)return;const occ=new Set();for(const fm of FMs)for(const t of fm.userData.forest.list){const k=t[5]+','+t[6];if(unitAt(t[5],t[6]))occ.add(k)}const sig=[...occ].sort().join(';');if(sig===GL.forestSig)return;GL.forestSig=sig;
+  const o=new THREE.Object3D();for(const fm of FMs){const {sc,y0,list,PH,proxy}=fm.userData.forest;list.forEach((t,i)=>{const k=occ.has(t[5]+','+t[6])?0.45:1;o.position.set(t[0],0.02-y0*sc*k,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc*k);o.updateMatrix();fm.setMatrixAt(i,o.matrix);
+    if(proxy){o.position.set(t[0],0.02+PH*k/2,t[2]);o.rotation.set(0,0,0);o.scale.setScalar(k);o.updateMatrix();proxy.setMatrixAt(i,o.matrix)}});fm.instanceMatrix.needsUpdate=true;if(proxy)proxy.instanceMatrix.needsUpdate=true}GL.dirty=true}
 function glTrees(){glForestOcc();if(!GL.trees||!GL.trees.length)return;let sig='';const occ=new Set();for(const t of GL.trees[0].list){const k=t[9]+','+t[10];if(!occ.has(k)&&unitAt(t[9],t[10]))occ.add(k)}sig=[...occ].sort().join(';');
   if(sig===GL.treeSig)return;GL.treeSig=sig;const o=new THREE.Object3D();
   for(const {m,list} of GL.trees){list.forEach((t,i)=>{let x=t[0],y=t[1],z=t[2],k=1;if(occ.has(t[9]+','+t[10])){const [cx,cz]=world(t[9],t[10]);x=cx+(x-cx)*1.95;z=cz+(z-cz)*1.95;k=0.45;y*=k}
@@ -6893,7 +6846,7 @@ const GLM={};
 function glLegacy(R){if('useLegacyLights' in R)R.useLegacyLights=true;if('outputColorSpace' in R&&THREE.LinearSRGBColorSpace)R.outputColorSpace=THREE.LinearSRGBColorSpace;else if('outputEncoding' in R&&THREE.LinearEncoding)R.outputEncoding=THREE.LinearEncoding}
 let KTX2=null;function glLoader(){const L=new THREE.GLTFLoader();if(THREE.KTX2Loader){if(!KTX2){let R=GL.R;if(!R){try{R=new THREE.WebGLRenderer({canvas:document.createElement('canvas')})}catch(e){R=null}}/* the home page preloads models before the board's renderer exists: a throwaway one tells the loader which compressed format this GPU takes */if(R){KTX2=new THREE.KTX2Loader().setTranscoderPath(THREE.KTX2_PATH||'').detectSupport(R);if(R!==GL.R)R.dispose()}}if(KTX2)L.setKTX2Loader(KTX2)}return L}
 function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE==='undefined'||typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
-  glLoader().load(file,g=>{const o=g.scene;o.userData.anims=g.animations||[];o.userData.skinned=false;o.traverse(m=>{if(m.isSkinnedMesh)o.userData.skinned=true;if(m.isMesh){m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map){if('colorSpace' in mt.map)mt.map.colorSpace=THREE.NoColorSpace;else mt.map.encoding=THREE.LinearEncoding}mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
+  glLoader().load(file,g=>{const o=g.scene;o.userData.file=file;o.userData.anims=g.animations||[];o.userData.skinned=false;o.traverse(m=>{if(m.isSkinnedMesh)o.userData.skinned=true;if(m.isMesh){m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map){if('colorSpace' in mt.map)mt.map.colorSpace=THREE.NoColorSpace;else mt.map.encoding=THREE.LinearEncoding}mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
     const b=new THREE.Box3().setFromObject(o);o.userData.bb={h:b.max.y-b.min.y,y0:b.min.y,cx:(b.max.x+b.min.x)/2,cz:(b.max.z+b.min.z)/2,w:b.max.x-b.min.x,d:b.max.z-b.min.z};res(o)},undefined,e=>rej(e))}))}
 function glSwapModel(g,MD){glModel(typeof MD.file==='function'?MD.file():MD.file).then(src=>{if(!g.parent&&!g.userData.pv)return;const o=(src.userData.skinned&&THREE.skinClone)?THREE.skinClone(src):src.clone();/* v140: a rigged model needs the skeleton-aware clone */const bb=src.userData.bb;const s=(typeof MD.h==='function'?MD.h():MD.h)*FIG3D_K/bb.h;o.scale.setScalar(s);o.position.set(-bb.cx*s,0.17-bb.y0*s,-bb.cz*s);if(MD.rot)o.rotation.y=MD.rot;
   for(const ch of g.children.slice())g.remove(ch);/* v78c (owner): no base under a real model, the hex itself takes the army's ground */o.position.y=0.03-bb.y0*s;o.traverse(m=>{if(m.isMesh&&m.material)m.material=m.material.clone()});g.add(o);g.userData.top=0.03+bb.h*s;g.userData.giant=0;if(g.userData.spent){g.userData.spent=undefined;glSpent(g,true)}g.userData.bob=[];g.userData.wings=[];g.userData.spin=null;g.userData.model=1;if(g.userData.shadow)glShadowTint(g);/* v137: the real model arrives after the figure was built */glRigStart(g,o,src.userData.anims||[]);glNoCull(g);if(typeof GL!=='undefined')GL.dirty=true}).catch(()=>{})}
@@ -7098,7 +7051,7 @@ function glProps(){if(GL.props)GL.scene.remove(GL.props);const g=new THREE.Group
 function glPlinth(){if(GL.plinth)GL.scene.remove(GL.plinth);const Rw=(G.Rv||G.R)*S3+1.05;
   const m=gMesh(new THREE.CylinderGeometry(Rw,Rw+0.3,0.9,6),gMat('#171a21',{roughness:0.9}),0,-0.95,0);m.rotation.y=Math.PI/2;m.castShadow=false;GL.plinth=m;GL.scene.add(m)}
 function glSunFit(){const e=(G.Rv||G.R)*S3+3,sc=GL.sun.shadow.camera;Object.assign(sc,{left:-e,right:e,top:e,bottom:-e,near:1,far:e*5});sc.updateProjectionMatrix();GL.sun.position.set(-e*0.55,e*1.3,e*0.5);GL.sun.target.position.set(0,0,0)}
-function glNoCull(o){o.traverse(x=>{x.frustumCulled=false})}
+function glNoCull(o){o.traverse(x=>{if(!(x.userData&&x.userData.forest))x.frustumCulled=false})}/* v142: forest chunks keep culling (they carry a real bounding sphere) */
 // called by draw3D once per frame before the units are drawn: rebuilds what changed
 function glFrame(){
   if(!glInit())return false;GL.tick++;
@@ -8285,7 +8238,6 @@ function shapeText(A){
 // v46 (owner 3 Oct 2026): the Crown Wilds is the default board and mode
 /* v106 (owner 20 Oct 2026: "the Realm is the mode"): the setup offers only the Realm; the Crown Wilds and the random board stay in the code (tests and old rooms use them) */
 const REALM_ONLY=true;
-const REALM_START=['warband','fire','ice','arcane'];// the main four (owner 18 Oct 2026)
 let cfg={n:4,teams:false,mode:'warlord',map:REALM_ONLY?'realm':'wilds',deploy:true,relics:true,seats:[
   {fac:'warband',ctrl:'human'},{fac:'fire',ctrl:'bot'},{fac:'ice',ctrl:'bot'},{fac:'arcane',ctrl:'bot'},{fac:'curse',ctrl:'bot'},{fac:'rift',ctrl:'bot'}]};/* v106: the first four seats are the main four */
 let setupMore=false;// the 'More options' fold on the home page
@@ -9141,7 +9093,6 @@ function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm
     if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='fx'&&typeof GLFX!=='undefined'){GLFX.on=!GLFX.on;try{localStorage.setItem('hexmarch.fx',GLFX.on?'on':'off')}catch(e){}if(!GLFX.on&&GLFX.amb){GL.scene.remove(GLFX.amb);GLFX.amb=null}else if(typeof glAmbientBuild==='function')glAmbientBuild();toast(GLFX.on?'3D effects on: flames, light, impacts.':'3D effects off: the flat overlay effects only.',2600)}if(k==='vp'){VP.on=!VP.on;try{localStorage.setItem('hexmarch.vp',VP.on?'on':'off')}catch(e){}layout();toast(VP.on?'Only the visible part of the board is drawn (sharp and light).':'Classic drawing: the whole board is drawn at once.',3000)}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='acam'&&typeof ACAM!=='undefined'){ACAM.on=!ACAM.on;try{localStorage.setItem('hexmarch.actioncam',ACAM.on?'on':'off')}catch(e){}toast(ACAM.on?'Action camera on: the view follows attacks, with slow motion on kills.':'Action camera off.',2600)}if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
-function phoneZoomTo(u){if(!u)return;frameArmy(u.owner)}
 function setFocus(on){document.body.classList.toggle('focus',on);document.body.classList.remove('drawer');$('#focusBtn').textContent=on?(window.innerWidth<700?'✕ Exit':'Exit full screen'):'⛶ Full screen';
   try{if(on&&document.documentElement.requestFullscreen&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
   setTimeout(()=>{layout();centerBoard();if(on&&G&&isHumanTurn())frameArmy(G.cur)},80)}
@@ -9761,7 +9712,6 @@ function drawFeature2D(f,x,y,S,q,r){
   ctx.restore();
 }
 const ND=[[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];// neighbour across edge i of a pointy hex (corners at 60i-30 and 60i+30)
-function outpostOwner(q,r){const u=unitAt(q,r);return u&&u.kind!=='wall'?u:null}
 function myDeployZone(){if(G.phase!=='deploy'||!isHumanTurn())return null;if(!netOnline()&&localHumans()>1&&curtain!==G.cur)return null;return new Set(P(G.cur).zone)}
 function drawRelicGlyph(kind,x,y,S,now){const Rl=RELICS[kind];ctx.save();ctx.shadowColor=Rl.col;ctx.shadowBlur=S*0.8*(0.6+0.4*Math.sin(now/220));
   ctx.beginPath();ctx.moveTo(x,y-S*0.62);ctx.lineTo(x+S*0.5,y);ctx.lineTo(x,y+S*0.62);ctx.lineTo(x-S*0.5,y);ctx.closePath();ctx.fillStyle=Rl.col;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#0b0e14';ctx.lineWidth=1.5;ctx.stroke();
@@ -9907,9 +9857,6 @@ function hpBar(u,x,y,w,h){if(!SHOW_HP||u.kind==='wall')return;const pct=Math.max
   const col=pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161';if(pct>0){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x0,y0,Math.max(h,w*pct),h,r);else ctx.rect(x0,y0,w*pct,h);ctx.fillStyle=col;ctx.fill()}
   if(h>=8){const t=`${Math.ceil(u.hp)}`;ctx.font=`800 ${h*0.95}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=2.5;ctx.strokeStyle='rgba(8,10,16,.9)';ctx.strokeText(t,x,y+0.5);ctx.fillStyle='#ffffff';ctx.fillText(t,x,y+0.5)}ctx.restore()}
 const hpBarH=sz=>SHOW_HP?Math.max(5,sz):0;
-function hpPill(u,x,y,sz){if(!SHOW_HP||u.kind==='wall')return;const t=String(Math.ceil(u.hp)),pct=Math.max(0,u.hp/u.maxhp);const fs=Math.max(9,sz);ctx.font=`800 ${fs}px Oxanium, sans-serif`;
-  const w=ctx.measureText(t).width+fs*0.7,h=fs*1.15;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-h/2,w,h,h/2);else ctx.rect(x-w/2,y-h/2,w,h);ctx.fillStyle='rgba(8,10,16,.88)';ctx.fill();
-  ctx.lineWidth=1.2;ctx.strokeStyle=pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161';ctx.stroke();ctx.fillStyle=pct>.5?'#c9f5d9':pct>.25?'#ffe3a1':'#ffb3b3';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,x,y+0.5)}
 function badge(x,y,r,bg,fg,text){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=bg;ctx.fill();ctx.fillStyle=fg;ctx.font=`700 ${Math.max(8,r*1.25)*(String(text).length>2?0.72:1)}px Oxanium, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x,y+0.5)}// "2/4" (a statue's counter) is set smaller to fit
 function draw(now){
   requestAnimationFrame(draw);
