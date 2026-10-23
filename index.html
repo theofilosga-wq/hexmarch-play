@@ -992,8 +992,8 @@ const ABIL={
     desc:'The dark mirror of Bless: an enemy within 3 is shrouded for 3 turns: 1 less ATK, and it takes 1 damage ignoring DEF at the start of each of your next 3 turns.'},
   butchery:{name:'Butchery',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:3,special:'butchery',
     desc:'The dark mirror of Field Surgery: strike an adjacent enemy for 3 minus DEF, then the most wounded other enemy next to the Hospitaller takes 3 minus DEF.'},
-  sanctuary:{name:'Sanctuary',cost:2,cd:4,aim:'self',shape:'aura',size:40,hits:'ally',heal:2,overheal:1,cdCut:2,bot:'sanctuary',// v62 (owner): the whole army, anywhere; every unit healed comes back faster// overheal = the most points one heal may turn into damage
-    desc:'Every unit of your army, wherever it stands, heals 2, and every unit that was healed has its ability rests cut by 2 turns (ready sooner). Overflowing light: for each unit already at full HP, 1 damage (ignoring DEF) hits the enemy nearest to it, within 3.'},
+  sanctuary:{name:'Sanctuary',cost:2,cd:4,aim:'self',shape:'aura',size:40,hits:'ally',heal:2,overheal:2,cdCut:2,bot:'sanctuary',// v62 (owner): the whole army, anywhere; every unit healed comes back faster// overheal = the most points one heal may turn into damage
+    desc:'Every unit of your army, wherever it stands, heals 2, and every unit that was healed has its ability rests cut by 2 turns (ready sooner). Overflowing light: for each unit already at full HP, 2 damage (ignoring DEF) hits the enemy nearest to it, within 3.'},
   mend:{name:'Mend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',heal:3,overheal:3,cleanse:1,bot:'mend',
     desc:'Heal one ally within 3 (or the Cleric itself) by 3; healing beyond full HP becomes damage (ignoring DEF) on the enemy nearest to that ally, within 3. Then remove one debuff from it (frozen or stunned first, then a curse, Seared, Hex, Sunder, delay, chill).'},
   layhands:{name:'Lay on Hands',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:1,shape:'single',heal:4,overheal:4,bot:'mend',
@@ -1307,7 +1307,7 @@ const FAC={
     units:[
       {name:'High Priest',icon:'crown',leader:1,hp:14,atk:3,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'sanctuary'},
       {name:'Cleric',icon:'hand',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'mend'},
-      {name:'Seraph',icon:'wing',n:2,hp:10,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'layhands'},// v76 (owner): no shields in this army, only heals: the Seraph heals by touch
+      {name:'Seraph',icon:'wing',n:2,hp:10,atk:1,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'layhands'},/* v136 (owner): 1 ATK, it heals by touch, it does not fight (in his game two Seraphs dealt 58 of the army's 97 plain-attack damage) */// v76 (owner): no shields in this army, only heals: the Seraph heals by touch
       {name:'Druid',icon:'staff',n:2,hp:8,atk:1,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'grove'},
       {name:'Lightwarden',icon:'sun',n:2,hp:9,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bless'},
       {name:'Hospitaller',icon:'hammer',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'surgery'}]},// v76 (owner): the fighter who heals and strikes
