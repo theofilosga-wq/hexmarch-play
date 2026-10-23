@@ -1119,7 +1119,7 @@ const ABIL={
 
 /* ---------- traits: one passive quirk per unit ---------- */
 const TRAITS={
-  trail:{name:'Hellfire Trail',text:'Every hex the Pit Lord walks over burns until the start of its next turn: red ground, where fire units get +1 ATK, any other unit that starts its turn there takes 1 and enemies move 1 less.'},
+  trail:{name:'Hellfire Trail',text:'Every hex the Pit Lord walks over burns until the start of its next turn: red ground, where fire units get +1 ATK, any other unit still there at the end of its turn takes 1 and enemies move 1 less.'},
   pilot:{name:'Pilot',text:'Inside its machine: the machine’s HP take every hit first; when they are gone the gnome is thrown clear, alive, and the wreck stays as scrap.'},
   behemoth:{name:'Behemoth',text:'Built from 3 scrap. Fires only with a gnome inside, moves only with 3. When it is wrecked the crew climbs out alive and it leaves 2 scrap.'},
   mammoth:{name:'Rime Mammoth',text:'Leaves 1 frost mark on every enemy it walks past, and on every enemy standing next to it at the start of your turn.'},
@@ -1234,7 +1234,7 @@ const FAC={
     theme:'Demons and fire. Rogue demons that do not buff each other or work as a team: each one uses fire to kill and torment, and every death, theirs or their enemies’, is a soul. In the end they are sacrificed to summon the Archdemon: the Court’s carry and its only sure way to victory.',// owner's words, 17 Oct 2026
     passive:'Souls: every Ember unit that falls and every enemy the Court kills is a soul (a Sacrificed Imp and a death next to the Soul Devourer count 2; a Phoenix that leaves an egg counts 0). At 10 souls the Archdemon rises next to the Pit Lord (2 hexes, 18 HP, 4 ATK, Hellwhip), or at once if the whole Court falls. The Archdemon FEEDS: whenever a unit it has wounded dies, it gains +1 ATK and heals 2, with no limit. Hellspawn: a dying Ember unit bursts for 1 ignoring DEF on every adjacent enemy and its hex burns red. Seared targets can’t be healed until the end of their next turn.',
     home:'Red ground: fire units get +1 ATK. Any other unit that starts a turn on red ground takes 1 damage, and Crown Wilds monsters on it burn for 1 each round. An enemy standing on red ground moves 1 less.',homeAtk:1,
-    homeRealm:'Burning ground: there is no home ground on the Realm, only the fire you make. Hexes set alight by Kindle, the breaths, the Fireball, Fire Frenzy, Hellspawn, Scorched Earth or the Pit Lord’s trail are red while they burn: fire units on them get +1 ATK, any other unit that starts its turn on one takes 1 damage, and enemies on them move 1 less.',
+    homeRealm:'Burning ground: there is no home ground on the Realm, only the fire you make. Hexes set alight by Kindle, the breaths, the Fireball, Fire Frenzy, Hellspawn, Scorched Earth or the Pit Lord’s trail are red while they burn: fire units on them get +1 ATK, any other unit still standing on one at the end of its turn takes 1 damage, and enemies on them move 1 less.',
     // v25 (30 Sep 2026): the hell-creature reskin. Same stats and abilities for the five old units; the three Cinder pawns are replaced by 2 Salamanders.
     units:[
       // v75 (brief): demons only. Expendable Imps and Soul Wisps feed the Archdemon; Hellhounds, the Hellknight and the Magma Wyrm are the core kept beside it.
