@@ -1726,6 +1726,7 @@ const solid=(q,r)=>inR(q,r)&&!G.voids[key(q,r)]&&!isTrap(q,r);
 const FEATURES={rock:{name:'Rock',text:'Impassable for walkers. Blocks shots. Flyers can fly over it or perch on top (walkers can\u2019t reach them, but their attacks lose 1 range). Jumpers can pass over.'},
   forest:{name:'Forest',text:'Hidden: a unit inside can only be targeted from 2 hexes or closer. +1 DEF. Straight shots stop here.'},
   hill:{name:'Hill',text:'High ground: a ranged unit on it gets +1 range and +1 damage. Melee attacks up the hill from lower ground deal 1 less.'},
+  fountain:{name:'Healing Fountain',text:'The fountain of your base: at the start of your turn every unit of yours standing next to it heals 2. Nobody can stand on the fountain itself.'},/* v135 (owner) */
   shrine:{name:'Shrine',text:'Heals the unit standing on it 2 HP at the start of your turn. One drink only: after it heals a unit the shrine is spent for the next 2 rounds, then returns.'},
   river:{name:'River',text:'Walkers cannot enter or cross it; flyers fly over. Cross at a bridge.'},
   rubble:{name:'Rubble',text:'Fallen stones: walkers cannot enter or cross; flyers fly over. Shots pass.'},
@@ -1744,7 +1745,7 @@ const centreWalled=()=>!!G&&G.round<RULES.CENTRE_FROM&&!G.noWall;
 // v27 (owner, 1 Oct 2026: "only ONE ring of wall"): the wall is the single ring directly around the Heart (heartR+1); the Heart inside stays sealed with it.
 // The outer grey ring (heartR+2) is open ground from the start.
 const isCentreWall=(q,r)=>centreWalled()&&hd(q,r,0,0)<=heartR()+1;
-const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock'&&featAt(q,r)!=='river'&&featAt(q,r)!=='rubble'&&!isCentreWall(q,r);
+const passable=(q,r)=>solid(q,r)&&featAt(q,r)!=='rock'&&featAt(q,r)!=='river'&&featAt(q,r)!=='rubble'&&featAt(q,r)!=='fountain'&&!isCentreWall(q,r);
 /* The Collapse: from a set round, the outer ring crumbles into void, each ring a little later than the last,
    down to the grey no man's land around the Heart. The ring is marked a full round before it falls. */
 // v27 (owner, 1 Oct 2026: "it closes too fast in later rounds"): the first ring falls at the start round, then the gaps are
@@ -2447,7 +2448,8 @@ function beginTurn(){
     {const sc=cells(u).find(([q,r])=>shrineOn(q,r));if(sc&&healUnit(u,2,'#9ff0c0','Shrine')){vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'});const back=G.round+RULES.SHRINE_REST+1;(G.shrineOff=G.shrineOff||{})[key(sc[0],sc[1])]=back;
       addLog(p.id,`${u.name} drinks from the shrine; it is spent until round ${back}.`);if(trk()&&!SIM){const e=tFx(p.fac,'','Shrine');if(e)e.uses++}}}
     if(F.homeHeal&&onHome(u))healUnit(u,F.homeHeal,'#5fd68e','Indigo ground (home)');
-    if(G.realm&&!u.machine&&inValley(p,u.q,u.r)&&u.hp<u.maxhp)healUnit(u,REALM.heal,'#5fd68e','Home valley');
+    if(G.realm&&!u.machine&&p.fount&&featAt(p.fount[0],p.fount[1])==='fountain'&&distUC(u,p.fount[0],p.fount[1])<=1&&u.hp<u.maxhp){if(healUnit(u,REALM.heal,'#5fd68e','Healing Fountain'))vfx({k:'buff',at:[u.q,u.r],col:'#9fe8ff'})}/* v135 (owner): the fountain heals the units next to it (was the whole valley) */
+    else if(G.realm&&!u.machine&&!(p.fount&&featAt(p.fount[0],p.fount[1])==='fountain')&&inValley(p,u.q,u.r)&&u.hp<u.maxhp)healUnit(u,REALM.heal,'#5fd68e','Home valley');
     // Grove (Circle of Priests): holy ground heals 1 at the start of its owner's turn, friend or foe; credited to the Druid who raised it.
     if(u===G.units.find(x=>x.owner===p.id))blightTick(p);/* v132: once per turn start */
     {const g=cells(u).map(([q,r])=>groveAt(q,r)).find(Boolean);
@@ -4120,7 +4122,7 @@ const CAPTIVE={name:'Captive',icon:'hand',hp:6,atk:0,def:0,mov:3,mt:'walk',at:'n
 const FREEDMAN={name:'Freedman',icon:'helm',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1};
 const ROOM_NAMES={fort:'Hill Fort',crypt:'Crypt',vault:'Vault',lair:'Dragon’s Lair'};
 const ENC_NAMES={guardian:'a Stone Guardian',golem:'a Vault Golem',crate:'a Locked Crate',hold:'an empty hall: hold it alone',forge:'a Forge',captive:'a Captive in chains',dragon:'a Dragon',shrine:'a Shrine',beast:'the Rift Beast'};
-const isBlock=(q,r)=>{const f=featAt(q,r);return f==='rock'||f==='river'||f==='rubble'};
+const isBlock=(q,r)=>{const f=featAt(q,r);return f==='rock'||f==='river'||f==='rubble'||f==='fountain'};
 function wildsMirrors(q,r){const o=[[q,r],[-q-r,r],[q+r,-r],[-q,-r]];const s=new Set(),out=[];for(const c of o){const k=key(c[0],c[1]);if(!s.has(k)){s.add(k);out.push(c)}}return out}
 function hexLine(a,b){const n=hd(a[0],a[1],b[0],b[1]);const out=[];for(let i=0;i<=n;i++){const t=n?i/n:0;const x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t,y=-x-z;let rx=Math.round(x),rz=Math.round(z);const ry=Math.round(y);const dx=Math.abs(rx-x),dy=Math.abs(ry-y),dz=Math.abs(rz-z);if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy<=dz)rz=-rx-ry;out.push([rx,rz])}return out}
 function wildsHash(s){let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)}h^=h>>>15;h=Math.imul(h,0x2c1b3c6d);h^=h>>>12;return (h>>>0)/4294967296}
@@ -4783,6 +4785,7 @@ function genRealm(){
   const order=[0,1,3,2].map(i=>bases[i]);
   G.players.forEach(p=>{const c=order[p.spot%4];p.home=c;p.camp=c;
     p.base=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=1).map(([q,r])=>key(q,r));
+    {const fr=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])===3&&passable(q,r)).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0)||Math.abs(a[0]-c[0])-Math.abs(b[0]-c[0]))[0];if(fr){p.fount=fr;G.feat[key(fr[0],fr[1])]='fountain'}}/* v135 (owner): the Healing Fountain just outside the keep, three hexes from the base's middle toward the centre; the deployment zone is computed after it, so nobody deploys on it */
     p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2&&passable(q,r)).map(([q,r])=>key(q,r))});
 }
 // Ground colour: lush near each base (tinted with its army colour), fading to dry land and then grey wasteland toward the centre.
@@ -6869,6 +6872,7 @@ const FOREST_MODEL='models/tile_forest-meadow.glb';let FOREST_GEO=null;
 const CITY_WALL_MODEL='models/camps_city-wall.glb';let CITY_WALL=null;
 /* v133: the owner's Crown City model (his 'ornate temple complex') fills the Heart inside the wall until the Beast lands; then the code rubble takes over */
 const CITY_MODEL='models/camps_city.glb';let CITY=null;
+const FOUNTAIN_MODEL='models/camps_healing-fountain.glb';/* v135: the owner's stone fountain on every base's middle hex */
 function glCityLoad(){if(CITY!==null)return;CITY=false;glModel(CITY_MODEL).then(src=>{CITY={src,bb:src.userData.bb};GL.sig='';GL.dirty=true}).catch(()=>{})}
 const cityUp=()=>!!(G&&G.realm&&CITY&&(!G.throneBeast||(typeof fallPre==='function'&&fallPre())));
 function glCityWallLoad(){if(CITY_WALL!==null)return;CITY_WALL=false;glModel(CITY_WALL_MODEL).then(src=>{CITY_WALL={src,bb:src.userData.bb};GL.sig='';GL.dirty=true}).catch(()=>{})}
@@ -7066,7 +7070,8 @@ function glTerrSig(){let h=(typeof fallPre==='function'&&fallPre())?977:0;h+=(ty
 function glProps(){if(GL.props)GL.scene.remove(GL.props);const g=new THREE.Group();GL.props=g;GL.scene.add(g);if(!G.realm||!G.players)return;
   for(const p of G.players){const MD=BASE_MODELS[p.fac];if(!MD||!p.base||!p.base.length)continue;const c=p.base.map(k=>k.split(',').map(Number)).sort((a,b)=>hd(b[0],b[1],0,0)-hd(a[0],a[1],0,0))[0];
     glModel(MD.file).then(src=>{if(GL.props!==g)return;const o=src.clone();const bb=src.userData.bb;let sc=MD.h/bb.h;if(MD.w)sc=Math.min(sc,MD.w/Math.max(bb.w||1,bb.d||1));o.scale.setScalar(sc);const [x,z]=world(c[0],c[1]);o.position.set(x-bb.cx*sc,0.03-bb.y0*sc,z-bb.cz*sc);o.rotation.y=Math.atan2(-x,-z)+(MD.rot||0);
-      const pv=new THREE.Group();pv.position.set(x,0,z);pv.rotation.y=Math.atan2(-x,-z);o.position.set(-bb.cx*sc,0.03-bb.y0*sc,-bb.cz*sc);o.rotation.y=MD.rot||0;pv.add(o);g.add(pv);glNoCull(g);GL.dirty=true}).catch(()=>{})}}
+      const pv=new THREE.Group();pv.position.set(x,0,z);pv.rotation.y=Math.atan2(-x,-z);o.position.set(-bb.cx*sc,0.03-bb.y0*sc,-bb.cz*sc);o.rotation.y=MD.rot||0;pv.add(o);g.add(pv);glNoCull(g);GL.dirty=true}).catch(()=>{})}
+  if(G.realm)for(const p of G.players){if(!p.fount||featAt(p.fount[0],p.fount[1])!=='fountain')continue;const [fq,fr]=p.fount;glModel(FOUNTAIN_MODEL).then(src=>{if(GL.props!==g){if(!GL.fountRe){GL.fountRe=1;GL.sig='';GL.dirty=true}return}/* the props were rebuilt while the model loaded: one more rebuild picks it up */const o=src.clone();o.userData.fount=1;const bb=src.userData.bb;const sc=1.55/Math.max(bb.w||1,bb.d||1);o.scale.setScalar(sc);const [x,z]=world(fq,fr);o.position.set(x-bb.cx*sc,0.03-bb.y0*sc,z-bb.cz*sc);o.traverse(m=>{if(m.isMesh){m.castShadow=innerWidth>=1000;m.receiveShadow=true}});g.add(o);glNoCull(g);GL.dirty=true}).catch(()=>{})}}
 function glPlinth(){if(GL.plinth)GL.scene.remove(GL.plinth);const Rw=(G.Rv||G.R)*S3+1.05;
   const m=gMesh(new THREE.CylinderGeometry(Rw,Rw+0.3,0.9,6),gMat('#171a21',{roughness:0.9}),0,-0.95,0);m.rotation.y=Math.PI/2;m.castShadow=false;GL.plinth=m;GL.scene.add(m)}
 function glSunFit(){const e=(G.Rv||G.R)*S3+3,sc=GL.sun.shadow.camera;Object.assign(sc,{left:-e,right:e,top:e,bottom:-e,near:1,far:e*5});sc.updateProjectionMatrix();GL.sun.position.set(-e*0.55,e*1.3,e*0.5);GL.sun.target.position.set(0,0,0)}
@@ -9292,7 +9297,7 @@ function storyRules(){return `<h3>The Realm: the story</h3><ul>
 function realmRules(){if(typeof STORY==='function'&&RULES.STORY2)return storyRules();return `<h3>The Realm (test board)</h3><ul>
   <li><b>No AP.</b> Every unit may move once and act once (attack or ability) each turn. Abilities only rest.</li>
   <li><b>Your army grows.</b> You start with your Leader and ${REALM.start} units. Once per turn, tap a unit in the reserve bar (above the board) to call it into your base; if you forget, the first one comes at the end of your turn. The fallen are gone for good.</li>
-  <li><b>Home valley.</b> Your base sits in a corner valley ringed by broken mountains. Units inside it heal ${REALM.heal} at the start of your turn. Two Valley Camps live there (tier 1): the unit that lands the killing blow gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good, so choose who strikes last, and the camp becomes your <b>spawn site</b>. Camps never come back.</li>
+  <li><b>Home valley and the Healing Fountain.</b> Your base sits in a corner valley ringed by broken mountains. The fountain stands just outside the keep, on the road to the centre (nobody can stand on it): every unit of yours next to it heals ${REALM.heal} at the start of your turn. Two Valley Camps live there (tier 1): the unit that lands the killing blow gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good, so choose who strikes last, and the camp becomes your <b>spawn site</b>. Camps never come back.</li>
   <li><b>Spawn sites.</b> A cleared tier-1 or tier-2 camp is yours: when you call a unit you may put it next to any spawn site you own. A site stays yours until an enemy unit stands on it.</li>
   <li><b>The edges.</b> In the middle of each edge waits a tier-2 lair shared by two bases: the <b>Healing Spring</b> (left and right: its killing blow heals every unit of your army ${REALM.springHeal}). Ancient Ruins near the edges hold a chest with a relic.</li>
   <li><b>The wasteland.</b> Two <b>Ogre Lairs</b> (tier 2) stand north and south of the Heart, close to the city: the unit that lands the killing blow gains +${REALM.ogreAtk} ATK for good and the lair becomes a spawn site right by the centre, worth fighting over. Two <b>Elder Drakes</b> (tier 3) wait at the top and bottom edges of the map: their killing blow scores ${REALM_MON.drake.pts} points and brings back your strongest fallen unit. Four <b>levers</b> stand out there too: a unit standing on one pulls it for its side, and once levers of two different sides are pulled a trap door opens and the <b>Wanderer</b> (${REALM.wanderHp} HP, roams 3 hexes a round) runs out; its killing blow scores ${REALM.wanderPts}. You choose when to wake it.</li>
@@ -9635,6 +9640,7 @@ function drawMonster2D(c,u,x,y,S,now){if(!(S>0))return;/* v46: a monster badge s
   if(S>=10){c.font=`800 ${Math.max(9,S*0.42)}px Oxanium,sans-serif`;c.lineWidth=3;c.strokeStyle='#0b0e14';const t=`${Math.ceil(u.hp)}`;c.strokeText(t,x+r*0.85,y-r*0.85);c.fillStyle='#f2e6ff';c.fillText(t,x+r*0.85,y-r*0.85)}c.restore()}
 function drawFeature2D(f,x,y,S,q,r){
   ctx.save();
+  if(f==='fountain'){hexPath(x,y,S*0.97);ctx.fillStyle='#4a5a66';ctx.fill();ctx.beginPath();ctx.arc(x,y+S*0.08,S*0.55,0,7);ctx.fillStyle='#6f7f8c';ctx.fill();ctx.beginPath();ctx.arc(x,y+S*0.08,S*0.4,0,7);ctx.fillStyle='#5cc8ff';ctx.fill();ctx.beginPath();ctx.arc(x,y-S*0.1,S*0.16,0,7);ctx.fillStyle='#cfd3dc';ctx.fill();ctx.restore();return}/* v135 the Healing Fountain */
   if(f==='rock'){const lk=G&&G.wallLook&&G.wallLook[key(q,r)];hexPath(x,y,S*0.97);ctx.fillStyle=lk?({fence:'#3a3a44',gravefence:'#2c2e26',mausoleum:'#4a4650',arch:'#8a8070',boulder:'#5a524b',palisade:'#6b4a2e',icespire:'#9fd6f2',obsidian:'#1c1418',menhir:'#77726a',scrap:'#6b5236',marble:'#cfc9bb',crystal:'#2f8f7a',clockwall:'#4a2468',bluestone:'#2a4a8a',cliff:'#2a2d33'})[lk]||'#2a2d33':'#2a2d33';ctx.fill();ctx.beginPath();ctx.moveTo(x-S*0.6,y+S*0.35);ctx.lineTo(x-S*0.35,y-S*0.4);ctx.lineTo(x+S*0.1,y-S*0.6);ctx.lineTo(x+S*0.6,y-S*0.2);ctx.lineTo(x+S*0.55,y+S*0.4);ctx.closePath();
     const g=ctx.createLinearGradient(x-S*0.6,y-S*0.6,x+S*0.6,y+S*0.4);g.addColorStop(0,'#9aa0aa');g.addColorStop(1,'#4b5059');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#1b1d22';ctx.lineWidth=1.2;ctx.stroke()}
   if(f==='river'){hexPath(x,y,S*0.99);const g=ctx.createLinearGradient(x-S,y-S,x+S,y+S);g.addColorStop(0,'#2f7fc0');g.addColorStop(1,'#1d5a8f');ctx.fillStyle=g;ctx.fill();
