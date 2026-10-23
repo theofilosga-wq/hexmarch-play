@@ -1178,12 +1178,12 @@ const hasTrait=(u,t)=>!!u&&(u.trait===t||u.trait2===t);// v77: a unit may carry 
 const TALENTS={
   fire:[{k:'scorch',name:'Scorched Earth',text:'Your basic attacks set the target’s hex ablaze until your next turn (it feeds Wildfire).'},
         {k:'soultithe',name:'Soul Tithe',text:'Every enemy your units kill counts as 2 souls: the Archdemon comes sooner.'},
-        {k:'hellsgate',name:'Hell’s Gate',text:'The Archdemon rises next to the unit that gathered the tenth soul, and it may move and act at once.'}],// v77 (owner): talents must change how you play
+        {k:'hellfire',name:'Hellfire',text:'When one of your units dies, its death burst deals 2 damage instead of 1 to every enemy next to it.'}],/* v130 (owner) */// v77 (owner): talents must change how you play
   ice:[{k:'frozenheart',name:'Frozen Heart',text:'Your Ice Statues keep the ATK of the unit they were (instead of 2).'},
        {k:'grip',name:'Winter’s Grip',text:'Enemies that start their turn next to any of your units are chilled.'},
        {k:'permafrost',name:'Permafrost',text:'The first Frost hit on a frozen enemy makes it stay frozen one turn longer (once per freeze).'}],// v77 (owner)
   giants:[{k:'avalanche',name:'Avalanche',text:'Earthquake reaches 3 hexes from each giant instead of 2.'},
-          {k:'oldmountain',name:'Old Mountain',text:'Every giant standing on stone ground heals 1 HP at the start of your turn.'},
+          {k:'oldmountain',name:'Old Mountain',text:'A giant that neither moved nor attacked in your turn stands like a mountain: it heals 3 at the start of your next turn.'},/* v130 (owner: the stone-ground version made no sense on the Realm) */
           {k:'hunters',name:'Monster Hunters',text:'Your giants’ basic attacks deal +2 damage to room monsters, Dragons, the Wanderer and the Rift Beast.'}],
   gnomes:[{k:'hotswap',name:'Hot Swap',text:'A gnome thrown from its wreck climbs at once into a machine of yours standing next to it, and a machine with 2 gnomes inside attacks twice a turn.'},// v77 (owner)
           {k:'workshop',name:'Spare Parts',text:'Every wrecked machine of yours leaves 2 scrap instead of 1.'},
@@ -1192,8 +1192,8 @@ const TALENTS={
           {k:'sacredground',name:'Sacred Ground',text:'Groves last 5 turns instead of 3.'},
           {k:'lastrites',name:'Last Rites',text:'When one of your units dies, your units next to it heal 3.'}],
   warband:[{k:'bloodlust',name:'Bloodlust',text:'Momentum: once per turn, a unit of yours that kills with a basic attack may act again.'},
-           {k:'discipline',name:'Shield Discipline',text:'All your units get +1 DEF while next to an ally.'},
-           {k:'warchief',name:'Drillmaster',text:'Move as One carries the block 1 hex further.'}],
+           {k:'discipline',name:'Lockstep',text:'Every unit that marched with Move as One this turn gets +1 DEF until your next turn.'},/* v130 (owner): the old +1 DEF next to an ally was a stat stick */
+           {k:'warchief',name:'Drillmaster',text:'Every unit marches 1 hex further with Move as One.'}],
   rift:[{k:'horizon',name:'Event Horizon',text:'Your throws slam for 1 more damage (5 instead of 4).'},
         {k:'aftershock',name:'Aftershock',text:'When one of your holes closes, every enemy next to it takes 2 damage ignoring DEF.'},// v77 (owner)
         {k:'gravitylord',name:'Gravity Lord',text:'Rift Storm holes pull from 3 hexes away instead of 2.'}],
@@ -1881,7 +1881,7 @@ const blockRank=v=>hasTrait(v,'shieldwall')?0:(v.leader||hasTrait(v,'captain'))?
 const MARCH={foe:3,narrow:3,range:4};
 if(RULES.MARCH)Object.assign(ABIL.blockmove,{aim:'empty',range:MARCH.range,desc:'An order, not an action: tap where you want the army. Every connected unit that has not moved walks its own way there, as far as it can walk, and they form up for the situation: a shield wall facing the nearest enemy (spears behind shields), a ring round the Throne, a column through narrow ground, a marching box in the open. A unit that can reach no place in the formation stays. They all count as moved and can still attack.'});
 function marchKind(v){return hasTrait(v,'shieldwall')?'shield':(v.leader||hasTrait(v,'captain'))?'leader':'spear'}
-function marchReach(v,grp,m){const N=(engaged(v)||(G.realm&&stickyNear(v)))?Math.min(1,effMov(v)):effMov(v);const out=new Map();out.set(key(v.q,v.r),0);let fr=[[v.q,v.r]];
+function marchReach(v,grp,m){const N=((engaged(v)||(G.realm&&stickyNear(v)))?Math.min(1,effMov(v)):effMov(v))+(utal(v,'warchief')?1:0);/* v130: Drillmaster marches 1 further */const out=new Map();out.set(key(v.q,v.r),0);let fr=[[v.q,v.r]];
   for(let s=1;s<=N;s++){const nx=[];for(const [q,r] of fr)for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(out.has(k)||!inR(a,b)||!passable(a,b)||(G.realm&&v.summon&&a===0&&b===0))continue;const o=m.get(k);if(o&&!grp.has(o))continue;out.set(k,s);nx.push([a,b])}fr=nx}
   return out}
 function marchFoes(u){return G.units.filter(v=>alive(v)&&v!==u&&(v.kind!=='wall'?(v.owner>=0&&tm(v.owner)!==tm(u.owner)&&!v.statue&&!v.egg):(v.monster||v.beast)))}
@@ -1956,7 +1956,7 @@ function effDef0(u){const cry=u.kind!=='wall'&&u.st&&u.st.cry>0?1:0;/* v81 Battl
   if(u.kind!=='wall'&&loneGiant(u))return effDef1(u)+1+cry;return effDef1(u)+cry}
 function effDef1(u){
   if(u.kind==='wall')return u.beast?(u.def!=null?u.def:RULES.BEAST_DEF):u.monster?u.def:0;const F=facOf(u);
-  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&G.units.some(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(u,v)===1)?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def')+kingsGuard(u)+(heavyCrew(u)?1:0)+(RULES.HEAVY&&!RULES.FORTRESS&&u.kind!=='wall'&&!u.machine&&G.players[u.owner]&&G.players[u.owner].secret?1:0)+(RULES.PHALANX_DEF&&inPhalanx(u)?RULES.PHALANX_DEF:0)+wildsDef(u));
+  return Math.max(0,u.def+(heartBuff(u)?1:0)+(F.homeDef&&onHome(u)?F.homeDef:0)+(cells(u).some(([q,r])=>featAt(q,r)==='forest')?1:0)+(hasRelic(u,'aegis')?2:0)+(utal(u,'discipline')&&u.st&&u.st.lockstep?1:0)-(u.st&&u.st.sunder>0?1:0)+kingStat(u,'def')+kingsGuard(u)+(heavyCrew(u)?1:0)+(RULES.HEAVY&&!RULES.FORTRESS&&u.kind!=='wall'&&!u.machine&&G.players[u.owner]&&G.players[u.owner].secret?1:0)+(RULES.PHALANX_DEF&&inPhalanx(u)?RULES.PHALANX_DEF:0)+wildsDef(u));
 }
 /* ---------- v21 counter effects: debuffs, Seared, delay, Sunder, stealth, cleanse ----------
  Seared (Ember Court: Flame Breath, Fireball): st.seared=1 until the end of the target's next turn; every heal on it is blocked (healUnit).
@@ -2381,7 +2381,7 @@ function hellAura(p){if(!RULES.ARCHDEMON)return;const ds=G.units.filter(d=>d.kin
     for(const v of G.units.slice())if(v.owner===p.id&&v.kind!=='wall'&&!v.statue&&alive(v)&&distUU(v,d)===1)hurt(v,1,'#ff4a3d',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 function beginTurn(){
   const p=P(G.cur);tbRecord(p);hellAura(p);G.tok++;G.sel=null;G.amode=null;G.aim=null;G.inspect=null;G.gateUsed=false;G.combo=false;
-  for(const u of G.units)if(u.owner===p.id){if(G.realm){u.hpPrev2=u.hpPrev1;u.hpPrev1=u.hp}u.sync=0;u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.dbl=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cdx){u.cdx=Object.assign({},u.cdx);for(const kk in u.cdx)if(u.cdx[kk]>0)u.cdx[kk]--}if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.cry>0)u.st.cry--;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0;if(!(u.st.frozen>0))u.st.chill=0}/* v77 (owner): a quiet turn clears the marks and the chill */}}// Rally (+1 ATK) and Guard last until the start of your next turn
+  for(const u of G.units)if(u.owner===p.id){if(u.st)u.st.lockstep=0;if(G.realm){u.hpPrev2=u.hpPrev1;u.hpPrev1=u.hp}u.sync=0;u.chaseNow=u.chase!=null?u.chase:null;u.chase=null;u.moved=false;u.acted=false;u.mom=false;u.hr=false;u.dbl=false;u.mdist=0;u.swings=0;u.qk=0;u.freeAtk=0;u.freeMove=0;u.atkd=false;u.fv=0;u.kt=0;u.echoed=false;if(u.st&&u.st.stealth)tFxBy(u.id,G.players[u.owner].fac,'Stealth','stealthTurns',1);if(u.cd>0)u.cd--;if(u.cd>0&&onThrone(u)&&oldCentre())u.cd--;if(u.cd2>0)u.cd2--;if(u.cdx){u.cdx=Object.assign({},u.cdx);for(const kk in u.cdx)if(u.cdx[kk]>0)u.cdx[kk]--}if(u.cd2>0&&onThrone(u)&&oldCentre())u.cd2--;if(u.st){u.st.rally=0;u.st.guard=0;if(u.st.cry>0)u.st.cry--;if(u.st.fb>0&&--u.st.fbT<=0){u.st.fb=0;u.st.fbT=0;if(!(u.st.frozen>0))u.st.chill=0}/* v77 (owner): a quiet turn clears the marks and the chill */}}// Rally (+1 ATK) and Guard last until the start of your next turn
   // Stealth tracking: every enemy of a stealthed Second Hand that has it in attack reach from more than 2 hexes at the start of its turn counts one attack avoided.
   if(trk()&&!SIM)for(const s of G.units){if(!s.st||!s.st.stealth||s.kind==='wall'||tm(s.owner)===p.team)continue;let n=0;const m=occ();
     for(const w of G.units){if(w.owner!==p.id||w.kind==='wall'||w.at==='none'||w.egg||distUU(w,s)<=2)continue;const set=atkCells(w,m);if(cells(s).some(([q,r])=>set.has(key(q,r))))n++}
@@ -2428,7 +2428,7 @@ function beginTurn(){
     const n=curseCount(u);
     if(n){CUR_SRC=u.st.curseBy!=null?byId(u.st.curseBy):null;CUR_TAG=null;CUR_NAME='Curse ticks';{const pb=paleBite(u);if(pb&&!SIM&&trk()){const e=tFx('curse','','Pale ground: curse ticks +1');if(e)e.uses++}hurt(u,curseHit(u,n)+pb,'#e8e23a',true)}CUR_SRC=null;CUR_NAME=null;
       if(RULES.ROT_CURSES)rotTick(u);if(!alive(u))continue;for(const c of Object.keys(u.st.curses)){if(--u.st.curses[c]<=0){delete u.st.curses[c];if(c==='frailty')u.st.frailN=0}}}
-    if(fireIn&&p.fac!=='fire'&&cells(u).some(([q,r])=>terrAt(q,r)==='fire')){const kp=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.kindle);CUR_SRC=kp?(G.units.find(v=>v.owner===kp.owner&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===kp.owner&&v.kind!=='wall')||null):null;CUR_NAME=kp?'Kindle ground':'Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;CUR_SRC=null;if(!alive(u))continue}
+    /* v130 (owner): burning ground now burns at the END of the unit's own turn (see endTurn), so it can step out of the fire first */
     if(oldCentre()&&G.holder===p.team&&cells(u).some(([q,r])=>isHeart(q,r)))healUnit(u,1,'#ffd766','Heart healing');
     // Shrines are consumable (v22b): the first unit it heals uses it up; the shrine is gone for the next 2 rounds and returns at the start of the round after.
     {const sc=cells(u).find(([q,r])=>shrineOn(q,r));if(sc&&healUnit(u,2,'#9ff0c0','Shrine')){vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'});const back=G.round+RULES.SHRINE_REST+1;(G.shrineOff=G.shrineOff||{})[key(sc[0],sc[1])]=back;
@@ -2441,7 +2441,7 @@ function beginTurn(){
       else if(g&&!u.statue&&!u.egg){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=byId(g.by);CUR_TAG='Dot';CUR_NAME='Holy ground (burn)';if(!SIM)vfx({k:'buff',at:[u.q,u.r],col:'#ffe9a8'});hurt(u,1,'#ffe9a8',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!alive(u))continue}}
     // Bless (Lightwarden, v27): heals 1 at the start of each of the owner's turns while it lasts (Seared blocks it like any heal).
     if(u.st.bless>0&&healUnit(u,1,'#ffe9a8','Bless',u.st.blessBy))vfx({k:'buff',at:[u.q,u.r],col:'#ffd766'});
-    if(u.size===2&&talent(p,'oldmountain')&&onHome(u))healUnit(u,1,'#5fd68e','Old Mountain (talent)');
+    if(u.size===2&&talent(p,'oldmountain')&&u.rested&&u.hp<u.maxhp)healUnit(u,3,'#5fd68e','Old Mountain (talent)');u.rested=0;
 
     if(G.units.some(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&utal(v,'grip')&&distUU(u,v)===1))chillT(u,2,{fac:'ice',name:'Winter’s Grip (talent)'});
     // Frost Hold's cold: blue ground under you chills you at the start of your turn.
@@ -2501,7 +2501,8 @@ function endTurn(){
   if(RULES.PHALANX&&FAC[p.fac].phalanx&&!SIM&&trk()){const n=G.units.filter(u=>u.kind!=='wall'&&u.owner===p.id&&inPhalanx(u)).length;const e=tFx(p.fac,'','Phalanx: turns ended in formation');if(e){e.turns=(e.turns||0)+1;if(n){e.uses++;e.hits+=n}}}
   if(!G.realm)claimGround(p);// v77 (owner): no home ground on the Realm, only ground that abilities paint
   if(RULES.PILOTS2)for(const u of G.units)if(u.owner===p.id&&isGnome(u)&&u.build==='still'){if(!u.moved&&key(u.q,u.r)===u.buildPos)u.build='done';else{u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'build delayed','#ff6ec7')}}
-  for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){
+  {const fireIn=G.players.some(x=>x.alive&&x.fac==='fire');if(fireIn&&p.fac!=='fire')for(const u of G.units.slice()){if(u.owner!==p.id||u.kind==='wall'||!alive(u)||!cells(u).some(([q,r])=>terrAt(q,r)==='fire'))continue;const kp=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.kindle);CUR_SRC=kp?(G.units.find(v=>v.owner===kp.owner&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===kp.owner&&v.kind!=='wall')||null):null;CUR_NAME=kp?'Kindle ground':'Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;CUR_SRC=null}}/* v130 (owner): fire burns whoever still stands in it when its turn ENDS */
+  for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){u.rested=(!u.moved&&!u.acted)?1:0;/* v130 Old Mountain */
     // Defender Barrier (v25): a unit that made no basic attack and used no ability this turn has a Barrier until an enemy hit breaks it.
     {const had=!!u.bar;u.bar=barrierAble(u)&&!u.fought;u.fought=false;if(u.bar&&!had&&!SIM&&trk()){const s=tStat(u);const e=s&&tFx(s.fac,s.name,'Barrier');if(e)e.raised=(e.raised||0)+1}}
     if(u.st.chill>0)u.st.chill--;if(u.st.tslow)u.st.tslow=0;
@@ -2648,7 +2649,7 @@ function kill(t){
     const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Death blast';for(const v of near)if(tm(v.owner)!==tm(t.owner))hurt(v,afterDef(2,effDef(v)),'#ff9a3d');CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
   // v37 Hellspawn (Ember Court passive, owner 2 Oct 2026): a dying Ember Court unit bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.
   if(G.players[t.owner]&&G.players[t.owner].fac==='fire'&&!t.summon&&!t.egg&&!(t.sacrificed&&!(G.realm&&REALM.sacStack))){const ring=cells(t);if(!SIM)vfx({k:'ab',ab:'kindle',shape:'nova',from:[t.q,t.r],to:[t.q,t.r],cells:DIRS.map(([a,b])=>[t.q+a,t.r+b]),col:'#ff5a1a',cam:1});
-    const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Hellspawn (death burst)';let hit=0;for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner)){hurt(v,REALM.burst,'#ff5a1a');hit++}
+    const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Hellspawn (death burst)';let hit=0;for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner)){hurt(v,REALM.burst+(talent(G.players[t.owner],'hellfire')?1:0),'#ff5a1a');hit++}
     for(const [a,b] of ring)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:t.owner};
     if(trk()&&!SIM){const e=tFx('fire',t.name,'Hellspawn (death burst)');if(e)e.uses++}if(!SIM&&hit)addLog(t.owner,`The ${t.name} bursts in hellfire as it dies.`);CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
   // v37 Last of the Old Ones (Stone Giants passive): when a giant falls, every surviving giant of its army heals 3 and gains +1 ATK for the rest of the game (u.oldAtk).
@@ -3620,7 +3621,7 @@ function useAbility(u,k,q,r,dest){
     case 'convergence':{const area=shapeCells(u,k,q,r);if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:'#2bff5a',cam:1});const m=occ();const seen=new Set();
       for(const [a,b] of area){const v=m.get(key(a,b));if(!v||seen.has(v)||v.kind==='wall')continue;seen.add(v);if(tm(v.owner)===tm(u.owner))healUnit(v,3,'#3fa8ff');else{hurt(v,3,'#2bff5a');if(alive(v)){if(v.size!==2)v.st.anchor=1;if(!(v.q===q&&v.r===r))pushUnit(v,dirTo(q,r,v.q,v.r),1,u)}}}break}
     // ---- v71 the Phalanx ----
-    case 'blockmove':{if(RULES.MARCH){const P=marchPlan(u,[q,r]);if(!P.moves.length)break;for(const [v,a,b] of P.moves){if(!SIM)setAnim(v);v.q=a;v.r=b;v.dir=P.d;v.moved=true;v.blockT=G.tok}for(const v of P.grp)if(v.kind!=='wall'&&v.size!==2)v.dir=P.d;G.players[u.owner].face=P.d;tSup('moved',P.moves.length);
+    case 'blockmove':{if(RULES.MARCH){const P=marchPlan(u,[q,r]);if(!P.moves.length)break;for(const [v,a,b] of P.moves){if(!SIM)setAnim(v);v.q=a;v.r=b;v.dir=P.d;v.moved=true;v.blockT=G.tok;if(utal(v,'discipline')){v.st.lockstep=1;if(!SIM)fx(v,'lockstep +1 DEF','#eef0f4')}}for(const v of P.grp)if(v.kind!=='wall'&&v.size!==2)v.dir=P.d;G.players[u.owner].face=P.d;tSup('moved',P.moves.length);
       if(!SIM){addLog(u.owner,`The army marches: ${P.moves.length} unit${P.moves.length===1?'':'s'} form a ${marchName(P.shape)}.`);for(const [v] of P.moves)braceCheck(v)}break}
       const d=aimDir(u,q,r);if(d<0)break;const P0=blockPlan(u,d);const moved=new Set();
       for(const [v,a,b] of P0.moves){if(!SIM)setAnim(v);v.q=a;v.r=b;v.dir=d;moved.add(v)}for(const v of P0.grp)v.blockT=G.tok;for(const v of P0.grp)if(v.kind!=='wall'&&v.size!==2)v.dir=d;G.players[u.owner].face=d;if(P0.cost&&!SIM)addLog(u.owner,`The block turns ${P0.turn*60}°: the shields walk to the new front, ${P0.cost} hex${P0.cost>1?'es':''} lost.`);
