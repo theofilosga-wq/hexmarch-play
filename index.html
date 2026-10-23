@@ -979,6 +979,19 @@ const ABIL={
 
   // Circle of Priests (v19d, key 'arcane' kept in code): heal, shield, holy ground and blessings. Almost no damage of its own; the Zealot hits harder for every point it was healed this turn.
   // v27 (owner, 1 Oct 2026: healing was "through the roof"): Mend 4 -> 3, Sanctuary 3 -> 2, Grace removed; Wall of Light replaced by Bless.
+  /* v132 SHADOW PRIESTS (owner 23 Oct 2026): a priest whose light kills turns to shadow; its spells are the opposite of the light ones; a kill in shadow turns it back */
+  anathema:{name:'Anathema',cost:2,cd:4,aim:'self',shape:'aura',size:40,hits:'none',special:'anathema',bot:'anathema',
+    desc:'The dark mirror of Sanctuary: every enemy within 3 hexes of any of your units takes 2 damage ignoring DEF, and every one of its ability rests grows by 2 turns.'},
+  shwither:{name:'Wither',cost:1,cd:2,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',dmg:3,pierce:1,hex:2,special:'shwither',
+    desc:'The dark mirror of Mend: an enemy within 3 takes 3 damage ignoring DEF and is Hexed (2 less ATK and 1 more damage from abilities for 2 of its turns).'},
+  draintouch:{name:'Drain Touch',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:4,special:'drain',
+    desc:'The dark mirror of Lay on Hands: an adjacent enemy takes 4 minus DEF and the Seraph heals as much as it dealt.'},
+  blight:{name:'Blight',cost:2,cd:3,aim:'hex',range:2,shape:'blast',size:1,hits:'none',special:'blight',bot:'blight',
+    desc:'The dark mirror of Grove: a hex within 2 and its 6 neighbours become blighted ground for 3 turns (never the Heart): at the start of your turn every enemy standing on it takes 2 damage ignoring DEF and cannot be healed during its next turn (Decay).'},
+  dusk:{name:'Dusk',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',special:'dusk',bot:'dusk',
+    desc:'The dark mirror of Bless: an enemy within 3 is shrouded for 3 turns: 1 less ATK, and it takes 1 damage ignoring DEF at the start of each of your next 3 turns.'},
+  butchery:{name:'Butchery',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:3,special:'butchery',
+    desc:'The dark mirror of Field Surgery: strike an adjacent enemy for 3 minus DEF, then the most wounded other enemy next to the Hospitaller takes 3 minus DEF.'},
   sanctuary:{name:'Sanctuary',cost:2,cd:4,aim:'self',shape:'aura',size:40,hits:'ally',heal:2,overheal:1,cdCut:2,bot:'sanctuary',// v62 (owner): the whole army, anywhere; every unit healed comes back faster// overheal = the most points one heal may turn into damage
     desc:'Every unit of your army, wherever it stands, heals 2, and every unit that was healed has its ability rests cut by 2 turns (ready sooner). Overflowing light: for each unit already at full HP, 1 damage (ignoring DEF) hits the enemy nearest to it, within 3.'},
   mend:{name:'Mend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',heal:3,overheal:3,cleanse:1,bot:'mend',
@@ -1194,9 +1207,9 @@ const TALENTS={
   warband:[{k:'bloodlust',name:'Bloodlust',text:'Momentum: once per turn, a unit of yours that kills with a basic attack may act again.'},
            {k:'discipline',name:'Lockstep',text:'Every unit that marched with Move as One this turn gets +1 DEF until your next turn.'},/* v130 (owner): the old +1 DEF next to an ally was a stat stick */
            {k:'warchief',name:'Drillmaster',text:'Every unit marches 1 hex further with Move as One.'}],
-  rift:[{k:'horizon',name:'Event Horizon',text:'Your throws slam for 1 more damage (5 instead of 4).'},
-        {k:'aftershock',name:'Aftershock',text:'When one of your holes closes, every enemy next to it takes 2 damage ignoring DEF.'},// v77 (owner)
-        {k:'gravitylord',name:'Gravity Lord',text:'Rift Storm holes pull from 3 hexes away instead of 2.'}],
+  rift:[{k:'opendoors',name:'Open Doors',text:'Enemies no longer shut your portal ends by standing next to them.'},
+        {k:'longgate',name:'Long Gate',text:'Every portal pair you open lasts 1 round longer.'},
+        {k:'ricochet',name:'Ricochet',text:'A Rift Shot bullet that kills flies on, straight, to the next unit in its path.'}],/* v132 (owner) */
   curse:[{k:'plaguewind',name:'Plague Wind',text:'Your curses last 1 turn longer.'},
          {k:'chorus',name:'Martyr’s Chorus',text:'When one of your units dies, enemies next to it get Plague.'},
          {k:'rites',name:'Final Rites',text:'Doom also inflicts Frailty and Leech.'}],
@@ -1288,7 +1301,7 @@ const FAC={
       {name:'Mechanic',icon:'gear',hp:8,atk:1,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'build2',ab2:'repair',mach:{name:'Repair Spider',hp:12,atk:1,def:0,mov:3,at:'melee',rng:1,ab:'repair2',ab2:'salvage'}}]},
   arcane:{name:'Circle of Priests',color:'#8f5cff',
     theme:'Healers only, no shields: expose a priest, mend it, and the light that overflows burns the nearest enemy. Faith brings the dead back.',
-    passive:'Overflowing light: every heal beyond full HP becomes damage on the nearest enemy within 3. Faith: every point of healing a priest’s heal (Mend, Lay on Hands, Tend, Field Surgery, Sanctuary, Bless, Grove, Radiance) actually lands on a priest unit is 1 Faith, but only while one of your units lies fallen (no banking Faith with nobody dead); healing a unit already at full HP gives none (that light burns an enemy instead), and the valley, shrines and the Spring give none; at 16 the unit that died last rises where it fell at full HP (then 22, then 28, +6 each time), at most one per round. Holy ground heals allies and burns enemies; Bless gives +1 ATK and healing over time; Mend lifts a debuff; whoever hits a blessed priest takes 2 back. No tank and low HP: a priest alone dies in a turn or two.',
+    passive:'Shadow form: a priest whose light kills an enemy turns to shadow, its spell becomes the dark mirror of the light one, and a kill in shadow returns the light (see How to play). Overflowing light: every heal beyond full HP becomes damage on the nearest enemy within 3. Faith: every point of healing a priest’s heal (Mend, Lay on Hands, Tend, Field Surgery, Sanctuary, Bless, Grove, Radiance) actually lands on a priest unit is 1 Faith, but only while one of your units lies fallen (no banking Faith with nobody dead); healing a unit already at full HP gives none (that light burns an enemy instead), and the valley, shrines and the Spring give none; at 16 the unit that died last rises where it fell at full HP (then 22, then 28, +6 each time), at most one per round. Holy ground heals allies and burns enemies; Bless gives +1 ATK and healing over time; Mend lifts a debuff; whoever hits a blessed priest takes 2 back. No tank and low HP: a priest alone dies in a turn or two.',
     home:'Indigo ground: your units standing on it heal 1 at the start of your turn.',
     homeRealm:'Holy ground: the Druids’ Groves are the only ground you make: your units on a Grove heal 1 at the start of your turn and enemies on it burn for 1. No home ground on the Realm.',homeHeal:1,
     units:[
@@ -1947,7 +1960,7 @@ function covered(t){if(RULES.HEAVY)return false;if(t.kind==='wall'||t.summon||!f
 const kingsGuard=u=>!!RULES.KINGSGUARD&&u.king&&u.kind!=='wall'&&G.players[u.owner]&&G.players[u.owner].fac==='warband'&&G.units.some(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&distUU(u,v)===1)?1:0;
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine&&MACHINES[u.wpn]?MACHINES[u.wpn].atk:0)+(RULES.FORTRESS&&u.name==='Grenadier'&&u.wpn&&fortSecret(u)?1:0)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.fed||0)+loneGiant(u)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.cry>0?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine&&MACHINES[u.wpn]?MACHINES[u.wpn].atk:0)+(RULES.FORTRESS&&u.name==='Grenadier'&&u.wpn&&fortSecret(u)?1:0)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.fed||0)+loneGiant(u)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.cry>0?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)-(u.st.dusk>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+synB(u,'atk')+(u.parts&&u.parts<=5&&talent(G.players[u.owner],'acidic')?1:0)+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u)+(u.oldAtk||0)-(hasCurse(u,'frailty')?Math.max(1,u.st.frailN||0):0));// v75 Frailty: −1 ATK per stack
 }
 function effDef(u){
@@ -2436,6 +2449,7 @@ function beginTurn(){
     if(F.homeHeal&&onHome(u))healUnit(u,F.homeHeal,'#5fd68e','Indigo ground (home)');
     if(G.realm&&!u.machine&&inValley(p,u.q,u.r)&&u.hp<u.maxhp)healUnit(u,REALM.heal,'#5fd68e','Home valley');
     // Grove (Circle of Priests): holy ground heals 1 at the start of its owner's turn, friend or foe; credited to the Druid who raised it.
+    if(u===G.units.find(x=>x.owner===p.id))blightTick(p);/* v132: once per turn start */
     {const g=cells(u).map(([q,r])=>groveAt(q,r)).find(Boolean);
       if(g&&tm(g.owner)===tm(u.owner)){if(healUnit(u,1,'#9ff0c0','Grove',g.by))vfx({k:'buff',at:[u.q,u.r],col:'#8f5cff'})}
       else if(g&&!u.statue&&!u.egg){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=byId(g.by);CUR_TAG='Dot';CUR_NAME='Holy ground (burn)';if(!SIM)vfx({k:'buff',at:[u.q,u.r],col:'#ffe9a8'});hurt(u,1,'#ffe9a8',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!alive(u))continue}}
@@ -2577,7 +2591,7 @@ function kindleBlast(t){if(!RULES.KINDLE_BLAST||t.kind==='wall'||!(CUR_NAME==='K
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Abil';CUR_NAME='Kindle: hellfire burst';for(const v of vs)if(alive(v))hurt(v,RULES.KINDLE_BLAST,'#ff4a3d');[CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function kill(t){
   const i=G.units.indexOf(t);if(i<0)return;soulCount(t);
-  G.units.splice(i,1);newKill(t,CUR_SRC);if(RULES.KINDLE_BLAST)kindleBlast(t);// v62: an enemy killed by the Kindle bursts
+  G.units.splice(i,1);newKill(t,CUR_SRC);shadowKill(t);/* v132 */if(RULES.KINDLE_BLAST)kindleBlast(t);// v62: an enemy killed by the Kindle bursts
   if(RULES.SPLITTERS&&SPLITS[t.name])splitUnit(t);// v64: the Frost Colossus breaks into smaller pieces
   if(t.behemoth)behemothDown(t);
   if(t.beast){beastSlain(t);return}
@@ -2812,6 +2826,7 @@ function hurt(t,n,col,tick){
       if(utal(is,'permafrost')&&!t.st.pf&&t.st.frzLost){t.st.pf=1;t.st.frzLost=0;fx(t,'permafrost','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Permafrost (talent): frozen 1 turn longer');if(e)e.uses++}}}/* v77: the first Frost hit on a frozen enemy keeps it frozen through one more of its turns */else if(RULES.SHATTER&&t.st.frozen>0&&!t.st.stun){t.st.frozen=0;t.st.frzBy=null;t.st.frzLost=0;t.st.fimm=1;t.st.chill=Math.max(t.st.chill||0,1);fx(t,'shattered','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Shatter (double damage, thawed)');if(e)e.uses++}}
       else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,hasTrait(is,'deepcold')?2:1)}}}// v61: the Glacier Knight's Deep Cold leaves 2 marks
   if(t.hp>0&&rsrc){if(hasRelic(rsrc,'ash')){sear(rsrc,t);relicUse(rsrc,'ash')}}
+  if(t.hp<0)shadowOver(t,-t.hp);/* v132 overflowing dark */
   if(t.hp<=0)kill(t);
   return n;
 }
@@ -3388,6 +3403,26 @@ function bulwarkCharge(u,d,dry,detail){const own=()=>new Set(cells(u).map(c=>key
     if(!cleared)break;setAnim(u);u.q=nq;u.r=nr;steps++}
   if(dry){u.q=q0;u.r=r0;return detail?{steps,shoved}:steps}
   if(steps&&!SIM){fx(u,'charge!','#d9a45b');tSup('moved',shoved.length)}return steps}
+
+/* ---------- v132 SHADOW PRIESTS (owner 23 Oct 2026) ----------
+   "Priests turn to shadow priests when they kill an enemy by healing someone; when the shadow priest gets a kill he turns back; the spells of the
+   shadow form are the opposite of the main form." u.shadow flags the form. The light ability's key is swapped for its shadow key in abilsOf0,
+   and both share ONE rest (cdOf/setCd map the shadow key back to the light key). Overflowing dark: damage beyond a kill by a shadow priest
+   heals the nearest ally within 3 (the mirror of overflowing light). Faith comes only from the light heals, so a shadow priest feeds no Ultimate. */
+const SHADOW={sanctuary:'anathema',mend:'shwither',layhands:'draintouch',grove:'blight',bless:'dusk',surgery:'butchery'};
+const LIGHT_OF={};for(const k in SHADOW)LIGHT_OF[SHADOW[k]]=k;
+const isPriest=u=>!!(u&&u.kind!=='wall'&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='arcane'&&!u.summon);
+{const a0=abilsOf0;abilsOf0=function(u){const o=a0(u);return u&&u.shadow?o.map(k=>SHADOW[k]||k):o}}
+{const c0=cdOf;cdOf=function(u,k){return c0(u,LIGHT_OF[k]||k)}}
+{const s0=setCd;setCd=function(u,k,n){return s0(u,LIGHT_OF[k]||k,n)}}
+function shadowTurn(u,on,why){if(!u||!!u.shadow===!!on)return;u.shadow=on?1:0;if(SIM)return;fx(u,on?'turns to shadow':'the light returns',on?'#6a2bb0':'#ffe9a8');addLog(u.owner,on?`${u.name}'s light killed: it turns to a Shadow ${u.name}.`:`The Shadow ${u.name} has killed: the light returns to it.`);vfx({k:'buff',at:[u.q,u.r],col:on?'#6a2bb0':'#ffe9a8',cam:1});nTrk('arcane',u.name,on?'Turned to shadow':'Returned to light',e=>e.uses++)}
+function shadowKill(t){const s=CUR_SRC;if(!isPriest(s)||!alive(s)||t===s)return;if(t.kind!=='wall'&&tm(t.owner)===tm(s.owner))return;
+  if(!s.shadow){if(/overflowing light|Holy ground|Radiance/.test(CUR_NAME||''))shadowTurn(s,true)}else shadowTurn(s,false)}
+function shadowOver(t,over){const s=CUR_SRC;if(!(over>0)||!isPriest(s)||!s.shadow||t.kind!=='wall'&&tm(t.owner)===tm(s.owner))return;const al=G.units.filter(v=>v!==t&&alive(v)&&v.kind!=='wall'&&tm(v.owner)===tm(s.owner)&&v.hp<v.maxhp&&distUU(v,t)<=3).sort((a,b)=>distUU(a,t)-distUU(b,t)||a.hp-b.hp)[0];if(!al)return;
+  if(healUnit(al,over,'#b06bff','Overflowing dark',s.id)&&!SIM)vfx({k:'bolt',from:[t.q,t.r],to:[al.q,al.r],col:'#b06bff'})}
+function blightTick(p){for(const u of G.units.slice()){if(!alive(u)||u.kind==='wall'||tm(u.owner)===p.team||u.statue||u.egg)continue;const b=cells(u).map(([q,r])=>{const pt=G.paint[key(q,r)];return pt&&pt.kind==='blight'&&pt.owner===p.id?pt:null}).find(Boolean);if(!b)continue;
+    const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=byId(b.by);CUR_TAG='Dot';CUR_NAME='Blighted ground';if(!SIM)vfx({k:'buff',at:[u.q,u.r],col:'#6a2bb0'});hurt(u,2,'#6a2bb0',true);if(alive(u)&&u.st){u.st.curses=Object.assign({},u.st.curses||{});u.st.curses.decay=Math.max(u.st.curses.decay||0,1);u.st.curseBy=b.by}[CUR_SRC,CUR_TAG,CUR_NAME]=o}
+  for(const u of G.units.slice()){if(!alive(u)||u.kind==='wall'||!u.st||!(u.st.dusk>0)||u.st.duskBy!==p.id)continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=byId(u.st.duskSrc);CUR_TAG='Dot';CUR_NAME='Dusk';hurt(u,1,'#6a2bb0',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(alive(u)&&--u.st.dusk<=0){u.st.dusk=0;delete u.st.duskBy}}}
 function collideTrack(src,name,n){if(SIM||!trk()||!src||src.kind==='wall'||!G.players[src.owner])return;const e=tFx(G.players[src.owner].fac,'',name);if(e){e.uses++;e.dmg+=n}}
 function slamOf(src){return RULES.SLAM+(src&&src.kind!=='wall'&&facOf(src).slam?facOf(src).slam:0)+(src&&utal(src,'horizon')?1:0)}
 // Falls: a unit shoved, dragged or thrown onto a lethal hex. Tracked as its own effect rows for the pushing side
@@ -3667,6 +3702,13 @@ function useAbility(u,k,q,r,dest){
       for(const v of blk){braceCheck(v);const foe=G.units.filter(e=>e.kind!=='wall'&&tm(e.owner)!==tm(u.owner)&&alive(e)&&!e.statue&&!e.egg&&distUU(v,e)===1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(foe){const o=[CUR_SRC,CUR_NAME];CUR_SRC=v;CUR_NAME='Forward!';if(!SIM)vfx({k:'slash',from:[v.q,v.r],to:[foe.q,foe.r],col:F.color});hurt(foe,1,F.color);[CUR_SRC,CUR_NAME]=o;hits++}}
       tSup('moved',n);addLog(u.owner,`Forward! ${n} comrade${n===1?'':'s'} step as one${hits?` and ${hits} strike`:''}.`);break}// v77 (owner): the Captain's block is a moving wall
+    case 'anathema':{let n=0;for(const v of G.units.slice()){if(!alive(v)||v.kind==='wall'||v.statue||v.egg||tm(v.owner)===tm(u.owner))continue;if(!G.units.some(w=>w.kind!=='wall'&&w.owner===u.owner&&alive(w)&&distUU(w,v)<=3))continue;hurt(v,2,'#6a2bb0');n++;if(alive(v))for(const k2 of abilsOf0(v)){if(!ABIL[k2]||ABIL[k2].aux)continue;setCd(v,k2,cdOf(v,k2)+2)}}if(!SIM){addLog(u.owner,`Anathema: ${n} enem${n===1?'y':'ies'} wither and their rests grow.`);vfx({k:'ab',ab:'sanctuary',shape:'aura',from:[u.q,u.r],to:[u.q,u.r],cells:[],col:'#6a2bb0',cam:1})}break}
+    case 'shwither':if(tgt&&tgt.kind!=='wall')applyHit(u,tgt,A);break;
+    case 'drain':if(tgt&&tgt.kind!=='wall'){const h0=tgt.hp;applyHit(u,tgt,A);const got=Math.max(0,h0-Math.max(0,tgt.hp));if(got>0)healUnit(u,got,'#b06bff','Drain Touch',u.id)}break;
+    case 'butchery':{if(tgt&&tgt.kind!=='wall')applyHit(u,tgt,A);const nx=G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&!v.statue&&!v.egg&&alive(v)&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)===1).sort((a,b)=>(a.hp/a.maxhp)-(b.hp/b.maxhp)||a.id-b.id)[0];if(nx)applyHit(u,nx,Object.assign({},A,{special:null}));break}
+    case 'blight':{const area=shapeCells(u,k,q,r).filter(([a,b])=>solid(a,b)&&!isHeart(a,b)&&featAt(a,b)!=='rock');for(const [a,b] of area)G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:3,owner:u.owner,kind:'blight',by:u.id};
+      vfx({k:'ab',ab:'grove',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:'#6a2bb0'});addLog(u.owner,`Blight spreads over ${area.length} hexes.`);break}
+    case 'dusk':if(tgt&&tgt.kind!=='wall'){tgt.st.dusk=3;tgt.st.duskBy=u.owner;tgt.st.duskSrc=u.id;fx(tgt,'dusk','#6a2bb0');vfx({k:'buff',at:[tgt.q,tgt.r],col:'#6a2bb0'})}break;
     case 'surgery':{if(tgt&&tgt.kind!=='wall'&&tm(tgt.owner)!==tm(u.owner))applyHit(u,tgt,Object.assign({},A,{heal:0,overheal:0}));
       const ally=G.units.filter(v=>v!==u&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&!v.statue&&!v.egg&&!v.summon&&alive(v)&&distUU(u,v)===1).sort((a,b)=>(a.hp/a.maxhp)-(b.hp/b.maxhp)||a.id-b.id)[0];
       if(ally){const h=healUnit(ally,A.heal,'#ffe9a8','Field Surgery',u.id);const ex=A.heal-h;if(ex>0)overheal(u,ally,ex,'Field Surgery')}break}// v77 (owner): strike one, mend one
@@ -5069,6 +5111,9 @@ function heuristic(u,k,q,r,ctx,dest){
     case 'blockmove':{if(RULES.MARCH){const P=marchPlan(u,[q,r]);if(P.moves.length<3)return 0;let s=0;for(const [v,a,b] of P.moves)s+=Math.max(-1,moveEval(v,{q:a,r:b,dir:P.d},ctx)+1.2);if(P.shape&&P.shape.kind==='wall')s+=2;return s}
       const d=aimDir(u,q,r);if(d<0)return 0;const grp=phalanxGroup(u).filter(v=>!v.st.frozen&&v.size!==2&&effMov(v)>0);if(grp.length<3)return 0;if(grp.some(v=>ctx.foes.some(f=>f.owner>=0&&distUU(f,v)<=4)))return 0;// approach only: in a fight the members move on their own
       const P0=blockPlan(u,d);let s=0,n=0;for(const [v,a,b] of P0.moves){n++;s+=Math.max(-1,moveEval(v,{q:a,r:b,dir:d},ctx)+1.2)}return n>=3?s:0}
+    case 'anathema':{let n=0,s=0;for(const f of ctx.foes){if(f.owner<0)continue;if(!G.units.some(w=>w.kind!=='wall'&&w.owner===u.owner&&distUU(w,f)<=3))continue;n++;s+=1.5+(f.leader?1.5:0)+(f.hp<=2?3:0)}return n>=2?s:0}
+    case 'blight':{let s=0;const area=shapeCells(u,k,q,r);for(const [a,b] of area){const v=ctx.m.get(key(a,b));if(v&&v.kind!=='wall'){if(tm(v.owner)!==team)s+=2+(v.hp<=2?2:0)+(v.leader?1.5:0);else s-=1.5}}return s>=3?s:0}
+    case 'dusk':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)===team||(t.st&&t.st.dusk>0))return 0;return 2+(t.leader?2:0)+Math.min(2,t.atk)*0.8}
     case 'howl':{let n=0;for(const f of ctx.foes)if(f.owner>=0&&f.size!==2&&distUU(f,u)<=2)n+=(f.leader?2:1)+(distUU(f,u)===1?0.5:0);return n>=2?n*1.4:0}
     case 'bulwark':{const d=aimDir(u,q,r);if(d<0)return 0;const sim=bulwarkCharge(u,d,true,true);if(!sim||!sim.steps)return 0;let s=0;for(const v of sim.shoved){if(v.kind==='wall')continue;s+=tm(v.owner)!==team?(v.leader?3:1.6)+(v.hp<=1?2:0):-1.2}const end={q:u.q+DIRS[d][0]*sim.steps,r:u.r+DIRS[d][1]*sim.steps,dir:u.dir};s+=Math.max(-2,moveEval(u,end,ctx))*0.5;return s>=2?s:0}
     case 'devour':{const t=unitAt(q,r);if(!t||t.kind==='wall'||t.leader||t.size===2||t.hp>4||tm(t.owner)===team)return 0;return 6+worth(t)*0.3}
@@ -5459,8 +5504,8 @@ function synRevert(u,t){const S0=t&&t.tbE&&t.tbE[u.owner];if(!S0)return;const hp
 const portalCol=P=>P.kind==='life'?'#bfffe8':P.kind==='lance'?'#9fe8ff':'#12d69a';
 function portalAt(q,r){for(const P of G.portals||[]){if(P.a[0]===q&&P.a[1]===r)return {P,end:'a'};if(P.b[0]===q&&P.b[1]===r)return {P,end:'b'}}return null}
 const portalExit=(P,end)=>end==='a'?P.b:P.a;
-function guarded(u,q,r){return G.units.some(v=>v.kind!=='wall'&&v.owner>=0&&!v.decoy&&tm(v.owner)!==tm(u.owner)&&!inert(v)&&distUC(v,q,r)===1)}
-function openPortal(u,kind,a,b,ttl){G.portals=(G.portals||[]).filter(P=>!(P.by===u.id&&P.kind===kind));const P={id:G.nid++,a:a.slice(),b:b.slice(),owner:u.owner,kind,by:u.id,ttl};G.portals=G.portals.concat([P]);
+function guarded(u,q,r){if(talent(G.players[u.owner],'opendoors'))return false;/* v132 Open Doors */return G.units.some(v=>v.kind!=='wall'&&v.owner>=0&&!v.decoy&&tm(v.owner)!==tm(u.owner)&&!inert(v)&&distUC(v,q,r)===1)}
+function openPortal(u,kind,a,b,ttl){G.portals=(G.portals||[]).filter(P=>!(P.by===u.id&&P.kind===kind));const P={id:G.nid++,a:a.slice(),b:b.slice(),owner:u.owner,kind,by:u.id,ttl:ttl+(talent(G.players[u.owner],'longgate')?1:0)};/* v132 Long Gate */G.portals=G.portals.concat([P]);
   if(!SIM){vfx({k:'buff',at:a,col:portalCol(P)});vfx({k:'buff',at:b,col:portalCol(P),cam:1});nTrk('rift',u.name,kind==='gate'?'Twin Gates opened':kind==='life'?'Lifegates opened':'Lancer portals',e=>e.uses++)}return P}
 function portalTick(p){if(!G.portals)return;const out=[];for(const P of G.portals){if(P.owner===p.id){const n=P.ttl-1;if(n<=0)continue;out.push(Object.assign({},P,{ttl:n}))}else out.push(P)}G.portals=out}
 function portalDest(u,hit){const ex=portalExit(hit.P,hit.end);const m=occ();m.delete(key(u.q,u.r));return u.size===2?null:nearFree(ex[0],ex[1],m,1)}
@@ -5475,15 +5520,17 @@ function lanceDest(u){const m=occ();return allCells().filter(([q,r])=>hd(q,r,u.q
 // trace the shot: from the far end it flies on in direction d; every portal end in its way sends it out of its pair (once per portal per bullet)
 function riftTrace(owner,start,d,shooter){const split=RULES.RIFT_SPLIT;const hits=[],paths=[];let live=[{q:start[0],r:start[1],d,used:new Set(),passes:1,path:[start.slice()]}];let total=1;/* the Lancer's own pair sends the shot straight on; it splits at every OTHER portal */
   const m=occ();let guard=0;
-  while(live.length&&guard++<200){const nx=[];for(const b of live){let q=b.q,r=b.r,done=false;for(let s=0;s<10&&!done;s++){q+=DIRS[b.d][0];r+=DIRS[b.d][1];if(!inR(q,r)||isBlock(q,r)||isCentreWall(q,r)){done=true;break}b.path.push([q,r]);
-        const o=m.get(key(q,r));if(o&&o!==shooter&&!o.statue){hits.push({t:o,passes:b.passes});done=true;break}
+  while(live.length&&guard++<200){const nx=[];for(const b of live){let q=b.q,r=b.r,done=false;for(let s=0;s<14&&!done;s++){q+=DIRS[b.d][0];r+=DIRS[b.d][1];if(!inR(q,r)||isBlock(q,r)||isCentreWall(q,r)){done=true;break}b.path.push([q,r]);
+        const o=m.get(key(q,r));if(o&&o!==shooter&&!o.statue){hits.push({t:o,passes:b.passes,d:b.d});done=true;break}
         const h=portalAt(q,r);if(h&&!b.used.has(h.P.id)){b.used=new Set(b.used);b.used.add(h.P.id);const ex=portalExit(h.P,h.end);q=ex[0];r=ex[1];b.path.push([q,r]);b.passes++;
           if(split&&total<4){total+=1;nx.push({q,r,d:(b.d+5)%6,used:b.used,passes:b.passes,path:b.path.slice()});b.d=(b.d+1)%6}}}
       paths.push(b.path)}live=nx}
   return {hits,paths}}
 function riftShot(u,A,q,r,dest){const d=aimDir(u,q,r);if(d<0||!dest)return;const P=openPortal(u,'lance',[q,r],[dest.q,dest.r],1);const res=riftTrace(u.owner,[dest.q,dest.r],d,u);
   if(!SIM)vfx({k:'bolt',from:[u.q,u.r],to:[q,r],col:'#9fe8ff'});
-  for(const h of res.hits){if(!alive(h.t))continue;const dmg=RULES.RIFT_SPLIT?4:4+2*(h.passes-1);const t=h.t;const n=t.kind==='wall'?dmg:afterDef(dmg+synB(u,'abd'),effDef(t));if(!SIM)vfx({k:'bolt',from:[dest.q,dest.r],to:[t.q,t.r],col:'#9fe8ff'});hurt(t,n,'#9fe8ff')}
+  const queue=res.hits.map(h=>Object.assign({from:[dest.q,dest.r]},h));let guard=0;
+  while(queue.length&&guard++<12){const h=queue.shift();if(!alive(h.t))continue;const dmg=RULES.RIFT_SPLIT?4:4+2*(h.passes-1);const t=h.t;const n=t.kind==='wall'?dmg:afterDef(dmg+synB(u,'abd'),effDef(t));if(!SIM)vfx({k:'bolt',from:h.from,to:[t.q,t.r],col:'#9fe8ff'});const tq=t.q,tr=t.r;hurt(t,n,'#9fe8ff');
+    if(!alive(t)&&talent(G.players[u.owner],'ricochet')&&h.d!=null){const more=riftTrace(u.owner,[tq,tr],h.d,u);for(const h2 of more.hits.slice(0,1))queue.push(Object.assign({from:[tq,tr]},h2,{passes:h.passes}));if(!SIM&&more.hits.length)fx(t,'ricochet','#9fe8ff')}}/* v132 Ricochet */
   if(!SIM){addLog(u.owner,`The Rift Lancer fires through the rift: ${res.hits.length} hit${res.hits.length===1?'':'s'}.`);nTrk('rift',u.name,'Rift Shot: bullets that hit',e=>{e.hits=(e.hits||0)+res.hits.length})}}
 function abductDest(u){const m=occ();return allCells().filter(([q,r])=>hd(q,r,u.q,u.r)<=4&&freeHex(q,r,m))}
 function riftAbduct(u,t,dest){if(!t||!dest||t.size===2)return;placeAt(t,dest.q,dest.r);if(!SIM){vfx({k:'buff',at:[dest.q,dest.r],col:'#12d69a',cam:1});addLog(u.owner,`The Abductor swallows the ${t.name} into the rift and drops it from the sky.`);nTrk('rift',u.name,'Abducted',e=>e.uses++)}hurt(t,2,'#12d69a');if(alive(t))portalPush(t)}
@@ -7419,6 +7466,7 @@ function drawStatusBadges(c,u,x,y,w,h){const L=statusBadges(u);if(!L.length)retu
   c.restore()}
 function drawStatusFX(c,u,x,y,w,h,now){
   if(!u||!u.st||u.kind==='wall')return;const f=statusFlags(u);
+  if(u.shadow){const k=0.6+0.4*Math.sin(now/300);c.save();c.globalAlpha=0.35+0.2*k;c.shadowColor='#6a2bb0';c.shadowBlur=12;c.strokeStyle='#6a2bb0';c.lineWidth=3;c.beginPath();c.ellipse(x,y+h*0.1,w*0.62,h*0.42,0,0,Math.PI*2);c.stroke();c.globalAlpha=0.18+0.1*k;c.fillStyle='#3a0f66';c.fill();c.restore()}/* v132 Shadow Priest: a dark violet halo */
   // v45: Frostbite marks are shown as a counter pill (statusBadges) instead of snowflake glyphs over the head
   if(!(f.frozen||f.stun||f.chill||f.curse||f.seared||f.sunder||f.hex||f.glow||f.shield))return;
   const still=typeof stillMotion==='function'&&stillMotion(),t=still?0:now/1000,m=Math.min(w,h);
@@ -8821,6 +8869,8 @@ function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))retu
   if(s.seared>0)add('seared','🔥','Seared',1,'#ff9a3d',0,'can’t be healed until the end of its next turn');
   if(s.sunder>0)add('sunder','⛏','Sunder',s.sunder,'#d9a45b',0,'1 less DEF');
   if(s.hex>0)add('hex','🔮','Hex',s.hex,'#b06bff',0,'2 less ATK and 1 more damage from abilities');
+  if(u.shadow)add('shadow','🌑','Shadow form',null,'#6a2bb0',1,'its light killed: its spells are now the dark mirrors (Wither, Drain Touch, Blight, Dusk, Anathema, Butchery); a kill in shadow returns the light');
+  if(s.dusk>0)add('dusk','🌒','Dusk',s.dusk,'#6a2bb0',0,'1 less ATK and 1 damage at the start of each of the caster’s turns');
   if((s.dlA||0)+(s.dlB||0)>0)add('delay','⏳','Delayed','+'+((s.dlA||0)+(s.dlB||0))+' cooldown','#ff9be8',0,'its cooldowns were pushed back');
   if(s.duel)add('duel','⚔','Challenged',s.duel.ttl,'#ff6161',0,'basic attacks only at the Champion');
   if(u.king)add('king','♛',kingChallenged(u)?'King, challenged':'King',G.map?'for life':kingChallenged(u)?'+2/+2':'+1/+1','#ffd766',1,kingText());
@@ -10504,6 +10554,7 @@ if(typeof ANN_SHORT!=='undefined')Object.assign(ANN_SHORT,{chrono:'Syndicate',oo
   <li><b>Contracts</b> (Chrono Syndicate). When the Syndicate has no contract, the enemy unit or camp monster with the lowest HP within 8 hexes of its crew is marked (🎯 on the board) for 5 of its turns. Any crew member that kills it collects a bounty for the whole crew, for the rest of the game: 1st +1 max HP, 2nd +1 ATK, 3rd +1 move, 4th every rest 1 shorter, 5th +2 max HP, 6th +1 ability damage, 7th +1 ATK, 8th rests 1 shorter, 9th +1 move and +2 max HP, 10th +1 ATK and +1 ability damage, then a heal of 1 per bounty. Every Syndicate unit teleports when it moves (Phase Walk).</li>
   <li><b>Stasis Field</b> (Field Engineer): the device lands now and goes off at the start of the Syndicate's next turn: every enemy still on its 7 hexes loses its next turn. <b>Holograms</b> (Holo-Tech) have 1 HP and hit for 1; they cannot take the Throne or carry anything, and killing one gives nothing.</li>
   <li><b>Portals</b> (Riftwalkers). A unit that walks onto a portal end may come out of the other end; anyone may use any portal. A Riftwalker that comes out of a portal may move again, once per turn. An enemy standing next to a portal end shuts that door. Gatekeeper gates last 3 rounds, a Lifegate 2 (allies passing heal 3, enemies take 2), a Rift Lancer's own pair until its next turn. A Banisher's basic attack kicks the enemy 3 hexes; a kick that crosses a portal end sends it through.</li>
+  <li><b>Shadow Priests</b> (Circle of Priests). A priest whose light kills an enemy (overflowing light, Holy ground, Radiance) turns to its SHADOW form at once: its spell becomes the dark mirror of the light one, on the same rest. Sanctuary becomes Anathema (2 ignoring DEF to every enemy within 3 of your units, their rests grow by 2), Mend becomes Wither (3 ignoring DEF and Hex), Lay on Hands becomes Drain Touch (4, the Seraph heals what it dealt), Grove becomes Blight (enemies on it take 2 at your turn start and cannot be healed next turn), Bless becomes Dusk (1 less ATK and 1 damage a turn for 3 turns), Field Surgery becomes Butchery (3 to the target and 3 to the most wounded other neighbour). Overflowing dark: damage beyond a kill heals the nearest ally within 3. A Shadow Priest that kills an enemy returns to the light. Shadow heals give no Faith.</li>
   <li><b>Rift Shot</b>: the Lancer opens its own pair and fires out of the far end; every other portal in the bullet's way sends it out of its twin and adds 2 damage to it. The bullet hits the first unit in its path, friend or foe: 4 minus DEF, plus 2 per portal it flew through.</li>
   <li><b>March</b> (Iron Warband, Move as One). Tap where you want the army: every connected unit that has not moved walks its own way there, as far as it can walk, and the army forms up for the situation at the destination. An enemy within 3 hexes: a <b>shield wall</b> facing it, Shieldbearers in front and every Spearman directly behind a shield (it strikes over it), the Warlord and the Captain behind. The Throne: a <b>ring</b> round it. Narrow ground (3 or fewer open neighbours): a <b>column</b> two wide, shields leading. Open ground: a <b>marching box</b> facing the way of travel. Each place is taken by the nearest unit of the right kind; a unit that can reach no place stays where it is. Everyone who marched counts as moved and can still attack. The preview shows every landing hex and names the formation.</li>
   <li><b>Warhorn</b> (Iron Warband Ultimate). Every unit of yours strikes a random enemy in its reach at once (spears over shields, the Captain cleaving) without using its action.</li>
