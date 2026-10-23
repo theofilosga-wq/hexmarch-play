@@ -609,7 +609,7 @@ body.focus.fwide .ab-head h3,body.focus.fwide .uhead h3{font-size:20px}
       <button class="btn sm" id="quickBtn">Quick reference</button>
       <button class="btn sm" id="sndBtn" aria-label="Sound on or off">Sound on</button>
       <button class="btn sm" id="annBtn" aria-label="Announcements on or off" title="Big banners for points, fallen leaders, Ultimates and the acts">Announcements on</button>
-      <button class="btn sm" id="balBtn">Balance report</button>
+
       <button class="btn sm" id="setupBtn" hidden>New game</button>
     </div>
   </div>
@@ -6883,7 +6883,9 @@ function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(t
   new THREE.GLTFLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map)mt.map.encoding=THREE.LinearEncoding;mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
     const b=new THREE.Box3().setFromObject(o);o.userData.bb={h:b.max.y-b.min.y,y0:b.min.y,cx:(b.max.x+b.min.x)/2,cz:(b.max.z+b.min.z)/2,w:b.max.x-b.min.x,d:b.max.z-b.min.z};res(o)},undefined,e=>rej(e))}))}
 function glSwapModel(g,MD){glModel(typeof MD.file==='function'?MD.file():MD.file).then(src=>{if(!g.parent&&!g.userData.pv)return;const o=src.clone();const bb=src.userData.bb;const s=(typeof MD.h==='function'?MD.h():MD.h)*FIG3D_K/bb.h;o.scale.setScalar(s);o.position.set(-bb.cx*s,0.17-bb.y0*s,-bb.cz*s);if(MD.rot)o.rotation.y=MD.rot;
-  for(const ch of g.children.slice())g.remove(ch);/* v78c (owner): no base under a real model, the hex itself takes the army's ground */o.position.y=0.03-bb.y0*s;o.traverse(m=>{if(m.isMesh&&m.material)m.material=m.material.clone()});g.add(o);g.userData.top=0.03+bb.h*s;g.userData.giant=0;if(g.userData.spent){g.userData.spent=undefined;glSpent(g,true)}g.userData.bob=[];g.userData.wings=[];g.userData.spin=null;g.userData.model=1;glNoCull(g);if(typeof GL!=='undefined')GL.dirty=true}).catch(()=>{})}
+  for(const ch of g.children.slice())g.remove(ch);/* v78c (owner): no base under a real model, the hex itself takes the army's ground */o.position.y=0.03-bb.y0*s;o.traverse(m=>{if(m.isMesh&&m.material)m.material=m.material.clone()});g.add(o);g.userData.top=0.03+bb.h*s;g.userData.giant=0;if(g.userData.spent){g.userData.spent=undefined;glSpent(g,true)}g.userData.bob=[];g.userData.wings=[];g.userData.spin=null;g.userData.model=1;if(g.userData.shadow)glShadowTint(g);/* v137: the real model arrives after the figure was built */glNoCull(g);if(typeof GL!=='undefined')GL.dirty=true}).catch(()=>{})}
+/* v137 (owner: 'shadow priests are not distinguishable enough, I want a deep purple'): every mesh of a Shadow Priest's figure gets its own material, deep purple with a violet glow */
+function glShadowTint(fig){fig.traverse(o=>{if(!o.isMesh||!o.material)return;const mats=Array.isArray(o.material)?o.material:[o.material];const out=mats.map(mt=>{const m=mt.clone();if(m.color)m.color.setRGB(0.42,0.16,0.9);if(m.emissive){m.emissive.set('#5a1aa8');m.emissiveIntensity=0.55}m.needsUpdate=true;return m});o.material=Array.isArray(o.material)?out:out[0]})}
 function buildFigure(u,fac){
   const g0=buildFigure0(u,fac);const MD=u.suitHp>0?(u.walker==='pilot'?MODELS['machine:'+u.walkerName]:null):MODELS[u.name];if(MD)glSwapModel(g0,MD);return g0}// a piloted gnome shows its machine's model
 function buildFigure0(u,fac){
@@ -7089,8 +7091,8 @@ function glFrame(){
 // place (and if needed build) one unit's miniature; returns the world height of its head top
 function glUnit(u,pts,x,z,now,spent){
   const fac=u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:(u.monster||u.beast)?'monster':'warband';
-  const k=u.id+'|'+u.name+'|'+fac+'|'+(u.suitHp>0?u.suitItem:'');let fig=GL.figs.get(k);
-  if(!fig){fig=buildFigure(u,fac);fig.userData.k=k;fig.userData.ph=(u.id*1.7)%6.28;GL.figs.set(k,fig);GL.scene.add(fig);glNoCull(fig)}
+  const k=u.id+'|'+u.name+'|'+fac+'|'+(u.suitHp>0?u.suitItem:'')+(u.shadow?'|shadow':'');let fig=GL.figs.get(k);
+  if(!fig){fig=buildFigure(u,fac);if(u.shadow){fig.userData.shadow=1;glShadowTint(fig)}fig.userData.k=k;fig.userData.ph=(u.id*1.7)%6.28;GL.figs.set(k,fig);GL.scene.add(fig);glNoCull(fig)}
   GL.seen.add(k);const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
   fig.position.set(x,0,z);
   if(fig.userData.giant&&pts.length===2){// the hex axis gives the stance; the giant turns its chest toward the viewer
@@ -10161,7 +10163,7 @@ $('#viewBtn').onclick=()=>{VIEW=VIEW==='3d'?'2d':'3d';try{localStorage.setItem('
 $('#rotL').onclick=()=>{CAM.azT-=Math.PI/3};
 $('#rotR').onclick=()=>{CAM.azT+=Math.PI/3};
 syncViewButtons();
-$('#balBtn').onclick=()=>showBalance();
+if($('#balBtn'))$('#balBtn').onclick=()=>showBalance();/* v137: the Balance report button is gone (owner) */
 $('#setupBtn').onclick=()=>showScreen('setup');
 $('#pauseBtn').onclick=()=>pauseGame();
 $('#takeBots').onclick=netTakeHost;
