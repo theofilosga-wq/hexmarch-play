@@ -679,8 +679,17 @@ body.focus.fwide .ab-head h3,body.focus.fwide .uhead h3{font-size:20px}
 <div id="annBanner" class="ann" role="status" aria-live="polite" hidden></div>
 <div id="annFeed" class="annfeed" aria-label="Recent announcements" hidden></div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<!-- v139: three r160 as ES modules (one copy), exposed as the global THREE with the loaders attached; gl3d.js waits for it (glActive checks typeof THREE) -->
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {KTX2Loader} from 'three/addons/loaders/KTX2Loader.js';
+THREE.ColorManagement.enabled=false;/* keep the r128 look: no colour management, linear output, legacy light units (set on each renderer in gl3d.js) */
+const T=Object.assign({},THREE,{GLTFLoader,KTX2Loader});
+T.KTX2_PATH='https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/libs/basis/';
+window.THREE=T;window.dispatchEvent(new Event('three-ready'));
+</script>
 <script>
 /* Hexmarch engine: rules, data and bots. No DOM access, so it also runs headless for the balance tournament. */
 const S3=Math.sqrt(3);
@@ -6544,7 +6553,7 @@ function glInit(){
     /* v123: if the browser drops the 3D surface (too much graphics memory), fall back to the drawn tabletop at once and come back when it is restored */
     c.addEventListener('webglcontextlost',ev=>{ev.preventDefault();GL.lost=true;c.hidden=true;try{toast('The 3D view paused to save memory: the board is drawn flat until it comes back.',4000)}catch(x){}},false);
     c.addEventListener('webglcontextrestored',()=>{GL.lost=false;c.hidden=false;GL.sig='';GL.dirty=true;try{GL.figs&&GL.figs.clear&&GL.figs.forEach(f=>GL.scene.remove(f));GL.figs.clear()}catch(x){}},false);
-    R.setClearColor(0x000000,0);R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;
+    R.setClearColor(0x000000,0);R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;glLegacy(R);
     const scene=new T.Scene();
     scene.add(new T.HemisphereLight('#d6e2ff','#3a2c22',0.5));
     const sun=new T.DirectionalLight('#fff0d6',0.8);sun.position.set(-14,22,10);sun.castShadow=true;sun.shadow.mapSize.set(innerWidth<1000?1024:2048,innerWidth<1000?1024:2048);
@@ -6879,8 +6888,11 @@ function glCityWallLoad(){if(CITY_WALL!==null)return;CITY_WALL=false;glModel(CIT
 const cityWallUp=()=>!!(G&&G.realm&&CITY_WALL&&(!G.cityDown||(typeof fallPre==='function'&&fallPre())));/* v116: the wall stands until the Beast lands */
 function glForestLoad(){if(FOREST_GEO!==null)return;FOREST_GEO=false;glModel(FOREST_MODEL).then(src=>{let mesh=null;src.traverse(m=>{if(m.isMesh&&!mesh)mesh=m});if(!mesh)return;const bb=src.userData.bb;FOREST_GEO={geo:mesh.geometry,mat:mesh.material,bb};GL.sig='';GL.dirty=true}).catch(()=>{})}// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
 const GLM={};
-function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
-  new THREE.GLTFLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map)mt.map.encoding=THREE.LinearEncoding;mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
+/* v139 three r160: the r128 look is kept (linear output, legacy light units, no colour management); textures may be KTX2 (Basis) via the shared KTX2Loader */
+function glLegacy(R){if('useLegacyLights' in R)R.useLegacyLights=true;if('outputColorSpace' in R&&THREE.LinearSRGBColorSpace)R.outputColorSpace=THREE.LinearSRGBColorSpace;else if('outputEncoding' in R&&THREE.LinearEncoding)R.outputEncoding=THREE.LinearEncoding}
+let KTX2=null;function glLoader(){const L=new THREE.GLTFLoader();if(THREE.KTX2Loader){if(!KTX2){let R=GL.R;if(!R){try{R=new THREE.WebGLRenderer({canvas:document.createElement('canvas')})}catch(e){R=null}}/* the home page preloads models before the board's renderer exists: a throwaway one tells the loader which compressed format this GPU takes */if(R){KTX2=new THREE.KTX2Loader().setTranscoderPath(THREE.KTX2_PATH||'').detectSupport(R);if(R!==GL.R)R.dispose()}}if(KTX2)L.setKTX2Loader(KTX2)}return L}
+function glModel(file){return GLM[file]||(GLM[file]=new Promise((res,rej)=>{if(typeof THREE==='undefined'||typeof THREE.GLTFLoader==='undefined'){rej('no loader');return}
+  glLoader().load(file,g=>{const o=g.scene;o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;const mats=Array.isArray(m.material)?m.material:[m.material];for(const mt of mats){if(mt.map){if('colorSpace' in mt.map)mt.map.colorSpace=THREE.NoColorSpace;else mt.map.encoding=THREE.LinearEncoding}mt.emissiveMap=null;mt.emissiveIntensity=0;mt.metalness=0;mt.metalnessMap=null;mt.roughness=0.8;mt.color.setRGB(1.25,1.25,1.25);mt.needsUpdate=true}/* v78f (owner: 'they look transparent'): no self-glow, it flattened the shading; a plain lift of 1.25 (no metal: black without an environment map) keeps the model solid */}});
     const b=new THREE.Box3().setFromObject(o);o.userData.bb={h:b.max.y-b.min.y,y0:b.min.y,cx:(b.max.x+b.min.x)/2,cz:(b.max.z+b.min.z)/2,w:b.max.x-b.min.x,d:b.max.z-b.min.z};res(o)},undefined,e=>rej(e))}))}
 function glSwapModel(g,MD){glModel(typeof MD.file==='function'?MD.file():MD.file).then(src=>{if(!g.parent&&!g.userData.pv)return;const o=src.clone();const bb=src.userData.bb;const s=(typeof MD.h==='function'?MD.h():MD.h)*FIG3D_K/bb.h;o.scale.setScalar(s);o.position.set(-bb.cx*s,0.17-bb.y0*s,-bb.cz*s);if(MD.rot)o.rotation.y=MD.rot;
   for(const ch of g.children.slice())g.remove(ch);/* v78c (owner): no base under a real model, the hex itself takes the army's ground */o.position.y=0.03-bb.y0*s;o.traverse(m=>{if(m.isMesh&&m.material)m.material=m.material.clone()});g.add(o);g.userData.top=0.03+bb.h*s;g.userData.giant=0;if(g.userData.spent){g.userData.spent=undefined;glSpent(g,true)}g.userData.bob=[];g.userData.wings=[];g.userData.spin=null;g.userData.model=1;if(g.userData.shadow)glShadowTint(g);/* v137: the real model arrives after the figure was built */glNoCull(g);if(typeof GL!=='undefined')GL.dirty=true}).catch(()=>{})}
@@ -7143,7 +7155,7 @@ function glAnimFig(fig,t){const ud=fig.userData,lift=ud.hover?0.25+0.08*Math.sin
   for(const w of ud.wings)w.rotation.y=w.userData.flap*(0.5+0.25*Math.sin(t*(ud.hover?7:2.5)));if(ud.spin)ud.spin.rotation.y=t*18}
 function pvGL(){if(PV3.R!==undefined)return PV3.R;
   try{if(typeof THREE==='undefined'||GL.pref==='off')throw 0;const T=THREE,c=document.createElement('canvas');c.id='pvCv';c.setAttribute('role','img');
-    const R=new T.WebGLRenderer({canvas:c,antialias:true,alpha:true});R.setClearColor(0x000000,0);R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;
+    const R=new T.WebGLRenderer({canvas:c,antialias:true,alpha:true});glLegacy(R);R.setClearColor(0x000000,0);R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;
     const scene=new T.Scene();scene.add(new T.HemisphereLight('#d6e2ff','#3a2c22',0.55));
     const sun=new T.DirectionalLight('#fff0d6',0.9);sun.position.set(-4,8,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-0.0006;Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:0.5,far:30});scene.add(sun);
     const rim=new T.DirectionalLight('#ffd09a',0.45);rim.position.set(5,4,-6);scene.add(rim);
@@ -10669,7 +10681,7 @@ function guardLog(kind,msg,stack){try{const e=Object.assign({k:kind,msg:String(m
   GUARD.errs.push(e);if(GUARD.errs.length>GUARD.max)GUARD.errs.shift();localStorage.setItem('hexmarch.errs',JSON.stringify(GUARD.errs));
   if(typeof console!=='undefined')console.warn('[guard]',kind,msg)}catch(x){}}
 function guardAct(name,a){try{const u=a&&a[0]&&a[0].name?a[0].name:'';GUARD.acts.push({t:Date.now(),a:name,u,q:a&&a[1]&&a[1].q!=null?a[1].q:(a&&typeof a[2]==='number'?a[2]:null),r:a&&a[1]&&a[1].r!=null?a[1].r:(a&&typeof a[3]==='number'?a[3]:null),k:a&&typeof a[1]==='string'?a[1]:''});if(GUARD.acts.length>40)GUARD.acts.shift()}catch(e){}}
-addEventListener('error',e=>guardLog('error',e.message||e,e.error&&e.error.stack));
+addEventListener('error',e=>{if(/ResizeObserver loop/.test(String(e.message||'')))return;/* a benign browser notice, not a fault */guardLog('error',e.message||e,e.error&&e.error.stack)});
 addEventListener('unhandledrejection',e=>guardLog('promise',e.reason&&(e.reason.message||e.reason),e.reason&&e.reason.stack));
 document.addEventListener('visibilitychange',()=>{GUARD.vis=performance.now()});
 
