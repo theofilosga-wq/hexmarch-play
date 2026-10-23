@@ -1216,9 +1216,9 @@ const TALENTS={
   chrono:[{k:'longhand',name:'Long Hand',text:'Both Second Hands start the game with 1 Tempo stack.'},
           {k:'echo',name:'Temporal Echo',text:'A granted strike that kills gives the Second Hand 2 Tempo stacks instead of 1.'},
           {k:'paradox',name:'Paradox',text:'Your Ultimate (Time Stop) needs 3 less charge.'}],
-  mage:[{k:'pactofash',name:'Pact of Ash',text:'When a shaman (not an Elemental) dies, its element’s bar gains 1. Their deaths feed the ascension.'},
+  mage:[{k:'earlyrising',name:'Early Rising',text:'Every element needs 1 less to ascend.'},/* v134 (owner): Pact of Ash was weak */
         {k:'ascension',name:'Ascension Surge',text:'When a pair ascends, each new Elemental releases its element around itself at once: fire 2 damage to enemies within 2, water heals allies within 2 for 3, earth stops the enemies next to it from moving on their next turn, air blows enemies within 2 one hex away.'},
-        {k:'wellspring',name:'Wellspring',text:'An Elemental standing on a hex of its own element casts its 1-AP spell for free.'}],
+        {k:'fury',name:'Elemental Fury',text:'An Elemental that kills releases its element around itself at once (the Ascension Surge effect, on every kill).'}],/* v134 (owner): Wellspring was bad */
 };
 function talent(p,k){if(typeof p==='number')p=G.players[p];return !!p&&!!p.talent&&p.talent===k}
 function utal(u,k){return u&&u.kind!=='wall'&&talent(G.players[u.owner],k)}
@@ -1458,12 +1458,12 @@ Object.assign(ULTS,{
   ooze:{name:'The Tide Rises',text:'For this turn and your next one, Spawn has no rest and costs no HP: the Mother may pour out droplets every turn (the 10-part limit still holds).'},
 });
 Object.assign(TALENTS,{
-  chrono:[{k:'longcon',name:'Long Con',text:'Every contract lasts 7 of your turns instead of 5.'},
-          {k:'biggame',name:'Big Game',text:'A contract on an enemy Leader or the King pays two steps of the bounty ladder.'},
-          {k:'slippery',name:'Slippery',text:'A Phase Blade that snaps back after a Dash Strike heals 2.'}],
-  rift:[{k:'widegates',name:'Wide Gates',text:'The far end of a Twin Gate may open up to 13 hexes away instead of 10.'},
-        {k:'stablegates',name:'Stable Gates',text:'Gatekeeper gates last 4 rounds instead of 3.'},
-        {k:'deepkick',name:'Deep Kick',text:'Banishers kick 4 hexes instead of 3.'}],
+  chrono:[{k:'doublebounty',name:'Double Bounty',text:'The first contract of the game pays two steps of the bounty ladder.'},
+          {k:'nowitness',name:'No Witnesses',text:'A crew member that collects a bounty may Phase Walk again at once, even if it had moved.'},
+          {k:'coldtrail',name:'Cold Trail',text:'When a Stasis Field goes off, enemies standing next to its 7 hexes are held too.'}],/* v134 (owner) */
+  rift:[{k:'opendoors',name:'Open Doors',text:'Enemies no longer shut your portal ends by standing next to them.'},
+        {k:'longgate',name:'Long Gate',text:'Every portal pair you open lasts 1 round longer.'},
+        {k:'ricochet',name:'Ricochet',text:'A Rift Shot bullet that kills flies on, straight, to the next unit in its path.'}],/* v132/v134 (owner); the old block's rift list is dead */
   ooze:[{k:'deeppool',name:'Deep Pool',text:'Up to 13 droplet parts may be on the board instead of 10.'},
         {k:'motherblood',name:'Mother’s Blood',text:'Spawn costs the Mother 1 HP instead of 2.'},
         {k:'corrosive',name:'Corrosive',text:'Acid Flask deals 3 instead of 2.'}],
@@ -1497,7 +1497,7 @@ const ELEMENTALS={fire:{name:'Fire Elemental',icon:'flame',hp:14,atk:3,def:0,mov
   earth:{name:'Earth Elemental',icon:'boulder',hp:17,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,book:['e_stoneskin','e_stonegrip'],trait:'bedrock'},
   air:{name:'Air Elemental',icon:'wing',hp:12,atk:2,def:0,mov:4,mt:'fly',at:'bolt',rng:2,book:['e_tailwind','e_gust'],trait:'windwalk'}};
 const ELEMENTAL_LORD={name:'Elemental Lord',icon:'crystal',hp:18,atk:4,def:1,mov:3,mt:'walk',at:'melee',rng:1,book:['inferno','greattide','mountaingrip','tempest'],ab2:'convergence',trait:'lord'};
-const elNeed=p=>(G&&G.realm?[3,4,5,6]:EL_NEED)[Math.min(3,p.evoN||0)];// v75 (brief): 3, 4, 5, 6 on the Realm
+const elNeed=p=>Math.max(2,(G&&G.realm?[3,4,5,6]:EL_NEED)[Math.min(3,p.evoN||0)]-(talent(p,'earlyrising')?1:0));/* v134 Early Rising */// v75 (brief): 3, 4, 5, 6 on the Realm
 const lordPow=(u,el)=>{const p=G.players[u.owner];return p&&p.lordPow?Math.floor((p.lordPow[el]||0)/2):0};// v75: +1 per 2 Elemental spells of that element
 const elHexOf=(q,r)=>G.elHex?G.elHex[key(q,r)]:null;
 const onElHex=(u,el)=>{const h=elHexOf(u.q,u.r);return !!h&&(h.owner==null||h.owner===u.owner)&&h.el===el};
@@ -2591,7 +2591,8 @@ function kindleBlast(t){if(!RULES.KINDLE_BLAST||t.kind==='wall'||!(CUR_NAME==='K
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Abil';CUR_NAME='Kindle: hellfire burst';for(const v of vs)if(alive(v))hurt(v,RULES.KINDLE_BLAST,'#ff4a3d');[CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function kill(t){
   const i=G.units.indexOf(t);if(i<0)return;soulCount(t);
-  G.units.splice(i,1);newKill(t,CUR_SRC);shadowKill(t);/* v132 */if(RULES.KINDLE_BLAST)kindleBlast(t);// v62: an enemy killed by the Kindle bursts
+  G.units.splice(i,1);newKill(t,CUR_SRC);shadowKill(t);/* v132 */
+  {const s=CUR_SRC;if(RULES.SHAMANS&&s&&s.kind!=='wall'&&s.elemental&&s.el&&alive(s)&&G.players[s.owner]&&talent(G.players[s.owner],'fury')&&(t.kind!=='wall'||t.monster)&&!(t.kind!=='wall'&&tm(t.owner)===tm(s.owner))){surgeOf(s,s.el);if(!SIM)fx(s,'fury!',EL_COL[s.el])}}/* v134 Elemental Fury */if(RULES.KINDLE_BLAST)kindleBlast(t);// v62: an enemy killed by the Kindle bursts
   if(RULES.SPLITTERS&&SPLITS[t.name])splitUnit(t);// v64: the Frost Colossus breaks into smaller pieces
   if(t.behemoth)behemothDown(t);
   if(t.beast){beastSlain(t);return}
@@ -5465,7 +5466,8 @@ function contractTarget(p){const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=
 function contractTick(p){if(!G.realm||p.fac!=='chrono'||!p.alive)return;
   if(p.contract){const t=byId(p.contract.id);if(!t||!alive(t)){p.contract=null}else{p.contract={id:p.contract.id,left:p.contract.left-1};if(p.contract.left<=0){if(!SIM){addLog(p.id,`The contract on the ${t.name} runs out.`);nTrk('chrono','','Contracts failed',e=>e.uses++)}p.contract=null}}}
   if(!p.contract){const t=contractTarget(p);if(t){p.contract={id:t.id,left:talent(p,'longcon')?7:5};if(!SIM){addLog(p.id,`New contract: the ${t.name} (${Math.ceil(t.hp)} HP). Kill it within 5 of your turns.`);fx(t,'contract','#ffd766');announce({k:'note',col:FAC.chrono.color,t:'New contract',s:`The Chrono Syndicate marks the ${t.name}. Whoever of the crew kills it collects the bounty.`});nTrk('chrono','','Contracts posted',e=>e.uses++)}}}}
-function bounty(p,t){p.bounty=(p.bounty||0)+1;const steps=(talent(p,'biggame')&&t&&(t.leader||t.king))?2:1;
+function bounty(p,t,k){const first=!(p.bounty||0);p.bounty=(p.bounty||0)+1;const steps=((talent(p,'biggame')&&t&&(t.leader||t.king))||(first&&talent(p,'doublebounty')))?2:1;/* v134 Double Bounty */
+  if(k&&alive(k)&&talent(p,'nowitness')){k.moved=false;k.blockT=null;if(!SIM)fx(k,'no witnesses: move again','#ffd766')}/* v134 No Witnesses */
   for(let s=0;s<steps;s++){const n=(p.bStep||0)+1;p.bStep=n;const R=CONTRACT_LADDER[n-1];const sb=Object.assign({hp:0,atk:0,mov:0,rest:0,abd:0},p.sb||{});
     if(R){for(const k in R)sb[k]+=R[k];p.sb=sb;if(R.hp)for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&!v.summon){v.maxhp+=R.hp;v.hp+=R.hp}}
     else for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&!v.summon)healUnit(v,1,'#ffd766','Bounty');
@@ -5473,13 +5475,13 @@ function bounty(p,t){p.bounty=(p.bounty||0)+1;const steps=(talent(p,'biggame')&&
       addLog(p.id,`Bounty ${n} collected: ${txt} for the whole crew.`);announce({k:'note',col:FAC.chrono.color,t:`Bounty ${n}`,s:`The Chrono Syndicate collects: ${txt}.`});nTrk('chrono','','Bounties collected',e=>e.uses++)}}}
 function synKill(t,k){if(!G.realm||!k||!isSyn(k))return;const p=G.players[k.owner];if(!p)return;if(t.summon||t.decoy||t.statue||t.egg)return;
   const hit=p.contract&&p.contract.id===t.id;const os=p.osTok===G.tok&&!t.monster&&t.kind!=='wall'&&tm(t.owner)!==tm(p.id);
-  if(hit||os){if(hit)p.contract=null;bounty(p,t)}}
+  if(hit||os){if(hit)p.contract=null;bounty(p,t,k)}}
 function synDash(u,A,tgt){if(!tgt)return;const m=occ();const spots=[];for(const [cq,cr] of cells(tgt))for(const [dq,dr] of DIRS){const a=cq+dq,b=cr+dr;if(freeHex(a,b,m)||(a===u.q&&b===u.r))spots.push([a,b])}
   spots.sort((x,y)=>hd(x[0],x[1],u.q,u.r)-hd(y[0],y[1],u.q,u.r));const s=spots[0];if(!s)return;
   if(!u.dashFrom)u.dashFrom=[u.q,u.r];if(!(s[0]===u.q&&s[1]===u.r))placeAt(u,s[0],s[1]);applyHit(u,tgt,A)}
 function synSnapBack(p){for(const u of G.units){if(u.owner!==p.id||!u.dashFrom)continue;const f=u.dashFrom;u.dashFrom=null;if(!alive(u))continue;const m=occ();m.delete(key(u.q,u.r));const c=nearFree(f[0],f[1],m,2);if(c&&!(c[0]===u.q&&c[1]===u.r)){placeAt(u,c[0],c[1]);if(!SIM){fx(u,'snaps back','#c81ca6');nTrk('chrono',u.name,'Dash Strike: snapped back',e=>e.uses++)}}if(talent(p,'slippery'))healUnit(u,2,'#c81ca6','Slippery')}}
 function fieldTick(p){if(!G.fields||!G.fields.length)return;const keep=[];for(const f of G.fields){if(f.owner!==p.id){keep.push(f);continue}let n=0;
-  for(const t of G.units.slice()){if(!alive(t)||t.kind==='wall'||t.owner<0||tm(t.owner)===tm(p.id)||t.statue||t.egg)continue;if(!cells(t).some(([a,b])=>hd(a,b,f.q,f.r)<=1))continue;t.st.fimm=0;if(freezeT(t,true))n++}
+  for(const t of G.units.slice()){if(!alive(t)||t.kind==='wall'||t.owner<0||tm(t.owner)===tm(p.id)||t.statue||t.egg)continue;const R=talent(p,'coldtrail')?2:1;/* v134 Cold Trail */if(!cells(t).some(([a,b])=>hd(a,b,f.q,f.r)<=R))continue;t.st.fimm=0;if(freezeT(t,true))n++}
   if(!SIM){vfx({k:'buff',at:[f.q,f.r],col:FAC.chrono.color,cam:1});addLog(p.id,`The stasis field goes off: ${n} enem${n===1?'y':'ies'} stunned.`);nTrk('chrono','Field Engineer','Stasis Field: stunned',e=>{e.uses++;e.stasisTurns=(e.stasisTurns||0)+n})}}G.fields=keep}
 function synDecoy(u,tgt){if(!tgt)return;const p=G.players[u.owner];const m=occ();const c=nearFree(u.q,u.r,m,2);if(!c)return;
   const d={name:tgt.name,icon:tgt.icon,hp:1,atk:1,def:0,mov:tgt.mov||3,mt:'blink',at:'melee',rng:1};const h=makeUnit(p,d);h.hp=h.maxhp=1;h.summon=true;h.decoy=1;h.lookAs=tgt.name;h.ttl=3;h.q=c[0];h.r=c[1];h.moved=true;h.acted=true;G.units.push(h);
@@ -6655,12 +6657,13 @@ function glBuildStatics(){
     else if(!isHeart(q,r)&&!G.map){if(h(7)<0.5)L.pebble.push([x+(h(8)-0.5)*1.2,0.03,z+(h(9)-0.5)*1.2,h(10)*3,0.6+h(11)*0.8]);if(h(12)<0.45)for(let i=0;i<3;i++)L.grass.push([x+(h(13+i)-0.5)*1.3,0.1,z+(h(16+i)-0.5)*1.3,h(19+i),1])}
     if(isCentreWall(q,r)&&!isHeart(q,r)&&!f)L.cwall.push([x,0,z,0,1,1])
     // v80 the Realm's city: houses inside the Heart until the Beast falls, then rubble
-    if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast||(typeof fallPre==='function'&&fallPre())){/* v121: the houses stand during the city moment before the Fall */if(h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
+    if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast||(typeof fallPre==='function'&&fallPre())){/* v121: the houses stand during the city moment before the Fall */if(!cityUp()&&h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
   if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5);const fm=new T.InstancedMesh(FOREST_GEO.geo,FOREST_GEO.mat,L.fmodel.length);fm.castShadow=innerWidth>=1000;/* phones skip the forests' shadow pass: 29k triangles x ~100 forests */fm.receiveShadow=true;const o=new T.Object3D();
     L.fmodel.forEach((t,i)=>{o.position.set(t[0],0.02-bb.y0*sc,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc);o.updateMatrix();fm.setMatrixAt(i,o.matrix)});fm.userData.forest={sc,y0:bb.y0};grp.add(fm);GL.forestMesh=fm;GL.forestList=L.fmodel}else{GL.forestMesh=null;GL.forestList=null}
   if(cityWallUp()){const bb=CITY_WALL.bb,o=CITY_WALL.src.clone();const target=2*(G.heartR+1)*S3+1.3;const sc=target/Math.max(bb.w||1,bb.d||1);o.scale.setScalar(sc);o.position.set(-bb.cx*sc,0.03-bb.y0*sc,-bb.cz*sc);
     o.traverse(m=>{if(m.isMesh){m.castShadow=innerWidth>=1000;m.receiveShadow=true}});const pv=new T.Group();pv.rotation.y=bb.w<bb.d?Math.PI/6:0;/* the ring's corners must lie on the x axis, like the hex ring's */pv.add(o);grp.add(pv);GL.cityWall=pv}else GL.cityWall=null
+  if(cityUp()){const bb=CITY.bb,o=CITY.src.clone();const target=2*G.heartR*S3-0.4;const sc=target/Math.max(bb.w||1,bb.d||1);o.scale.setScalar(sc);o.position.set(-bb.cx*sc,0.03-bb.y0*sc,-bb.cz*sc);o.traverse(m=>{if(m.isMesh){m.castShadow=innerWidth>=1000;m.receiveShadow=true}});grp.add(o);GL.city=o}else GL.city=null
   add(tree(glInst(L.trunk,gGeo('trunk',()=>{const g=new T.CylinderGeometry(0.06,0.1,0.45,6);g.translate(0,0,0);return g}),gMat('#6b4a2e')),L.trunk));
   add(tree(glInst(L.crown,gGeo('crown',()=>new T.IcosahedronGeometry(0.42,1)),gMat('#4f9a4a')),L.crown));
   add(tree(glInst(L.crown2,gGeo('crown',()=>new T.IcosahedronGeometry(0.42,1)),gMat('#63ad55')),L.crown2));
@@ -6864,6 +6867,10 @@ const BASE_MODELS={fire:{file:'models/fire_base-hellgate.glb',h:4.6},ice:{file:'
 const FOREST_MODEL='models/tile_forest-meadow.glb';let FOREST_GEO=null;
 // v88: the owner's city wall (one whole hexagonal ring) stands on the Realm's wall ring until the Beast falls; then the code wall blocks and rubble return (the ruined ring will replace them when he makes it)
 const CITY_WALL_MODEL='models/camps_city-wall.glb';let CITY_WALL=null;
+/* v133: the owner's Crown City model (his 'ornate temple complex') fills the Heart inside the wall until the Beast lands; then the code rubble takes over */
+const CITY_MODEL='models/camps_city.glb';let CITY=null;
+function glCityLoad(){if(CITY!==null)return;CITY=false;glModel(CITY_MODEL).then(src=>{CITY={src,bb:src.userData.bb};GL.sig='';GL.dirty=true}).catch(()=>{})}
+const cityUp=()=>!!(G&&G.realm&&CITY&&(!G.throneBeast||(typeof fallPre==='function'&&fallPre())));
 function glCityWallLoad(){if(CITY_WALL!==null)return;CITY_WALL=false;glModel(CITY_WALL_MODEL).then(src=>{CITY_WALL={src,bb:src.userData.bb};GL.sig='';GL.dirty=true}).catch(()=>{})}
 const cityWallUp=()=>!!(G&&G.realm&&CITY_WALL&&(!G.cityDown||(typeof fallPre==='function'&&fallPre())));/* v116: the wall stands until the Beast lands */
 function glForestLoad(){if(FOREST_GEO!==null)return;FOREST_GEO=false;glModel(FOREST_MODEL).then(src=>{let mesh=null;src.traverse(m=>{if(m.isMesh&&!mesh)mesh=m});if(!mesh)return;const bb=src.userData.bb;FOREST_GEO={geo:mesh.geometry,mat:mesh.material,bb};GL.sig='';GL.dirty=true}).catch(()=>{})}// v78d: a base building per army on the Realm, standing on the base's outermost hex, facing the board
@@ -7068,7 +7075,7 @@ function glNoCull(o){o.traverse(x=>{x.frustumCulled=false})}
 function glFrame(){
   if(!glInit())return false;GL.tick++;
   if(GL.game!==G){GL.game=G;GL.sig='';GL.terrSig='';for(const f of GL.figs.values()){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose())}GL.figs.clear()}
-  glForestLoad();if(G.realm)glCityWallLoad();
+  glForestLoad();if(G.realm){glCityWallLoad();glCityLoad()}
   if(GL.tick%15===1||!GL.sig){const s=glStaticSig();if(s!==GL.sig){GL.sig=s;glBuildTiles();glBuildStatics();glPlinth();glProps();glSunFit();GL.terrSig='';glNoCull(GL.scene)}
     const t=glTerrSig();if(t!==GL.terrSig){GL.terrSig=t;glPaintTiles();glBuildTerrDeco();glNoCull(GL.terrDeco)}}
   if(GL.throne)GL.throne.visible=!unitAt(0,0);
