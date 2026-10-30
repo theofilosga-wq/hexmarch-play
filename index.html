@@ -708,7 +708,7 @@ function heartTarget(){if(G.mode!=='warlord')return RULES.TARGET;if(G.map)return
    KING_ADJ 2 (v40b) = the King is never challenged: it always scores, and KING_KILL 1 = killing the King scores 1 point (1 = challenged only by an enemy next to the Throne, 0 = by an enemy anywhere on the Heart); NEW_LEADER 1 = a leaderless side's crowned King becomes its new
    Leader; LAST_LEADER 0 = no instant win for the last side with a Leader; WILDS_MOV 1 = on the Crown Wilds every unit +1 move and Leaders +1 more.
    The Barrier is off (BARRIER 0). */
-const RULES={COLLIDE:1,QUAKE_DMG:2,QUAKE_R:2,MARCH:1,NO_CALL_R1:1,BASE_EDGE:1,TERRAIN2:1,FORMATION:1,STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:1,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
+const RULES={CROWN_POT:1,HURT_CHARGE:1,SPAWN_PTS:1,FORGE_CAP:2,LVL_CAP:4,/* v146 frame: the crown pot, Ultimate charge from damage taken, points for every spawn, caps on the growing edges */COLLIDE:1,QUAKE_DMG:2,QUAKE_R:2,MARCH:1,NO_CALL_R1:1,BASE_EDGE:1,TERRAIN2:1,FORMATION:1,STORY2:1,REALM_SHAPE:1,GIANT_STOP:1,FAITH_FALLEN:1,LONE_GIANTS:1,MAP2:1,DREAD:1,PHALANX2:1,LIVING_FLAME:1,SHAMANS:1,FORTRESS:0,GHOULS:2,HEAVY:0,PILOTS2:1,SPLITTERS:1,FREEZE_HOLD:1,ROT_CURSES:1,KINDLE_DMG:2,KINDLE_BLAST:2,SANCT_CUT:2,WALKER_KING:1,NO_TOWER:1,FREEZE_IMM:1,AUTO_LOOT:1,BASE_EDGE:1,DEMON_LOST:4,DEMON_KILLS:4,DEMON_SOULS:12,FROST_MARKS_REALM:4,ICE_STATUES:3,SMALL_BASE:1,ARCHDEMON:1,RIFTKIT:1,RMARK_MOV:1,RMARK_PUSH:1,STORM_R:2,STORM_GIANT:6,TURNBACK:1,CREATURE_SLAM:1,PHALANX:5,PHALANX_DEF:1,PHALANX_ATK:0,PHALANX_HOLD:1,RIVER_SLAM:2,SLAM_MOM:2,VOIDWALK:1,SINK_DMG:6,SHATTER:1,KINGSGUARD:1,FIRE_MON:1,OVERHEAL:1,PILOTS:1,GROUND3:0,CREATURE_FX:1,SQUEEZE:1,GROUND2:1,HOLD:1,RETRIB:1,RED_SLOW:1,CHILL_FREE:1,KING_KILL:1,KING_ADJ:2,ENGAGE:0,STRIKE_ALL:0,MELEE_MOV:1,PURSUIT:1,NEW_LEADER:1,LAST_LEADER:0,WILDS_MOV:1,BASE_AP:4,LEADER_AP:2,THRONE_AP:1,HEART_AP:0,AP_CAP:9,TARGET:8,WARLORD_TARGET:12,LEADERLESS_AP:1,SLAM:1,CURSE_TURNS:4,VET_MAX:3,ULT:12,ULT_STEP:6,HOLE_TTL:4,CENTRE_FROM:5,FLAG_FROM:3,SPRING_AT:4,BEAST_AT:5,BEAST_HP:12,BEAST_DEF:1,BEAST_PTS:3,BEAST_CHARGE:6,BEAST_MOVE:4,TEAM_ULT_COST:3,ROAD_FROM:3,TRUCE:1,FOREST_HIDE:2,ZONE:20,RELIC_FROM:4,RELIC_EVERY:4,ULT_COST:2,SURROUND:1,ROAD:1,SHRINE_REST:2,BARRIER:0,TEMPO_CAP:3};
 // Act 1 (v23, 30 Sep 2026): the centre is walled until CENTRE_FROM (round 5), so Heart points and the Throne start then; flags (Outposts) stay captured
 // and score from FLAG_FROM; the Wellspring rises on the outer ring at SPRING_AT (+1 AP a turn to its owner); the Rift Beast spawns in the grey no man's land around the Heart at BEAST_AT (v25).
 const APV0=0.35,APV=APV0;
@@ -2509,7 +2509,7 @@ function beginTurn(){
     if(mine>=1&&mine>best){G.outpostAt[p.team]=G.round;
     G.score[p.team]++;tPts(p.id,'outpost',1);addLog(p.id,`${teamName(p.team)} owns the most flags (${mine}): ${G.score[p.team]}/${target}.`);
   }}
-  if((G.mode==='conquest'||G.mode==='warlord')&&G.score[p.team]>=target){G.over={team:p.team,how:'heart'};HOOKS.over();return}
+  if((G.mode==='conquest'||G.mode==='warlord')&&teamScore(p.team)>=target){G.over={team:p.team,how:'heart'};HOOKS.over();return}
   if((G.score[p.team]||0)>s0)announce({k:'score',team:p.team,gain:G.score[p.team]-s0,scores:scoreSnap(),target});
   HOOKS.turn();
 }
@@ -2636,7 +2636,7 @@ function kill(t){
   if(G.realm&&t.kind!=='wall'&&!t.summon&&G.players[t.owner]&&G.players[t.owner].fac==='warband'){for(const v of G.units)if(v!==t&&v.owner===t.owner&&v.kind!=='wall'&&!v.summon&&alive(v))xpGain(v,REALM.xp.fallen);if(!SIM&&trk()){const e=tFx('warband','','Fallen comrades (XP shared)');if(e)e.uses++}}
   // Veterans: a star per kill (+1 ATK each, up to 3). Giants count as two soldiers, so they need 2 kills per star. Machines and eggs give no star.
   if(!G.realm&&k&&alive(k)&&k.kind!=='wall'&&t.kind!=='wall'&&!t.summon&&tm(k.owner)!==tm(t.owner)&&(k.stars||0)<RULES.VET_MAX&&(k.kills=(k.kills||0)+1)%(k.size===2?2:1)===0){
-    k.stars=(k.stars||0)+1;
+    k.stars=Math.min(RULES.VET_MAX,(k.stars||0)+1);
     addLog(k.owner,`${k.name} is now a veteran ${'★'.repeat(k.stars)}.`);fx(k,'★'.repeat(k.stars),'#ffd766');vfx({k:'vet',at:[k.q,k.r]});
   }
   if(k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner))k.kt=(k.kt||0)+1;// kills this turn (Stealth)
@@ -2658,11 +2658,11 @@ function kill(t){
   // Warlord: a Leader takedown scores 2 points for the killer's side, checked against the target at once.
   if(G.mode==='warlord'&&(!G.realm||REALM.leaderPts>0)&&t.leader&&k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner].alive){const kt=tm(k.owner),LP=G.realm?REALM.leaderPts:2;/* v96 (owner): on the Realm killing an enemy Leader scores REALM.leaderPts; other units score nothing */G.score[kt]=(G.score[kt]||0)+LP;tPts(k.owner,'takedown',LP);
     addLog(k.owner,`Leader takedown! ${teamName(kt)} scores ${LP}: ${G.score[kt]}/${heartTarget()}.`);
-    if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}
+    if(teamScore(kt)>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}
   // v40b Kingslayer (owner 3 Oct 2026: "when someone kills the King they get a point"): on top of a Leader takedown if the King also leads.
-  if(G.mode==='warlord'&&(G.realm?REALM.kingPts>0&&(!t.leader||REALM.kingPts>REALM.leaderPts):RULES.KING_KILL>0)&&t.king&&k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner].alive&&!G.over){const kt=tm(k.owner),n=G.realm?(t.leader?REALM.kingPts-REALM.leaderPts:REALM.kingPts):RULES.KING_KILL;/* v118: a Leader who is King pays the King's price in all (Leader 1 + the rest) *//* v96: on the Realm the King's crown is a prize too (a Leader-King pays the Leader points only, never both) */G.score[kt]=(G.score[kt]||0)+n;tPts(k.owner,'kingslayer',n);
-    addLog(k.owner,`Kingslayer! ${teamName(kt)} scores ${n} for killing the King: ${G.score[kt]}/${heartTarget()}.`);
-    if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}
+  if(G.mode==='warlord'&&(G.realm?REALM.kingPts>0&&(!t.leader||REALM.kingPts>REALM.leaderPts):RULES.KING_KILL>0)&&t.king&&k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner].alive&&!G.over){const kt=tm(k.owner),n=G.realm?(t.leader?REALM.kingPts-REALM.leaderPts:REALM.kingPts):RULES.KING_KILL;/* v118: a Leader who is King pays the King's price in all (Leader 1 + the rest) *//* v96: on the Realm the King's crown is a prize too (a Leader-King pays the Leader points only, never both) */G.score[kt]=(G.score[kt]||0)+n;tPts(k.owner,'kingslayer',n);let pot=0;if(crownPot()){pot=G.cpot.pot;G.cpot=Object.assign({},G.cpot,{pot:0});G.score[kt]+=pot;tPts(k.owner,'crown',pot)}/* v146: the crown's unbanked points go to the killer */
+    addLog(k.owner,`Kingslayer! ${teamName(kt)} scores ${n} for killing the King${pot?` and takes the ${pot} point${pot>1?'s':''} in the crown`:''}: ${G.score[kt]}/${heartTarget()}.`);
+    if(teamScore(kt)>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}
   if(t.leader&&!SIM){const kk=k&&k.kind!=='wall'&&G.players[k.owner]?k:null,foe=kk&&tm(kk.owner)!==tm(t.owner);
     const cause=CUR_NAME==='Curse ticks'?'curse':foe?null:kk?'self':G.col&&G.col.justFell?'collapse':CUR_NAME===BEAST_SB?'beast':CUR_NAME==='Burning ground'?'fire':'other';
     const pts=G.mode==='warlord'&&foe&&G.players[kk.owner].alive?2:0;
@@ -2716,7 +2716,7 @@ function faithGain(p,n){if(!p||!(n>0))return;if(SIM){if((p.fallenAt||[]).length)
   if(trk()){const e=tFx('arcane','','Faith resurrections');if(e){e.uses++;e.round=G.round}}}
 function warbandLast(u){if(!u||!G.players[u.owner]||G.players[u.owner].fac!=='warband')return false;const p=G.players[u.owner];if((p.reserve||[]).length)return false;return !G.units.some(v=>v!==u&&v.owner===u.owner&&v.kind!=='wall'&&!v.summon&&alive(v))}
 function xpGain(u,n){if(!u||u.kind==='wall'||!(n>0))return;u.xp=(u.xp||0)+n;let lv=u.lvl||0;const need=l=>REALM.xp.steps[l]!=null?REALM.xp.steps[l]:REALM.xp.steps[REALM.xp.steps.length-1]+10*(l-REALM.xp.steps.length+1);
-  while(u.xp>=need(lv)){lv++;u.lvl=lv;if(lv%2){u.oldAtk=(u.oldAtk||0)+1;if(!SIM)fx(u,`level ${lv}: +1 ATK`,'#ffd766')}else{u.maxhp+=2;healUnit(u,2,'#ffd766','Veteran level');if(!SIM)fx(u,`level ${lv}: +2 HP`,'#ffd766')}
+  while(u.xp>=need(lv)&&lv<RULES.LVL_CAP){lv++;u.lvl=lv;/* v146: at most RULES.LVL_CAP levels (+2 ATK, +4 HP): a growing edge with a ceiling */if(lv%2){u.oldAtk=(u.oldAtk||0)+1;if(!SIM)fx(u,`level ${lv}: +1 ATK`,'#ffd766')}else{u.maxhp+=2;healUnit(u,2,'#ffd766','Veteran level');if(!SIM)fx(u,`level ${lv}: +2 HP`,'#ffd766')}
     if(!SIM){addLog(u.owner,`${u.name} reaches veteran level ${lv}.`);vfx({k:'vet',at:[u.q,u.r]});if(trk()){const e=tFx('warband',u.name,'Veteran level-ups');if(e){e.uses++;e.round=G.round}}}}}
 function spawnArchdemon(p,at){if(!RULES.ARCHDEMON||!p||p.fac!=='fire'||p.demon)return null;
   const [aq,ar]=at||p.home;const m=occ();const tmp={size:2,q:0,r:0,dir:0,kind:'unit',mt:'walk',owner:p.id};let spot=null;
@@ -2829,6 +2829,7 @@ function hurt(t,n,col,tick){
   const hpB=t.hp;
   if(t.beast)beastHurt(t,n,tick,hpB);
   t.hp=r2(t.hp-n);fx(t,'−'+n,col||'#ff6161');
+  if(RULES.HURT_CHARGE&&G.realm&&hostile&&t.kind!=='wall'&&!t.summon&&!t.monster&&!t.beast&&t.owner>=0&&G.players[t.owner]&&G.players[t.owner].alive){const p=G.players[t.owner],eff=Math.min(n,Math.max(0,hpB));p.hurtDmg=(p.hurtDmg||0)+eff;let g=0;while(p.hurtDmg>=REALM.hurtCharge){p.hurtDmg-=REALM.hurtCharge;g++}if(g){addCharge(p.id,g,'damage taken');if(!SIM){fx(t,'+'+g+' charge','#ffd766');if(trk()){const e=tFx(p.fac,'','Charge from damage taken');if(e)e.uses+=g}}}}/* v146: every REALM.hurtCharge damage a side takes is +1 Ultimate charge (camp work gives 1 per 6 dealt): the turnaround for the side losing the exchange */
   if(G.realm&&t.monster&&t.hp>0&&!t.enraged&&REALM.phase2[t.monster]&&t.hp*2<=t.maxhp)realmEnrage(t);// v117 two-phase camps
   if(hostile&&t.kind!=='wall'&&hasTrait(t,'bloodbond')&&G.players[t.owner]){const eff=Math.min(n,Math.max(0,hpB));const L=G.units.find(v=>v.owner===t.owner&&v.leader&&v.kind!=='wall'&&v!==t&&alive(v));if(L&&eff>=2){const h=Math.floor(eff/2);const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=t;CUR_TAG='Abil';CUR_NAME='Blood Bond (trait)';healUnit(L,h,'#e8e23a','Blood Bond (trait)',t.id);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[L.q,L.r]],col:'#e8e23a'})}}// v77 (owner): the Knight's pain feeds the Lich King
   if(hostile&&CUR_SRC&&CUR_SRC.kind!=='wall'&&CUR_SRC.name==='Archdemon'&&t.kind!=='wall')t.demonHit=CUR_SRC.owner;// v75: the Archdemon remembers whom it wounded
@@ -3092,6 +3093,18 @@ function resolveBarrier(){
 // painted patches or Groves) suffers there. Iron Warband bone: +1 from Warband basic attacks. Gnome pink: +1 from machine attacks. Hourglass magenta:
 // its abilities cost 1 more. Priests' indigo: it can't be healed. RULES.GROUND2 switches all ground weapons.
 const onClaimOf=(t,fac)=>RULES.GROUND2&&RULES.GROUND3&&t&&t.kind!=='wall'&&G.players[t.owner]&&G.players[t.owner].fac!==fac&&G.players.some(p=>p.fac===fac&&p.alive&&tm(p.id)!==tm(t.owner))&&cells(t).some(([q,r])=>G.terr[key(q,r)]===fac&&!(G.paint[key(q,r)]));
+/* v146 NAMED DUOS (research: Duelyst keywords, Hades duo boons, Engage's Break): the set-up another unit left on the target and the pay-off this hit gets from it,
+   as one short label for the damage tag. Interface only: nothing here changes a number. */
+function duoLabel(u,t,A){if(!u||!t||t.kind==='wall'||t.owner===u.owner)return null;const st=t.st||{};
+  try{
+    if(A&&coldDouble(t,A))return {t:A.cold2==='frozen'?'SHATTER x2':'COLD TARGET x2',c:'#5cc8ff'};
+    if(iceShatter(u,t))return {t:G.realm?'SHATTER +2':'SHATTER x2',c:'#5cc8ff'};
+    if(A&&A.special==='requiem'&&t.curses&&t.curses.length)return {t:'REAP THE ROTS',c:'#c9c22e'};
+    if(A&&A.special==='devour'&&t.hp<=6)return {t:'DEVOUR: DIES',c:'#ff4a3d'};
+    if(typeof isSyn==='function'&&isSyn(u)&&G.players[u.owner].contract&&G.players[u.owner].contract.id===t.id)return {t:'CONTRACT',c:'#c81ca6'};
+    const hb=hitBonuses(u,t,false).filter(([nm])=>!/ground/i.test(nm));if(hb.length){const [nm,v]=hb[0];return {t:nm.replace(/\s*\(.*\)$/,'').toUpperCase()+' +'+v,c:'#ffd766'}}
+    if(st.terrified>0&&A&&A.hits==='foe')return {t:'TERRIFIED',c:'#ff7a5c'};
+  }catch(e){}return null}
 function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
   if(G.players[u.owner]&&G.players[u.owner].fac==='warband'&&onClaimOf(t,'warband'))o.push(['Bone ground (enemy on it)',1]);
   if(u.machine&&onClaimOf(t,'gnomes'))o.push(['Pink ground (enemy on it)',1]);
@@ -3990,7 +4003,7 @@ function beastSlain(t){
     if(!SIM)addLog(pid,`${teamName(kt)}: ${G.score[kt]}/${heartTarget()} Warlord points.`);}
   announce({k:'beastdown',fac:G.players[pid].fac,unit:k.name,pts:pts?RULES.BEAST_PTS:0,noPts:!pts&&G.mode==='warlord',team:kt,scores:pts?scoreSnap():null,target:heartTarget()});
   if(pts){
-    if(G.score[kt]>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}}
+    if(teamScore(kt)>=heartTarget()&&!G.over){G.over={team:kt,how:'heart'};if(!SIM)HOOKS.over()}}}
 // Spawn spot (v25): 3 mutually adjacent free hexes (no unit, no feature, no relic) all inside the grey no man's land (heartR+1 or +2, never the Heart),
 // preferring two of them on the ring touching the Heart, then the triangle farthest from every unit. Ties: RNG. The Collapse never takes its hexes (beastHex).
 // v26 (owner's playtest: "the Beast didn't spawn after the wall collapsed"): it now spawns in the same round the wall falls and never silently skips.
@@ -4266,7 +4279,7 @@ function revealRoom(R,u){
 // Loot appears in a room (monsters cleared, crate broken, room held), or the Wanderer drops a Crown Shard.
 function dropLoot(R,q,r,quiet){if(!R.loot)return;R.state='loot';G.loot=G.loot||[];const x={id:G.nid++,kind:R.loot,gem:R.gem,item:R.item,room:R.id,q,r,carrier:null};G.loot.push(x);
   if(!quiet)addLog(null,`The ${ROOM_NAMES[R.type]}'s treasure lies open: ${lootName(x)}. ${x.kind==='suit'?'Step a unit onto it to climb in!':'Carry it home to your base!'}`);vfx({k:'relic',at:[q,r],col:lootCol(x)})}
-function wildsWin(team){if(G.score[team]>=heartTarget()&&!G.over){G.over={team,how:'heart'};HOOKS.over()}}
+function wildsWin(team){if(teamScore(team)>=heartTarget()&&!G.over){G.over={team,how:'heart'};HOOKS.over()}}
 function monsterSlain(t){
   const R=(G.rooms||[]).find(x=>x.id===t.room);
   if(t.monster==='cracked'){addLog(null,'A cracked wall crumbles: the way is open.');vfx({k:'death',at:[t.q,t.r],icon:'mountain',col:'#9a9283'});return}
@@ -4335,7 +4348,7 @@ function deliverLoot(){
     if(k==='gem'){const g=G.gems[p.team]=G.gems[p.team]||{};const was=g[x.gem]||0;g[x.gem]=Math.min(WILDS.gemMax,was+1);
       text=was>=WILDS.gemMax?`the crown already holds ${WILDS.gemMax} ${GEMS[x.gem].name}s: no more effect`:`set in the crown (${g[x.gem]}/${WILDS.gemMax}): ${GEMS[x.gem].text}`;
       // v44 (owner 3 Oct 2026: rooms must be worth it): every Crown Shard brought home also scores Warlord points, a path to victory away from the Throne
-      if(G.mode==='warlord'&&WILDS.shardPts&&!p.leaderless){G.score[p.team]=(G.score[p.team]||0)+WILDS.shardPts;tPts(pid,'shard',WILDS.shardPts);text+=` and +${WILDS.shardPts} point (${G.score[p.team]}/${heartTarget()})`;if(G.score[p.team]>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};if(!SIM)HOOKS.over()}}}
+      if(G.mode==='warlord'&&WILDS.shardPts&&!p.leaderless){G.score[p.team]=(G.score[p.team]||0)+WILDS.shardPts;tPts(pid,'shard',WILDS.shardPts);text+=` and +${WILDS.shardPts} point (${G.score[p.team]}/${heartTarget()})`;if(teamScore(p.team)>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};if(!SIM)HOOKS.over()}}}
     else if(k==='relic'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(lootFlip(u,x)*free.length)]:null;if(rk){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:u.id})}}
     addLog(pid,`${FAC[p.fac].name} brings home the ${lootName(x)}: ${text}.`);fx(u,lootName(x),lootCol(x));vfx({k:'buff',at:[u.q,u.r],col:lootCol(x),cam:1});
     announce({k:'loot',fac:p.fac,loot:lootName(x),text});
@@ -4652,6 +4665,11 @@ function kingCrown(){
   vfx({k:'buff',at:[0,0],col:'#ffd766',cam:1});announce({k:'king',fac:G.players[u.owner].fac,unit:u.name});
   if(trk()){const O=tObj();if(O){O.kings=O.kings||[];O.kings.push({pid:u.owner,unit:u.name,round:G.round})}}}
 function kingPromote(u){const p=G.players[u.owner];if(!RULES.NEW_LEADER||!p.leaderless||u.leader)return;u.leader=true;p.leaderless=false;addLog(u.owner,`${FAC[p.fac].name} has a Leader again: the ${u.name} wears the crown and leads the army.`);fx(u,'new Leader!','#ffd766')}
+/* v146 THE CROWN POT (research 30 Oct 2026, Kemet's temporary points): on the Realm the King's Throne points go into the CROWN. Every REALM.potBank-th point is banked
+   for good; the rest sit in the crown, count for the King's side while it wears the crown, and go to whoever kills the King (on top of the King-kill points). A King
+   who dies to a monster or the Beast leaves the pot on the crown for the next King. teamScore(t) = banked points + the pot if that side's unit is King. */
+function teamScore(t){const b=(G.score&&G.score[t])||0;if(!RULES.CROWN_POT||!G.realm||!G.cpot||!(G.cpot.pot>0))return b;const k=kingOf();return b+(k&&tm(k.owner)===t?G.cpot.pot:0)}/* G.cpot = the crown pot {n: King points so far, pot: unbanked}; G.crown is the Crown Stones count of the story */
+function crownPot(){return RULES.CROWN_POT&&G.realm&&G.cpot&&G.cpot.pot>0?G.cpot.pot:0}
 function kingScore(p){
   if(STORY()&&!SIM){const K=kingOf(),god=G.god!=null?byId(G.god):null;if(K&&K.owner===p.id&&god&&alive(god)&&distUU(god,K)<=3&&K.hp<K.maxhp)healUnit(K,REALM.godHeal,'#ffd766','Old God')}// v98: the Old God heals the King
   {const k=kingOf();if(k&&k.owner===p.id&&!SIM)kingPromote(k)}// v40: a King whose side lost its Leader becomes the new Leader
@@ -4659,8 +4677,12 @@ function kingScore(p){
   const k=kingOf();if(!k||k.owner!==p.id||!onThrone(k))return;
   if(heartFoes(p.team)){addLog(p.id,`The King is challenged: ${RULES.KING_ADJ?'an enemy stands next to the Throne':'enemies stand on the Heart'}, so no point this turn${G.map?'':' (it fights at +2 ATK, +2 DEF on the Throne)'}.`);return}
   G.scoredAt=G.scoredAt||{};if(G.scoredAt[p.team]===G.round)return;G.scoredAt[p.team]=G.round;// a team scores once per round
+  if(RULES.CROWN_POT&&G.realm){G.cpot=Object.assign({pot:0,n:0},G.cpot||{});G.cpot.n++;tPts(p.id,'throne',1);
+    if(G.cpot.n%REALM.potBank===0){G.score[p.team]=(G.score[p.team]||0)+1;addLog(p.id,`The King holds the Throne: this point is banked for good (${G.score[p.team]} banked, ${G.cpot.pot} in the crown, ${teamScore(p.team)}/${heartTarget()}).`)}
+    else{G.cpot.pot++;addLog(p.id,`The King holds the Throne: +1 into the crown (${G.cpot.pot} in the crown, which his killer would take; ${G.score[p.team]||0} banked; ${teamScore(p.team)}/${heartTarget()}).`)}
+    if(teamScore(p.team)>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}return}
   G.score[p.team]=(G.score[p.team]||0)+1;tPts(p.id,'throne',1);addLog(p.id,`The King holds the Throne: ${G.score[p.team]}/${heartTarget()}.`);
-  if(G.score[p.team]>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}}
+  if(teamScore(p.team)>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}}
 /* ---------- The Realm (v74, owner 17 Oct 2026): the first playable test of the big redesign ----------
    A big rectangular board with the four bases in the corners, each inside a home valley walled by broken mountains (three wide exits and holes).
    Everything but the bases is rolled every game and mirrored, so every player gets the same distances. Four rings: the home valley (two tier-1
@@ -4672,7 +4694,7 @@ function kingScore(p){
    Points: last hits (an enemy unit 1, a Leader 3, camps by tier) and the King on the Throne (1 a turn); first to REALM.target wins.
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
-const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:1,burst:1,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,suitHp:12,
+const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:1,burst:1,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,hurtCharge:10,potBank:3,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
@@ -4680,7 +4702,7 @@ const REALM_MON={
   warden:{name:'Spring Warden',icon:'golem',hp:20,atk:4,def:0,tier:2,pts:0},
   ogre:{name:'Ogre Warlord',icon:'golem',hp:24,atk:5,def:0,tier:2,pts:0},
   drake:{name:'Elder Drake',icon:'drake',hp:30,atk:4,def:0,tier:3,pts:3},
-  spawn1:{name:'Rift Spawn',icon:'skull',hp:10,atk:2,def:0,mov:3,tier:'s',pts:0},spawn2:{name:'Rift Spawn',icon:'skull',hp:16,atk:3,def:0,mov:3,tier:'s',pts:0},
+  spawn1:{name:'Rift Spawn',icon:'skull',hp:10,atk:2,def:0,mov:3,tier:'s',pts:0},spawn2:{name:'Rift Spawn',icon:'skull',hp:16,atk:3,def:0,mov:3,tier:'s',pts:1},/* v146: a second road to points (RULES.SPAWN_PTS): from wave 2 every spawn is worth a point (the owner's 19 Oct table had 0 for waves 1-2; a wave-1 spawn point read 0.3x the median objective on the points ruler, too cheap) */
   spawn3:{name:'Rift Spawn',icon:'skull',hp:24,atk:4,def:1,mov:3,tier:'s',pts:1},spawn4:{name:'Rift Spawn',icon:'skull',hp:32,atk:5,def:1,mov:4,tier:'s',pts:2},
   oldgod:{name:'Old God',icon:'crown',hp:30,atk:0,def:1,mov:3,tier:'g',pts:2},/* v98 story v2 *//* v96 (owner): camps are quick to clear; the real fights are army against army */
   chest:{name:'Ruin Chest',icon:'chest',hp:10,atk:0,def:0,tier:0,pts:0}};
@@ -4844,20 +4866,20 @@ function realmSummon(p,name,quiet,at){if(!realmCanSummon(p))return null;const i=
 function realmBotPick(p){const on=n=>G.units.filter(v=>v.owner===p.id&&v.name===n).length;return p.reserve.slice().sort((a,b)=>on(a)-on(b))[0]}
 function realmPts(pid,n,src,why){const p=G.players[pid];if(!p||!(n>0))return;const t=p.team;G.score[t]=(G.score[t]||0)+n;
   if(!SIM){tPts(pid,src,n);addLog(pid,`${why}: +${n} point${n>1?'s':''} (${G.score[t]}/${heartTarget()}).`);announce({k:'score',team:t,gain:n,scores:scoreSnap(),target:heartTarget()})}
-  if(G.score[t]>=heartTarget()&&!G.over){G.over={team:t,how:'heart'};if(!SIM)HOOKS.over()}}
+  if(teamScore(t)>=heartTarget()&&!G.over){G.over={team:t,how:'heart'};if(!SIM)HOOKS.over()}}
 // A camp monster falls: the side that landed the killing blow scores its tier's points and takes its reward at once (nothing to carry home).
 function realmSlain(t,R,k){
   if(R){if(R.respawn){R.state='down';R.back=G.round+R.respawn}else R.state='done'}
   const M=t.monster==='wanderer'?{pts:REALM.wanderPts,tier:'w'}:REALM_MON[t.monster]||{pts:0};if(!k||!G.players[k.owner]){addLog(null,`The ${t.name} falls, but no army lands the blow.`);return}
   const p=G.players[k.owner],F=FAC[p.fac];let what='';
-  if(t.monster==='brute'){k.maxhp+=REALM.t1Hp;k.hp+=REALM.t1Hp;k.forgeAtk=(k.forgeAtk||0)+REALM.t1Atk;what=`the ${k.name} gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good, and the camp becomes a ${F.name} spawn site`}
+  if(t.monster==='brute'){k.maxhp+=REALM.t1Hp;k.hp+=REALM.t1Hp;k.forgeAtk=Math.min(RULES.FORGE_CAP,(k.forgeAtk||0)+REALM.t1Atk);what=`the ${k.name} gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good, and the camp becomes a ${F.name} spawn site`}
   else if(t.monster==='warden'){if(t.halfBy!=null)what=`the Spring becomes a ${F.name} spawn site`;else{let n=0;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&v.hp<v.maxhp&&healUnit(v,REALM.springHeal,'#9ff0c0','Healing Spring'))n++;what=`every ${F.name} unit heals ${REALM.springHeal} (${n} healed), and the Spring becomes a ${F.name} spawn site`}}
   else if(t.monster==='wanderer'){addCharge(p.id,REALM.charge.w);what=`the Wanderer is slain`}
-  else if(t.monster==='ogre'){k.forgeAtk=(k.forgeAtk||0)+REALM.ogreAtk;what=`the ${k.name} takes the Ogre's strength: +${REALM.ogreAtk} ATK for good, and the lair becomes a ${F.name} spawn site`}
+  else if(t.monster==='ogre'){k.forgeAtk=Math.min(RULES.FORGE_CAP,(k.forgeAtk||0)+REALM.ogreAtk);what=`the ${k.name} takes the Ogre's strength: +${REALM.ogreAtk} ATK for good, and the lair becomes a ${F.name} spawn site`}
   else if(t.monster==='drake'){const fl=(p.fallen||[]).map(n=>FAC[p.fac].units.find(d=>d.name===n)).filter(Boolean).sort((a,b)=>b.hp-a.hp)[0];
     if(fl){const u=makeUnit(p,fl);if(realmPlace(p,u)){p.fallen.splice(p.fallen.indexOf(fl.name),1);u.moved=true;u.acted=true;G.units.push(u);tStat(u);what=`the fallen ${fl.name} returns to the ${F.name} base`}else what='the base is full, so nobody returns'}
     else{for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'){v.maxhp+=3;v.hp+=3}what=`every ${F.name} unit gains +3 max HP for good`}}
-  else if(t.spawnW===3){k.forgeAtk=(k.forgeAtk||0)+1;what=`the ${k.name} tears the spawn apart: +1 ATK for good`}
+  else if(t.spawnW===3){k.forgeAtk=Math.min(RULES.FORGE_CAP,(k.forgeAtk||0)+1);what=`the ${k.name} tears the spawn apart: +1 ATK for good`}
   else if(t.spawnW===4){for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'){v.maxhp+=2;v.hp+=2}what=`every ${F.name} unit gains +2 max HP for good`}
   else if(t.spawnW){what='a piece of the Beast is destroyed'}
   else if(t.god){G.god=null;what='the Old God falls and will not return'}
@@ -4869,7 +4891,7 @@ function realmSlain(t,R,k){
   if(R&&(R.tier===1||R.tier===2)){G.outposts=G.outposts||[];if(!G.outposts.some(o=>o[0]===R.c[0]&&o[1]===R.c[1]))G.outposts.push([R.c[0],R.c[1]]);G.flagOwner=G.flagOwner||{};G.flagOwner[key(R.c[0],R.c[1])]=p.id}
   {const ch=REALM.charge[M.tier]-(t.halfCh||0);if(ch>0)addCharge(p.id,ch)}
   if(trk()){const O=tObj();if(O){O.realm=O.realm||[];O.realm.push({m:t.monster,pid:p.id,round:G.round})}}
-  realmPts(p.id,Math.max(0,M.pts-(t.halfPts||0)),'camp'+M.tier,`${F.name} take the ${t.name}`)}
+  realmPts(p.id,Math.max(0,(t.spawnW===2&&!RULES.SPAWN_PTS?0:M.pts)-(t.halfPts||0)),'camp'+M.tier,`${F.name} take the ${t.name}`)}
 /* v117 (owner: "camps have 2 phases like some Elden Ring bosses, and drop half the reward at half HP and the rest when they die"): at half HP a tier-2/3 camp ENRAGES
    (REALM.phase2: +ATK, the Drake also strikes everyone next to it) and the side whose hit broke it takes half the reward at once: the Spring's heal and half its charge,
    the Drake's first point and half its charge. The killing blow takes the rest (the spawn site; the Drake's other points and the fallen unit back). */
@@ -4983,8 +5005,8 @@ function throwSetups(team){
   return s}
 function cloneU(u){const c=Object.assign({},u);c.st=Object.assign({},u.st);if(u.cdx)c.cdx=Object.assign({},u.cdx);if(u.st&&u.st.curses)c.st.curses=Object.assign({},u.st.curses);delete c.anim;return c}
 function simScore(team,fn){
-  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
-  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.sinks=Object.assign({},G.sinks||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;
+  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields,cpot:G.cpot};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
+  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.sinks=Object.assign({},G.sinks||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;G.cpot=G.cpot?Object.assign({},G.cpot):G.cpot;
   SIM=true;let v;
   try{fn();v=evaluate(team)}finally{SIM=false;Object.assign(G,save);BEAST_Q=bq;BAR_Q=barq}
   return v;
@@ -8715,20 +8737,28 @@ function kingZoneDraw(now){if(!G||G.mode!=="warlord"||G.phase||RULES.KING_ADJ!==
   ctx.restore()}
 /* v45 danger hexes (owner's vision: show the stakes before a choice): the hexes any enemy could hit with a basic attack on its next turn, after moving.
    Move dots on those hexes turn red. Cached per position of every piece. Abilities and Ultimates are not counted (basic attacks only). */
-let DANGER={k:null,set:null};
-function dangerHexes(){if(!G||G.phase||!isHumanTurn())return null;const me=tm(G.cur);
-  const k=G.round+'|'+G.cur+'|'+G.units.map(u=>u.id+':'+u.q+','+u.r).join(';');if(DANGER.k===k)return DANGER.set;
-  const set=new Set();
+let DANGER={k:null,set:null,dmg:new Map()};
+/* v146 TELEGRAPHED THREATS (research 30 Oct 2026: Into the Breach shows the hit before it lands). For the selected unit, every hex it could stand on carries the
+   damage the enemies in reach could deal to it there next turn: each enemy's best basic blow from any hex it can walk to (close +1 / far -1 on the Realm),
+   camp monsters that strike their neighbours, and the Rift Beast's sweep cones. The red dots become numbers; the unit's own hex says 'here -N' or 'here safe'. */
+let THREAT_ON=true;try{THREAT_ON=localStorage.getItem('hexmarch.threat')!=='off'}catch(e){}
+function dangerHexes(){if(!G||G.phase||!isHumanTurn())return null;const me=tm(G.cur);const su=G.sel!=null?byId(G.sel):null;
+  const k=G.round+'|'+G.cur+'|'+(su?su.id:'')+'|'+G.units.map(u=>u.id+':'+u.q+','+u.r+','+u.hp).join(';');if(DANGER.k===k)return DANGER.set;
+  const set=new Set(),dmg=new Map();let def=1;try{def=su&&su.kind!=='wall'?effDef(su):1}catch(e){}const add=(c,d)=>{set.add(c);dmg.set(c,(dmg.get(c)||0)+d)};
   for(const v of G.units){if(v.kind==='wall'||tm(v.owner)===me||v.at==='none'||v.egg||v.statue||(v.st&&v.st.frozen>0))continue;
-    const q0=v.q,r0=v.r,d0=v.dir,spots=[[q0,r0,d0],...[...moveOpts(v,true).values()].map(o=>[o.q,o.r,o.dir])];
-    try{for(const [q,r,d] of spots){v.q=q;v.r=r;v.dir=d;for(const c of atkCells(v))set.add(c)}}finally{v.q=q0;v.r=r0;v.dir=d0}}
-  DANGER={k,set};return set}
+    const q0=v.q,r0=v.r,d0=v.dir,spots=[[q0,r0,d0],...[...moveOpts(v,true).values()].map(o=>[o.q,o.r,o.dir])];const best=new Map();let a=1;try{a=effAtk(v)}catch(e){}
+    try{for(const [q,r,d] of spots){v.q=q;v.r=r;v.dir=d;for(const c of atkCells(v)){let h=Math.max(1,a-def);if(G.realm){const [cq,cr]=c.split(',').map(Number);h=Math.max(1,h+(meleeAt(v.at)&&hd(q,r,cq,cr)<=1?REALM.near:-REALM.far))}if(h>(best.get(c)||0))best.set(c,h)}}}finally{v.q=q0;v.r=r0;v.dir=d0}
+    for(const [c,h] of best)add(c,h)}
+  if(G.realm){try{for(const m of G.units){if(!m.monster||!(m.atk>0)||!alive(m))continue;const M=REALM_MON[m.monster]||{};if(!(M.tier>=2||(su&&m.lastBy===su.id)))continue;for(const [q,r] of allCells())if(distUC(m,q,r)===1)add(key(q,r),Math.max(1,m.atk-def))}
+    if(G.breaches&&typeof storyBeast==='function'&&storyBeast())for(const br of G.breaches)for(const c of br.zone||[])add(c,Math.max(1,REALM.sweepDmg+(G.eaten||0)-def))}catch(e){}}
+  DANGER={k,set,dmg};return set}
+function threatAt(k){if(!THREAT_ON||!dangerHexes())return 0;return DANGER.dmg.get(k)||0}
 /* v40 turn recap (owner 3 Oct 2026: "when I make a choice, do I feel its impact?"). When a human ends a turn we remember the board; at the start of that
    player's next turn a small box says what happened in between: units lost and hurt, enemy losses, points scored and by what, a new King. */
 const RECAP={};
 function recapSnap(pid){if(!G||G.phase)return;const pts=G.stats&&G.stats.points?JSON.parse(JSON.stringify(G.stats.points)):{};const K=kingOf();
   RECAP[pid]={round:G.round,units:new Map(G.units.filter(u=>u.kind!=='wall'&&!u.statue).map(u=>[u.id,{hp:u.hp,name:u.name,owner:u.owner}])),score:{...(G.score||{})},pts,king:K?K.id:null}}
-const PT_WORD={kingslayer:'killing the King',throne:'the King on the Throne',outpost:'the most flags',takedown:'Leader kills',beast:'the Rift Beast',heart:'the Heart'};
+const PT_WORD={kingslayer:'killing the King',crown:'the points taken from the King’s crown',throne:'the King on the Throne',outpost:'the most flags',takedown:'Leader kills',beast:'the Rift Beast',heart:'the Heart'};
 function recapShow(pid,tries){const S=RECAP[pid];if(!S||!G||G.phase||G.over||G.tutorial){delete RECAP[pid];return}
   {const ab=$('#annBanner');if(ab&&!ab.hidden&&(tries||0)<20){setTimeout(()=>{if(G&&G.cur===pid)recapShow(pid,(tries||0)+1)},600);return}}// wait until a big announcement has gone
   delete RECAP[pid];const old=$('#recapBox');if(old)old.remove();
@@ -8740,7 +8770,7 @@ function recapShow(pid,tries){const S=RECAP[pid];if(!S||!G||G.phase||G.over||G.t
   for(const o in foeLost)lines.push(`${nm(+o)} lost ${foeLost[o].join(', ')}.`);
   const P2=G.stats&&G.stats.points||{};
   for(const p of G.players){const was=S.pts[p.id]||{},is=P2[p.id]||{};const got=Object.keys(is).map(k=>[k,(is[k]||0)-(was[k]||0)]).filter(x=>x[1]>0);
-    if(got.length)lines.push(`${p.id===pid?'<b>You</b>':nm(p.id)} scored ${got.map(([k,n])=>`+${n} (${PT_WORD[k]||k})`).join(', ')}: now ${G.score[p.team]||0} of ${heartTarget()}.`)}
+    if(got.length)lines.push(`${p.id===pid?'<b>You</b>':nm(p.id)} scored ${got.map(([k,n])=>`+${n} (${PT_WORD[k]||k})`).join(', ')}: now ${teamScore(p.team)} of ${heartTarget()}.`)}
   const K=kingOf();if((K?K.id:null)!==S.king)lines.push(K?`♛ New King: the ${nm(K.owner)} ${K.name}.`:'♛ The King has fallen: the crown is free.');
   if(!lines.length)lines.push('A quiet round: nothing of yours was touched.');
   const b=document.createElement('div');b.id='recapBox';b.className='recap';b.setAttribute('role','status');
@@ -8785,7 +8815,7 @@ function annSet(on){ANN.on=on;try{localStorage.setItem('hexmarch.ann',on?'on':'o
 function syncAnnBtn(){const b=$('#annBtn');if(b){b.textContent=ANN.on?'Announcements on':'Announcements off';b.setAttribute('aria-pressed',ANN.on?'true':'false')}}
 function wildsSeats(){}// v50: the Riftwalkers play on the Crown Wilds too (they make their own holes), so no seat is swapped any more
 // v33: the King rules in one place, for texts. Crown Wilds: +2/+2 for life; random board: +1/+1 for life, +2/+2 on the Throne while challenged.
-function kingText(){return G&&G.map?`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. It scores 1 point at the start of its side's turn while it sits on the Throne. Whoever kills the King scores ${G.realm?REALM.kingPts:RULES.KING_KILL}.${G.realm&&RULES.STORY2?` Its crown holds ${G.crown||0} Crown Stone${(G.crown||0)===1?'':'s'} (+1 ATK and +1 max HP each), and stays on the throne for the next King.`:''}`
+function kingText(){return G&&G.map?`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. It scores 1 point at the start of its side's turn while it sits on the Throne. Whoever kills the King scores ${G.realm?REALM.kingPts:RULES.KING_KILL}${G.realm&&RULES.CROWN_POT?` and takes the points in the crown (only every ${REALM.potBank}${REALM.potBank===3?'rd':'th'} Throne point is banked for good${crownPot()?'; '+crownPot()+' in the crown now':''})`:''}.${G.realm&&RULES.STORY2?` Its crown holds ${G.crown||0} Crown Stone${(G.crown||0)===1?'':'s'} (+1 ATK and +1 max HP each), and stays on the throne for the next King.`:''}`
   :'+1 ATK and +1 DEF for as long as it lives. At the start of its side’s turn, sitting on the Throne scores 1 point, always. To stop it, kill the King (its killer scores '+RULES.KING_KILL+') or take the Throne: whoever sits on the Throne takes the crown, even from a living King who has stepped off it.'}
 function isHumanTurn(){if(!G||G.over)return false;const p=P(G.cur);if(p.ctrl!=='human')return false;return !netOnline()||p.uid===NET.me}
 function teamColor(t){return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t).fac].color}
@@ -8814,7 +8844,7 @@ function renderDoom(){
 function renderScoreStrip(){const el=$('#scoreStrip');if(!el)return;if(G.phase){el.hidden=true;return}el.hidden=false;
   const ts=[...new Set(G.players.map(p=>p.team))],TGT=heartTarget(),war=G.mode==='warlord',live=G.round>=RULES.CENTRE_FROM;
   const dots=t=>G.players.filter(p=>p.team===t).map(p=>`<i style="background:${FAC[p.fac].color}"></i>`).join('');
-  const side=t=>{const dead=!G.players.some(p=>p.team===t&&p.alive),hold=G.holder===t,cur=P(G.cur).team===t;return `<span class="sc ${hold?'hold':''} ${dead?'dead':''} ${cur?'cur':''}" title="${teamName(t)}${hold?' holds the Heart':''}">${dots(t)}${war?`<b>${G.score[t]||0}</b><small>/${TGT}</small>`:''}${hold?'<em>⬢</em>':''}</span>`};
+  const side=t=>{const dead=!G.players.some(p=>p.team===t&&p.alive),hold=G.holder===t,cur=P(G.cur).team===t;return `<span class="sc ${hold?'hold':''} ${dead?'dead':''} ${cur?'cur':''}" title="${teamName(t)}${hold?' holds the Heart':''}">${dots(t)}${war?`<b>${teamScore(t)}</b>${(()=>{const K=kingOf();return crownPot()&&K&&tm(K.owner)===t?`<small class="pot" title="${crownPot()} of these points sit in the crown: the King's killer takes them">♛${crownPot()}</small>`:''})()}<small>/${TGT}</small>`:''}${hold?'<em>⬢</em>':''}</span>`};
   const soulPill=p=>{const nd=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;const n=p.souls||0;if(p.demon)return `<span class="sc souls up" title="The Archdemon has risen">🔥<b>Archdemon</b></span>`;return `<span class="sc souls ${nd&&nd-n<=2?'near':''}" title="Souls of the Ember Court: every Ember unit that falls and every enemy the Court kills; at ${nd} the Archdemon rises">🔥<b>${Math.min(n,nd||n)}</b><small>/${nd||'?'} souls</small></span>`};
   const soulPills=RULES.ARCHDEMON?G.players.filter(p=>p.fac==='fire'&&p.alive).map(soulPill).join(''):'';// v89: the owner wants the souls counter very visible
   el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span>${soulPills}<span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall falls':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.mode!=='conquest'?(()=>{const K=kingOf();return K?`♛ <span style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name}</span> King${onThrone(K)?(kingChallenged(K)?' · challenged':' · on the Throne'):' · off the Throne'}`:throneOpen()?'Throne free':'Throne hidden'})():G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`}
@@ -8856,7 +8886,7 @@ function refresh(){
   if(G.mode==='conquest'||G.mode==='warlord'){
     const TGT=heartTarget();
     const ts=[...new Set(G.players.map(p=>p.team))];
-    scores='<div class="scores">'+ts.map(t=>{const dead=!G.players.some(p=>p.team===t&&p.alive);return `<div class="srow" style="${dead?'opacity:.4':''}"><span style="color:${teamColor(t)}">${teamName(t)}</span><div class="bar"><i style="width:${G.score[t]/TGT*100}%;background:${teamColor(t)}"></i></div><b>${G.score[t]}</b></div>`}).join('')+'</div>';
+    scores='<div class="scores">'+ts.map(t=>{const dead=!G.players.some(p=>p.team===t&&p.alive);return `<div class="srow" style="${dead?'opacity:.4':''}"><span style="color:${teamColor(t)}">${teamName(t)}</span><div class="bar"><i style="width:${teamScore(t)/TGT*100}%;background:${teamColor(t)}"></i></div><b>${teamScore(t)}</b></div>`}).join('')+'</div>';
   }
   const TERR=territory(),tl=territoryLeader();
   const sides=G.players.map(p=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;${p.alive?'':'opacity:.35;text-decoration:line-through'}" title="${talentInfo(p)?talentInfo(p).name+': '+talentInfo(p).text:''}"><span class="dot" style="background:${FAC[p.fac].color}"></span>P${p.id+1}${G.teams?' '+'ABC'[p.team]:''} <span class="hint">⬢${TERR[p.fac]||0}${tl===p.id?' ★':''}</span>${p.leaderless&&p.alive?' <span class="hint">(no leader)</span>':''}${p.bank?` <span class="hint">+${p.bank} AP banked</span>`:''}</span>`).join(' ');
@@ -9087,9 +9117,10 @@ let SHOW_HP=true;try{SHOW_HP=localStorage.getItem('hexmarch.hp')!=='off'}catch(e
 let MENU_RESET=0;
 function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm" data-m="info">Game info and unit details</button><button class="btn sm" data-m="view">${VIEW==='3d'?'Switch to flat map':'Switch to tabletop'}</button>
   ${VIEW==='3d'?'<button class="btn sm" data-m="rot">Rotate board ⟳</button>':''}<button class="btn sm" data-m="zin">Zoom in +</button><button class="btn sm" data-m="zout">Zoom out −</button><button class="btn sm" data-m="fit">⤢ Fit whole board</button><button class="btn sm" data-m="army">◎ Show my army</button>
-  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="fx">${typeof GLFX!=='undefined'&&GLFX.on?'✨ 3D effects on':'✨ 3D effects off (lighter)'}</button><button class="btn sm" data-m="vp">${VP.on?'🖼 Board drawing: on-screen part only':'🖼 Board drawing: classic (whole board)'}</button><button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button>${VIEW==='3d'?`<button class="btn sm" data-m="topv">${TOPVIEW?'🎯 Top view when a unit is selected: on':'🎯 Top view when a unit is selected: off'}</button>`:''}<button class="btn sm" data-m="ring">${UX.ring?'🔘 Buttons beside the unit: on':'🔘 Buttons beside the unit: off'}</button><button class="btn sm" data-m="kb">⌨ Keyboard keys</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="acam">${typeof ACAM!=='undefined'&&ACAM.on?'🎬 Action camera on':'🎬 Action camera off'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
+  ${VIEW==='3d'&&typeof THREE!=='undefined'?`<button class="btn sm" data-m="gl">${GL.pref!=='off'?'🧊 3D models on':'🧊 3D models off (lighter)'}</button>`:''}<button class="btn sm" data-m="fx">${typeof GLFX!=='undefined'&&GLFX.on?'✨ 3D effects on':'✨ 3D effects off (lighter)'}</button><button class="btn sm" data-m="vp">${VP.on?'🖼 Board drawing: on-screen part only':'🖼 Board drawing: classic (whole board)'}</button><button class="btn sm" data-m="threat">${THREAT_ON?'⚠ Threat numbers on the move dots':'⚠ Threat numbers off'}</button><button class="btn sm" data-m="hp">${SHOW_HP?'Hide':'Show'} health bars</button><button class="btn sm" data-m="snd">${SND.on?'🔊 Sound on':'🔇 Sound off'}</button><button class="btn sm" data-m="ann">${ANN.on?'📣 Announcements on':'📣 Announcements off'}</button>${VIEW==='3d'?`<button class="btn sm" data-m="topv">${TOPVIEW?'🎯 Top view when a unit is selected: on':'🎯 Top view when a unit is selected: off'}</button>`:''}<button class="btn sm" data-m="ring">${UX.ring?'🔘 Buttons beside the unit: on':'🔘 Buttons beside the unit: off'}</button><button class="btn sm" data-m="kb">⌨ Keyboard keys</button><button class="btn sm" data-m="cam">${CAMF.on?'🎥 Camera follows the action':'🎥 Camera stays put'}</button><button class="btn sm" data-m="acam">${typeof ACAM!=='undefined'&&ACAM.on?'🎬 Action camera on':'🎬 Action camera off'}</button><button class="btn sm" data-m="pause">⏸ Pause</button><button class="btn sm" data-m="score">Score card</button>${netOnline()&&netIsHost()?'<button class="btn sm" data-m="newroom">↺ New game in this room</button>':''}<button class="btn sm" data-m="hist">🗂 Match history</button><button class="btn sm" data-m="rules">📖 Rules (How to play)</button><button class="btn sm" data-m="quick">Quick reference</button><button class="btn sm" data-m="exit">Exit full screen</button>`;
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
+    if(k==='threat'){THREAT_ON=!THREAT_ON;try{localStorage.setItem('hexmarch.threat',THREAT_ON?'on':'off')}catch(e){}toast(THREAT_ON?'Move dots show the damage you would take there next turn':'Threat numbers hidden',2200);refresh()}
     if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='fx'&&typeof GLFX!=='undefined'){GLFX.on=!GLFX.on;try{localStorage.setItem('hexmarch.fx',GLFX.on?'on':'off')}catch(e){}if(!GLFX.on&&GLFX.amb){GL.scene.remove(GLFX.amb);GLFX.amb=null}else if(typeof glAmbientBuild==='function')glAmbientBuild();toast(GLFX.on?'3D effects on: flames, light, impacts.':'3D effects off: the flat overlay effects only.',2600)}if(k==='vp'){VP.on=!VP.on;try{localStorage.setItem('hexmarch.vp',VP.on?'on':'off')}catch(e){}layout();toast(VP.on?'Only the visible part of the board is drawn (sharp and light).':'Classic drawing: the whole board is drawn at once.',3000)}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='acam'&&typeof ACAM!=='undefined'){ACAM.on=!ACAM.on;try{localStorage.setItem('hexmarch.actioncam',ACAM.on?'on':'off')}catch(e){}toast(ACAM.on?'Action camera on: the view follows attacks, with slow motion on kills.':'Action camera off.',2600)}if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
@@ -9302,7 +9333,7 @@ function scoreRows(){const S=G.stats||{units:{},fx:{}},terr=territory(),war=G.mo
     const alive=G.units.filter(u=>u.owner===p.id&&u.kind!=='wall'&&!u.summon).length;
     const best=us.slice().sort((a,b)=>b.dmg-a.dmg)[0];
     const fx=Object.entries(S.fx||{}).filter(([k])=>k.startsWith(p.fac+'|')).sort((a,b)=>b[1].dmg-a[1].dmg)[0];
-    return {p,heart:war?(G.score[p.team]||0):null,alive,start:army.length,kills:us.reduce((s,x)=>s+x.kills,0),lk:us.reduce((s,x)=>s+x.leaderKills,0),
+    return {p,heart:war?teamScore(p.team):null,alive,start:army.length,kills:us.reduce((s,x)=>s+x.kills,0),lk:us.reduce((s,x)=>s+x.leaderKills,0),
       dmg:us.reduce((s,x)=>s+x.dmg,0),taken:us.reduce((s,x)=>s+x.taken,0),heal:us.reduce((s,x)=>s+x.healed,0),ults:p.ultN||0,ground:terr[p.fac]||0,
       leader:G.units.some(u=>u.owner===p.id&&u.leader),best,fx}})}
 function showScoreCard(){
@@ -9342,8 +9373,10 @@ function storyRules(){return `<h3>The Realm: the story</h3><ul>
   <li><b>The Fall.</b> A peaceful planet kept its power in the five stones of its crown. One alien race sent the Rift Beast to take them; it fell on the city on the very first round, crushed the tower and broke the wall in four places, one breach facing each army. Four stones were thrown out onto the roads; the fifth is in its belly. The other races, your armies, come through their portals (your bases) to take the stones and the throne for themselves.</li>
   <li><b>No AP.</b> Every unit may move once and act once each turn. Call one unit a turn from your reserve to your portal or a spawn site you own. The fallen are gone for good. Units in your home valley heal ${REALM.heal} a turn.</li>
   <li><b>The Rift Beast</b> never moves. Its max HP starts at ${REALM.storyBeastHp} and falls ${REALM.beastDecay} every round as the Rift closes. Once a round, after the last player, it makes one attack, the one that deals the most damage: <b>tentacle sweep</b> through a breach (the red cones on the board: ${REALM.sweepDmg} minus DEF, shoved 1 hex), <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes from its body (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours), or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back).</li>
-  <li><b>The spawns.</b> In rounds ${REALM.waves.join(', ')} the Beast tears one spawn per player off its body, each bound to one Crown Stone. A spawn fetches its stone and runs it back; the Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP). Whoever carries a stone is hunted by its spawn. Each wave is harder: the first bites, the second roars, the third spits, the fourth sweeps. Waves 1 and 2 give nothing; a wave-3 spawn gives 1 point and +1 ATK to its killer; a wave-4 spawn 2 points and +2 max HP to the killer's whole army. Spawns never hunt the King and take double damage from him.</li>
+  <li><b>The spawns.</b> In rounds ${REALM.waves.join(', ')} the Beast tears one spawn per player off its body, each bound to one Crown Stone. A spawn fetches its stone and runs it back; the Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP). Whoever carries a stone is hunted by its spawn. Each wave is harder: the first bites, the second roars, the third spits, the fourth sweeps. A wave-1 spawn gives nothing; a wave-2 spawn is worth ${RULES.SPAWN_PTS?'1 point':'nothing'} to its killer; a wave-3 spawn gives 1 point and +1 ATK to its killer; a wave-4 spawn 2 points and +2 max HP to the killer's whole army. Spawns never hunt the King and take double damage from him.</li>
   <li><b>Crown Stones.</b> Walk onto one to carry it; it does nothing yet. A carrier that dies drops it. When one of your units is crowned, every stone your side carries goes into the crown: <b>+1 ATK and +1 max HP for the King per stone</b>, and stones your side picks up later go in too.</li>
+  ${RULES.CROWN_POT?`<li><b>The crown pot.</b> The King scores 1 point at each of his turns on the Throne, but only every ${REALM.potBank}${REALM.potBank===3?'rd':'th'} point is banked for good: the others sit <b>in the crown</b> (the ♛ number next to the score). They count for the King's side while it wears the crown, and <b>whoever kills the King takes them</b>, on top of the ${REALM.kingPts} points for the kill. A King who dies to a monster or the Beast leaves the pot on the crown for the next King.</li>`:''}
+  ${RULES.HURT_CHARGE?`<li><b>Charge from damage taken.</b> Every ${REALM.hurtCharge} damage your units take from enemies, monsters or the Beast gives your army +1 Ultimate charge (camp work gives 1 per ${REALM.dmgCharge} dealt). The side losing the exchange charges its turnaround faster.</li>`:''}
   <li><b>Slaying the Beast</b> scores ${RULES.BEAST_PTS} points, and the unit that lands the blow is crowned King on the spot, lifted onto the throne, with every stone in the belly in its crown. If the Beast dies before round ${REALM.waves[3]}, it explodes and flings the wave-4 spawns far across the land; after its death the spawns fear the King.</li>
   <li><b>The King</b> (+${WILDS.kingAtk} ATK, +${WILDS.kingDef} DEF, plus the crown) scores 1 point at each of your turns on the throne. Kill the King: ${REALM.kingPts} points, and the crown stays on the throne with all its stones for the next unit that sits there.</li>
   <li><b>The Old God</b> wakes beside the first King's portal and walks to him. Within 3 of the King it heals him ${REALM.godHeal} at the start of his turn, and every ${REALM.godEvery} rounds it roars ${REALM.godRoar} damage ignoring DEF at the King's enemies within 3. Kill it: 2 points; it never returns.</li>
@@ -9637,7 +9670,8 @@ function tapTol(){const S=VIEW==='3d'?CAM.S:SZ;return Math.max(window.innerWidth
 // The damage a basic attack would deal, as a red tag beside each piece you can attack now.
 function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTurn()||u.owner!==G.cur)return;let d,jn=0;try{jn=phalanxJoin(u,t);d=basicDmg(u,t)+jn}catch(e){return}if(!(d>0))return;
   let rb=0;try{rb=d>=t.hp?0:retaliation(u,t)}catch(e){}// v40: a Riposte target shows what it hits back
-  const tx=(d>=t.hp?'KILL ':'')+'-'+fmt(d)+(jn?` (+${jn} ⚔⚔)`:'')+(rb?`  ↩ ${fmt(rb)}`:'');ctx.font=`900 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(tx).width+fs*0.7,h=fs*1.3;
+  let dl=null;try{dl=duoLabel(u,t,null)}catch(e){}/* v146 named duos */
+  const tx=(d>=t.hp?'KILL ':'')+'-'+fmt(d)+(jn?` (+${jn} ⚔⚔)`:'')+(dl?'  '+dl.t:'')+(rb?`  ↩ ${fmt(rb)}`:'');ctx.font=`900 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(tx).width+fs*0.7,h=fs*1.3;
   ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-h/2,w,h,h/2);else ctx.rect(x-w/2,y-h/2,w,h);ctx.fillStyle=d>=t.hp?'#ff3b3b':'#b3141f';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
   ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tx,x,y+0.5)}
 // Zoomed in, the canvas gets an empty margin of about a third of the box on every side, so pieces at the board's edge can still be scrolled
@@ -10305,7 +10339,7 @@ function histArmyStats(){const out={};const S=G.stats&&G.stats.units||{};for(con
 function histSnap(){const K=kingOf&&kingOf();return {round:G.round,t:Date.now(),cur:G.cur,score:Object.assign({},G.score),king:K?{id:K.id,name:K.name,owner:K.owner,onThrone:K.q===0&&K.r===0}:null,
   players:G.players.map(p=>({id:p.id,fac:p.fac,alive:p.alive,team:p.team,ult:p.ult||0,souls:p.souls||0,faith:p.faith||0,ctrl:p.ctrl,units:G.units.filter(u=>u.owner===p.id&&u.kind!=='wall'&&u.hp>0).length,reserve:(p.reserve||[]).length,fallen:(p.fallen||[]).length})),
   units:G.units.filter(u=>u.hp>0&&(u.kind!=='wall'||u.monster||u.beast)).map(u=>({id:u.id,n:u.name,o:u.owner,q:u.q,r:u.r,hp:Math.round(u.hp*10)/10,mhp:u.maxhp,atk:u.atk,def:u.def,ld:u.leader?1:0,k:u.king?1:0,m:u.monster||(u.beast?'beast':undefined),st:Object.keys(u.st||{}).filter(k=>u.st[k]&&u.st[k]!==0)})),
-  armies:histArmyStats(),paint:Object.keys(G.paint||{}).length,loot:(G.loot||[]).map(x=>({k:x.kind,c:x.carrier,q:x.q,r:x.r})),story:{belly:G.belly,eaten:G.eaten,crown:G.crown,wave:G.waveN,beast:(G.units.find(u=>u.beast)||{}).hp,god:G.god},points:JSON.parse(JSON.stringify(G.stats&&G.stats.points||{}))}}
+  armies:histArmyStats(),pot:(G.cpot&&G.cpot.pot)||0,paint:Object.keys(G.paint||{}).length,loot:(G.loot||[]).map(x=>({k:x.kind,c:x.carrier,q:x.q,r:x.r})),story:{belly:G.belly,eaten:G.eaten,crown:G.crown,wave:G.waveN,beast:(G.units.find(u=>u.beast)||{}).hp,god:G.god},points:JSON.parse(JSON.stringify(G.stats&&G.stats.points||{}))}}
 function histStartMatch(){const seats=G.players.map(p=>({id:p.id,fac:p.fac,ctrl:p.ctrl,team:p.team}));
   if(!G.histId)G.histId='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   HIST.match={id:G.histId,started:Date.now(),version:(typeof VERSION!=='undefined'?VERSION:''),board:G.realm?'realm':(G.map||'random'),mode:G.mode,n:G.players.length,teams:!!G.teams,online:!!(typeof netOnline==='function'&&netOnline()),seats,rounds:[],log:[],photos:{},result:null,stats:null,device:(navigator.userAgent||'').slice(0,80)};
@@ -10454,8 +10488,13 @@ function uxDragDraw(){const d=UX.drag;if(!d||!d.on||!UX.dragTo)return;const u=by
 /* ---------- 3. aim shapes: tags on everyone inside, best target first ---------- */
 function uxAimTags(){const u=uxSel();if(!u||!G.amode||!hl.hitIds.size)return;const A=ABIL[G.amode];if(!A)return;const fs=Math.max(11,(VIEW==='3d'?CAM.S:SZ)*0.42);
   for(const id of hl.hitIds){const t=byId(id);if(!t||!alive(t))continue;const ally=t.owner>=0&&tm(t.owner)===tm(u.owner);const [x,y]=uxHead(t);
-    if(ally){if(hostileAbil(A)&&t!==u)uxPill(x,y-fs*0.9,'⚠ ally','#ffb35c','#1a1206',fs)}
-    else if(A.dmg||A.useAtk){let dm=0;try{dm=hitDmg(u,t,A)}catch(e){dm=0}if(dm>0)uxPill(x,y-fs*0.9,dm>=t.hp?`KILL (${dm})`:`−${dm}`,dm>=t.hp?'#ff6161':'#ffd766','#1a1206',fs)}}}
+    if(ally){if(hostileAbil(A)&&t!==u)uxPill(x,y-fs*0.9,'⚠ ally','#ffb35c','#1a1206',fs);else if(A.heal&&A.overheal&&t.hp>=t.maxhp)uxPill(x,y-fs*0.9,'OVERFLOW → enemy','#ffd766','#1a1206',fs)}
+    else if(A.dmg||A.useAtk){let dm=0;try{dm=hitDmg(u,t,A)}catch(e){dm=0}let dl=null;try{dl=duoLabel(u,t,A)}catch(e){}if(dm>0)uxPill(x,y-fs*0.9,(dm>=t.hp?`KILL (${dm})`:`−${dm}`)+(dl?' '+dl.t:''),dm>=t.hp?'#ff6161':dl?dl.c:'#ffd766','#1a1206',fs)}
+    else{let dl=null;try{dl=duoLabel(u,t,A)}catch(e){}if(dl)uxPill(x,y-fs*0.9,dl.t,dl.c,'#1a1206',fs)}}}
+/* v146 telegraphed threats: a number on every move dot = the damage the selected unit would take there next turn; its own hex says here -N or here safe */
+function uxThreatPills(){const u=uxSel();if(!u||G.amode||!THREAT_ON||!hl.moves||!hl.moves.size||hl.ghost)return;if(!dangerHexes())return;const fs=Math.max(10,(VIEW==='3d'?CAM.S:SZ)*0.34);
+  for(const k of hl.moves.keys()){const d=DANGER.dmg.get(k);if(!d)continue;const [q,r]=k.split(',').map(Number);const [x,y]=vPos(q,r,0);uxPill(x,y,'−'+d,d>=u.hp?'#ff3b3b':'#8a2323','#fff',fs)}
+  {const d=DANGER.dmg.get(key(u.q,u.r))||0;const [x,y]=vPos(u.q,u.r,0);uxPill(x,y+(VIEW==='3d'?CAM.S*0.5:SZ*0.62),d?'here −'+d:'here safe',d?(d>=u.hp?'#ff3b3b':'#8a2323'):'#1f5a2e','#fff',fs)}}
 function uxAimScore(u,k,q,r){let s=0;try{for(const t of abilityTargets(u,k,q,r)){const ally=t.owner>=0&&tm(t.owner)===tm(u.owner);const A=ABIL[k];
   if(ally){s+=hostileAbil(A)&&t!==u?-6:2}else{let d=0;try{d=hitDmg(u,t,A)}catch(e){}s+=1+d+(d>=t.hp?4:0)+(t.leader?1:0)}}}catch(e){}return s}
 // after the aim hexes are known: put the aim on the best spot so the shape shows at once (tap another gold hex to move it)
@@ -10547,7 +10586,7 @@ function kbDraw(now){if(!KB.on||!KB.cur||!G)return;const p=0.55+0.45*Math.sin(no
 
 /* ---------- hooks ---------- */
 // drawn on the board after the effects, in both views
-function uxDraw(now){if(!G)return;try{uxDragDraw();uxGiantFoot();uxAimTags();kbDraw(now);uxRingPlace()}catch(e){}}
+function uxDraw(now){if(!G)return;try{uxDragDraw();uxGiantFoot();uxThreatPills();uxAimTags();kbDraw(now);uxRingPlace()}catch(e){}}
 {const r0=refresh;refresh=function(){r0.apply(this,arguments);try{uxRingBuild()}catch(e){}}}
 {const a0=aimAbil;aimAbil=function(u,k){a0(u,k);try{uxAutoAim(u,k);refresh()}catch(e){}}}
 
