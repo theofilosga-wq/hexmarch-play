@@ -806,8 +806,8 @@ const ABIL={
     desc:'The Archdemon lashes its whip in a straight line 3 hexes long: every enemy on it takes 2 damage minus DEF and is dragged toward the Archdemon.'},
   spitfire:{name:'Spit Fire',cost:2,cd:2,aim:'dir',shape:'line',size:3,hits:'foe',dmg:3,paint:'area',paintTtl:2,sear:1,
     desc:'Spit a stream of fire in a straight line 3 hexes long: every enemy on it takes 3 damage minus DEF and is Seared (it can’t be healed until the end of its next turn). The 3 hexes become red ground for 2 turns.'},
-  drakeball:{name:'Fireball',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:3,centre:1,paint:'area',paintTtl:3,sear:1,/* v105: the lookahead judges it (the 'fireball' bot rule never existed: 0 casts in 318 chances) */
-    desc:'The Hell Drake lobs a fireball 2 to 4 hexes away; it detonates on the target hex and the 6 around it: 3 damage minus DEF to every enemy there (4 on the centre hex), Seared (no healing until the end of its next turn). All 7 hexes burn red for 3 turns.'},// v77 (owner): a bomb, not another breath
+  drakeball:{name:'Fireball',cost:2,cd:3,aim:'hex',range:4,rmin:2,shape:'blast',size:1,hits:'foe',dmg:4,centre:1,paint:'area',paintTtl:3,sear:1,/* v105: the lookahead judges it (the 'fireball' bot rule never existed: 0 casts in 318 chances) */
+    desc:'The Hell Drake lobs a fireball 2 to 4 hexes away; it detonates on the target hex and the 6 around it: 4 damage minus DEF to every enemy there (5 on the centre hex), Seared (no healing until the end of its next turn). All 7 hexes burn red for 3 turns.'},// v77 (owner): a bomb, not another breath
   breath:{name:'Flame Breath',cost:2,cd:3,aim:'dir',shape:'cone',size:2,hits:'foe',dmg:3,pierce:1,paint:'area',sear:1,
     desc:'Breathe a cone 2 hexes deep: 3 damage to each enemy in it, ignoring DEF, and it is Seared: it can’t be healed until the end of its next turn. The cone catches fire (the hexes burn red).'},// v77 (owner): 2 -> 3
   eruption:{name:'Eruption',cost:2,cd:3,aim:'self',shape:'ring',size:2,hits:'foe',dmg:2,
@@ -821,9 +821,9 @@ const ABIL={
     desc:'Pick a hex within 3. Every enemy on it or next to it is chilled and takes 1 damage ignoring DEF: 2 if it was already chilled, 3 if it was frozen.'},
   frostbolt:{name:'Frost Bolt',cost:1,cd:2,aim:'unit',hits:'foe',los:'lob',range:2,shape:'single',dmg:1,pierce:1,chill:1,bot:'frostbolt',
     desc:'1 damage ignoring DEF to one enemy within 2, and it is chilled (1 less move for 2 turns).'},
-  coldfront:{name:'Cold Front',cost:2,cd:4,aim:'dir',shape:'arc',hits:'foe',fbMarks:2,chill:1,
+  coldfront:{name:'Cold Front',cost:2,cd:2,aim:'dir',shape:'arc',hits:'foe',fbMarks:2,chill:1,
     desc:'Every enemy in the 3 hexes in front of the Warden gets 2 Frostbite marks and is chilled. At 3 marks a unit freezes.'},
-  icelance:{name:'Ice Lance',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',dmg:4,pierce:1,cold2:'chill',chainFreeze:1,
+  icelance:{name:'Ice Lance',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',dmg:4,pierce:1,cold2:'chill',chainFreeze:1,/* v145: rests 3 (was 2), the Hailcaller shoots 4 at 2 instead */
     desc:'4 damage ignoring DEF to one enemy within 3, doubled to 8 if it is chilled or frozen. On a frozen target the lance carries on: the enemy directly behind it (one hex further on the line from the Hailcaller) is frozen too.'},
   shatterstrike:{name:'Shatter Strike',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:1,shape:'single',dmg:4,cold2:'frozen',
     desc:'Strike an adjacent enemy for 4 damage minus DEF, doubled to 8 minus DEF if it is frozen.'},
@@ -831,8 +831,8 @@ const ABIL={
   // Stone Giants (v19): few, slow, and every ability is one big blow on a long rest.
   stomp:{name:'Earthshaker',cost:2,cd:5,aim:'self',shape:'aura',size:2,hits:'foe',dmg:2,stun:1,paint:'head',
     desc:'Every enemy within 2 hexes of the King takes 2 damage minus DEF and is stunned: it loses its next turn (no move, attack or ability). The 7 hexes around the King turn to stone ground for 3 turns.'},
-  boulder:{name:'Boulder',cost:3,cd:4,aim:'unit',hits:'foe',los:'lob',range:5,rmin:2,shape:'single',dmg:5,
-    desc:'Hurl a boulder at an enemy 2 to 5 hexes away: 5 damage minus DEF. The boulder flies over anything in between.'},
+  boulder:{name:'Boulder',cost:3,cd:2,aim:'unit',hits:'foe',los:'lob',range:5,rmin:2,shape:'single',dmg:6,
+    desc:'Hurl a boulder at an enemy 2 to 5 hexes away: 6 damage minus DEF. The boulder flies over anything in between.'},
   crush:{name:'Crush',cost:2,cd:4,aim:'unit',hits:'foe',los:'lob',range:1,shape:'single',dmg:7,
     desc:'Bring both fists down on one adjacent enemy: 7 damage minus DEF.'},
   chainhook:{name:'Chain Hook',cost:2,cd:4,aim:'unit',hits:'foe',los:'bolt',range:4,special:'hook',dmg:2,pierce:1,
@@ -910,8 +910,8 @@ const ABIL={
      adds 1 to its element's bar (2 when cast from its own element's hex); when a bar fills, that element's shamans evolve into Elementals. */
   flare:{name:'Flare',cost:1,cd:1,aim:'self',shape:'nova',hits:'foe',dmg:1,pierce:1,el:'fire',spell:1,
     desc:'1 damage (ignoring DEF) to every enemy next to the Flame Shaman.'},
-  flamelash:{name:'Flame Lash',cost:2,cd:1,aim:'unit',range:3,hits:'foe',shape:'single',dmg:3,el:'fire',spell:1,
-    desc:'3 damage minus DEF to an enemy within 3.'},
+  flamelash:{name:'Flame Lash',cost:2,cd:1,aim:'unit',range:3,hits:'foe',shape:'single',dmg:5,el:'fire',spell:1,
+    desc:'5 damage minus DEF to an enemy within 3.'},
   cleanwave:{name:'Cleansing Wave',cost:1,cd:1,aim:'self',special:'cleanwave',size:2,heal:1,el:'water',spell:1,
     desc:'Every ally within 2 (the shaman too) loses one debuff and heals 1.'},
   healtide:{name:'Healing Tide',cost:2,cd:1,aim:'unit',range:3,hits:'ally',special:'tide',heal:4,el:'water',spell:1,
@@ -920,15 +920,15 @@ const ABIL={
     desc:'An ally within 3 gets +2 DEF until your next turn.'},
   stonegrip:{name:'Stone Grip',cost:2,cd:1,aim:'unit',range:3,hits:'foe',special:'stonegrip',dmg:2,pierce:1,el:'earth',spell:1,
     desc:'Stone hands grab an enemy within 3: 2 damage (ignoring DEF) and it can’t move on its next turn.'},
-  tailwind:{name:'Tailwind',cost:1,cd:1,aim:'unit',range:3,hits:'ally',special:'tailwind',el:'air',spell:1,
-    desc:'An ally within 3 gets a free move this turn (no AP, even if it has already moved).'},
+  tailwind:{name:'Tailwind',cost:1,cd:0,aim:'unit',range:3,hits:'ally',special:'tailwind',el:'air',spell:1,
+    desc:'An ally within 3 gets a free move this turn (even if it has already moved) and the wind behind its blows: +1 ATK until the start of your next turn.'},
   gust:{name:'Gust',cost:2,cd:1,aim:'unit',range:3,hits:'foe',special:'gust',push:3,el:'air',spell:1,
     desc:'Pick an enemy within 3, then the direction: it is blown 3 hexes that way (crashing into walls or units hurts).'},
   // the Elemental forms: same AP, stronger and longer
   e_flare:{name:'Flare',cost:1,cd:1,aim:'self',shape:'nova',hits:'foe',dmg:3,pierce:1,sear:1,el:'fire',spell:1,
     desc:'3 damage (ignoring DEF) to every enemy next to the Fire Elemental; they can’t be healed on their next turn.'},
-  e_flamelash:{name:'Flame Lash',cost:2,cd:1,aim:'unit',range:4,hits:'foe',special:'lash',dmg:4,behind:3,el:'fire',spell:1,
-    desc:'4 damage minus DEF to an enemy within 4, and 3 minus DEF to the enemy right behind it.'},
+  e_flamelash:{name:'Flame Lash',cost:2,cd:1,aim:'unit',range:4,hits:'foe',special:'lash',dmg:6,behind:3,el:'fire',spell:1,
+    desc:'6 damage minus DEF to an enemy within 4, and 3 minus DEF to the enemy right behind it.'},
   e_cleanwave:{name:'Cleansing Wave',cost:1,cd:1,aim:'self',special:'cleanwave',size:4,heal:2,el:'water',spell:1,
     desc:'Every ally within 4 loses one debuff and heals 2.'},
   e_healtide:{name:'Healing Tide',cost:2,cd:1,aim:'unit',range:5,hits:'ally',special:'tide',heal:6,splash:2,el:'water',spell:1,
@@ -937,8 +937,8 @@ const ABIL={
     desc:'An ally within 4 and every ally next to it get +3 DEF until your next turn.'},
   e_stonegrip:{name:'Stone Grip',cost:2,cd:1,aim:'unit',range:4,hits:'foe',special:'stonegrip',dmg:2,pierce:1,spread:1,el:'earth',spell:1,
     desc:'An enemy within 4 and every enemy next to it take 2 (ignoring DEF) and can’t move on their next turn.'},
-  e_tailwind:{name:'Tailwind',cost:1,cd:1,aim:'unit',range:5,hits:'ally',special:'tailwind',spread:1,el:'air',spell:1,
-    desc:'An ally within 5 and every ally next to it get a free move this turn.'},
+  e_tailwind:{name:'Tailwind',cost:1,cd:0,aim:'unit',range:5,hits:'ally',special:'tailwind',spread:1,el:'air',spell:1,
+    desc:'An ally within 5 and every ally next to it get a free move this turn and +1 ATK until the start of your next turn.'},
   e_gust:{name:'Gust',cost:2,cd:1,aim:'unit',range:5,hits:'foe',special:'gust',push:4,spread:1,el:'air',spell:1,
     desc:'Pick an enemy within 5, then the direction: it is blown 4 hexes that way; every enemy next to it is blown 1 hex away from it.'},
   // the Elder Shaman: one small spell of each element, 1 AP, every turn
@@ -975,7 +975,7 @@ const ABIL={
   stepout:{name:'Step Out',cost:0,cd:0,free:1,aim:'self',special:'stepout',bot:'stepout',
     desc:'The Possessor leaves this host: the host returns to its own side (spent for this turn) and the Possessor appears on a free hex next to it, spent, and Possession rests 4 turns.'},
   devour:{name:'Devour',cost:2,cd:3,aim:'unit',hits:'foe',range:1,special:'devour',bot:'devour',
-    desc:'Swallow the soul of an enemy next to it that has 4 HP or less: it dies at once. Not a Leader, not a two-hex giant.'},
+    desc:'Swallow the soul of an enemy next to it that has 6 HP or less: it dies at once. Not a Leader, not a two-hex giant.'},
   mountainfall:{name:'Mountain’s Fall',cost:2,cd:4,aim:'empty',range:3,special:'mountainfall',dmg:3,bot:'mountainfall',
     desc:'The King leaps up to 3 hexes onto an empty spot where his two-hex body fits and lands like a falling mountain: every enemy next to him takes 3 minus DEF and can’t move on its next turn.'},
   deploy:{name:'Set Down',cost:1,cd:0,aim:'empty',range:1,special:'deploy',free:1,aux:1,bot:'deploy',
@@ -1002,7 +1002,7 @@ const ABIL={
     desc:'The dark mirror of Bless: an enemy within 3 is shrouded for 3 turns: 1 less ATK, and it takes 1 damage ignoring DEF at the start of each of your next 3 turns.'},
   butchery:{name:'Butchery',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:3,special:'butchery',
     desc:'The dark mirror of Field Surgery: strike an adjacent enemy for 3 minus DEF, then the most wounded other enemy next to the Hospitaller takes 3 minus DEF.'},
-  sanctuary:{name:'Sanctuary',cost:2,cd:4,aim:'self',shape:'aura',size:40,hits:'ally',heal:2,overheal:2,cdCut:2,bot:'sanctuary',// v62 (owner): the whole army, anywhere; every unit healed comes back faster// overheal = the most points one heal may turn into damage
+  sanctuary:{name:'Sanctuary',cost:2,cd:5,aim:'self',shape:'aura',size:40,hits:'ally',heal:2,overheal:2,cdCut:2,bot:'sanctuary',// v62 (owner): the whole army, anywhere; every unit healed comes back faster// overheal = the most points one heal may turn into damage
     desc:'Every unit of your army, wherever it stands, heals 2, and every unit that was healed has its ability rests cut by 2 turns (ready sooner). Overflowing light: for each unit already at full HP, 2 damage (ignoring DEF) hits the enemy nearest to it, within 3.'},
   mend:{name:'Mend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',heal:3,overheal:3,cleanse:1,bot:'mend',
     desc:'Heal one ally within 3 (or the Cleric itself) by 3; healing beyond full HP becomes damage (ignoring DEF) on the enemy nearest to that ally, within 3. Then remove one debuff from it (frozen or stunned first, then a curse, Seared, Hex, Sunder, delay, chill).'},
@@ -1026,10 +1026,10 @@ const ABIL={
   forward:{name:'Forward!',cost:1,cd:3,aim:'dir',shape:'line',size:1,hits:'none',special:'forward',bot:'forward',
     desc:'Pick a direction: the whole connected block around the Captain steps 1 hex that way for free, keeping its shape (a member that cannot step stays). Every member that ends next to an enemy strikes it for 1.'},// v77 (owner): the Captain makes the block a moving wall
   battlecry:{name:'Battle Cry',cost:1,cd:4,aim:'self',shape:'aura',size:2,hits:'ally',special:'battlecry',bot:'rally',
-    desc:'The Captain shouts the line on: every Warband unit within 2 hexes (the Captain too) gets +1 ATK and +1 DEF for 2 turns (this turn and your next).'},// v81 (owner): the commander's inspiration
-  holdfast:{name:'Hold Fast',cost:1,cd:3,aim:'self',shape:'aura',size:2,hits:'ally',special:'holdfast',bot:'rally',needForm:1,
+    desc:'The Captain shouts the line on: every Warband unit within 2 hexes (the Captain too) gets +1 ATK and +1 DEF until the start of your next turn.'},// v81 (owner): the commander's inspiration
+  holdfast:{name:'Hold Fast',cost:1,cd:4,aim:'self',shape:'aura',size:2,hits:'ally',special:'holdfast',bot:'rally',needForm:1,
     desc:'Only while the Warlord touches 2 or more comrades: every other Warband unit within 2 hexes heals 2 and gets +1 ATK until the start of your next turn.'},// v81 (owner): his ability inside the line
-  javelin:{name:'Javelin',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',dmg:6,needLoose:1,
+  javelin:{name:'Javelin',cost:2,cd:0,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',dmg:6,needLoose:1,
     desc:'Only while the Warlord touches fewer than 2 comrades: he hurls his javelin at one enemy within 3 for 6 damage minus DEF.'},// v81 (owner): his ability outside the line
   rally:{name:'Rally',cost:1,cd:3,aim:'self',shape:'aura',size:2,hits:'ally',special:'rally',bot:'rally',
     desc:'Every other Warband unit within 2 hexes of the Warlord heals 1 and gets +1 ATK until the start of your next turn.'},
@@ -1088,7 +1088,7 @@ const ABIL={
     desc:'Straight shot up to 3: 1 damage, ignoring DEF, and it gets Leech: every time its curses tick, this Grave Leech heals 1. The Grave Leech heals 2 at once.'},
   bogring:{name:'Bog Ring',cost:2,cd:3,aim:'self',shape:'ring',size:2,hits:'foe',curse:'mire',
     desc:'Every enemy exactly 2 hexes away gets Grave Mud (−1 move), and its hex turns pale.'},
-  silence:{name:'Decay',cost:2,cd:3,aim:'unit',hits:'foe',los:'bolt',range:4,shape:'single',curse:'silence',
+  silence:{name:'Decay',cost:2,cd:2,aim:'unit',hits:'foe',los:'bolt',range:4,shape:'single',curse:'silence',
     desc:'Straight shot up to 4: the enemy gets Decay: while it rots it can’t be healed by anything.'},
   consecrate:{name:'Consecrate',cost:2,cd:3,aim:'self',shape:'aura',size:1,hits:'ally',heal:2,thaw:1,
     desc:'Heal this unit and every adjacent ally 2 HP, and thaw any Chill or Freeze on them.'},
@@ -1267,7 +1267,7 @@ const FAC={
       {name:'Phoenix',icon:'phoenix',hp:8,atk:3,def:0,mov:4,mt:'fly',at:'melee',rng:1,ab:'breath',trait:'rebirth'},
       {name:'Dread Fiend',icon:'wraith',aoe:'cleave',hp:15,atk:3,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'howl',trait:'dread',guard:1},
       {name:'Possessor',icon:'ghost',hp:9,atk:2,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'possession'},
-      {name:'Soul Devourer',icon:'skull',hp:11,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'devour',trait:'devourer'},
+      {name:'Soul Devourer',icon:'skull',hp:11,atk:4,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'devour',trait:'devourer'},
       {name:'Hell Drake',icon:'drake',hp:12,atk:3,def:0,mov:3,mt:'fly',at:'lob',rng:3,rmin:2,ab:'drakeball'}]},
   ice:{name:'Frost Hold',color:'#5cc8ff',
     theme:'Marks, then freeze, then shatter: move as a group and cast on the same target. The dead you froze rise as Ice Statues.',
@@ -1279,7 +1279,7 @@ const FAC={
       // v64 (owner 6 Oct 2026): the Frostlings leave; a splitting Frost Colossus and a third Hailcaller take their places
       {name:'Rime Mammoth',icon:'crystal',size:2,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,trait:'mammoth'},// v75 (brief): the front line; 1 frost mark on every enemy it walks past or stands beside at its turn start
       {name:'Frost Warden',icon:'crystal',n:2,hp:11,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'coldfront'},
-      {name:'Hailcaller',icon:'hail',n:3,hp:10,atk:2,def:0,mov:3,mt:'walk',at:'lob',rng:3,rmin:2,ab:'icelance'},
+      {name:'Hailcaller',icon:'hail',n:3,hp:10,atk:4,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'icelance'},/* v145 (the rulers): the Frost damage dealer hits 4 from 2 hexes (was 2 ATK lobbed from 2-3: 1 damage a shot); Ice Lance rests 3 */
       {name:'Glacier Knight',icon:'shield',n:2,hp:14,atk:3,def:1,mov:3,mt:'line',at:'melee',rng:1,ab:'shatterstrike',trait:'deepcold'}]},
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
     theme:'Five walking fortresses that start strong: they stride over mountains and rivers and leave stones for their kin.',
@@ -1326,7 +1326,7 @@ const FAC={
     home:'Bone ground: +1 ATK.',homeRealm:'No home ground on the Realm: the Phalanx is the Warband’s ground.',homeAtk:1,
     units:[
       // v75 (brief): a pure army that moves as one. Warlord, Captain (second in command), 3 shields, 3 spears, 2 swords. Berserker, Outrider and Raider are off the roster.
-      {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'holdfast',ab2:'javelin',trait:'bornforwar'},
+      {name:'Warlord',icon:'crown',leader:1,hp:16,atk:4,def:1,/* v145 (the rulers): DEF 1 (was 2); untouchable inside the line anyway, and the Leader band topped out at 575 */mov:2,mt:'walk',at:'melee',rng:1,ab:'holdfast',ab2:'javelin',trait:'bornforwar'},
       {name:'Captain',icon:'helm',aoe:'cleave',hp:14,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'battlecry',trait:'captain'},/* v128: the Captain cleaves (the Swordsmen are off the roster) */
       {name:'Shieldbearer',icon:'shield',n:4,hp:12,atk:2,def:2,mov:3,mt:'walk',at:'melee',rng:1,trait:'shieldwall'},
       {name:'Spearman',icon:'spear',aoe:'pierce',n:4,hp:8,atk:3,def:1,mov:3,mt:'walk',at:'reach',rng:2,trait:'brace'}]},/* v128 (owner): 4 shields, 4 spears, no Swordsmen: two kinds of soldier, two jobs */// v19c: a regular second-rank unit (was a pawn), strikes over a friendly unit
@@ -1351,7 +1351,7 @@ const FAC={
     units:[
       {name:'Lich King',icon:'crown',leader:1,hp:13,atk:3,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
       {name:'Plague Bearer',icon:'skull',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'miasma'},
-      {name:'Banshee',icon:'candle',n:2,hp:6,atk:2,def:0,mov:2,mt:'walk',at:'lob',rng:4,rmin:2,ab:'wither'},
+      {name:'Banshee',icon:'candle',n:2,hp:7,atk:2,def:0,mov:2,mt:'walk',at:'lob',rng:4,rmin:2,ab:'wither'},
       {name:'Grave Leech',icon:'drop',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'siphon',trait:'scavenger'},
       {name:'Bog Hag',icon:'hand',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bogring'},
       {name:'Bell Wraith',icon:'bell',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'diag',rng:3,ab:'silence'},
@@ -1391,7 +1391,7 @@ FAC.chrono={name:'Chrono Syndicate',color:'#c81ca6',syndicate:1,
   passive:'Phase Walk: every unit moves by teleporting to any free hex within its move range. Contracts: when you have none, the enemy unit or camp monster with the lowest HP within 8 hexes of your crew becomes your contract for 5 of your turns. Kill it with any crew member to collect the bounty, for the whole crew for the rest of the game: 1st +1 max HP, 2nd +1 ATK, 3rd +1 move, 4th every rest 1 shorter, 5th +2 max HP, 6th +1 ability damage, 7th +1 ATK, 8th every rest 1 shorter, 9th +1 move and +2 max HP, 10th +1 ATK and +1 ability damage; every bounty after that heals the crew 1.',
   home:'No home ground.',homeRealm:'No home ground on the Realm.',
   units:[
-    {name:'The Broker',icon:'crown',leader:1,hp:11,atk:2,def:0,mov:3,mt:'blink',at:'melee',rng:1,ab:'timelock'},
+    {name:'The Broker',icon:'crown',leader:1,hp:14,atk:2,def:1,mov:3,mt:'blink',at:'melee',rng:1,ab:'timelock'},
     {name:'Phase Blade',icon:'clock',n:2,hp:8,atk:3,def:0,mov:4,mt:'blink',at:'melee',rng:1,ab:'dashstrike'},
     {name:'Field Engineer',icon:'spark',hp:6,atk:2,def:0,mov:3,mt:'blink',at:'melee',rng:1,ab:'stasisfield'},
     {name:'Holo-Tech',icon:'void',hp:6,atk:2,def:0,mov:3,mt:'blink',at:'melee',rng:1,ab:'decoy'},
@@ -1404,9 +1404,9 @@ FAC.rift={name:'Riftwalkers',color:'#12d69a',portals:1,
   passive:'Portals: a unit that steps onto a portal end comes out of the other end. A Riftwalker that comes out of a portal may move again, once per turn. Guarded doors: nobody can go in through a portal end that has one of its enemies standing next to it. Gatekeeper gates last 3 rounds, the Lifegate 2, a Lancer’s own pair until its next turn.',
   home:'No home ground.',homeRealm:'No home ground on the Realm: Riftwalkers fold space with portals instead.',
   units:[
-    {name:'Rift Sovereign',icon:'crown',leader:1,hp:13,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'collapse'},
+    {name:'Rift Sovereign',icon:'crown',leader:1,hp:16,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'collapse'},
     {name:'Gatekeeper',icon:'void',n:2,hp:9,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'twingates'},
-    {name:'Rift Lancer',icon:'burst',n:2,hp:8,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:3,ab:'riftshot'},
+    {name:'Rift Lancer',icon:'burst',n:2,hp:8,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'riftshot'},/* v145 (the rulers): shoots 2 (was 3): a 3-ATK shot from 3 hexes dealt 1; the long reach is the Rift Shot */
     {name:'Abductor',icon:'gravity',n:2,hp:9,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'abduct'},
     {name:'Banisher',icon:'fist',n:2,hp:11,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,trait:'banish'},
     {name:'Rift Mender',icon:'wave',hp:8,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'lifegate'}]};
@@ -1417,27 +1417,27 @@ FAC.ooze={name:'The Ooze',color:'#6a5cff',ooze:1,
   units:[{name:'Droplet',icon:'drop',n:12,hp:4,atk:1,def:0,mov:4,mt:'walk',at:'melee',rng:1,parts:1}]};
 {const order=Object.keys(FAC);const want=order.filter(k=>k!=='ooze');const i=want.indexOf('chrono');want.splice(i+1,0,'ooze');const F2={};for(const k of want)F2[k]=FAC[k];F2.ooze=FAC.ooze;for(const k of Object.keys(FAC))delete FAC[k];Object.assign(FAC,F2)}
 Object.assign(ABIL,{
-  timelock:{name:'Time Lock',cost:1,cd:3,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',special:'timelock',
+  timelock:{name:'Time Lock',cost:1,cd:2,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',special:'timelock',
     desc:'Stop one enemy within 3 in time: it loses its next turn (no move, attack or ability).'},
-  dashstrike:{name:'Dash Strike',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:4,shape:'single',dmg:6,special:'dashstrike',
-    desc:'Dash to a free hex next to an enemy within 4 and strike it for 6 minus DEF. At the end of your turn the Phase Blade snaps back to where it dashed from.'},
-  stasisfield:{name:'Stasis Field',cost:2,cd:4,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',special:'stasisfield',bot:'stasisfield',
+  dashstrike:{name:'Dash Strike',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:4,shape:'single',dmg:5,special:'dashstrike',
+    desc:'Dash to a free hex next to an enemy within 4 and strike it for 5 minus DEF. At the end of your turn the Phase Blade snaps back to where it dashed from.'},
+  stasisfield:{name:'Stasis Field',cost:2,cd:2,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',special:'stasisfield',bot:'stasisfield',
     desc:'Throw a stasis device up to 3 hexes. At the start of your next turn it goes off: every enemy still on it or next to it (7 hexes) is stunned and loses its next turn. Enemies see it coming and can run.'},
-  decoy:{name:'Decoy',cost:1,cd:4,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',special:'decoy',bot:'decoy',
+  decoy:{name:'Decoy',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',special:'decoy',bot:'decoy',
     desc:'Project a hologram of an ally within 3 onto a free hex next to the Holo-Tech: it has 1 HP and its attack deals 1, you move it, and it lasts 3 turns. It cannot sit the Throne, carry stones or be a contract, and killing it gives nothing.'},
-  stealtime:{name:'Steal Time',cost:1,cd:6,aim:'unit',hits:'ally',los:'lob',range:3,special:'stealtime',bot:'stealtime',
+  stealtime:{name:'Steal Time',cost:1,cd:4,aim:'unit',hits:'ally',los:'lob',range:3,special:'stealtime',bot:'stealtime',
     desc:'Pick an ally within 3 whose ability is resting, then an enemy within 3 whose ability is ready: their rests swap (the ally’s ability is ready now, the enemy’s rests instead), and the ally may act again this turn. Never Ultimates.'},
-  snatch:{name:'Snatch',cost:1,cd:4,aim:'unit',hits:'foe',los:'lob',range:1,special:'snatch',bot:'snatch',
+  snatch:{name:'Snatch',cost:1,cd:1,aim:'unit',hits:'foe',los:'lob',range:1,special:'snatch',bot:'snatch',
     desc:'Take the Crown Stone or the loot an adjacent enemy carries, then blink up to 2 hexes away from danger.'},
-  revert:{name:'Revert',cost:2,cd:4,aim:'unit',hits:'ally',los:'lob',range:4,special:'revert',bot:'revert',
+  revert:{name:'Revert',cost:2,cd:3,aim:'unit',hits:'ally',los:'lob',range:4,special:'revert',bot:'revert',
     desc:'One of your units within 4 (or the Timekeeper) goes back to how it was when you ended your last turn: its hex, its HP, its curses and statuses. Never the dead.'},
-  quicken4:{name:'Quicken',cost:1,cd:4,aim:'unit',hits:'ally',los:'lob',range:3,special:'quicken',bot:'quicken',
+  quicken4:{name:'Quicken',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,special:'quicken',bot:'quicken',
     desc:'A friendly unit within 3 (not the Accelerator) gets one extra basic attack this turn, even if it has already acted.'},
-  twingates:{name:'Twin Gates',cost:2,cd:3,aim:'empty',range:3,special:'twingates',bot:'twingates',
+  twingates:{name:'Twin Gates',cost:2,cd:2,aim:'empty',range:3,special:'twingates',bot:'twingates',
     desc:'Open two linked portals: tap a free hex within 3, then a free hex within 10. Any unit, friend or foe, that steps onto one comes out of the other. They last 3 rounds; a Gatekeeper keeps one pair at a time.'},
   riftshot:{name:'Rift Shot',cost:2,cd:2,aim:'dir',special:'riftshot',bot:'riftshot',
     desc:'Pick a direction, then a free hex within 6: the Lancer opens its own portal pair there and fires through it. The shot flies on straight from the far end; every other portal in its way sends it out of its twin and the bullet gains 2 damage. It hits the first unit in its path, friend or foe, for 4 minus DEF, plus 2 for every portal it flew through. The Lancer’s pair stays open, for anyone, until your next turn.'},
-  abduct:{name:'Abduct',cost:2,cd:4,aim:'unit',hits:'foe',los:'lob',range:4,special:'abduct',bot:'abduct',
+  abduct:{name:'Abduct',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:4,special:'abduct',bot:'abduct',
     desc:'A portal opens on the ground under an enemy within 4 (not a two-hex unit) and swallows it; a portal opens in the sky over a free hex within 4 of the Abductor and drops it there for 2 damage. Tap the enemy, then the drop hex.'},
   lifegate:{name:'Lifegate',cost:2,cd:3,aim:'empty',range:3,special:'lifegate',bot:'lifegate',
     desc:'Open a healing portal pair: a free hex within 3, then a free hex within 6. Allies going through heal 3 (once a turn), enemies going through take 2. It lasts 2 rounds.'},
@@ -3587,7 +3587,7 @@ function useAbility(u,k,q,r,dest){
     case 'swap':if(tgt&&tgt!==u&&tgt.size!==2&&tgt.kind!=='wall'){setAnim(u);setAnim(tgt);const a=u.q,b=u.r;u.q=tgt.q;u.r=tgt.r;tgt.q=a;tgt.r=b;tSup('moved',2);rMark(tgt,u)}break;
     // Rally: +1 ATK to every other Warband unit within 2 until the start of your next turn (st.rally, cleared in beginTurn).
     case 'tend':{if(tgt&&tgt.kind!=='wall'&&tm(tgt.owner)===tm(u.owner)){const h=healUnit(tgt,A.heal,'#ffe9a8','Tend',u.id);const ex=A.heal-h;if(ex>0)overheal(u,tgt,ex,'Tend');u.st.rally=1;if(!SIM)fx(u,'+1 ATK','#ffe9a8')}break}
-    case 'battlecry':{let n=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v.summon||v.kind==='wall')continue;v.st.cry=2;n++;fx(v,'+1 ATK +1 DEF','#ffd766');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}if(!u.st.cry){u.st.cry=2;n++}addLog(u.owner,`Battle Cry! ${n} warrior${n===1?'':'s'} fight harder for two turns.`);tSup('moved',0);break}
+    case 'battlecry':{let n=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v.summon||v.kind==='wall')continue;v.st.cry=1;n++;fx(v,'+1 ATK +1 DEF','#ffd766');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}if(!u.st.cry){u.st.cry=1;n++}addLog(u.owner,`Battle Cry! ${n} warrior${n===1?'':'s'} fight harder until your next turn.`);/* v145: one turn (the ability rule) */tSup('moved',0);break}
     case 'holdfast':{let n=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.summon||v.kind==='wall')continue;v.st.rally=1;n++;fx(v,'+1 ATK','#e8b84e');healUnit(v,2,'#5fd68e','Hold Fast');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}addLog(u.owner,`Hold Fast: ${n} comrade${n===1?'':'s'} mended and sharpened.`);break}
     case 'rally':{let n=0;for(const v of abilityTargets(u,k,u.q,u.r)){if(v===u||v.summon)continue;v.st.rally=1;n++;fx(v,'+1 ATK','#e8b84e');healUnit(v,1,'#5fd68e');vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'})}addLog(u.owner,`Rally: ${n} comrade${n===1?'':'s'} sharpen their blades.`);break}
     case 'dash':if(tgt){if(distUU(u,tgt)>1){const s=dashSpot(u,tgt);if(s){setAnim(u);u.q=s.q;u.r=s.r;u.dir=s.dir;tSup('moved',1);braceCheck(u)}}if(alive(u))applyHit(u,tgt,A)}break;
@@ -3657,7 +3657,7 @@ function useAbility(u,k,q,r,dest){
     case 'stoneskin':{const vs=tgt&&tgt.kind!=='wall'?[tgt,...(A.spread?G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)&&distUU(v,tgt)===1):[])]:[];for(const v of vs){v.st.skin=Math.max(v.st.skin||0,A.amount);v.st.skinBy=u.owner;fx(v,'+'+A.amount+' DEF','#c9a46a')}break}
     case 'stonegrip':{const vs=tgt&&tgt.kind!=='wall'?[tgt,...(A.spread?G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&!v.statue&&tm(v.owner)!==tm(u.owner)&&distUU(v,tgt)===1):[])]:[];
       for(const v of vs){applyHit(u,v,A);if(alive(v)&&v.size!==2){v.st.anchor=1;fx(v,'gripped','#8a6a3a');tSup('stasisTurns',1)}}break}
-    case 'tailwind':{const vs=tgt&&tgt.kind!=='wall'?[tgt,...(A.spread?G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&v.owner===u.owner&&distUU(v,tgt)===1):[])]:[];for(const v of vs){if(v.machine||v.statue)continue;v.freeMove=(v.freeMove||0)+1;fx(v,'tailwind','#d8eef2')}tSup('moved',vs.length);break}
+    case 'tailwind':{const vs=tgt&&tgt.kind!=='wall'?[tgt,...(A.spread?G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&v.owner===u.owner&&distUU(v,tgt)===1):[])]:[];for(const v of vs){if(v.machine||v.statue)continue;v.freeMove=(v.freeMove||0)+1;v.st.rally=1;fx(v,'tailwind +1 ATK','#d8eef2')}/* v145: the free move alone was dead by the ability rule; st.rally = +1 ATK until the owner's next turn */tSup('moved',vs.length);break}
     case 'gust':if(tgt&&tgt.kind!=='wall'&&dest){let d=-1;for(let i=0;i<6;i++){const n=A.push;if(tgt.q+DIRS[i][0]*n===dest.q&&tgt.r+DIRS[i][1]*n===dest.r)d=i}if(d<0)break;
       const near=A.spread?G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&distUU(v,tgt)===1):[];const c0=[tgt.q,tgt.r];pushUnit(tgt,d,A.push,u);for(const v of near)if(alive(v))pushUnit(v,dirTo(c0[0],c0[1],v.q,v.r),1,u)}break;
     case 'lash':if(tgt){const d=dirTo(u.q,u.r,tgt.q,tgt.r);const b=unitAt(tgt.q+DIRS[d][0],tgt.r+DIRS[d][1]);applyHit(u,tgt,A);if(b&&b!==tgt&&b.kind!=='wall'&&tm(b.owner)!==tm(u.owner)&&alive(b))applyHit(u,b,Object.assign({},A,{dmg:A.behind,special:null}))}break;
@@ -3689,7 +3689,7 @@ function useAbility(u,k,q,r,dest){
     case 'disembark':{if(!u.crew||!u.crew.length||unitAt(q,r)||!passable(q,r))break;const c=u.crew[u.crew.length-1];u.crew=u.crew.slice(0,-1);c.q=q;c.r=r;c.moved=true;c.acted=false;G.units.push(c);if(!SIM){addLog(u.owner,`The ${c.name} climbs out of the Behemoth.`);fx(c,'out','#ff6ec7')}break}
     case 'sacrifice':{u.sacrificed=1;const vs=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&distUU(v,u)===1);for(const v of vs)if(alive(v))hurt(v,A.dmg,'#ff5a1a');
       if(!SIM)vfx({k:'death',at:[u.q,u.r],icon:u.icon,col:'#ff5a1a'});addLog(u.owner,`The Imp detonates!`);{const o=CUR_SRC;CUR_SRC=u;hurt(u,u.hp+50,'#ff5a1a',true);CUR_SRC=o}break}
-    case 'devour':if(tgt&&tgt.kind!=='wall'&&!tgt.leader&&tgt.size!==2&&tgt.hp<=4){if(!SIM)vfx({k:'death',at:[tgt.q,tgt.r],icon:'skull',col:'#ff4a3d'});hurt(tgt,tgt.hp+50,'#ff4a3d',true)}break;
+    case 'devour':if(tgt&&tgt.kind!=='wall'&&!tgt.leader&&tgt.size!==2&&tgt.hp<=6){if(!SIM)vfx({k:'death',at:[tgt.q,tgt.r],icon:'skull',col:'#ff4a3d'});hurt(tgt,tgt.hp+50,'#ff4a3d',true)}break;
     case 'mountainfall':{const m=occ();for(const c of cells(u))m.delete(key(c[0],c[1]));let d=-1;for(const x of [u.dir,...[0,1,2,3,4,5]]){const a=q+DIRS[x][0],b=r+DIRS[x][1];if(freeFor(m,u,q,r)&&freeFor(m,u,a,b)){d=x;break}}if(d<0)break;
       if(!SIM)setAnim(u);u.q=q;u.r=r;u.dir=d;const vs=G.units.filter(v=>v!==u&&v.kind!=='wall'&&!v.statue&&tm(v.owner)!==tm(u.owner)&&distUU(v,u)===1);
       if(!SIM)vfx({k:'ab',ab:'stomp',shape:'aura',from:[u.q,u.r],to:[u.q,u.r],cells:ringCells().filter(([a,b])=>distUC(u,a,b)<=1),col:F.color,cam:1});
@@ -5129,7 +5129,7 @@ function heuristic(u,k,q,r,ctx,dest){
     case 'dusk':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)===team||(t.st&&t.st.dusk>0))return 0;return 2+(t.leader?2:0)+Math.min(2,t.atk)*0.8}
     case 'howl':{let n=0;for(const f of ctx.foes)if(f.owner>=0&&f.size!==2&&distUU(f,u)<=2)n+=(f.leader?2:1)+(distUU(f,u)===1?0.5:0);return n>=2?n*1.4:0}
     case 'bulwark':{const d=aimDir(u,q,r);if(d<0)return 0;const sim=bulwarkCharge(u,d,true,true);if(!sim||!sim.steps)return 0;let s=0;for(const v of sim.shoved){if(v.kind==='wall')continue;s+=tm(v.owner)!==team?(v.leader?3:1.6)+(v.hp<=1?2:0):-1.2}const end={q:u.q+DIRS[d][0]*sim.steps,r:u.r+DIRS[d][1]*sim.steps,dir:u.dir};s+=Math.max(-2,moveEval(u,end,ctx))*0.5;return s>=2?s:0}
-    case 'devour':{const t=unitAt(q,r);if(!t||t.kind==='wall'||t.leader||t.size===2||t.hp>4||tm(t.owner)===team)return 0;return 6+worth(t)*0.3}
+    case 'devour':{const t=unitAt(q,r);if(!t||t.kind==='wall'||t.leader||t.size===2||t.hp>6||tm(t.owner)===team)return 0;return 6+worth(t)*0.3}
     case 'mountainfall':{let n=0;for(const f of ctx.foes)if(f.owner>=0&&distUC(f,q,r)<=2)n+=f.leader?2:1;return n>=2?3+n*2:0}
     case 'holdline':{if(G.players[u.owner].hold)return 0;const ws=mine.filter(v=>!v.summon&&v.kind!=='wall');let n=0;for(const f of ctx.foes)if(f.owner>=0&&ws.some(v=>distUU(v,f)<=3))n++;return n>=2?2+n*1.3:0}
     case 'deploy':{if(!u.wpn)return 0;if(RULES.FORTRESS&&u.wpnHome!=='proto'&&u.hp*2>u.maxhp)return 0;// v67: Gunners and Grenadiers drop their weapon only to run when hurtif(RULES.HEAVY&&!u.acted&&G.ap>=atkCost(u)+1&&attackTargets(u).length)return 0;// strike with the weapon in hand first; Set Down is free afterwards
@@ -5717,7 +5717,7 @@ function slimeOn(o){SLIME=Object.assign({},SLIME_DEF,o||{});for(const k of ['mot
   if(SLIME.brewers)FAC.ooze.units.push({name:'Acid Brewer',icon:'drop',n:SLIME.brewers,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1,ab:'acidflask'});
   if(SLIME.wardens)FAC.ooze.units.push({name:'Gel Warden',icon:'drop',n:SLIME.wardens,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1});
   if(SLIME.shapers)FAC.ooze.units.push({name:'Gel Shaper',icon:'drop',n:SLIME.shapers,hp:C.hp,atk:C.atk,def:0,mov:C.mov,mt:'walk',at:'melee',rng:1,ab:'coalesce'});
-  ABIL.coalesce={name:'Coalesce',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,special:'coalesce',bot:'coalesce',desc:'Pick one of your blobs within 3, then another within 3: they flow together into the second one wherever they stand (up to 3 parts; the first counts as moved).'};NEW_BOT.add('coalesce');NEW_TWO.add('coalesce');
+  ABIL.coalesce={name:'Coalesce',cost:1,cd:0,aim:'unit',hits:'ally',los:'lob',range:3,special:'coalesce',bot:'coalesce',desc:'Pick one of your blobs within 3, then another within 3: they flow together into the second one wherever they stand (up to 3 parts; the first counts as moved).'};NEW_BOT.add('coalesce');NEW_TWO.add('coalesce');
   REALM.startBy.ooze=SLIME.start;NEW_BOT.add('slimespawn');NEW_BOT.add('acidflask')}
 const SLIME_DROP=()=>({name:'Droplet',icon:'drop',hp:SLIME.drop.hp,atk:SLIME.drop.atk,def:0,mov:SLIME.drop.mov,mt:'walk',at:'melee',rng:1,parts:1});
 const slimeCap=pid=>SLIME.cap+(talent(G.players[pid],'deeppool')?3:0);
