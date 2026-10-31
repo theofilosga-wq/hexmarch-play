@@ -2348,14 +2348,18 @@ function terrainReport(){
   return {pool:pool.length,coloured:col,pct:100*col/pool.length,players};
 }
 function newGame(c){
-  const n=c.n,teams=!!c.teams&&(n===4||n===6),T=teams?n/2:n;
+  /* v147 FIGHT THE OOZE (owner 31 Oct 2026: "the Ooze can serve as the bad guy"): c.vs = seat 0 alone on team 0, seats 1-3 together on team 1 (the swarm);
+     corners as in a free-for-all, team rules otherwise (shared points, no friendly fire). The Ooze seats get the boss tune SLIME_BOSS. */
+  const vs=!!c.vs&&c.n===4;const n=c.n,teams=vs||(!!c.teams&&(n===4||n===6)),T=teams&&!vs?n/2:n;
+  if(RULES.SLIME&&typeof slimeOn==='function')slimeOn(vs?SLIME_BOSS:SLIME_STD);
   G={v:18,botLevel:c.botLevel||'normal',timer:c.timer||0,claim:{},col:null,outposts:[],flagOwner:{},flagEver:{},spring:null,beast:null,eggs:[],wells:[],relics:[],relicsOn:c.relics!==false,stats:{units:{},abil:{},ults:[],events:[],fx:{},points:{}},fxSeq:0,fxLog:[],feat:{},R:BOARD_R[n],heartR:n<=3?1:2,heartCount:{},mode:c.mode,teams,players:[],units:[],nid:1,cur:0,ap:0,apMax:RULES.BASE_AP,round:1,log:[],score:{},over:null,
     sel:null,amode:null,aim:null,inspect:null,tok:0,holder:null,contested:false,terr:{},paint:{},voids:{},traps:{},gateUsed:false};
   for(let i=0;i<n;i++){
     // Teammates take neighbouring spots on the circle; turns still alternate between sides.
-    const s=c.seats[i],team=teams?i%T:i,spot=teams?team*2+Math.floor(i/T):i;
+    const s=c.seats[i],team=vs?(i===0?0:1):(teams?i%T:i),spot=teams&&!vs?team*2+Math.floor(i/T):i;
     G.players.push({id:i,fac:s.fac,ctrl:s.ctrl,team,spot,alive:true,leaderless:false,bank:0});G.score[team]=0;
   }
+  if(vs)G.vs=true;
   G.players.forEach(p=>{p.home=spawnPoints(G.players.length,G.R)[p.spot];p.formation=(c.formations&&c.formations[p.id])||DEFAULT_FORMATION[n];const ts=TALENTS[p.fac];p.talent=c.seats[p.id].talent&&ts.some(t=>t.k===c.seats[p.id].talent)?c.seats[p.id].talent:(c.randomTalents?ts[Math.floor(RNG()*3)].k:ts[0].k)});
   if(c.map==='wilds'){G.map='wilds';G.R=WILDS.R;G.relicsOn=false;G.rooms=[];G.loot=[]}
   if(c.map==='realm'){G.map='realm';G.realm=true;G.heartR=3;G.relicsOn=false;G.rooms=[];G.loot=[];realmBoard()}
@@ -2393,7 +2397,7 @@ function computeHolder(){
   G.heartCount=n;
   G.holder=ts.length===1?ts[0]:null;G.contested=ts.length>1;
 }
-function teamName(t){if(G.teams)return 'Team '+'ABC'[t];return FAC[G.players.find(p=>p.team===t).fac].name}
+function teamName(t){if(G.vs)return t===0?FAC[G.players[0].fac].name:'The Ooze';if(G.teams)return 'Team '+'ABC'[t];return FAC[G.players.find(p=>p.team===t).fac].name}
 const tbSnap=u=>{const st=Object.assign({},u.st);st.curses=Object.assign({},u.st&&u.st.curses||{});return {q:u.q,r:u.r,dir:u.dir,hp:u.hp,st}};
 function tbRecord(p){if(!RULES.TURNBACK||!G.units.some(v=>v.owner===p.id&&v.kind!=='wall'&&(v.ability==='turnback'||v.ability2==='turnback')))return;
   for(const v of G.units){if(v.kind==='wall'||v.egg||v.statue)continue;v.tb=v.tb||{};const o=v.tb[p.id];v.tb[p.id]={prev:o?o.cur:null,cur:tbSnap(v)}}}
@@ -5753,7 +5757,9 @@ function slimeSpawn(u){const p=G.players[u.owner];let n=Math.min(SLIME.spawnN,sl
 function slimeFlask(u,A,q,r){for(const t of areaUnits(u,A,shapeCells(u,'acidflask',q,r)))applyHit(u,t,Object.assign({},A,{dmg:SLIME.flask.dmg+(talent(G.players[u.owner],'corrosive')?1:0)}));
   const p=G.players[u.owner];if(slimeParts(p.id)<slimeCap(p.id)){const c=nearFree(q,r,occ(),1);if(c){slimeDrop(p,c[0],c[1],1);if(!SIM)nTrk('ooze',u.name,'Droplets spawned',e=>e.uses++)}}}
 /* v115 (owner 22 Oct 2026: 'do that and I will test it tomorrow'): the slime casters ARE The Ooze now, with the stat line of docs/TEMPO_STUDY.md. */
-RULES.SLIME=1;slimeOn({drop:{hp:6,atk:2},spawnRest:1,cap:10,spawnPrice:2,killHeal:3});
+const SLIME_STD={drop:{hp:6,atk:2},spawnRest:1,cap:10,spawnPrice:2,killHeal:3};/* the Ooze as a player army */
+const SLIME_BOSS={drop:{hp:5,atk:1},spawnRest:2,cap:6,spawnPrice:2,killHeal:3,brewers:2,shapers:1};/* v147: the Ooze as the bad guy of Fight the Ooze (three Ooze seats on one team): weaker droplets (5 HP, 1 ATK), a spawn every other turn, 6 parts a seat; the standard tune wiped every army by round 15 in sim/ooze_bench.js, this one lets Hard-bot armies win about half */
+RULES.SLIME=1;slimeOn(SLIME_STD);
 
 /* v122 THE OPENING CHOICE (owner 23 Oct 2026: "choose which units spawn along with the Leader, and the Leader ability, as the first thing each player decides").
    realmOpening(p,talentKey,names): before its first action on the Realm a side may pick its Leader talent and which units start beside the Leader;
@@ -8452,7 +8458,7 @@ function renderSetup(){
       <div class="label">Play on this device</div>
       <div class="field"><div class="label">Board</div>${REALM_ONLY&&cfg.map==='realm'?'<div class="hint" style="margin:0"><b>The Realm</b> · 4 players, free for all</div>':seg([['wilds','Crown Wilds'],['realm','The Realm (new)'],['random','Random board']],['wilds','realm'].includes(cfg.map)?cfg.map:'random','map')}
         <div class="hint">${cfg.map==='realm'?REALM_HINT():cfg.map==='wilds'?'A hand-made map for 4 players: bases far apart on the edge, three roads each, twelve hidden rooms with monsters and treasure you must carry home, rivers, and a Throne Hall whose walls fall in round '+WILDS.open+' to wake the Rift Beast; slay it, sit the Throne and be crowned King. Warlord rules, first to '+WILDS.target+' points. No Collapse.':'A new round board every game, with flags, the Wellspring and the Rift Beast.'}</div></div>
-      ${inRoom?'':'<button class="btn primary" id="startBtn" style="width:100%;padding:14px;font-size:17px;margin-bottom:16px">▶ Start the game</button>'}
+      ${inRoom?'':'<button class="btn primary" id="startBtn" style="width:100%;padding:14px;font-size:17px;margin-bottom:6px">▶ Start the game</button>'}${inRoom||cfg.map!=='realm'?'':'<button class="btn" id="oozeBtn" style="width:100%;padding:12px;font-size:15px;margin-bottom:16px" title="Your army alone against three Ooze swarms on one side: the bad guys. Same Realm, same points.">🟣 Fight the Ooze (you vs the swarm)</button>'}
       ${inRoom?`<div class="field"><div class="label">Seats</div><div class="hint">${roomHostLobby?'You are hosting room '+NET.code+'. The seats, their armies and who plays them are set in the Online game box; the settings above apply to the room.':'The online game is in progress; leave the room to set up a game on this device.'}</div></div>`:`<div class="field"><div class="label">Armies and players</div><div class="seats">${seats}</div>
         <div class="hint">Humans share this device and pass it around. Bots play themselves.</div></div>
 `}
@@ -8512,7 +8518,7 @@ function renderSetup(){
   $('#setupView').querySelectorAll('.urow').forEach(r=>{const go=()=>openPreview(r.dataset.fac,{u:+r.dataset.u});r.onclick=go;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}});
   $('#setupView').querySelectorAll('button[data-mach]').forEach(b=>b.onclick=()=>openPreview(b.dataset.fac,{m:b.dataset.mach}));
   $('#setupView').querySelectorAll('button[data-wraith]').forEach(b=>b.onclick=()=>openPreview(b.dataset.fac,{wr:1}));
-  if($('#startBtn'))$('#startBtn').onclick=startGame;
+  if($('#startBtn'))$('#startBtn').onclick=()=>{cfg.vs=false;startGame()};if($('#oozeBtn'))$('#oozeBtn').onclick=()=>{cfg.vs=true;startGame()};
   if($('#tutBtn'))$('#tutBtn').onclick=()=>startTutorial();
   if(roomHostLobby)netSyncCfg();
   renderOnline();
@@ -8580,7 +8586,8 @@ function newGameUI(){
   const seats=cfg.seats.slice(0,cfg.n);
   showScreen('game');
   if(cfg.map==='wilds'||cfg.map==='realm'){cfg.n=4;cfg.teams=false;cfg.mode='warlord';wildsSeats()}
-  curtain=null;newGame({n:cfg.n,teams:cfg.teams,mode:cfg.mode,map:['wilds','realm'].includes(cfg.map)?cfg.map:null,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal',seats});resetVFX(false);
+  const vs=!!cfg.vs&&cfg.map==='realm';let seatsUsed=seats;if(vs){const me=seats.find(s=>s.ctrl==='human')||seats[0];seatsUsed=[{fac:me.fac,ctrl:'human',talent:me.talent},{fac:'ooze',ctrl:'bot'},{fac:'ooze',ctrl:'bot'},{fac:'ooze',ctrl:'bot'}]}/* v147 Fight the Ooze: you alone against three Ooze bots on one team */
+  curtain=null;newGame({n:cfg.n,teams:cfg.teams,vs,mode:cfg.mode,map:['wilds','realm'].includes(cfg.map)?cfg.map:null,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal',seats:seatsUsed});resetVFX(false);
   if(window.innerWidth<700&&!document.body.classList.contains('focus'))setFocus(true);
   const firstHuman=G.players.find(p=>p.ctrl==='human');faceHome(firstHuman?firstHuman.id:0);CAM.az=CAM.azT;
   layout();centerBoard();refresh();
@@ -8634,7 +8641,7 @@ const annEsc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 function annCol(c){return `color:${c};color:color-mix(in srgb, ${c} 78%, #ffffff)`}
 function annFac(f,short){const F=FAC[f]||{name:f,color:'#ece8dd'};return `<b style="${annCol(F.color)}">${annEsc(short?(ANN_SHORT[f]||F.name):F.name)}</b>`}
 function annSideOf(t){const ps=G.players.filter(p=>p.team===+t);return ps.length?ps[0]:null}
-function annSide(t,short){if(G.teams){const p=annSideOf(t);return `<b style="${annCol(p?FAC[p.fac].color:'#ece8dd')}">Team ${'ABC'[t]}</b>`}const p=annSideOf(t);return p?annFac(p.fac,short):'?'}
+function annSide(t,short){if(G.vs){const p=annSideOf(t);return `<b style="${annCol(p?FAC[p.fac].color:'#ece8dd')}">${teamName(t)}</b>`}if(G.teams){const p=annSideOf(t);return `<b style="${annCol(p?FAC[p.fac].color:'#ece8dd')}">Team ${'ABC'[t]}</b>`}const p=annSideOf(t);return p?annFac(p.fac,short):'?'}
 function annOrd(n){const s=n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');return n+s}
 function annUnit(name,f){return `<b style="${annCol((FAC[f]||{}).color||'#ece8dd')}">${annEsc(name)}</b>`}
 // "7 points, 1st place (Giants 6, Frost 4, Priests 2)"
@@ -8818,7 +8825,7 @@ function wildsSeats(){}// v50: the Riftwalkers play on the Crown Wilds too (they
 function kingText(){return G&&G.map?`+${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. It scores 1 point at the start of its side's turn while it sits on the Throne. Whoever kills the King scores ${G.realm?REALM.kingPts:RULES.KING_KILL}${G.realm&&RULES.CROWN_POT?` and takes the points in the crown (only every ${REALM.potBank}${REALM.potBank===3?'rd':'th'} Throne point is banked for good${crownPot()?'; '+crownPot()+' in the crown now':''})`:''}.${G.realm&&RULES.STORY2?` Its crown holds ${G.crown||0} Crown Stone${(G.crown||0)===1?'':'s'} (+1 ATK and +1 max HP each), and stays on the throne for the next King.`:''}`
   :'+1 ATK and +1 DEF for as long as it lives. At the start of its side’s turn, sitting on the Throne scores 1 point, always. To stop it, kill the King (its killer scores '+RULES.KING_KILL+') or take the Throne: whoever sits on the Throne takes the crown, even from a living King who has stepped off it.'}
 function isHumanTurn(){if(!G||G.over)return false;const p=P(G.cur);if(p.ctrl!=='human')return false;return !netOnline()||p.uid===NET.me}
-function teamColor(t){return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t).fac].color}
+function teamColor(t){if(G.vs)return FAC[G.players.find(p=>p.team===t).fac].color;return G.teams?'#ece8dd':FAC[G.players.find(p=>p.team===t).fac].color}
 
 /* ---------- highlights ---------- */
 function computePreview(){
@@ -8870,7 +8877,7 @@ function refresh(){
   }
   computePreview();
   const p=P(G.cur),F=FAC[p.fac];
-  $('#curChip').innerHTML=`<span class="dot" style="background:${F.color}"></span>P${p.id+1} · ${F.name}${G.teams?` <span class="team">Team ${'ABC'[p.team]}</span>`:''}${p.ctrl==='bot'?' <span class="hint">(bot)</span>':''}${netOnline()?` <span class="hint">· ${NET.code} · ${p.ctrl==='bot'?'bots':isHumanTurn()?'your turn':'waiting for '+(p.uid===NET.me?'you':(NET.names[p.uid]||'Player '+(p.id+1)))}</span>`:''}`;
+  $('#curChip').innerHTML=`<span class="dot" style="background:${F.color}"></span>P${p.id+1} · ${F.name}${G.vs?` <span class="team">${p.team===0?'vs the Ooze':'the swarm'}</span>`:G.teams?` <span class="team">Team ${'ABC'[p.team]}</span>`:''}${p.ctrl==='bot'?' <span class="hint">(bot)</span>':''}${netOnline()?` <span class="hint">· ${NET.code} · ${p.ctrl==='bot'?'bots':isHumanTurn()?'your turn':'waiting for '+(p.uid===NET.me?'you':(NET.names[p.uid]||'Player '+(p.id+1)))}</span>`:''}`;
   const tb=$('#takeBots');if(tb)tb.hidden=!(netOnline()&&!netIsHost()&&p.ctrl==='bot'&&Date.now()-NET.lastChange>12000);
   let pips='';for(let i=0;i<G.apMax;i++)pips+=`<i class="${i<G.ap?'on':''}"></i>`;
   const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+(P(G.cur).leaderless?' (no Leader)':' Leader'):'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.well?'+'+pa.well+' Wellspring':'',pa.bank?'+'+pa.bank+' banked':''].filter(Boolean).join(' ')})</span>`+(bankOf(P(G.cur))&&!G.phase?`<span class="aplabel bankl" title="Banked Time: unspent AP carry over to your next turn">⏳ Banked Time: keeps ${Math.min(G.ap,bankOf(P(G.cur)))} of up to ${bankOf(P(G.cur))} unspent</span>`:'');
