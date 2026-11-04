@@ -4565,11 +4565,11 @@ function storyBeastAct(){const b=storyBeast();if(!b)return;if(b.st&&b.st.frozen>
   {const hit=us.filter(v=>distUU(b,v)<=REALM.roarReach);if(hit.length)opts.push({k:'roar',hit,o:2,tot:hit.reduce((s,v)=>s+Math.min(v.hp,dmgOf(v,REALM.roarDmg,1)),0)})}
   if(!opts.length)return;const pool=REALM.sweepFirst&&opts.some(o=>o.k==='sweep')?opts.filter(o=>o.k==='sweep'):opts;pool.sort((a,c)=>c.tot-a.tot||a.o-c.o);const A=pool[0];
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';const col='#b06bff';let n=0,dealt=0,bk=0;const bh=(v,d)=>{const h0=v.hp;hurt(v,d,col);dealt+=Math.min(d,h0);if(!alive(v))bk++};/* v153: the Beast's damage and kills are recorded per attack (stats.obj.beast) */
-  if(A.k==='sweep'){CUR_NAME='Rift Beast: tentacle sweep';if(!SIM){vfx({k:'ab',ab:'breath',shape:'cone',from:A.br.c,to:A.hit[0]?[A.hit[0].q,A.hit[0].r]:A.br.c,cells:(A.br.zone||[]).map(k=>k.split(',').map(Number)),col,cam:1});addLog(null,`The Rift Beast sweeps a tentacle through the breach facing the ${FAC[G.players[A.br.pid].fac].name}.`)}
+  if(A.k==='sweep'){CUR_NAME='Rift Beast: tentacle sweep';if(!SIM){vfx({k:'bsweep',from:A.br.c,at:[0,0],cells:(A.br.zone||[]).map(k=>k.split(',').map(Number)),hits:A.hit.map(v=>[v.q,v.r]),col,cam:1});/* v156: the tentacle sweep has its own visual in both views */addLog(null,`The Rift Beast sweeps a tentacle through the breach facing the ${FAC[G.players[A.br.pid].fac].name}.`)}
     for(const v of A.hit){if(!alive(v))continue;const d=dmgOf(v,REALM.sweepDmg);bh(v,d);n++;if(alive(v))storyShove(v,A.br.c)}}
-  else if(A.k==='spit'){CUR_NAME='Rift Beast: rift spit';if(!SIM){vfx({k:'lob',from:[0,0],to:[A.t.q,A.t.r],col,cam:1});addLog(null,`The Rift Beast spits rift matter at the ${A.t.name}.`)}
+  else if(A.k==='spit'){CUR_NAME='Rift Beast: rift spit';if(!SIM){vfx({k:'bspit',from:[0,0],to:[A.t.q,A.t.r],extra:A.nb.map(v=>[v.q,v.r]),col,cam:1});addLog(null,`The Rift Beast spits rift matter at the ${A.t.name}.`)}
     bh(A.t,dmgOf(A.t,REALM.spitDmg,1));n++;for(const v of A.nb){if(alive(v)){bh(v,dmgOf(v,REALM.spitSplash,1));n++}}}
-  else{CUR_NAME='Rift Beast: roar';if(!SIM){vfx({k:'ab',ab:'nova',shape:'aura',from:[0,0],to:[0,0],cells:A.hit.map(v=>[v.q,v.r]),col,cam:1});addLog(null,'The Rift Beast roars at everyone near its body.')}
+  else{CUR_NAME='Rift Beast: roar';if(!SIM){vfx({k:'broar',at:[0,0],cells:A.hit.map(v=>[v.q,v.r]),col,cam:1});addLog(null,'The Rift Beast roars at everyone near its body.')}
     for(const v of A.hit){if(!alive(v))continue;bh(v,dmgOf(v,REALM.roarDmg,1));n++;if(alive(v))storyShove(v,[0,0])}}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM){const O=tObj();if(O&&O.beast){O.beast.strikes+=n;O.beast[A.k]=(O.beast[A.k]||0)+1;O.beast.atkDmg=O.beast.atkDmg||{};O.beast.atkDmg[A.k]=(O.beast.atkDmg[A.k]||0)+dealt;O.beast.atkKills=O.beast.atkKills||{};O.beast.atkKills[A.k]=(O.beast.atkKills[A.k]||0)+bk}}}
 // round start on the Realm (STORY): the Rift closes, the Beast attacks, waves are born, spawns act, the Drakes wake, the Old God walks
@@ -4597,7 +4597,7 @@ function storyWalk(m,goals,steps,avoid){if(!goals.size||steps<=0)return;const fr
     for(const [dq,dr] of DIRS){const a=cur[0]+dq,b=cur[1]+dr,d=D.get(key(a,b));if(d!=null&&d<nd&&!unitAt(a,b)){nd=d;nx=[a,b]}}if(!nx)break;cur=nx}
   if(cur[0]!==fq||cur[1]!==fr){m.anim={fq,fr,t0:typeof performance!=='undefined'?performance.now():0,dur:350};m.q=cur[0];m.r=cur[1]}}
 const ringOf=(t,n)=>{const s=new Set();for(const [q,r] of allCells()){if(distUC(t,q,r)>=1&&distUC(t,q,r)<=n)s.add(key(q,r))}return s};
-function storySpawnHit(m,v,col){const d=Math.max(1,m.atk-effDef(v));hurt(v,d,col);return d}
+function storySpawnHit(m,v,col){const d=Math.max(1,m.atk-effDef(v));const h0=v.hp;hurt(v,d,col);if(!SIM&&trk()){const O=tObj();if(O&&O.story){const S=O.story.spawn=O.story.spawn||{};const w=S[m.spawnW]=S[m.spawnW]||{dmg:0,kills:0,fetched:0,keepDmg:0};w.dmg+=Math.min(d,h0);if(!alive(v))w.kills++;if(v.monster==='keep')w.keepDmg+=Math.min(d,h0)}}return d}/* v156: damage, kills and Keep damage per wave (stats.obj.story.spawn) */
 function storySpawns(){const b=storyBeast(),K=kingOf(),col='#b06bff';
   const fear=(q,r)=>!b&&(hd(q,r,0,0)<=G.heartR||(K&&distUC(K,q,r)<=2));
   for(const m of G.units.filter(u=>u.spawnW&&alive(u))){if(m.st&&m.st.frozen>0){m.st.frozen--;continue}if(m.st&&m.st.chill>0)m.st.chill--;
@@ -4616,7 +4616,7 @@ function storySpawns(){const b=storyBeast(),K=kingOf(),col='#b06bff';
       if(prey)goal=ringOf(prey,1)}
     const reach=m.spawnW===3?3:1;if(!(prey&&distUU(m,prey)<=reach&&!carry))storyWalk(m,goal||new Set(),m.mov||3,fear);
     if(b&&carry&&distUU(b,m)<=1){G.loot.splice(G.loot.indexOf(x),1);G.eaten=(G.eaten||0)+1;b.maxhp+=REALM.stoneHp;b.hp=Math.min(b.maxhp,b.hp+REALM.stoneHp);G.units.splice(G.units.indexOf(m),1);
-      if(!SIM){addLog(null,`A spawn brings a Crown Stone back: the Rift Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP; ${G.eaten} eaten).`);vfx({k:'buff',at:[0,0],col,cam:1});announce({k:'note',col,t:'The Beast swallows a Crown Stone',s:`+1 damage on all its attacks and +${REALM.stoneHp} HP. Its belly now holds ${1+G.eaten} stones, and they all spill out for its killer.`});const O=tObj();if(O&&O.story)O.story.eaten++}G.belly=(G.belly||0)+1;continue}
+      if(!SIM){addLog(null,`A spawn brings a Crown Stone back: the Rift Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP; ${G.eaten} eaten).`);vfx({k:'buff',at:[0,0],col,cam:1});announce({k:'note',col,t:'The Beast swallows a Crown Stone',s:`+1 damage on all its attacks and +${REALM.stoneHp} HP. Its belly now holds ${1+G.eaten} stones, and they all spill out for its killer.`});const O=tObj();if(O&&O.story){O.story.eaten++;const S=O.story.spawn=O.story.spawn||{};const w=S[m.spawnW]=S[m.spawnW]||{dmg:0,kills:0,fetched:0,keepDmg:0};w.fetched++}}G.belly=(G.belly||0)+1;continue}
     if(b&&x&&x.carrier==null&&x.q===m.q&&x.r===m.r){x.carrier=m.id;if(!SIM){addLog(null,'A spawn seizes a Crown Stone and turns back toward the Beast!');fx(m,'stone!','#ffd766')}}
     const CUR=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME=`Rift spawn (wave ${m.spawnW})`;
     let t=prey&&alive(prey)&&distUU(m,prey)<=reach?prey:G.units.filter(v=>storyLive(v)&&!v.king&&distUU(m,v)<=1).sort((u,v)=>u.hp-v.hp||u.id-v.id)[0]||null;
@@ -7294,10 +7294,28 @@ function fxDust(at,col,t0,n0){const [x,z]=fxW(at[0],at[1]);const n=n0||18;const 
   e.update=k=>{const a=P.geometry.attributes.position.array;for(let i=0;i<n;i++){a[i*3]=x+v[i][0]*Math.sqrt(k);a[i*3+1]=0.1+v[i][1]*k*(1-k*0.5);a[i*3+2]=z+v[i][2]*Math.sqrt(k)}P.geometry.attributes.position.needsUpdate=true;P.material.opacity=0.8*(1-k);P.material.size=0.3+k*0.5};return fxAdd(e)}
 function fxFlash(col,t0){/* a short tint over the board for Ultimates: a wide disc at the camera height */const e={t0,dur:700,g:new THREE.Group()};const d=fxDisc('dot',col,60);d.position.set(0,6,0);e.g.add(d);e.update=k=>{d.material.opacity=0.55*(k<0.2?k*5:1-(k-0.2)/0.8)};return fxAdd(e)}
 
+/* v156 THE RIFT BEAST'S ATTACKS in 3D: the tentacle (a chain of dark spheres from the body's top, sweeping across the breach's cone), the rift spit (a big glob from the mouth, a rift splash on landing), the roar (shockwaves from the body) */
+function fxTentacle(cells,from,col,t0){if(!cells||!cells.length)return;const [ox,oz]=fxW(0,0);const oy=3.2;const e={t0,dur:1000,g:new THREE.Group()};const N=18;const mats=[new THREE.MeshBasicMaterial({color:fxCol('#2a1040'),transparent:true,opacity:0.95}),new THREE.MeshBasicMaterial({color:fxCol('#5a2d8a'),transparent:true,opacity:0.9})];
+  const balls=[];for(let i=0;i<N;i++){const s=i/(N-1);const m=new THREE.Mesh(new THREE.SphereGeometry(1.05-0.7*s,10,8),mats[i%2]);m.frustumCulled=false;e.g.add(m);balls.push(m)}
+  const tip=fxSprite('dot','#d9b3ff',1.8);e.g.add(tip);
+  const pts=cells.map(([q,r])=>{const [x,z]=fxW(q,r);return {x,z,a:Math.atan2(z-oz,x-ox),d:Math.hypot(x-ox,z-oz)}});const [fx1,fz1]=fxW(from[0],from[1]);const a0=Math.atan2(fz1-oz,fx1-ox);const rel=p=>{let d=p.a-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d};
+  const lo=Math.min(...pts.map(rel)),hi=Math.max(...pts.map(rel)),R=Math.max(...pts.map(p=>p.d))+0.4;
+  e.update=k=>{const sw=k<0.15?0:k>0.85?1:(k-0.15)/0.7;const ang=a0+lo+(hi-lo)*(0.5-0.5*Math.cos(Math.PI*sw));const rise=k<0.15?k/0.15:1;const tx=ox+Math.cos(ang)*R*rise,tz=oz+Math.sin(ang)*R*rise;
+    for(let i=0;i<N;i++){const s=i/(N-1);const x=fxLerp(ox,tx,s),z=fxLerp(oz,tz,s),y=fxLerp(oy,0.45,s)+Math.sin(Math.PI*s)*(2.2-1.2*sw*sw)*rise;balls[i].position.set(x,y,z)}
+    tip.position.set(tx,0.5,tz);const fade=k>0.85?1-(k-0.85)/0.15:1;mats[0].opacity=0.95*fade;mats[1].opacity=0.9*fade;tip.material.opacity=0.9*fade};
+  e.done=()=>{fxDust([from[0],from[1]],'#5a2d8a',e.t0+e.dur,16)};fxAdd(e);fxCells(cells,col,[0,0],t0+120,false)}
+function fxSpit(to,extra,col,t0){const [x0,z0]=fxW(0,0),[x1,z1]=fxW(to[0],to[1]);const e={t0,dur:520,g:new THREE.Group()};const orb=fxSprite('dot','#b06bff',2.6);e.g.add(orb);const core=fxSprite('dot','#ffffff',1.1);e.g.add(core);const trail=[];for(let i=0;i<6;i++){const s=fxSprite('dot','#5a2d8a',1.1-i*0.12);s.material.opacity=0.5-i*0.07;e.g.add(s);trail.push(s)}
+  const hist=[];e.update=k=>{const t=fxEase(k),x=fxLerp(x0,x1,t),z=fxLerp(z0,z1,t),y=fxLerp(4.6,0.9,t)+Math.sin(Math.PI*t)*3.4;orb.position.set(x,y,z);core.position.set(x,y,z);hist.unshift([x,y,z]);if(hist.length>14)hist.pop();trail.forEach((s,i)=>{const h=hist[Math.min(hist.length-1,(i+1)*2)];if(h)s.position.set(h[0],h[1],h[2])})};
+  e.done=()=>{fxImpact(x1,z1,'#b06bff',true,e.t0+e.dur);fxShock(to,'#5a2d8a',e.t0+e.dur,3.2);fxColumn(to,'#5a2d8a',e.t0+e.dur,600,true);for(const c of extra||[]){const [ex,ez]=fxW(c[0],c[1]);fxImpact(ex,ez,'#b06bff',false,e.t0+e.dur+80)}};return fxAdd(e)}
+function fxRoarRing(col,t0,delay,y){const [x,z]=fxW(0,0);const e={t0:t0+delay,dur:900,g:new THREE.Group()};const ring=fxDisc('ring',col,1,true);ring.position.set(x,y,z);e.g.add(ring);e.update=k=>{const s=5+k*9;ring.scale.set(s,s,1);ring.material.opacity=0.95*(1-k)};return fxAdd(e)}/* the roar's rings start at the body's edge, above the rubble, and roll out past 2 hexes */
+function fxRoar(cells,col,t0){fxRoarRing('#b06bff',t0,0,0.9);fxRoarRing('#ffffff',t0,140,1.1);fxRoarRing('#5a2d8a',t0,280,0.7);const [x,z]=fxW(0,0);const e={t0,dur:700,g:new THREE.Group()};const sp=fxSprite('dot','#b06bff',3);sp.position.set(x,4.2,z);e.g.add(sp);e.update=k=>{sp.material.opacity=0.8*(1-k);const s=3+k*5;sp.scale.set(s,s,1)};fxAdd(e);for(const c of cells||[])fxDust(c,'#5a2d8a',t0+250,10)}
 /* ---------- events ---------- */
 function glFx(ev,t0){try{if(!GLFX.on||typeof glActive!=='function'||!glActive()||!GL.scene)return;const col=ev.col||'#ffffff';
   switch(ev.k){
     case 'bolt':if(ev.from&&ev.to)fxProjectile(ev.from,ev.to,col,false,t0);break;
+    case 'bsweep':fxTentacle(ev.cells,ev.from||[0,0],col,t0);break;
+    case 'bspit':if(ev.to)fxSpit(ev.to,ev.extra,col,t0);break;
+    case 'broar':fxRoar(ev.cells,col,t0);break;
     case 'lob':if(ev.from&&ev.to)fxProjectile(ev.from,ev.to,col,true,t0);break;
     case 'slash':if(ev.from&&ev.to){fxSlash(ev.from,ev.to,col,t0);if(ev.extra)for(const c of ev.extra)fxSlash(ev.from,c,col,t0+60)}break;
     case 'chain':if(ev.pts)for(let i=0;i+1<ev.pts.length;i++)fxProjectile(ev.pts[i],ev.pts[i+1],col,false,t0+i*140,220);break;
@@ -7415,7 +7433,7 @@ function pumpVFX(now){
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
     if(ev.k==='thefall'&&typeof fitBoard==='function'){window.FALL_HOLD=Date.now()+FALL_WAIT+4400;window.FALL_LAND=Date.now()+FALL_WAIT+4200*0.38;{const rd=()=>{try{if(typeof GL!=='undefined'&&GL)GL.sig='';if(typeof refresh==='function')refresh()}catch(x){}};setTimeout(rd,30);setTimeout(rd,FALL_WAIT+4200*0.38+40)}try{if(typeof glModel==='function'&&typeof MODELS!=='undefined'&&MODELS['Rift Beast']){const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?f():f).catch(()=>{})}}catch(x){}try{fitBoard()}catch(x){}setTimeout(()=>{try{fitBoard()}catch(x){}},150);setTimeout(()=>{try{if(G&&typeof frameArmy==='function'){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human')||{}).id;if(me!=null)frameArmy(me)}}catch(x){}},FALL_WAIT+4500)}// v100: the whole board for the Fall, then back to your army
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
-    if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')playSound('hit');if(ev.k==='crack')playSound('crack');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
+    if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain'||ev.k==='bsweep')playSound('hit');if(ev.k==='bspit')playSound('cast');if(ev.k==='broar')playSound('ult');if(ev.k==='crack')playSound('crack');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
     if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color;
     // Act 1 announcements (v23): a message on screen and a sound; the pictures are drawn below
     // with announcements on, the banner replaces the toast for the wall, the beast and the Wellspring; the round-before warnings stay toasts
@@ -7476,6 +7494,29 @@ function drawVFX(now){if(typeof glFxTick==='function'){try{glFxTick(now);glAmbie
           glowLine(zig,'#e9ddff',Math.max(1.5,U*0.06),Math.max(0,1-el/dur))}
         break}
       case 'dust':{dur=520;const t=Math.max(0,el/dur);const [x,y]=vPos(ev.at[0],ev.at[1],0.05);ctx.save();for(let i=0;i<7;i++){const a=i/7*Math.PI*2+0.4;ctx.globalAlpha=Math.max(0,0.45*(1-t));ctx.fillStyle=ev.col||'#c9b99a';ctx.beginPath();ctx.ellipse(x+Math.cos(a)*U*(0.25+t*0.55),y+Math.sin(a)*U*(0.12+t*0.25)-t*U*0.15,U*(0.12+t*0.12),U*(0.08+t*0.08),0,0,7);ctx.fill()}ctx.restore();break}
+      /* v156 THE RIFT BEAST'S ATTACKS (owner: "I want visuals for the Rift Beast attacks"). The tentacle sweep: a thick dark arm from the body's top that sweeps across the breach's cone;
+         the rift spit: a glob from the mouth that lands with a rift splash on the target and its neighbours; the roar: shockwave rings from the body. In 3D the GL kit draws the bodies, this overlay adds the ground marks. */
+      case 'bsweep':{dur=1000;const t=Math.min(1,el/dur);const [ox,oy]=vPos(0,0,VIEW==='3d'?2.2:1.2);const cells=(ev.cells||[]).map(([q,r])=>{const [x,y]=vPos(q,r,0.08);return {x,y,a:Math.atan2(y-oy,x-ox),d:Math.hypot(x-ox,y-oy)}});if(!cells.length)break;
+        const [fx1,fy1]=vPos(ev.from[0],ev.from[1],0.08);const a0=Math.atan2(fy1-oy,fx1-ox);const rel=c=>{let d=c.a-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d};
+        const lo=Math.min(...cells.map(rel)),hi=Math.max(...cells.map(rel)),R=Math.max(...cells.map(c=>c.d));const sw=t<0.15?0:t>0.85?1:(t-0.15)/0.7;const prog=lo+(hi-lo)*(0.5-0.5*Math.cos(Math.PI*sw));const ang=a0+prog;
+        ctx.save();for(const c of cells){const passed=rel(c)<=prog+0.05;ctx.globalAlpha=(passed?0.42:0.18)*(1-Math.max(0,t-0.8)*5);ctx.fillStyle=passed?'#6b2fb0':'#3a1a5a';ctx.beginPath();ctx.arc(c.x,c.y,U*0.5,0,7);ctx.fill()}
+        if(VIEW!=='3d'||!window.GLON_NOW){const tx=ox+Math.cos(ang)*R,ty=oy+Math.sin(ang)*R;const px0=ox-Math.sin(ang)*U*1.4,py0=oy+Math.cos(ang)*U*1.4-U*1.2;ctx.globalAlpha=Math.min(1,t*6)*(1-Math.max(0,t-0.8)*5);ctx.lineCap='round';
+          for(const [w,c2] of [[0.7,'#2a1040'],[0.46,'#5a2d8a'],[0.2,'#b06bff']]){ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,U*w);ctx.beginPath();ctx.moveTo(ox,oy);ctx.quadraticCurveTo(px0,py0,tx,ty);ctx.stroke()}
+          for(let i=1;i<=3;i++){const aa=ang-i*0.12;const ex=ox+Math.cos(aa)*R,ey=oy+Math.sin(aa)*R;ctx.globalAlpha*=0.55;ctx.strokeStyle='#5a2d8a';ctx.lineWidth=Math.max(1.5,U*0.2);ctx.beginPath();ctx.moveTo(ox,oy);ctx.quadraticCurveTo(px0,py0,ex,ey);ctx.stroke()}
+          sparks(tx,ty,5,U*0.5,'#d9b3ff',sw,ang)}
+        ctx.restore();break}
+      case 'bspit':{dur=900;const T=520;const t=Math.min(1,el/T);const [x0,y0]=vPos(0,0,VIEW==='3d'?4.5:2.6),[x1,y1]=vPos(ev.to[0],ev.to[1],0.2);
+        const hx=x0+(x1-x0)*t,hy=y0+(y1-y0)*t-Math.sin(Math.PI*t)*U*3.2;
+        if(el<T){ctx.save();ctx.fillStyle='#b06bff';ctx.beginPath();ctx.arc(hx,hy,Math.max(4,U*0.26),0,7);ctx.fill();ctx.strokeStyle='#e9d6ff';ctx.lineWidth=Math.max(1.5,U*0.05);ctx.stroke();ctx.globalAlpha=0.3;ctx.fillStyle='#5a2d8a';ctx.beginPath();ctx.arc(hx,hy,Math.max(7,U*0.5),0,7);ctx.fill();
+          for(let i=1;i<=4;i++){const tt=Math.max(0,t-i*0.06);const bx=x0+(x1-x0)*tt,by=y0+(y1-y0)*tt-Math.sin(Math.PI*tt)*U*3.2;ctx.globalAlpha=0.25-i*0.05;ctx.fillStyle='#b06bff';ctx.beginPath();ctx.arc(bx,by,Math.max(3,U*(0.22-i*0.04)),0,7);ctx.fill()}ctx.restore()}
+        else{const k=(el-T)/(dur-T);burst(x1,y1,U*(0.4+1.4*k),'#b06bff',Math.max(0,1-k));burst(x1,y1,U*(0.2+0.8*k),'#ffffff',Math.max(0,0.8-k*1.4));
+          ctx.save();ctx.globalAlpha=Math.max(0,0.8-k);ctx.strokeStyle='#5a2d8a';ctx.lineWidth=Math.max(2,U*0.14);ctx.beginPath();ctx.arc(x1,y1,U*(0.5+1.6*k),0,7);ctx.stroke();ctx.restore();
+          for(const [q,r] of ev.extra||[]){const [ex,ey]=vPos(q,r,0.2);burst(ex,ey,U*(0.25+0.6*k),'#b06bff',Math.max(0,0.9-k))}}
+        break}
+      case 'broar':{dur=1000;const t=Math.min(1,el/dur);const [x,y]=vPos(0,0,VIEW==='3d'?1.0:0.5);ctx.save();
+        for(let i=0;i<3;i++){const k=Math.max(0,Math.min(1,t*1.25-i*0.18));if(k<=0)continue;ctx.globalAlpha=0.85*(1-k);ctx.strokeStyle=i===1?'#ffffff':'#b06bff';ctx.lineWidth=Math.max(2,U*(0.22-i*0.05));ctx.beginPath();ctx.ellipse(x,y,U*(3.2+k*3.4),U*(3.2+k*3.4)*(VIEW==='3d'?0.55:1),0,0,7);ctx.stroke()}
+        for(const [q,r] of ev.cells||[]){const [cx,cy]=vPos(q,r,0.3);const k=Math.max(0,Math.min(1,(t-0.25)/0.6));ctx.globalAlpha=0.5*(1-k);ctx.fillStyle='#b06bff';ctx.beginPath();ctx.arc(cx,cy,U*(0.35+k*0.5),0,7);ctx.fill()}
+        ctx.restore();break}
       case 'ab':{if(SIG_FX[ev.ab]){const S=SIG_FX[ev.ab];dur=S.dur;SIG_U=U;S.draw(ev,el/dur,now);break}dur=700;const t=el/dur;const [cx,cy]=vPos(ev.from[0],ev.from[1],0.6),[tx,ty]=vPos(ev.to[0],ev.to[1],0.2);
         const A=ABIL[ev.ab]||{};
         if(ev.ab==='timewarp'||ev.ab==='quicken'||ev.ab==='rewind'||ev.ab==='clock'){const [x,y]=ev.ab==='timewarp'?[cx,cy]:vPos(ev.to[0],ev.to[1],0.6);
@@ -10791,7 +10832,7 @@ function esc0(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
    3. The bots wait for the slow motion to end before their next step.
    Switch: ☰ menu "Action camera", saved as hexmarch.actioncam. Later stages: a real 3D camera that dives toward the action, attack and cast poses, hit reactions. */
 const ACAM={on:true,seen:0,slowUntil:0,rate:1,lastReal:0,v:0};try{ACAM.on=localStorage.getItem('hexmarch.actioncam')!=='off'}catch(e){}
-const ACAM_KINDS=new Set(['slash','bolt','lob','ab','chain','death','ult','beastdown','rise']);
+const ACAM_KINDS=new Set(['slash','bolt','lob','ab','chain','death','ult','beastdown','rise','bsweep','bspit','broar']);/* v156: the Beast's attacks */
 function acamReduce(){return !!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
 // the effects clock: real time, slowed while a slow-motion moment runs
 function acamClock(now){if(!ACAM.lastReal){ACAM.lastReal=now;ACAM.v=now}const dt=now-ACAM.lastReal;ACAM.lastReal=now;const slow=ACAM.on&&now<ACAM.slowUntil&&!acamReduce();ACAM.v+=dt*(slow?0.33:1);window.ACAM_LAG=now-ACAM.v;return ACAM.v}
@@ -10822,7 +10863,10 @@ function punchApply(now){const els=[cv];if(typeof GL!=='undefined'&&GL&&GL.cv)el
 {const sc0=acamScan;acamScan=function(){const before=ACAM.seen;sc0();if(!G||!ACAM.on)return;for(const ev of (G.fxLog||[]).filter(e=>e.id>before&&e.id<=ACAM.seen)){
     if(ev.k==='death'&&ev.at){punchAt(ev.at[0],ev.at[1],ev.leader||ev.big?0.3:0.2,950);PUNCH.freezeUntil=performance.now()+120}
     else if((ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain')&&ev.to)punchAt(ev.to[0],ev.to[1],0.09,520)
-    else if(ev.k==='ult')punchAt((ev.at||[0,0])[0],(ev.at||[0,0])[1],0.14,1100)}}}
+    else if(ev.k==='ult')punchAt((ev.at||[0,0])[0],(ev.at||[0,0])[1],0.14,1100)
+    else if(ev.k==='broar')punchAt(0,0,0.12,900)
+    else if(ev.k==='bsweep'&&ev.hits&&ev.hits[0])punchAt(ev.hits[0][0],ev.hits[0][1],0.1,900)
+    else if(ev.k==='bspit'&&ev.to)punchAt(ev.to[0],ev.to[1],0.12,700)}}}
 // the effects clock stops for a heartbeat on a kill, and the punch is drawn every frame
 {const clk0=acamClock;acamClock=function(now){const v=clk0(now);if(now<PUNCH.freezeUntil){ACAM.v-=Math.min(now-(ACAM.fz||now),40);}ACAM.fz=now;return ACAM.v}}
 /* the punch goes on top of whatever the effects layer did this frame (the screen shake also moves the canvas) */
