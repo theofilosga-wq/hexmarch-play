@@ -914,7 +914,7 @@ const ABIL={
     desc:'5 damage minus DEF to an enemy within 3.'},
   cleanwave:{name:'Cleansing Wave',cost:1,cd:1,aim:'self',special:'cleanwave',size:2,heal:1,el:'water',spell:1,
     desc:'Every ally within 2 (the shaman too) loses one debuff and heals 1.'},
-  healtide:{name:'Healing Tide',cost:2,cd:1,aim:'unit',range:3,hits:'ally',special:'tide',heal:4,el:'water',spell:1,
+  healtide:{name:'Healing Tide',cost:2,cd:1,aim:'unit',range:3,hits:'ally',special:'tide',heal:3,el:'water',spell:1,
     desc:'Heal an ally within 3 for 4.'},
   stoneskin:{name:'Stoneskin',cost:1,cd:1,aim:'unit',range:3,hits:'ally',special:'stoneskin',amount:2,el:'earth',spell:1,
     desc:'An ally within 3 gets +2 DEF until your next turn.'},
@@ -1349,13 +1349,13 @@ const FAC={
     home:'Pale ground: curses cast from it last 5 turns instead of 4, and a cursed enemy standing on it takes 1 more from each curse tick. The Bog Ring turns its victims’ hexes pale for 3 turns.',
     homeRealm:'Bog: the Bog Ring turns its victims’ hexes pale for 3 turns: curses cast from pale ground last 5 turns instead of 4, and a cursed enemy on it takes 1 more from each tick. No home ground on the Realm.',blight:1,
     units:[
-      {name:'Lich King',icon:'crown',leader:1,hp:13,atk:3,def:2,mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
+      {name:'Lich King',icon:'crown',leader:1,hp:14,atk:4,def:1,/* v154 (laws 1-2): DEF 1 and ATK 4 (were 2 and 3): 7 blows at reach 3, a Leader's 5 to 8, and a Leader's blow */mov:1,mt:'walk',at:'bolt',rng:3,ab:'requiem'},
       {name:'Plague Bearer',icon:'skull',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'miasma'},
       {name:'Banshee',icon:'candle',n:2,hp:7,atk:2,def:0,mov:2,mt:'walk',at:'lob',rng:4,rmin:2,ab:'wither'},
       {name:'Grave Leech',icon:'drop',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:3,ab:'siphon',trait:'scavenger'},
       {name:'Bog Hag',icon:'hand',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bogring'},
       {name:'Bell Wraith',icon:'bell',hp:7,atk:2,def:0,mov:2,mt:'walk',at:'diag',rng:3,ab:'silence'},
-      {name:'Grave Knight',icon:'tomb',n:2,hp:18,atk:2,def:2,mov:2,mt:'walk',at:'melee',rng:1,trait:'bodyguard',trait2:'bloodbond'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Banshee and a second Grave Knight took their places
+      {name:'Grave Knight',icon:'tomb',n:2,hp:18,atk:2,def:1,/* v154 (law 1): DEF 1 (was 2): 9 blows, a tank's 7 to 10 */mov:2,mt:'walk',at:'melee',rng:1,trait:'bodyguard',trait2:'bloodbond'}]},// v52 (owner): the two weakest units (Soul Thief, Acolyte) left; a second Banshee and a second Grave Knight took their places
   chrono:{name:'Hourglass Order',color:'#c81ca6',
     theme:'One assassin, six helpers. Alone the Second Hand strikes once for 3; every supporter adds a piece (another strike, a sharpened blow, an echo, a free step, a rewound clock), and every kill makes the pieces they give hit harder.',
     passive:'The combo is a synergy. Quicken (Tempo Mage): one more strike. Synchrony (Chronarch): +1 on every strike this turn. Hourglass Sand (Sand Weaver): the next strike ignores DEF and deals +2. Echo (Echo Knight): the next strike lands on a second adjacent enemy too. Chase the Clock (Rewinder): a free move after every kill. Overwind (Tick): an ally’s abilities are ready again and it may act again. Rewind Wounds: an ally’s HP back to the start of your previous turn. Tempo stacks: every kill by a Second Hand is a stack on that blade, with no cap; each stack adds +1 to every strike a supporter granted it (never to its own single blow). Stealth: a blade that killed this turn can only be targeted from 2 hexes or closer.',bank:2,
@@ -1377,10 +1377,10 @@ const FAC={
     home:'Element hexes: on your side of the board lie one patch of fire, water, earth and air ground (3 hexes each). A shaman casting from a hex of its own element fills its bar twice as fast.',homeRealm:'Element shrines: one shrine of fire, water, earth and air stands in the fading land; a shaman casting from its own element’s shrine fills its bar twice as fast. No home ground on the Realm.',
     units:[
       {name:'Elder Shaman',icon:'crown',leader:1,hp:14,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:2,book:['spiritflame','renewal','ancestralward','spiritwalk']},
-      {name:'Flame Shaman',icon:'fireball',n:2,hp:8,atk:2,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['flare','flamelash'],el:'fire'},
-      {name:'Tide Shaman',icon:'wave',n:2,hp:9,atk:1,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['cleanwave','healtide'],el:'water'},
-      {name:'Stone Shaman',icon:'boulder',n:2,hp:11,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,book:['stoneskin','stonegrip'],el:'earth'},
-      {name:'Wind Shaman',icon:'wing',n:2,hp:7,atk:2,def:0,mov:4,mt:'walk',at:'bolt',rng:2,book:['tailwind','gust'],el:'air'}]},
+      {name:'Flame Shaman',icon:'fireball',n:2,hp:8,atk:3,def:0,/* v154 (law 2): ATK 3 (was 2) */mov:3,mt:'walk',at:'bolt',rng:2,book:['flare','flamelash'],el:'fire'},
+      {name:'Tide Shaman',icon:'wave',n:2,hp:8,atk:1,def:0,/* v154 (laws 1-2): HP 8 (was 9), Healing Tide 3 (was 4) */mov:3,mt:'walk',at:'bolt',rng:2,book:['cleanwave','healtide'],el:'water'},
+      {name:'Stone Shaman',icon:'boulder',n:2,hp:11,atk:2,def:0,/* v154 (law 1): a line unit (Stone Grip is its blow), DEF 0 (was 1) */mov:2,mt:'walk',at:'melee',rng:1,book:['stoneskin','stonegrip'],el:'earth'},
+      {name:'Wind Shaman',icon:'wing',n:2,hp:7,atk:1,def:0,/* v154 (law 2): ATK 1 (was 2): a support that moves and shoves, not a shooter */mov:4,mt:'walk',at:'bolt',rng:2,book:['tailwind','gust'],el:'air'}]},
 };
 // Spellbook units list their spells in d.book; d.ab mirrors the first spell so every "has an ability" check keeps working.
 for(const k in FAC)for(const d of FAC[k].units)if(d.book&&!d.ab)d.ab=d.book[0];
@@ -1391,12 +1391,12 @@ FAC.chrono={name:'Chrono Syndicate',color:'#c81ca6',syndicate:1,
   passive:'Phase Walk: every unit moves by teleporting to any free hex within its move range. Contracts: when you have none, the enemy unit or camp monster with the lowest HP within 8 hexes of your crew becomes your contract for 5 of your turns. Kill it with any crew member to collect the bounty, for the whole crew for the rest of the game: 1st +1 max HP, 2nd +1 ATK, 3rd +1 move, 4th every rest 1 shorter, 5th +2 max HP, 6th +1 ability damage, 7th +1 ATK, 8th every rest 1 shorter, 9th +1 move and +2 max HP, 10th +1 ATK and +1 ability damage; every bounty after that heals the crew 1.',
   home:'No home ground.',homeRealm:'No home ground on the Realm.',
   units:[
-    {name:'The Broker',icon:'crown',leader:1,hp:14,atk:2,def:1,mov:3,mt:'blink',at:'melee',rng:1,ab:'timelock'},
+    {name:'The Broker',icon:'crown',leader:1,hp:14,atk:3,def:1,/* v154 (law 2): ATK 3 (was 2) */mov:3,mt:'blink',at:'melee',rng:1,ab:'timelock'},
     {name:'Phase Blade',icon:'clock',n:2,hp:8,atk:3,def:0,mov:4,mt:'blink',at:'melee',rng:1,ab:'dashstrike'},
     {name:'Field Engineer',icon:'spark',hp:6,atk:2,def:0,mov:3,mt:'blink',at:'melee',rng:1,ab:'stasisfield'},
     {name:'Holo-Tech',icon:'void',hp:6,atk:2,def:0,mov:3,mt:'blink',at:'melee',rng:1,ab:'decoy'},
     {name:'Chrono Thief',icon:'hand',hp:6,atk:2,def:0,mov:4,mt:'blink',at:'melee',rng:1,ab:'stealtime'},
-    {name:'Pickpocket',icon:'knives',hp:6,atk:2,def:0,mov:4,mt:'blink',at:'melee',rng:1,ab:'snatch'},
+    {name:'Pickpocket',icon:'knives',hp:8,atk:3,def:0,/* v154 (laws 1-2): HP 8, ATK 3 (were 6 and 2) */mov:4,mt:'blink',at:'melee',rng:1,ab:'snatch'},
     {name:'Timekeeper',icon:'hourglass',hp:7,atk:2,def:0,mov:3,mt:'blink',at:'melee',rng:1,ab:'revert'},
     {name:'Accelerator',icon:'rewind',hp:6,atk:2,def:0,mov:4,mt:'blink',at:'melee',rng:1,ab:'quicken4'}]};
 FAC.rift={name:'Riftwalkers',color:'#12d69a',portals:1,
@@ -1408,7 +1408,7 @@ FAC.rift={name:'Riftwalkers',color:'#12d69a',portals:1,
     {name:'Gatekeeper',icon:'void',n:2,hp:9,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'twingates'},
     {name:'Rift Lancer',icon:'burst',n:2,hp:8,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'riftshot'},/* v145 (the rulers): shoots 2 (was 3): a 3-ATK shot from 3 hexes dealt 1; the long reach is the Rift Shot */
     {name:'Abductor',icon:'gravity',n:2,hp:9,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'abduct'},
-    {name:'Banisher',icon:'fist',n:2,hp:11,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,trait:'banish'},
+    {name:'Banisher',icon:'fist',n:2,hp:11,atk:3,def:0,/* v154 (law 1): DEF 0 (was 1) */mov:3,mt:'walk',at:'melee',rng:1,trait:'banish'},
     {name:'Rift Mender',icon:'wave',hp:8,atk:2,def:0,mov:3,mt:'walk',at:'melee',rng:1,ab:'lifegate'}]};
 FAC.ooze={name:'The Ooze',color:'#6a5cff',ooze:1,
   theme:'The Ooze Mother and her three fragile slime-casters. She pours out droplets that swarm the field and merge into bigger blobs; kill the casters and the tide stops.',
@@ -1421,7 +1421,7 @@ Object.assign(ABIL,{
     desc:'Stop one enemy within 3 in time: it loses its next turn (no move, attack or ability).'},
   dashstrike:{name:'Dash Strike',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:4,shape:'single',dmg:5,special:'dashstrike',
     desc:'Dash to a free hex next to an enemy within 4 and strike it for 5 minus DEF. At the end of your turn the Phase Blade snaps back to where it dashed from.'},
-  stasisfield:{name:'Stasis Field',cost:2,cd:2,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',special:'stasisfield',bot:'stasisfield',
+  stasisfield:{name:'Stasis Field',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',special:'stasisfield',bot:'stasisfield',
     desc:'Throw a stasis device up to 3 hexes. At the start of your next turn it goes off: every enemy still on it or next to it (7 hexes) is stunned and loses its next turn. Enemies see it coming and can run.'},
   decoy:{name:'Decoy',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',special:'decoy',bot:'decoy',
     desc:'Project a hologram of an ally within 3 onto a free hex next to the Holo-Tech: it has 1 HP and its attack deals 1, you move it, and it lasts 3 turns. It cannot sit the Throne, carry stones or be a contract, and killing it gives nothing.'},
@@ -1435,9 +1435,9 @@ Object.assign(ABIL,{
     desc:'A friendly unit within 3 (not the Accelerator) gets one extra basic attack this turn, even if it has already acted.'},
   twingates:{name:'Twin Gates',cost:2,cd:2,aim:'empty',range:3,special:'twingates',bot:'twingates',
     desc:'Open two linked portals: tap a free hex within 3, then a free hex within 10. Any unit, friend or foe, that steps onto one comes out of the other. They last 3 rounds; a Gatekeeper keeps one pair at a time.'},
-  riftshot:{name:'Rift Shot',cost:2,cd:2,aim:'dir',special:'riftshot',bot:'riftshot',
+  riftshot:{name:'Rift Shot',cost:2,cd:1,aim:'dir',special:'riftshot',bot:'riftshot',
     desc:'Pick a direction, then a free hex within 6: the Lancer opens its own portal pair there and fires through it. The shot flies on straight from the far end; every other portal in its way sends it out of its twin and the bullet gains 2 damage. It hits the first unit in its path, friend or foe, for 4 minus DEF, plus 2 for every portal it flew through. The Lancer’s pair stays open, for anyone, until your next turn.'},
-  abduct:{name:'Abduct',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:4,special:'abduct',bot:'abduct',
+  abduct:{name:'Abduct',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:4,special:'abduct',bot:'abduct',
     desc:'A portal opens on the ground under an enemy within 4 (not a two-hex unit) and swallows it; a portal opens in the sky over a free hex within 4 of the Abductor and drops it there for 2 damage. Tap the enemy, then the drop hex.'},
   lifegate:{name:'Lifegate',cost:2,cd:3,aim:'empty',range:3,special:'lifegate',bot:'lifegate',
     desc:'Open a healing portal pair: a free hex within 3, then a free hex within 6. Allies going through heal 3 (once a turn), enemies going through take 2. It lasts 2 rounds.'},
@@ -4563,7 +4563,7 @@ function storyBeastAct(){const b=storyBeast();if(!b)return;if(b.st&&b.st.frozen>
   {let best=null;for(const t of us){const d=distUU(b,t);if(d<REALM.spitMin||d>REALM.spitMax)continue;const nb=us.filter(v=>v!==t&&distUU(v,t)===1);const tot=Math.min(t.hp,dmgOf(t,REALM.spitDmg,1))+nb.reduce((s,v)=>s+Math.min(v.hp,dmgOf(v,REALM.spitSplash,1)),0);
     if(!best||tot>best.tot||(tot===best.tot&&t.id<best.t.id))best={k:'spit',t,nb,tot,o:1}}if(best)opts.push(best)}
   {const hit=us.filter(v=>distUU(b,v)<=REALM.roarReach);if(hit.length)opts.push({k:'roar',hit,o:2,tot:hit.reduce((s,v)=>s+Math.min(v.hp,dmgOf(v,REALM.roarDmg,1)),0)})}
-  if(!opts.length)return;opts.sort((a,c)=>c.tot-a.tot||a.o-c.o);const A=opts[0];
+  if(!opts.length)return;const pool=REALM.sweepFirst&&opts.some(o=>o.k==='sweep')?opts.filter(o=>o.k==='sweep'):opts;pool.sort((a,c)=>c.tot-a.tot||a.o-c.o);const A=pool[0];
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';const col='#b06bff';let n=0,dealt=0,bk=0;const bh=(v,d)=>{const h0=v.hp;hurt(v,d,col);dealt+=Math.min(d,h0);if(!alive(v))bk++};/* v153: the Beast's damage and kills are recorded per attack (stats.obj.beast) */
   if(A.k==='sweep'){CUR_NAME='Rift Beast: tentacle sweep';if(!SIM){vfx({k:'ab',ab:'breath',shape:'cone',from:A.br.c,to:A.hit[0]?[A.hit[0].q,A.hit[0].r]:A.br.c,cells:(A.br.zone||[]).map(k=>k.split(',').map(Number)),col,cam:1});addLog(null,`The Rift Beast sweeps a tentacle through the breach facing the ${FAC[G.players[A.br.pid].fac].name}.`)}
     for(const v of A.hit){if(!alive(v))continue;const d=dmgOf(v,REALM.sweepDmg);bh(v,d);n++;if(alive(v))storyShove(v,A.br.c)}}
@@ -4705,7 +4705,7 @@ function kingScore(p){
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
 const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:10,target:15,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:1,burst:1,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:2,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[4,8,11,15],drakeAt:10,/* v152 (owner 4 Nov 2026: longer games, the Throne a solid income): the story clock a quarter slower; the wall and the Drakes at round 10, waves 4/8/11/15, the Beast decays 2 a round */godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,hurtCharge:10,potBank:3,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
-Object.assign(RULES,{KEEP:1,SUPPLY:1,JUNGLE:1});REALM.keep={hp:30,def:1,pts:3};REALM.jungle={rx:19.2,ry:16.2,wob:2.1,corr:1.75,cliff:3.7,ford:1.6};REALM.stoneDist=11;/* v150: the stones land where the roads cross the ring *//* v150 THE JUNGLE RING (owner 4 Nov 2026, layout B on the objectives page): the ring corridor's ellipse, its wobble, half width and cliff band, in hex-pixel units *//* v149 (owner 4 Nov 2026): the KEEP stands on the base's middle hex (razing it: 2 points, the Fountain runs dry, the supplies stop) and SUPPLIES: once the reserve is empty the Keep sends one thing a turn that feeds the army's engine; a unit at home takes it */
+Object.assign(RULES,{KEEP:1,SUPPLY:1,JUNGLE:1});REALM.keep={hp:30,def:1,pts:3};REALM.sweepFirst=1;/* v154 (owner): the Beast sweeps the breach whenever units stand in one; it spits or roars only when no breach holds anyone, so the city's doorways are the danger, not the open field */REALM.jungle={rx:19.2,ry:16.2,wob:2.1,corr:1.75,cliff:3.7,ford:1.6};REALM.stoneDist=11;/* v150: the stones land where the roads cross the ring *//* v150 THE JUNGLE RING (owner 4 Nov 2026, layout B on the objectives page): the ring corridor's ellipse, its wobble, half width and cliff band, in hex-pixel units *//* v149 (owner 4 Nov 2026): the KEEP stands on the base's middle hex (razing it: 2 points, the Fountain runs dry, the supplies stop) and SUPPLIES: once the reserve is empty the Keep sends one thing a turn that feeds the army's engine; a unit at home takes it */
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:0},
@@ -4766,8 +4766,10 @@ function genRealm(){
         else if(Y>=19.2&&Y<=20.7&&X>=5.5&&X<=14)k='cliff';/* the ridge of the edge corridor to the Drake */
         else if((X>=22.5&&X<=24&&Y>=9&&Y<=10.5)||(Y>=21.5&&X>=9&&X<=10.5))k='wood';/* bush pockets in the edge corridors */
         else if(rho>9.5&&rho<11.5&&(ad(t,0.33)<0.08||ad(t,1.24)<0.08))k='wood';/* bushes on the inner field beside the road to the gate */
-        else{const e=edgeD(q,r);if(e<1.3)k=Math.sin(X*0.9+Y*1.3)>0.6?'cliff':'wood';else if(e<2.6&&rho>R+CLIFF+1&&Math.sin(X*0.7-Y*0.9)>0.3)k='wood'}
-        if(!k)continue;if(k==='cliff'){put(q,r,'mount',true);LOOK3[key(q,r)]='cliff'}else put(q,r,k,true)}
+        else if(rho>=9.6&&rho<=12.8&&Math.abs(t-0.47)*rho<=1.5)k='river';/* v154 (owner: "rivers and lakes are road blocks"): a lake on the inner field, one side of the road */
+        else if(rho>=8&&rho<=9.6&&Math.abs(t-1.1)*rho<=0.9)k='ruin';/* v154 (owner: "parts of a fallen city all over the land"): a fallen piece of the city on the other side of the road */
+        else{const e=edgeD(q,r);const run=Math.sin(t*13+G.tph)+0.55*Math.sin(t*29+G.tph*1.7);/* v154 (owner: "mountains standing alone look silly"): the edge mountains come in runs along the edge */if(e<1.3)k=run>0.6?'cliff':'wood';else if(e<2.6&&rho>R+CLIFF+1&&Math.sin(X*0.7-Y*0.9)>0.3)k='wood'}
+        if(!k)continue;if(k==='cliff'){put(q,r,'mount',true);LOOK3[key(q,r)]='cliff'}else if(k==='ruin'){put(q,r,'mount',true);LOOK3[key(q,r)]='ruinwall'}else put(q,r,k,true)}
     }else{
     const water=(q,r)=>{if(!T[key(q,r)]||T[key(q,r)]==='wood')put(q,r,'river',true)};
     // the rivers: along the horizontal mirror line (row r=0) and the vertical one (|x| under one hex), from 3 rings out of the city to a few hexes short of the edge camps
@@ -4821,7 +4823,12 @@ function genRealm(){
     if(!RULES.JUNGLE)for(const c of [...lists.camp2,...lists.camp3]){if(!inQ(...c)&&!(c[1]===0&&c[0]>0)&&!(c[0]===-c[1]/2))continue;/* v150: on the jungle map the Spring and the Drake have three mouths (two edge corridors and the river path), no horseshoe */const [cx,cy]=pix(...c),L0=Math.hypot(cx,cy)||1;
       for(const [q,r] of cellsAll){if(hd(q,r,c[0],c[1])!==2)continue;const [x,y]=pix(q,r),dx=x-cx,dy=y-cy,dl=Math.hypot(dx,dy)||1;const inward=-(dx*cx+dy*cy)/(dl*L0);if(inward>0.25)continue;const t=T[key(q,r)];if(t&&t!=='wood')continue;put(q,r,'mount');LOOK3[key(q,r)]='cliff'}}
     const RR=G.heartR+3;const [bx2,by2]=pix(...b0),L2=Math.hypot(bx2,by2);const ring=cellsAll.filter(([q,r])=>hd(q,r,0,0)===RR&&inQ(q,r)).map(([q,r])=>{const [x,y]=pix(q,r);return {q,r,a:Math.atan2(y,x),side:(x*by2-y*bx2)/L2}}).sort((u,v)=>u.a-v.a);
-    ring.forEach((c,i)=>{const [x,y]=pix(c.q,c.r);if(Math.abs(c.side)<2.2*S3||Math.abs(y)<1.2||Math.abs(x)<1.6)return;if(i%4===3)return;const t=T[key(c.q,c.r)];if(t&&t!=='wood')return;put(c.q,c.r,'mount');LOOK3[key(c.q,c.r)]='ruinwall'})}
+    ring.forEach((c,i)=>{const [x,y]=pix(c.q,c.r);if(Math.abs(c.side)<2.2*S3||Math.abs(y)<1.2||Math.abs(x)<1.6)return;if(RULES.JUNGLE?i%5>=2:i%4===3)return;/* v154: the ring's ruins stand in pairs with gaps of three, pieces of a wall rather than lone blocks */const t=T[key(c.q,c.r)];if(t&&t!=='wood')return;put(c.q,c.r,'mount');LOOK3[key(c.q,c.r)]='ruinwall'});
+    if(RULES.JUNGLE){/* v154 (owner: "a line of mountains is fine, mountains standing alone look silly"): NO LONE PEAK. A single cliff hex becomes a bush; a single ruin block grows a second hex beside it, so every blocker reads as a run, a ruin or a lake. The law book counts the lone peaks (law 5). */
+      const isM=(q,r)=>T[key(q,r)]==='mount',nM=(q,r)=>DIRS.filter(([a,b])=>isM(q+a,r+b)).length;
+      for(const [q,r] of cellsAll){if(!inQ(q,r)||!isM(q,r)||nM(q,r))continue;
+        if(LOOK3[key(q,r)]==='ruinwall'){const nb=DIRS.map(([a,b])=>[q+a,r+b]).find(([a,b])=>inR(a,b)&&!T[key(a,b)]);if(nb){put(nb[0],nb[1],'mount',true);LOOK3[key(nb[0],nb[1])]='ruinwall'}else put(q,r,'wood',true)}
+        else put(q,r,'wood',true)}}}
   // every base must reach the Heart and every camp: carve straight passes (mirrored) through mountains, rivers and the Heart's wall
   const pass=t=>t!=='mount'&&t!=='river'&&t!=='wall';
   const bfs=s=>{const D={};D[key(...s)]=0;const qu=[s];for(let i=0;i<qu.length;i++){const [q,r]=qu[i];for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr,k=key(a,b);if(!inR(a,b)||k in D||!pass(T[k]))continue;D[k]=D[key(q,r)]+1;qu.push([a,b])}}return D};
@@ -5805,7 +5812,7 @@ function newUltScore(p,foes){const mine=G.units.filter(v=>v.owner===p.id&&v.kind
    only the simulations switch it on with TWEAK "slimeOn({...})". It replaces The Ooze's roster: the Ooze Mother (Leader) spawns droplets (paying HP),
    Acid Brewers throw flasks (damage + one droplet), Gel Wardens are plain fragile casters for now; droplets are summons that merge up to OOZE_CAP. ===== */
 let SLIME=null;
-const SLIME_DEF={mother:{hp:14,atk:2,mov:3},brewers:2,wardens:0,shapers:1,caster:{hp:8,atk:1,mov:3},drop:{hp:4,atk:1,mov:4},spawnN:2,spawnRest:2,spawnPrice:2,cap:6,ttl:0,flask:{dmg:2,rest:3,range:3},killHeal:3,killGrow:1,start:0};
+const SLIME_DEF={mother:{hp:19,atk:2,mov:3},brewers:2,wardens:0,shapers:1,caster:{hp:9,atk:1,mov:3},/* v154 (law 1): the Mother is a Leader and lives like one, 19 HP (was 14; 7 to 10 blows); Brewer 9 (was 8) */drop:{hp:4,atk:1,mov:4},spawnN:2,spawnRest:2,spawnPrice:2,cap:6,ttl:0,flask:{dmg:2,rest:3,range:3},killHeal:3,killGrow:1,start:0};
 function slimeOn(o){SLIME=Object.assign({},SLIME_DEF,o||{});for(const k of ['mother','caster','drop','flask'])SLIME[k]=Object.assign({},SLIME_DEF[k],(o||{})[k]||{});
   ABIL.slimespawn={name:'Spawn',cost:1,cd:SLIME.spawnRest,aim:'self',special:'slimespawn',bot:'slimespawn',desc:`Pay ${SLIME.spawnPrice} HP: ${SLIME.spawnN} droplets appear beside the Mother.`};
   ABIL.acidflask={name:'Acid Flask',cost:1,cd:SLIME.flask.rest,aim:'hex',range:SLIME.flask.range,shape:'blast',size:1,hits:'foe',special:'acidflask',bot:'acidflask',desc:`Throw a flask: ${SLIME.flask.dmg} to every enemy on or next to the hex, and a droplet lands there.`};
@@ -8803,7 +8810,7 @@ function drawStone(c,x,y,S,now){c.save();const g=0.6+0.4*Math.sin((now||0)/260);
 function storyBeastCard(u){const pct=Math.max(0,u.hp/u.maxhp);const nx=REALM.waves.find(w=>w>G.round);const eaten=G.eaten||0;
   return `<div class="label">The Rift Beast</div><h3 style="color:#c99bff">Rift Beast</h3><div class="ab-hp" style="margin:6px 0"><i style="width:${pct*100}%;background:${pct>.5?'#5fd68e':pct>.25?'#e8b84e':'#ff6161'}"></i></div>
   <p style="margin:0"><b>${fmt(u.hp)}/${u.maxhp} HP</b> · its max HP falls ${REALM.beastDecay} every round (never below ${REALM.beastFloor}) · ${1+eaten>1?`${G.belly} stones`:'1 stone'} in its belly${eaten?` · +${eaten} damage from swallowed stones`:''}</p>
-  ${goalBox(`slay it. It never moves; once a round, after the last player, it makes one attack, the one that deals the most damage: <b>tentacle sweep</b> through a breach (the red cones: ${REALM.sweepDmg} minus DEF, shoved 1), <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes away (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours) or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back). ${nx?`Next wave of spawns: round ${nx}.`:'No more waves.'}`,
+  ${goalBox(`slay it. It never moves; once a round, after the last player, it makes one attack: a <b>tentacle sweep</b> through a breach whenever units stand in one (the red cones: ${REALM.sweepDmg} minus DEF, shoved 1); when no breach holds anyone, the stronger of <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes away (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours) or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back). ${nx?`Next wave of spawns: round ${nx}.`:'No more waves.'}`,
     `${RULES.BEAST_PTS} points; the unit that lands the killing blow is crowned King on the spot and lifted onto the throne, and every stone in the belly goes into its crown (+1 ATK and +1 max HP each).`)}`}
 function kingZoneDraw(now){if(!G||G.mode!=="warlord"||G.phase||RULES.KING_ADJ!==1||oldCentre())return;const K=kingOf();if(!K||!onThrone(K))return;
   const pk=0.5+0.5*Math.sin(now/600);ctx.save();
@@ -9450,7 +9457,7 @@ function rulesTop(){
 function storyRules(){return `<h3>The Realm: the story</h3><ul>
   <li><b>The Fall.</b> A peaceful planet kept its power in the five stones of its crown. One alien race sent the Rift Beast to take them; it fell on the city on the very first round, crushed the tower and broke the wall in four places, one breach facing each army. Four stones were thrown out onto the roads; the fifth is in its belly. The other races, your armies, come through their portals (your bases) to take the stones and the throne for themselves.</li>
   <li><b>No AP.</b> Every unit may move once and act once each turn. Call one unit a turn from your reserve to your portal or a spawn site you own. The fallen are gone for good. Units in your home valley heal ${REALM.heal} a turn.</li>
-  <li><b>The Rift Beast</b> never moves. Its max HP starts at ${REALM.storyBeastHp} and falls ${REALM.beastDecay} every round as the Rift closes. Once a round, after the last player, it makes one attack, the one that deals the most damage: <b>tentacle sweep</b> through a breach (the red cones on the board: ${REALM.sweepDmg} minus DEF, shoved 1 hex), <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes from its body (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours), or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back).</li>
+  <li><b>The Rift Beast</b> never moves. Its max HP starts at ${REALM.storyBeastHp} and falls ${REALM.beastDecay} every round as the Rift closes. Once a round, after the last player, it makes one attack: a <b>tentacle sweep</b> through a breach whenever units stand in one (the red cones on the board: ${REALM.sweepDmg} minus DEF, shoved 1 hex); when no breach holds anyone, the stronger of <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes from its body (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours), or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back).</li>
   <li><b>The spawns.</b> In rounds ${REALM.waves.join(', ')} the Beast tears one spawn per player off its body, each bound to one Crown Stone. A spawn fetches its stone and runs it back; the Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP). Whoever carries a stone is hunted by its spawn. Each wave is harder: the first bites, the second roars, the third spits, the fourth sweeps. A wave-1 spawn gives nothing; a wave-2 spawn is worth ${RULES.SPAWN_PTS?'1 point':'nothing'} to its killer; a wave-3 spawn gives 1 point and +1 ATK to its killer; a wave-4 spawn 2 points and +2 max HP to the killer's whole army. Spawns never hunt the King and take double damage from him.</li>
   <li><b>Crown Stones.</b> Walk onto one to carry it; it does nothing yet. A carrier that dies drops it. When one of your units is crowned, every stone your side carries goes into the crown: <b>+1 ATK and +1 max HP for the King per stone</b>, and stones your side picks up later go in too.</li>
   ${RULES.CROWN_POT?`<li><b>The crown pot.</b> The King scores 1 point at each of his turns on the Throne, but only every ${REALM.potBank}${REALM.potBank===3?'rd':'th'} point is banked for good: the others sit <b>in the crown</b> (the ♛ number next to the score). They count for the King's side while it wears the crown, and <b>whoever kills the King takes them</b>, on top of the ${REALM.kingPts} points for the kill. A King who dies to a monster or the Beast leaves the pot on the crown for the next King.</li>`:''}
