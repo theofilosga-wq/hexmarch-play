@@ -4702,7 +4702,7 @@ function kingScore(p){
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
 const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:1,burst:1,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,hurtCharge:10,potBank:3,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
-Object.assign(RULES,{KEEP:1,SUPPLY:1});REALM.keep={hp:30,def:1,pts:2};/* v149 (owner 4 Nov 2026): the KEEP stands on the base's middle hex (razing it: 2 points, the Fountain runs dry, the supplies stop) and SUPPLIES: once the reserve is empty the Keep sends one thing a turn that feeds the army's engine; a unit at home takes it */
+Object.assign(RULES,{KEEP:1,SUPPLY:1,JUNGLE:1});REALM.keep={hp:30,def:1,pts:2};REALM.jungle={rx:19.2,ry:16.2,wob:2.1,corr:1.75,cliff:3.7,ford:1.6};REALM.stoneDist=11;/* v150: the stones land where the roads cross the ring *//* v150 THE JUNGLE RING (owner 4 Nov 2026, layout B on the objectives page): the ring corridor's ellipse, its wobble, half width and cliff band, in hex-pixel units *//* v149 (owner 4 Nov 2026): the KEEP stands on the base's middle hex (razing it: 2 points, the Fountain runs dry, the supplies stop) and SUPPLIES: once the reserve is empty the Keep sends one thing a turn that feeds the army's engine; a unit at home takes it */
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:0},
@@ -4746,6 +4746,26 @@ function genRealm(){
      the middle stays open field (the camps' ground). Only small things (single trees and hills) change from game to game. */
   G.tph=RULES.TERRAIN2?RNG()*6.28:0;/* only the new layout draws it: the seeded sims of the old map stay the same */
   if(RULES.REALM_SHAPE&&RULES.STORY2){const R0=G.heartR+3;
+    if(RULES.JUNGLE){/* v150 THE JUNGLE RING (owner: "lanes guide the players but must not make the game stale; players need options in pathing and in which objectives
+      to take down; lanes like League's jungle, nothing straight"). A wobbling oval corridor about 13 hexes out, two hexes wide between cliff bands, open where the
+      four roads cross it (the stone sites) and at the two river crossings (fords two wide). From each ford a river-side path runs to the Spring or the Drake Lair
+      at the edge; from each valley an edge corridor with a ridge and a bush pocket runs to the same places past the home camp. Bushes at every bend and mouth. */
+      const J=REALM.jungle,RX=J.rx,RY=J.ry,CORR=J.corr,CLIFF=J.cliff;const ringR=t=>RX*RY/Math.hypot(RY*Math.cos(t),RX*Math.sin(t))+J.wob*Math.sin(4*t);
+      const bend=t=>[Math.PI/8,3*Math.PI/8].some(tb=>ad(t,tb)<0.07);
+      for(const [q,r] of cellsAll){if(!inQ(q,r)||T[key(q,r)])continue;const [X,Y]=pix(q,r);const t=Math.atan2(Y,X),rho=Math.hypot(X,Y),R=ringR(t),off=rho-R;let k=null;
+        if(Y<0.9&&X>=10.4&&X<=23.4)k=Math.abs(X-ringR(0))<=J.ford?'ford':'river';
+        else if(X<0.9&&Y>=9&&Y<=20.4)k=(Math.round(Y/1.5)%2===1&&Math.abs(Y-ringR(Math.PI/2))<=1.0)?'ford':'river';/* one odd row = two ford hexes side by side */
+        else if(Math.abs(off)<=CORR)k=(bend(t)&&off>CORR-1.1)?'wood':null;
+        else if(Math.abs(off)<=CLIFF){const arc=rho*ad(t,Math.PI/4);if(arc<=2.0)k=null;else if(off>0&&(rho*ad(t,0)<=2.4||rho*ad(t,Math.PI/2)<=2.4))k=null;else if(off<0&&(rho*ad(t,0)<=1.2||rho*ad(t,Math.PI/2)<=1.2))k='river';else k='cliff'}
+        else if(X>R+CLIFF-0.5&&X<=22.5&&Y>2.6&&Y<=4.6)k='cliff';/* the river-side path to the Spring */
+        else if(Y>ringR(Math.PI/2)+CLIFF-0.5&&Y<=19.2&&X>2.6&&X<=4.6)k='cliff';/* the river-side path to the Drake */
+        else if(X>=20.3&&X<=21.9&&Y>=5&&Y<=14.5)k='cliff';/* the ridge of the edge corridor to the Spring */
+        else if(Y>=19.2&&Y<=20.7&&X>=5.5&&X<=14)k='cliff';/* the ridge of the edge corridor to the Drake */
+        else if((X>=22.5&&X<=24&&Y>=9&&Y<=10.5)||(Y>=21.5&&X>=9&&X<=10.5))k='wood';/* bush pockets in the edge corridors */
+        else if(rho>9.5&&rho<11.5&&(ad(t,0.33)<0.08||ad(t,1.24)<0.08))k='wood';/* bushes on the inner field beside the road to the gate */
+        else{const e=edgeD(q,r);if(e<1.3)k=Math.sin(X*0.9+Y*1.3)>0.6?'cliff':'wood';else if(e<2.6&&rho>R+CLIFF+1&&Math.sin(X*0.7-Y*0.9)>0.3)k='wood'}
+        if(!k)continue;if(k==='cliff'){put(q,r,'mount',true);LOOK3[key(q,r)]='cliff'}else put(q,r,k,true)}
+    }else{
     const water=(q,r)=>{if(!T[key(q,r)]||T[key(q,r)]==='wood')put(q,r,'river',true)};
     // the rivers: along the horizontal mirror line (row r=0) and the vertical one (|x| under one hex), from 3 rings out of the city to a few hexes short of the edge camps
     const arm=(cellsOf,len)=>{const L=cellsOf.sort((a,b)=>a.t-b.t);for(const c of L){const f=Math.abs(c.t-0.3)<0.12||Math.abs(c.t-0.78)<0.12;if(f)put(c.q,c.r,'ford',true);else water(c.q,c.r)}};
@@ -4766,6 +4786,7 @@ function genRealm(){
     // the field: open, a couple of copses and one hill per quarter
     for(let k=0;k<2;k++){const s=pickC((q,r)=>!T[key(q,r)]&&hd(q,r,0,0)>G.heartR+3&&out(q,r)&&inQ(q,r)&&edgeD(q,r)>3);if(!s)continue;put(...s,'wood');for(const [dq,dr] of DIRS)if(RNG()<0.35){const a=s[0]+dq,b=s[1]+dr;if(inR(a,b)&&inQ(a,b)&&!T[key(a,b)])put(a,b,'wood')}}
     {const s=pickC((q,r)=>!T[key(q,r)]&&hd(q,r,0,0)>G.heartR+4&&out(q,r)&&inQ(q,r)&&edgeD(q,r)>3);if(s)put(...s,'hill')}
+    }/* end of the old shaped layout */
   }else{
   // rivers run in from the edges toward the Heart, with a ford every few hexes; ridges are short mountain lines; woods in clumps
   for(let k=0;k<2;k++){const s=pickC((q,r)=>edgeD(q,r)<1.6&&out(q,r)&&inQ(q,r)&&nearBase(q,r)>VR+2);if(!s)continue;let n=0;
@@ -4794,7 +4815,7 @@ function genRealm(){
   if(!RULES.STORY2)for(const [e,nb,g] of [[3,VR+2,5],[4,VR+1,4],[6,VR,3]]){if(lists.ruin.length)break;place((q,r)=>off(q,r)&&out(q,r)&&edgeD(q,r)<e&&edgeD(q,r)>1.2&&nearBase(q,r)>nb&&[...lists.camp2,...lists.camp3].every(o=>hd(o[0],o[1],q,r)>=g),'ruin',1,0,6)}
   if(!RULES.STORY2){for(const [lo,hi,gap] of [[8,13,4],[6,16,3],[5,20,2]]){if(lists.lever.length)break;place((q,r)=>off(q,r)&&out(q,r)&&hd(q,r,0,0)>=lo&&hd(q,r,0,0)<=hi&&edgeD(q,r)>2&&[...lists.camp3,...lists.ruin].every(o=>hd(o[0],o[1],q,r)>=gap),'lever',1,0,6)}}
   if(RULES.TERRAIN2&&RULES.REALM_SHAPE&&RULES.STORY2){/* v119: the Spring and the Drake Lair sit in a horseshoe of cliffs open toward the city; broken walls ring the city's approaches, open on the roads */
-    for(const c of [...lists.camp2,...lists.camp3]){if(!inQ(...c)&&!(c[1]===0&&c[0]>0)&&!(c[0]===-c[1]/2))continue;const [cx,cy]=pix(...c),L0=Math.hypot(cx,cy)||1;
+    if(!RULES.JUNGLE)for(const c of [...lists.camp2,...lists.camp3]){if(!inQ(...c)&&!(c[1]===0&&c[0]>0)&&!(c[0]===-c[1]/2))continue;/* v150: on the jungle map the Spring and the Drake have three mouths (two edge corridors and the river path), no horseshoe */const [cx,cy]=pix(...c),L0=Math.hypot(cx,cy)||1;
       for(const [q,r] of cellsAll){if(hd(q,r,c[0],c[1])!==2)continue;const [x,y]=pix(q,r),dx=x-cx,dy=y-cy,dl=Math.hypot(dx,dy)||1;const inward=-(dx*cx+dy*cy)/(dl*L0);if(inward>0.25)continue;const t=T[key(q,r)];if(t&&t!=='wood')continue;put(q,r,'mount');LOOK3[key(q,r)]='cliff'}}
     const RR=G.heartR+3;const [bx2,by2]=pix(...b0),L2=Math.hypot(bx2,by2);const ring=cellsAll.filter(([q,r])=>hd(q,r,0,0)===RR&&inQ(q,r)).map(([q,r])=>{const [x,y]=pix(q,r);return {q,r,a:Math.atan2(y,x),side:(x*by2-y*bx2)/L2}}).sort((u,v)=>u.a-v.a);
     ring.forEach((c,i)=>{const [x,y]=pix(c.q,c.r);if(Math.abs(c.side)<2.2*S3||Math.abs(y)<1.2||Math.abs(x)<1.6)return;if(i%4===3)return;const t=T[key(c.q,c.r)];if(t&&t!=='wood')return;put(c.q,c.r,'mount');LOOK3[key(c.q,c.r)]='ruinwall'})}
