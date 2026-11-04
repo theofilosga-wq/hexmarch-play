@@ -4564,14 +4564,14 @@ function storyBeastAct(){const b=storyBeast();if(!b)return;if(b.st&&b.st.frozen>
     if(!best||tot>best.tot||(tot===best.tot&&t.id<best.t.id))best={k:'spit',t,nb,tot,o:1}}if(best)opts.push(best)}
   {const hit=us.filter(v=>distUU(b,v)<=REALM.roarReach);if(hit.length)opts.push({k:'roar',hit,o:2,tot:hit.reduce((s,v)=>s+Math.min(v.hp,dmgOf(v,REALM.roarDmg,1)),0)})}
   if(!opts.length)return;opts.sort((a,c)=>c.tot-a.tot||a.o-c.o);const A=opts[0];
-  const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';const col='#b06bff';let n=0;
+  const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';const col='#b06bff';let n=0,dealt=0,bk=0;const bh=(v,d)=>{const h0=v.hp;hurt(v,d,col);dealt+=Math.min(d,h0);if(!alive(v))bk++};/* v153: the Beast's damage and kills are recorded per attack (stats.obj.beast) */
   if(A.k==='sweep'){CUR_NAME='Rift Beast: tentacle sweep';if(!SIM){vfx({k:'ab',ab:'breath',shape:'cone',from:A.br.c,to:A.hit[0]?[A.hit[0].q,A.hit[0].r]:A.br.c,cells:(A.br.zone||[]).map(k=>k.split(',').map(Number)),col,cam:1});addLog(null,`The Rift Beast sweeps a tentacle through the breach facing the ${FAC[G.players[A.br.pid].fac].name}.`)}
-    for(const v of A.hit){if(!alive(v))continue;const d=dmgOf(v,REALM.sweepDmg);hurt(v,d,col);n++;if(alive(v))storyShove(v,A.br.c)}}
+    for(const v of A.hit){if(!alive(v))continue;const d=dmgOf(v,REALM.sweepDmg);bh(v,d);n++;if(alive(v))storyShove(v,A.br.c)}}
   else if(A.k==='spit'){CUR_NAME='Rift Beast: rift spit';if(!SIM){vfx({k:'lob',from:[0,0],to:[A.t.q,A.t.r],col,cam:1});addLog(null,`The Rift Beast spits rift matter at the ${A.t.name}.`)}
-    hurt(A.t,dmgOf(A.t,REALM.spitDmg,1),col);n++;for(const v of A.nb){if(alive(v)){hurt(v,dmgOf(v,REALM.spitSplash,1),col);n++}}}
+    bh(A.t,dmgOf(A.t,REALM.spitDmg,1));n++;for(const v of A.nb){if(alive(v)){bh(v,dmgOf(v,REALM.spitSplash,1));n++}}}
   else{CUR_NAME='Rift Beast: roar';if(!SIM){vfx({k:'ab',ab:'nova',shape:'aura',from:[0,0],to:[0,0],cells:A.hit.map(v=>[v.q,v.r]),col,cam:1});addLog(null,'The Rift Beast roars at everyone near its body.')}
-    for(const v of A.hit){if(!alive(v))continue;hurt(v,dmgOf(v,REALM.roarDmg,1),col);n++;if(alive(v))storyShove(v,[0,0])}}
-  [CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM){const O=tObj();if(O&&O.beast){O.beast.strikes+=n;O.beast[A.k]=(O.beast[A.k]||0)+1}}}
+    for(const v of A.hit){if(!alive(v))continue;bh(v,dmgOf(v,REALM.roarDmg,1));n++;if(alive(v))storyShove(v,[0,0])}}
+  [CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM){const O=tObj();if(O&&O.beast){O.beast.strikes+=n;O.beast[A.k]=(O.beast[A.k]||0)+1;O.beast.atkDmg=O.beast.atkDmg||{};O.beast.atkDmg[A.k]=(O.beast.atkDmg[A.k]||0)+dealt;O.beast.atkKills=O.beast.atkKills||{};O.beast.atkKills[A.k]=(O.beast.atkKills[A.k]||0)+bk}}}
 // round start on the Realm (STORY): the Rift closes, the Beast attacks, waves are born, spawns act, the Drakes wake, the Old God walks
 function storyRound(){const b=storyBeast();
   if(b){b.maxhp=Math.max(REALM.beastFloor,b.maxhp-REALM.beastDecay);b.hp=Math.min(b.hp,b.maxhp);storyBeastAct()}
@@ -4629,7 +4629,7 @@ function storySpawns(){const b=storyBeast(),K=kingOf(),col='#b06bff';
     [CUR_SRC,CUR_TAG,CUR_NAME]=CUR}}
 // the Beast dies (STORY): belly stones to the crown, the killer is teleported onto the throne (kingCrown crowns it after the action), the spawns let go of their stones,
 // the wave-4 spawns are spat far from the centre if they were not born yet; the Old God waits for the crowning
-function storyBeastDeath(t,k){G.crown=(G.crown||0)+(G.belly||0);G.belly=0;
+function storyBeastDeath(t,k){G.crown=(G.crown||0)+(G.belly||0);G.belly=0;if(!SIM&&trk()){const O=tObj();if(O&&O.beast){O.beast.diedMax=t.maxhp;O.beast.diedRound=G.round}}
   for(const m of G.units.filter(u=>u.spawnW&&alive(u))){const x=(G.loot||[]).find(l=>l.carrier===m.id);if(x){x.carrier=null;x.q=m.q;x.r=m.r}}
   if(k&&alive(k)&&crownable(k)&&!kingOf()){const fq=k.q,fr=k.r;k.q=0;k.r=0;k.dir=0;k.anim={fq,fr,t0:typeof performance!=='undefined'?performance.now():0,dur:500};if(!SIM){addLog(k.owner,`The ${k.name} lands the killing blow and is lifted onto the throne!`);fx(k,'to the throne!','#ffd766')}}
   if(G.round<REALM.waves[3]&&!G.blastDone){G.blastDone=true;let n=0;for(const p of G.players.filter(p=>p.alive&&p.camp)){const a=storyAng(p.camp[0],p.camp[1]);
