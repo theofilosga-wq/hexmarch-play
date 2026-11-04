@@ -1815,7 +1815,7 @@ function distUU(a,b){let d=99;for(const x of cells(a))for(const y of cells(b))d=
 function distUC(u,q,r){let d=99;for(const x of cells(u))d=Math.min(d,hd(x[0],x[1],q,r));return d}
 function unitAt(q,r){return occ().get(key(q,r))||null}
 function byId(id){return G.units.find(u=>u.id===id)||null}
-function isFoe(u,v){return v.kind==='wall'||tm(v.owner)!==tm(u.owner)}
+function isFoe(u,v){return v.kind==='wall'?!(v.keepOf!=null&&u.owner>=0&&tm(v.keepOf)===tm(u.owner)):tm(v.owner)!==tm(u.owner)}/* v149: nobody attacks their own Keep */
 /* Claiming ground: at the end of your turn, every hex your units stand on becomes your colour.
    Neutral ground flips at once; an enemy's ground must be held through 2 of your turn-ends. The Heart and no man's land can't be claimed. */
 function claimable(q,r){return solid(q,r)&&featAt(q,r)!=='rock'&&!isNoMans(q,r)}
@@ -2422,7 +2422,7 @@ function beginTurn(){
   dreadTurn(p);mammothTurn(p);possTick(p);soulSafety(p);
   if(RULES.SHAMANS&&G.realm&&p.fac==='mage')for(const u of G.units.filter(u=>u.owner===p.id&&u.el&&!u.elemental&&u.kind!=='wall')){if(!onElHex(u,u.el)||(p.evo&&p.evo[u.el]))continue;p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);p.el[u.el]+=1;if(!SIM){fx(u,'shrine +1','#2bff5a');if(trk()){const e=tFx('mage',u.name,'Shrine (bar +1)');if(e)e.uses++}}if(p.el[u.el]>=elNeed(p))ascend(p,u.el)}// v75: a shaman on its own shrine
   if(RULES.PILOTS2)for(const u of G.units.filter(u=>u.owner===p.id&&isGnome(u))){if(u.build==='done')walkerIn2(u);else if(u.build==='started'){u.build='still';u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'stand still','#ff6ec7')}}
-  machineFire(p,'Auto-fire','Basic');ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
+  machineFire(p,'Auto-fire','Basic');supplyTurn(p);ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
   // Act 1: units standing on a flag or the Wellspring at the start of their side's turn capture it (before charge, AP and points are counted).
   captureObjectives(p.id);wildsTick(true);kingCrown();kingScore(p);if(G.over)return;
   // Wall gates: count the hexes next to each giant that walls deny it this turn (tracking only; the rule itself lives in freeFor).
@@ -2461,7 +2461,7 @@ function beginTurn(){
     {const sc=cells(u).find(([q,r])=>shrineOn(q,r));if(sc&&healUnit(u,2,'#9ff0c0','Shrine')){vfx({k:'buff',at:[u.q,u.r],col:'#9ff0c0'});const back=G.round+RULES.SHRINE_REST+1;(G.shrineOff=G.shrineOff||{})[key(sc[0],sc[1])]=back;
       addLog(p.id,`${u.name} drinks from the shrine; it is spent until round ${back}.`);if(trk()&&!SIM){const e=tFx(p.fac,'','Shrine');if(e)e.uses++}}}
     if(F.homeHeal&&onHome(u))healUnit(u,F.homeHeal,'#5fd68e','Indigo ground (home)');
-    if(G.realm&&!u.machine&&p.fount&&featAt(p.fount[0],p.fount[1])==='fountain'&&distUC(u,p.fount[0],p.fount[1])<=1&&u.hp<u.maxhp){if(healUnit(u,REALM.heal,'#5fd68e','Healing Fountain'))vfx({k:'buff',at:[u.q,u.r],col:'#9fe8ff'})}/* v135 (owner): the fountain heals the units next to it (was the whole valley) */
+    if(G.realm&&!u.machine&&p.fount&&!p.keepDown&&featAt(p.fount[0],p.fount[1])==='fountain'&&distUC(u,p.fount[0],p.fount[1])<=1&&u.hp<u.maxhp){if(healUnit(u,REALM.heal,'#5fd68e','Healing Fountain'))vfx({k:'buff',at:[u.q,u.r],col:'#9fe8ff'})}/* v135 (owner): the fountain heals the units next to it (was the whole valley) */
     else if(G.realm&&!u.machine&&!(p.fount&&featAt(p.fount[0],p.fount[1])==='fountain')&&inValley(p,u.q,u.r)&&u.hp<u.maxhp)healUnit(u,REALM.heal,'#5fd68e','Home valley');
     // Grove (Circle of Priests): holy ground heals 1 at the start of its owner's turn, friend or foe; credited to the Druid who raised it.
     if(u===G.units.find(x=>x.owner===p.id))blightTick(p);/* v132: once per turn start */
@@ -2841,7 +2841,7 @@ function hurt(t,n,col,tick){
   {const is=hostile&&!tick&&t.hp>0&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].fac==='ice'&&(CUR_TAG==='Basic'||CUR_TAG==='Abil')&&(t.kind!=='wall'||wildsCreature(t))?CUR_SRC:null;
     if(is){if(G.realm&&t.st.frozen>0&&!t.st.stun){if(!SIM&&trk()){const e=tFx('ice','','Deep freeze (+2 per hit, stays frozen)');if(e)e.uses++}
       if(utal(is,'permafrost')&&!t.st.pf&&t.st.frzLost){t.st.pf=1;t.st.frzLost=0;fx(t,'permafrost','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Permafrost (talent): frozen 1 turn longer');if(e)e.uses++}}}/* v77: the first Frost hit on a frozen enemy keeps it frozen through one more of its turns */else if(RULES.SHATTER&&t.st.frozen>0&&!t.st.stun){t.st.frozen=0;t.st.frzBy=null;t.st.frzLost=0;t.st.fimm=1;t.st.chill=Math.max(t.st.chill||0,1);fx(t,'shattered','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Shatter (double damage, thawed)');if(e)e.uses++}}
-      else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,hasTrait(is,'deepcold')?2:1)}}}// v61: the Glacier Knight's Deep Cold leaves 2 marks
+      else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,(hasTrait(is,'deepcold')?2:1)+(is.st&&is.st.icecart?1:0));if(is.st&&is.st.icecart){is.st.icecart=0;if(!SIM)fx(t,'ice block: +1 mark','#bfefff')}}}}// v61: the Glacier Knight's Deep Cold leaves 2 marks
   if(t.hp>0&&rsrc){if(hasRelic(rsrc,'ash')){sear(rsrc,t);relicUse(rsrc,'ash')}}
   if(t.hp<0)shadowOver(t,-t.hp);/* v132 overflowing dark */
   if(t.hp<=0)kill(t);
@@ -3006,7 +3006,7 @@ function attackTargets(u){
 const lineUp=(a,b,V)=>{for(const [aq,ar] of cells(a))for(const [bq,br] of b)for(const [dq,dr] of V){const sq=bq-aq,sr=br-ar;const n=dq?sq/dq:sr/dr;if(n>0&&Number.isInteger(n)&&sq===dq*n&&sr===dr*n)return true}return false};
 function whyNoAttack(u,t){
   if(!u||!t||u.kind==='wall')return null;const nm=u.name;
-  if(!isFoe(u,t))return t.kind==='wall'?null:`The ${t.name} is on your side.`;
+  if(!isFoe(u,t))return t.kind==='wall'?(t.monster==='keep'?'That is your own Keep.':null):`The ${t.name} is on your side.`;
   if(u.at==='none'||u.egg)return `The ${nm} has no basic attack${u.ability||u.book?': use its ability instead':''}.`;
   if(truce())return `Round ${RULES.TRUCE} is a truce: nobody can attack yet.`;
   if(u.st.frozen)return `The ${nm} is ${u.st.stun?'stunned':'frozen'} and loses this turn.`;
@@ -4133,6 +4133,7 @@ const GEMS={
 const GKEYS=Object.keys(GEMS);
 const SUIT_ITEMS={boots:{name:'Boots',text:'+1 move'},club:{name:'Ogre Club',text:'+1 ATK'},shield:{name:'Tower Shield',text:'+1 DEF'}};
 const LOOT={
+  supply:{name:'Supplies',text:'sent by the Keep once the reserve is empty: a unit of that army next to it at the start of its turn takes it; an enemy standing on it destroys it',col:'#ffd766'},/* v149 */
   scrap:{name:'Scrap',text:'the wreck of a gnome machine: a gnome that walks onto it collects it (3 scrap build a Behemoth); only giants can touch it',col:'#ff6ec7'},
   remains:{name:'Giant Remains',text:'the stones of a fallen giant: a giant of its army that steps here heals 6 and gains +2 max HP and +1 ATK for good; only giants can touch them',col:'#b9a98c'},
   gem:{name:'Crown Shard',text:'a gem for your crown: it powers your King',col:'#f2c75c'},
@@ -4141,9 +4142,9 @@ const LOOT={
   captive:{name:'Captive',text:'a prisoner in chains: step on him to free him, then walk him into your base',col:'#d8b49a'},
   relic:{name:'Ancient Relic',text:'the unit that brings it home carries a random relic',col:'#b98cff'},
   cursed:{name:'Mystery Chest',text:'a coin flip when picked up: a Crown Shard or an Ancient Relic, both to carry home',col:'#9a6bd0'}};
-const lootName=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].name+' Crown Shard':x.kind==='suit'&&SUIT_ITEMS[x.item]?`War Suit (${SUIT_ITEMS[x.item].name})`:LOOT[x.kind].name;
+const lootName=x=>x.kind==='supply'&&G.players[x.owner]&&SUPPLY[G.players[x.owner].fac]?`Supplies: ${SUPPLY[G.players[x.owner].fac].name}`:x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].name+' Crown Shard':x.kind==='suit'&&SUIT_ITEMS[x.item]?`War Suit (${SUIT_ITEMS[x.item].name})`:LOOT[x.kind].name;
 const lootCol=x=>x.kind==='gem'&&GEMS[x.gem]?GEMS[x.gem].col:LOOT[x.kind].col;
-const lootText=x=>x.kind==='gem'&&GEMS[x.gem]?`carry it home: +${WILDS.shardPts} point, and ${GEMS[x.gem].text}`:x.kind==='suit'&&SUIT_ITEMS[x.item]?`a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first (a giant straps it on as plating: ${WILDS.plateHp}), and ${SUIT_ITEMS[x.item].text}`:LOOT[x.kind].text;
+const lootText=x=>x.kind==='supply'&&G.players[x.owner]&&SUPPLY[G.players[x.owner].fac]?`${FAC[G.players[x.owner].fac].name} supplies: ${SUPPLY[G.players[x.owner].fac].text}. A unit of that army next to it at the start of its turn takes it (or steps onto it); an enemy standing on it destroys it`:x.kind==='gem'&&GEMS[x.gem]?`carry it home: +${WILDS.shardPts} point, and ${GEMS[x.gem].text}`:x.kind==='suit'&&SUIT_ITEMS[x.item]?`a unit that steps on it climbs in: ${WILDS.suitHp} extra HP that take every hit first (a giant straps it on as plating: ${WILDS.plateHp}), and ${SUIT_ITEMS[x.item].text}`:LOOT[x.kind].text;
 const CAPTIVE={name:'Captive',icon:'hand',hp:6,atk:0,def:0,mov:3,mt:'walk',at:'none',rng:0};
 const FREEDMAN={name:'Freedman',icon:'helm',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1};
 const ROOM_NAMES={fort:'Hill Fort',crypt:'Crypt',vault:'Vault',lair:'Dragon’s Lair'};
@@ -4312,6 +4313,7 @@ const canCarry=u=>!!u&&u.kind!=='wall'&&!u.summon&&!u.statue&&!u.captive;
 function pickupLoot(){
   if(!G.loot||!G.loot.length)return;
   for(const x of G.loot.slice()){if(x.carrier!=null){if(!byId(x.carrier)){x.carrier=null}continue}
+    if(x.kind==='supply'){const u=unitAt(x.q,x.r);if(!u||u.kind==='wall')continue;if(tm(u.owner)===tm(x.owner))supplyTake(x,u);else{G.loot.splice(G.loot.indexOf(x),1);if(!SIM)addLog(u.owner,`The ${u.name} destroys the ${FAC[G.players[x.owner].fac].name}'s supplies.`)}continue}/* v149 */
     if(x.kind==='scrap'){const u=unitAt(x.q,x.r);if(!u||u.kind==='wall')continue;if(isGnome(u)&&tm(u.owner)===tm(x.owner)){G.loot.splice(G.loot.indexOf(x),1);const p=G.players[u.owner];p.scrap=(p.scrap||0)+1;if(!SIM){fx(u,'+1 scrap','#ff6ec7');addLog(u.owner,`The ${u.name} collects scrap (${p.scrap} in all${p.scrap>=3?': enough for a Behemoth':''}).`);if(trk()){const e=tFx('gnomes','','Scrap collected');if(e)e.uses++}}}
       else if(tm(u.owner)!==tm(x.owner)&&!u.summon){G.loot.splice(G.loot.indexOf(x),1);if(!SIM)addLog(u.owner,`The ${u.name} crushes a pile of scrap.`)}continue}
     if(x.kind==='remains'){if(!G.loot.includes(x))continue;/* v98: already taken with its twin */const u=unitAt(x.q,x.r);if(!u||u.kind==='wall')continue;if(u.size===2&&G.players[u.owner]&&G.players[u.owner].fac==='giants'&&tm(u.owner)===tm(x.owner)){G.loot.splice(G.loot.indexOf(x),1);if(x.gid!=null&&RULES.STORY2)G.loot=G.loot.filter(y=>!(y.kind==='remains'&&y.gid===x.gid));/* v98 (owner): one reward per fallen giant */u.maxhp+=2;u.oldAtk=(u.oldAtk||0)+1;healUnit(u,6,'#b9a98c','Giant Remains');if(!SIM){fx(u,'+2 HP, +1 ATK','#b9a98c');addLog(u.owner,`The ${u.name} takes up its fallen kin's stones: heals 6, +2 max HP, +1 ATK.`);if(trk()){const e=tFx('giants','','Giant Remains taken');if(e)e.uses++}}
@@ -4700,6 +4702,7 @@ function kingScore(p){
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
 const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:8,target:10,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:1,burst:1,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:3,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[3,6,9,12],drakeAt:8,godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,hurtCharge:10,potBank:3,suitHp:12,
   comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
+Object.assign(RULES,{KEEP:1,SUPPLY:1});REALM.keep={hp:30,def:1,pts:2};/* v149 (owner 4 Nov 2026): the KEEP stands on the base's middle hex (razing it: 2 points, the Fountain runs dry, the supplies stop) and SUPPLIES: once the reserve is empty the Keep sends one thing a turn that feeds the army's engine; a unit at home takes it */
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
 const REALM_MON={
   brute:{name:'Valley Brute',icon:'paw',hp:14,atk:3,def:0,tier:1,pts:0},
@@ -4709,6 +4712,7 @@ const REALM_MON={
   spawn1:{name:'Rift Spawn',icon:'skull',hp:10,atk:2,def:0,mov:3,tier:'s',pts:0},spawn2:{name:'Rift Spawn',icon:'skull',hp:16,atk:3,def:0,mov:3,tier:'s',pts:1},/* v146: a second road to points (RULES.SPAWN_PTS): from wave 2 every spawn is worth a point (the owner's 19 Oct table had 0 for waves 1-2; a wave-1 spawn point read 0.3x the median objective on the points ruler, too cheap) */
   spawn3:{name:'Rift Spawn',icon:'skull',hp:24,atk:4,def:1,mov:3,tier:'s',pts:1},spawn4:{name:'Rift Spawn',icon:'skull',hp:32,atk:5,def:1,mov:4,tier:'s',pts:2},
   oldgod:{name:'Old God',icon:'crown',hp:30,atk:0,def:1,mov:3,tier:'g',pts:2},/* v98 story v2 *//* v96 (owner): camps are quick to clear; the real fights are army against army */
+  keep:{name:'Keep',icon:'keep',hp:REALM.keep.hp,atk:0,def:REALM.keep.def,tier:'k',pts:REALM.keep.pts},/* v149 */
   chest:{name:'Ruin Chest',icon:'chest',hp:10,atk:0,def:0,tier:0,pts:0}};
 Object.assign(MONSTERS,REALM_MON);
 Object.assign(ROOM_NAMES,{t1:'Valley Camp',heal:'Healing Spring',ogre:'Ogre Lair',t3:'Drake Lair',ruin:'Ancient Ruin'});
@@ -4821,7 +4825,8 @@ function genRealm(){
   G.players.forEach(p=>{const c=order[p.spot%4];p.home=c;p.camp=c;
     p.base=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=1).map(([q,r])=>key(q,r));
     {const fr=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])===3&&passable(q,r)).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0)||Math.abs(a[0]-c[0])-Math.abs(b[0]-c[0]))[0];if(fr){p.fount=fr;G.feat[key(fr[0],fr[1])]='fountain'}}/* v135 (owner): the Healing Fountain just outside the keep, three hexes from the base's middle toward the centre; the deployment zone is computed after it, so nobody deploys on it */
-    p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2&&passable(q,r)).map(([q,r])=>key(q,r))});
+    p.zone=cellsAll.filter(([q,r])=>hd(q,r,c[0],c[1])<=2&&passable(q,r)).map(([q,r])=>key(q,r));
+    if(RULES.KEEP){const m=makeMonster('keep',c[0],c[1],null);m.keepOf=p.id;m.tier='k';G.units.push(m)}/* v149: the Keep */});
 }
 // Ground colour: lush near each base (tinted with its army colour), fading to dry land and then grey wasteland toward the centre.
 /* v104 (owner): the shaped Realm has bands: HOME (the valley round each base, lush), EDGE (forest floor along the board's edge), FIELD (the open middle
@@ -4887,6 +4892,7 @@ function realmSlain(t,R,k){
   else if(t.spawnW===4){for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'){v.maxhp+=2;v.hp+=2}what=`every ${F.name} unit gains +2 max HP for good`}
   else if(t.spawnW){what='a piece of the Beast is destroyed'}
   else if(t.god){G.god=null;what='the Old God falls and will not return'}
+  else if(t.monster==='keep'){const o=G.players[t.keepOf];if(o){o.keepDown=true;G.loot=(G.loot||[]).filter(x=>!(x.kind==='supply'&&x.owner===o.id))}what=`the ${o?FAC[o.fac].name:'enemy'} Keep is razed: its Healing Fountain runs dry and no more supplies arrive`}/* v149 */
   else if(t.monster==='chest'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(wildsHash(`${G.round}|${k.id}|${t.id}`)*free.length)]:null;
     if(rk&&canCarry(k)&&!relicOf(k)){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:k.id});what=`the ${k.name} takes the ${RELICS[rk].name} (${RELICS[rk].text})`}else what='the chest holds nothing this unit can carry'}
   addLog(p.id,`The ${k.name} slays the ${t.name}: ${what}.`);fx(k,t.monster==='warden'?'healed':'reward','#ffd766');
@@ -4905,6 +4911,28 @@ function realmEnrage(t){const P2=REALM.phase2[t.monster];t.enraged=1;t.atk+=P2.a
   if(t.monster==='warden'){let n=0;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&v.hp<v.maxhp&&healUnit(v,REALM.springHeal,'#9ff0c0','Healing Spring'))n++;what=`every ${F.name} unit heals ${REALM.springHeal} (${n} healed)`}
   else if(M.pts){const h=Math.floor(M.pts/2)||1;t.halfPts=h;realmPts(p.id,h,'camp'+tier,`${F.name} break the ${t.name}`);what=`${h} point${h>1?'s':''} now; ${M.pts-h} more for the killing blow`}
   if(!SIM){addLog(p.id,`The ${k.name} breaks the ${t.name}: ${what}.`);announce({k:'note',col:F.color,t:`${F.name} break the ${t.name}`,s:`Half the reward: ${what}. It is enraged now; the killing blow takes the rest.`});if(trk()){const e=tFx(p.fac,k.name,'Camp broken at half HP ('+t.name+')');if(e)e.uses++}}}
+/* v149 SUPPLIES (owner 4 Nov 2026: "after you have summoned all your units the base keeps bringing in supplies, for example for the Ember Court 1 sheep for slaughter
+   which counts for the soul counter"). Once the reserve is empty and the Keep stands, one supply a turn appears on a free hex of the base (never two at once).
+   A unit of that army next to it at the start of its turn takes it (the most wounded first), or by stepping onto it; an enemy standing on it destroys it.
+   Each army's supply feeds its own engine, priced at about one eighth of the engine's payoff. Riftwalkers and the Ooze have none yet. */
+const SUPPLY={
+  fire:{name:'a sheep for the pit',text:'1 soul toward the Archdemon',f:(p,u)=>{const nd=REALM.demonSouls;p.souls=(p.souls||0)+1;soulReady(p,[u.q,u.r]);return `+1 soul (${Math.min(p.souls,nd)}/${nd})`}},
+  warband:{name:'a drilled recruit',text:'+1 XP to the unit that takes it',f:(p,u)=>{xpGain(u,1);return `+1 XP for the ${u.name}`}},
+  ice:{name:'a block of ice',text:'the next hit of the unit that takes it leaves one extra frost mark',f:(p,u)=>{u.st.icecart=1;return `the ${u.name}'s next hit leaves one more frost mark`}},
+  arcane:{name:'a pilgrim',text:'+2 Faith (heals the taker 2 while nobody has fallen)',f:(p,u)=>{if((p.fallenAt||[]).length){faithGain(p,2);return '+2 Faith'}healUnit(u,2,'#ffe9a8','Supplies');return `the ${u.name} heals 2`}},
+  giants:{name:'a cairn stone',text:'the giant that takes it heals 3',f:(p,u)=>{healUnit(u,3,'#b9a98c','Supplies');return `the ${u.name} heals 3`}},
+  curse:{name:'a corpse',text:'rises as a Ghoul if you are under the cap',f:(p,u)=>{p.ghoulQ=(p.ghoulQ||[]).concat([[u.q,u.r,'a corpse']]);return 'a Ghoul rises from the corpse if the cap allows'}},
+  mage:{name:'an offering',text:'one notch on the element bar of the unit that takes it (the Elder Shaman: your lowest bar)',f:(p,u)=>{p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);const k=u.el&&!(p.evo&&p.evo[u.el])?u.el:EL_KEYS.filter(e=>!(p.evo&&p.evo[e])).sort((a,b)=>p.el[a]-p.el[b])[0];if(!k)return 'nothing: every element has ascended';p.el[k]+=1;const need=elNeed(p);if(p.el[k]>=need)ascend(p,k);return `${k} +1 (${Math.min(p.el[k],need)}/${need})`}},
+  chrono:{name:'a tip-off',text:'the next bounty pays one step more',f:(p,u)=>{p.tipoff=(p.tipoff||0)+1;return 'the next bounty pays one step more'}}};
+function supplyTake(x,u){const p=G.players[x.owner];const S=p&&SUPPLY[p.fac];if(!S)return;G.loot.splice(G.loot.indexOf(x),1);const what=S.f(p,u);
+  if(!SIM){addLog(p.id,`The ${u.name} takes the supplies (${S.name}): ${what}.`);fx(u,'supplies','#ffd766');vfx({k:'buff',at:[u.q,u.r],col:'#ffd766'});if(trk()){const e=tFx(p.fac,u.name,'Supplies taken');if(e)e.uses++}}}
+function supplyTurn(p){if(!RULES.SUPPLY||!G.realm||!p||!p.alive||SIM)return;G.loot=G.loot||[];
+  for(const x of G.loot.slice()){if(x.kind!=='supply'||tm(x.owner)===tm(p.id))continue;const u=unitAt(x.q,x.r);if(u&&u.kind!=='wall'&&tm(u.owner)===tm(p.id)){G.loot.splice(G.loot.indexOf(x),1);addLog(p.id,`The ${u.name} destroys the ${FAC[G.players[x.owner].fac].name}'s supplies.`);if(trk()){const e=tFx(p.fac,u.name,'Enemy supplies destroyed');if(e)e.uses++}}}
+  const S=SUPPLY[p.fac];if(!S||p.keepDown||!p.camp||!p.reserve||p.reserve.length)return;
+  let x=G.loot.find(y=>y.kind==='supply'&&y.owner===p.id);
+  if(!x){const m=occ();const spot=allCells().filter(([q,r])=>hd(q,r,p.camp[0],p.camp[1])===1&&passable(q,r)&&!m.get(key(q,r))&&!G.loot.some(y=>y.carrier==null&&y.q===q&&y.r===r)).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0)||a[0]-b[0]||a[1]-b[1])[0];
+    if(spot){x={id:G.nid++,kind:'supply',owner:p.id,q:spot[0],r:spot[1],carrier:null};G.loot.push(x);if(!p.supplyTold){p.supplyTold=1;addLog(p.id,`Your reserve is empty: from now on the Keep sends supplies, ${S.name} each turn (${S.text}). A unit of yours next to it at the start of your turn takes it; an enemy standing on it destroys it; a razed Keep sends nothing.`);announce({k:'note',col:FAC[p.fac].color,t:`${FAC[p.fac].name}: supplies from the Keep`,s:`${S.name.charAt(0).toUpperCase()+S.name.slice(1)} waits at the base each turn: ${S.text}. A unit at home takes it.`})}else addLog(p.id,`Supplies at the base: ${S.name}.`);vfx({k:'buff',at:spot,col:'#ffd766'})}}
+  if(x){const u=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon&&!v.statue&&distUC(v,x.q,x.r)<=1).sort((a,b)=>(b.maxhp-b.hp)-(a.maxhp-a.hp)||a.id-b.id)[0];if(u)supplyTake(x,u)}}
 // Round start: camps that come back (Valley Camps and the Healing Spring) wake again.
 function realmRound(){if(!G.realm)return;
   for(const R of G.rooms||[]){if(R.state!=='down'||G.round<R.back)continue;const c=unitAt(R.c[0],R.c[1])?roomFree(R)[0]:R.c;if(!c)continue;
@@ -4917,7 +4945,8 @@ function realmStrike(m){if(!m.atk){m.lastBy=null;return}const o=[CUR_SRC,CUR_TAG
   for(const v of hit){if(!alive(v))continue;const d=Math.max(1,m.atk-effDef(v));addLog(v.owner,`The ${m.name} strikes the ${v.name} for ${d}.`);vfx({k:'slash',from:[m.q,m.r],to:[v.q,v.r],col:m.monster==='drake'?'#ff7a1a':'#b9b3d6'});hurt(v,d,m.monster==='drake'?'#ff7a1a':'#b9b3d6')}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o}
 // What a camp asks and gives (shown on the monster's card).
-function realmGoalText(m){if(m.spawnW)return {todo:`kill this wave-${m.spawnW} Rift spawn (${m.maxhp} HP${m.def?', '+m.def+' DEF':''}). It hunts one Crown Stone: it fetches it from the ground, runs it back to the Beast (which swallows it and grows stronger), and hunts whoever carries it. It never hunts the King and takes double damage from him.`,get:m.spawnW===3?'1 point and +1 ATK for good for the killer.':m.spawnW===4?'2 points and +2 max HP for every unit of the killer\'s army.':'nothing: the first two waves set the rhythm. It drops its stone where it dies.'};
+function realmGoalText(m){if(m.monster==='keep'){const o=G.players[m.keepOf];return {todo:`raze the ${o?FAC[o.fac].name+' ':''}Keep (${m.maxhp} HP, ${m.def} DEF). It never strikes back, and its own army cannot touch it. Every ${REALM.dmgCharge} damage to it earns +1 Ultimate charge.`,get:`${REALM.keep.pts} points for the killing blow. That army's Healing Fountain runs dry and its supplies stop.`}}/* v149 */
+  if(m.spawnW)return {todo:`kill this wave-${m.spawnW} Rift spawn (${m.maxhp} HP${m.def?', '+m.def+' DEF':''}). It hunts one Crown Stone: it fetches it from the ground, runs it back to the Beast (which swallows it and grows stronger), and hunts whoever carries it. It never hunts the King and takes double damage from him.`,get:m.spawnW===3?'1 point and +1 ATK for good for the killer.':m.spawnW===4?'2 points and +2 max HP for every unit of the killer\'s army.':'nothing: the first two waves set the rhythm. It drops its stone where it dies.'};
   if(m.god)return {todo:`the Old God serves the King: within 3 of him it heals him ${REALM.godHeal} each turn, and every ${REALM.godEvery} rounds it roars at his enemies within 3 for ${REALM.godRoar} ignoring DEF.`,get:'2 points for the killing blow. It never returns.'};if(m.monster==='wanderer')return {todo:`land the killing blow on the Wanderer (${m.maxhp} HP). It roams 3 hexes a round and strikes back at the last unit that hit it.`,get:`${REALM.wanderPts} points and +${REALM.charge.w} Ultimate charge.`};const R=(G.rooms||[]).find(r=>r.id===m.room);const M=REALM_MON[m.monster];if(!M)return null;
   const hits=m.tier>=2?'At each round start it strikes every unit next to it, and the last unit that hit it if that unit is within 3.':m.atk?'At each round start it strikes the last unit that hit it, if that unit is within 2.':'It never strikes back.';
   const back=` Every ${REALM.dmgCharge} damage your side deals to it earns +1 Ultimate charge, whoever lands the last hit.`,site=' The camp becomes your spawn site: you may call units next to it (it stays yours until an enemy unit stands on it).';
@@ -4932,12 +4961,14 @@ function realmGoalText(m){if(m.spawnW)return {todo:`kill this wave-${m.spawnW} R
   return {todo:`land the killing blow on the ${m.name} (${m.maxhp} HP${m.def?', '+m.def+' DEF':''}). ${hits}${back}`,get}}
 // Bots: where a unit heads on the Realm when no fight is close.
 function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.machine)return null;
+  if(RULES.KEEP&&p.fount&&!p.keepDown&&u.kind!=='wall'&&!u.leader&&!lootOf(u)){const foeNear=G.units.some(v=>v.kind!=='wall'&&!inert(v)&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)<=3);if(u.hp<=u.maxhp*0.4&&!foeNear)u.goHome=1;else if(u.hp>=u.maxhp*0.9||(foeNear&&u.hp>u.maxhp*0.6))u.goHome=0;if(u.goHome)return [p.fount[0],p.fount[1],6]}/* v149 bots: retreat to the Fountain, come back with the supplies */
   const hurtN=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall').reduce((s,v)=>s+(v.maxhp-v.hp),0);
   const opts=[];{const g=newGoal(u,p);if(g)opts.push(g)}// v111 contracts
   for(const m of G.units){if(!m.monster||!alive(m))continue;const R=(G.rooms||[]).find(r=>r.id===m.room);if(!R)continue;
     let w=R.type==='t1'?(inValley(p,m.q,m.r)?2.2:0.3):R.type==='heal'?(hurtN>=16?2.4:1.4):R.type==='ogre'?(G.round>=3?1.7:0.8):R.type==='t3'?(G.round>=6?1.4:0.3):1.1;
     if(u.leader)w*=0.6;opts.push([m.q,m.r,w])}
   for(const [q,r] of G.outposts||[]){const o=flagOwner(q,r);if(o!=null&&o!==p.id&&!inValley(G.players[o],q,r))opts.push([q,r,1.5])}
+  if(RULES.KEEP&&G.round>=REALM.open)for(const m of G.units){if(m.monster!=='keep'||!alive(m)||m.keepOf==null||tm(m.keepOf)===tm(p.id))continue;const o=G.players[m.keepOf];if(!o||!o.alive)continue;const weak=G.units.filter(v=>v.owner===o.id&&v.kind!=='wall'&&!v.summon).length<=4;const K=kingOf();opts.push([m.q,m.r,weak?2.8:(K&&tm(K.owner)!==tm(p.id)?2.0:1.2)])}/* v149: a late target, tempting when its army is thin or someone else is King */
   if(!G.wander&&u.id%5===2)for(const k of Object.keys(G.feat))if(G.feat[k]==='lever'&&G.levers[k]!==p.team){const [q,r]=k.split(',').map(Number);if(hd(q,r,p.camp[0],p.camp[1])<=16)opts.push([q,r,1.8])}
   {const L=lootOf(u);if(L&&L.kind==='stone')return G.beast&&G.beast.dead?[0,0,9]:[p.camp[0],p.camp[1],9]}// v98: a stone carrier keeps it safe until the throne is open
   for(const x of G.loot||[]){if(x.carrier!=null)continue;if(x.kind==='stone'&&canCarry(u)&&!lootOf(u)&&!u.leader)opts.push([x.q,x.r,3.4]);if(x.kind==='remains'&&u.size===2&&tm(x.owner)===p.team)opts.push([x.q,x.r,4])/* v108: the Remains heal, raise ATK and HP and teach an ability */;if(x.kind==='scrap'&&isGnome(u)&&tm(x.owner)===p.team)opts.push([x.q,x.r,u.walker?1.2:2.2])}// v75c bots: giants fetch their Remains, gnomes their scrap
@@ -5504,7 +5535,7 @@ function contractTarget(p){const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=
 function contractTick(p){if(!G.realm||p.fac!=='chrono'||!p.alive)return;
   if(p.contract){const t=byId(p.contract.id);if(!t||!alive(t)){p.contract=null}else{p.contract={id:p.contract.id,left:p.contract.left-1};if(p.contract.left<=0){if(!SIM){addLog(p.id,`The contract on the ${t.name} runs out.`);nTrk('chrono','','Contracts failed',e=>e.uses++)}p.contract=null}}}
   if(!p.contract){const t=contractTarget(p);if(t){p.contract={id:t.id,left:talent(p,'longcon')?7:5};if(!SIM){addLog(p.id,`New contract: the ${t.name} (${Math.ceil(t.hp)} HP). Kill it within 5 of your turns.`);fx(t,'contract','#ffd766');announce({k:'note',col:FAC.chrono.color,t:'New contract',s:`The Chrono Syndicate marks the ${t.name}. Whoever of the crew kills it collects the bounty.`});nTrk('chrono','','Contracts posted',e=>e.uses++)}}}}
-function bounty(p,t,k){const first=!(p.bounty||0);p.bounty=(p.bounty||0)+1;const steps=((talent(p,'biggame')&&t&&(t.leader||t.king))||(first&&talent(p,'doublebounty')))?2:1;/* v134 Double Bounty */
+function bounty(p,t,k){const first=!(p.bounty||0);p.bounty=(p.bounty||0)+1;let steps=((talent(p,'biggame')&&t&&(t.leader||t.king))||(first&&talent(p,'doublebounty')))?2:1;/* v134 Double Bounty */if(p.tipoff){steps+=p.tipoff;p.tipoff=0}/* v149 supplies */
   if(k&&alive(k)&&talent(p,'nowitness')){k.moved=false;k.blockT=null;if(!SIM)fx(k,'no witnesses: move again','#ffd766')}/* v134 No Witnesses */
   for(let s=0;s<steps;s++){const n=(p.bStep||0)+1;p.bStep=n;const R=CONTRACT_LADDER[n-1];const sb=Object.assign({hp:0,atk:0,mov:0,rest:0,abd:0},p.sb||{});
     if(R){for(const k in R)sb[k]+=R[k];p.sb=sb;if(R.hp)for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&!v.summon){v.maxhp+=R.hp;v.hp+=R.hp}}
@@ -8957,6 +8988,7 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
    the matching overlays (vfx.js drawStatusFX). When the engine gets a new temporary state, add it here too. */
 function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn and stays frozen until the end of the freezer’s next turn; any Frost Hold hit on it deals double (Shatter)')}
+  if(s.icecart)add('icecart','🧱','Ice block',null,'#bfefff',1,'from the supplies: its next hit leaves one extra frost mark');/* v149 */
   if(u.kind!=='wall'&&typeof inForest==='function'&&inForest(u))add('cover','🌲','In cover',null,'#6fbf73',1,`+1 DEF, and it cannot be targeted from more than ${RULES.FOREST_HIDE} hexes away while it stays in the forest`);/* v119 (owner: shade units that have cover) */
   if(s.chill>0)add('chill','❄️','Chilled',s.chill,'#5cc8ff',0,'1 less move; Ice Lance deals double');
   if(s.tslow)add('tslow','⌛','Time drags',1,'#c81ca6',0,'time broke beside a Second Hand’s kill (Shattered Time): 1 less move and no free moves on its next turn');
@@ -9229,7 +9261,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   if(!u&&G.tile){const [q,r]=G.tile,f=featAt(q,r),t=terrAt(q,r);
     const wn=wellNote(q,r),wellP=wn?`<p class="hint" style="margin:8px 0 0;padding:6px 8px;border-left:3px solid ${wellCol(wellAt(q,r))};background:${hexA(wellCol(wellAt(q,r)),0.12)};color:#e6fff6">${wn}</p>`:'';
     const rl=(G.relics||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);
-    {const lo=(G.loot||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);if(lo){el.innerHTML=`<div class="label">Treasure</div><h3 style="color:${lootCol(lo)}">${lootName(lo)}</h3><p style="margin:6px 0 0">${lootText(lo)}.</p><p class="hint" style="margin:6px 0 0">${lo.kind==='suit'?'Step a unit onto it: it climbs in at once. When the suit breaks, the unit steps out unhurt.':lo.kind==='captive'?'Step a unit onto him to free him: he joins that army next to it. Walk him into your camp and he takes up armour and a sword.':'Step a unit onto it to pick it up, then walk it back into your own camp to claim it. If the carrier dies it drops the treasure and anyone can take it.'}</p>`;return}}
+    {const lo=(G.loot||[]).find(x=>x.carrier==null&&x.q===q&&x.r===r);if(lo){el.innerHTML=`<div class="label">Treasure</div><h3 style="color:${lootCol(lo)}">${lootName(lo)}</h3><p style="margin:6px 0 0">${lootText(lo)}.</p><p class="hint" style="margin:6px 0 0">${lo.kind==='supply'?'Taken at the start of its army\'s turn by a unit next to it (the most wounded first), or by stepping onto it. An enemy standing on it destroys it.':lo.kind==='suit'?'Step a unit onto it: it climbs in at once. When the suit breaks, the unit steps out unhurt.':lo.kind==='captive'?'Step a unit onto him to free him: he joins that army next to it. Walk him into your camp and he takes up armour and a sword.':'Step a unit onto it to pick it up, then walk it back into your own camp to claim it. If the carrier dies it drops the treasure and anyone can take it.'}</p>`;return}}
     if(G.map&&isHeart(q,r)&&!isCentreWall(q,r)){el.innerHTML=q===0&&r===0?`<div class="label">Hex</div><h3>The Throne</h3><p class="hint" style="margin:6px 0 0">${G.throneOpen?`The first unit to sit here is crowned King: +${WILDS.kingAtk} ATK and +${WILDS.kingDef} DEF for as long as it lives. The King scores 1 point at the start of its turn while it sits here and no enemy stands on the Heart. When the King falls, the next unit to sit here is crowned.`:'Hidden under the Rift Beast. Its killing blow reveals the Throne.'}</p>`:`<div class="label">Hex</div><h3>The Heart</h3><p class="hint" style="margin:6px 0 0">The ground around the Throne. Any enemy unit standing here stops the King from scoring. On this map the Heart gives no points and no buffs of its own.</p>`;return}
     if(G.realm&&isOutpost(q,r)){const fo=flagOwner(q,r);const fc=fo!=null?FAC[P(fo).fac].color:'#ece8dd';el.innerHTML=`<div class="label">Spawn site</div><h3 style="color:${fc}">${fo!=null?FAC[P(fo).fac].name+' spawn site':'Spawn site'}</h3>${goalBox('stand a unit on this hex to take it from its owner.','a place to call new units: when you call a unit from your reserve you may put it next to any spawn site you own.')}<p class="hint" style="margin:6px 0 0">It stays its owner's until an enemy unit stands on it.</p>`;return}
     if(G.map){const Rm=roomAt(q,r);if(Rm){el.innerHTML=Rm.type==='lair'?`<div class="label">Room</div><h3 style="color:#ff9a3d">Dragon’s Lair</h3><p style="margin:6px 0 0">${Rm.state==='sleeping'?`The Dragon wakes in round ${WILDS.midAt}.`:Rm.state==='done'?'The Dragon is slain.':`A Dragon (20 HP, 1 DEF) guards it. Its killing blow wins ${WILDS.dragonPts} points.`}</p><p class="hint" style="margin:6px 0 0">It never leaves the lair. At the start of each round it breathes fire on the last unit that hit it (3 damage minus DEF). Walking past is safe.</p>`
@@ -9389,7 +9421,8 @@ function storyRules(){return `<h3>The Realm: the story</h3><ul>
   <li><b>The Old God</b> wakes beside the first King's portal and walks to him. Within 3 of the King it heals him ${REALM.godHeal} at the start of his turn, and every ${REALM.godEvery} rounds it roars ${REALM.godRoar} damage ignoring DEF at the King's enemies within 3. Kill it: 2 points; it never returns.</li>
   <li><b>The land.</b> Valley Camps near your portal (the planet's own beasts): the killer gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK and the camp becomes your spawn site. Two Healing Springs, east and west: your army heals ${REALM.springHeal} and the Spring becomes your spawn site. Two Elder Drakes sleep at the north and south edges until round ${REALM.drakeAt}: they strike only the last unit that hit them; the killing blow scores ${REALM_MON.drake.pts} points and brings back your strongest fallen unit.</li>
   <li><b>Points.</b> First to <b>${REALM.target}</b>: the King on the throne (1 a turn), the Beast (${RULES.BEAST_PTS}), the King (${REALM.kingPts}), an enemy Leader (${REALM.leaderPts}), a Drake (${REALM_MON.drake.pts}), a wave-4 spawn (2), a wave-3 spawn (1), the Old God (2). Ordinary units score nothing.</li>
-  <li><b>Light and fast, heavy and slow.</b> Units with no armour move 1 more, units with 2+ DEF move 1 less; giants walk 4 and never stop on mountains or rivers. Blows struck from next to the target deal 1 more; shots from afar deal 1 less.</li></ul>`}
+  <li><b>Light and fast, heavy and slow.</b> Units with no armour move 1 more, units with 2+ DEF move 1 less; giants walk 4 and never stop on mountains or rivers. Blows struck from next to the target deal 1 more; shots from afar deal 1 less.</li><li><b>The Keep and its supplies</b> (v149). The Keep stands on the middle hex of your base: ${REALM.keep.hp} HP, ${REALM.keep.def} DEF, it never strikes and your own units cannot touch it. An enemy that razes it scores <b>${REALM.keep.pts} points</b>, your Fountain runs dry and your supplies stop. SUPPLIES: once your reserve is empty (every unit called), the Keep sends one thing each turn to a free hex of the base, never two at once: a unit of yours next to it at the start of your turn takes it (the most wounded first), or any unit of yours that steps onto it; an enemy standing on it destroys it. What it is, by army: ${Object.entries(SUPPLY).map(([f,S])=>`<b>${FAC[f].name}</b> ${S.name} (${S.text})`).join('; ')}. The Riftwalkers and the Ooze have none yet.</li>
+</ul>`}
 function realmRules(){if(typeof STORY==='function'&&RULES.STORY2)return storyRules();return `<h3>The Realm (test board)</h3><ul>
   <li><b>No AP.</b> Every unit may move once and act once (attack or ability) each turn. Abilities only rest.</li>
   <li><b>Your army grows.</b> You start with your Leader and ${REALM.start} units. Once per turn, tap a unit in the reserve bar (above the board) to call it into your base; if you forget, the first one comes at the end of your turn. The fallen are gone for good.</li>
@@ -9729,7 +9762,7 @@ function unitPos(u,now){
 function drawChest(c,x,y,S,col,now){c.save();c.shadowColor=col;c.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/240));const w=S*0.62,h=S*0.42;
   c.fillStyle='#6b4423';c.fillRect(x-w/2,y-h*0.25,w,h*0.75);c.beginPath();c.ellipse(x,y-h*0.25,w/2,h*0.42,0,Math.PI,0);c.fillStyle='#8a5a2e';c.fill();c.shadowBlur=0;
   c.strokeStyle=col;c.lineWidth=Math.max(1.5,S*0.08);c.strokeRect(x-w/2,y-h*0.25,w,h*0.75);c.fillStyle=col;c.fillRect(x-S*0.06,y-h*0.2,S*0.12,S*0.16);c.restore()}
-const MON_GLYPH={guardian:'♜',golem:'♜',ghoul:'☠',crate:'▣',dragon:'♆',wanderer:'☄',cracked:'▦',brute:'♞',warden:'✚',ogre:'♜',drake:'♆',chest:'▣'};
+const MON_GLYPH={keep:'⌂',guardian:'♜',golem:'♜',ghoul:'☠',crate:'▣',dragon:'♆',wanderer:'☄',cracked:'▦',brute:'♞',warden:'✚',ogre:'♜',drake:'♆',chest:'▣'};
 function drawMonster2D(c,u,x,y,S,now){if(!(S>0))return;/* v46: a monster badge scaled to nothing or behind the camera crashed the frame (negative radius) */const r=S*0.78,crate=u.monster==='crate';c.save();c.shadowColor='#9a7bff';c.shadowBlur=crate?0:S*0.4*(0.6+0.4*Math.sin(now/300+u.id));
   c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=crate?'#6b4423':'#2a2140';c.fill();c.shadowBlur=0;c.lineWidth=Math.max(2,S*0.1);c.strokeStyle=crate?'#e8b84e':'#b9a2ff';c.stroke();
   c.fillStyle=crate?'#f6e2b0':'#e6dcff';c.font=`700 ${r*1.15}px 'Segoe UI Symbol','Noto Sans Symbols 2',serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(MON_GLYPH[u.monster]||'?',x,y+1);
