@@ -663,7 +663,7 @@ body.focus.fwide .ab-head h3,body.focus.fwide .uhead h3{font-size:20px}
           <span><svg width="16" height="16" viewBox="0 0 16 16"><path d="M1 13h14" stroke="#ecdebe" stroke-width="1.6" stroke-dasharray="3 2"/></svg>Flank road (+1 move)</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3" y="2" width="1.6" height="12" fill="#ece8dd"/><path d="M4.6 2.5h8l-2 3 2 3h-8z" fill="#ece8dd"/></svg>Flag (stays yours, +1 charge)</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" fill="#9a8a70" stroke="#241a10"/><path d="M1 8h14M5 3v5M11 3v5M8 8v5" stroke="#241a10" stroke-width="1"/></svg>Wall (until round 5)</span>
-          <span><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="#2fb8d8" stroke="#7fe8ff" stroke-width="1.6"/><circle cx="8" cy="8" r="2.5" fill="#bff6ff"/></svg>Wellspring (+1 AP)</span>
+          
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1.5 15,14 1,14" fill="#3a1760" stroke="#b06bff" stroke-width="1.4"/><circle cx="6.3" cy="9.5" r="1" fill="#fff36b"/><circle cx="9.7" cy="9.5" r="1" fill="#fff36b"/></svg>Rift Beast</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 13,8 8,15 3,8" fill="#ffd766"/></svg>Relic</span>
           <span><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#e8e23a"/><text x="8" y="11.5" font-size="9" text-anchor="middle" fill="#1b2008" font-weight="700">2</text></svg>Curses</span>
@@ -1207,7 +1207,7 @@ const TRAITS={
   tesla:{name:'Tesla Coil',text:'Can’t move. At the start of its owner’s turn every enemy within 2 hexes takes 1 damage ignoring DEF, for free. Construct rules apply.'},
   deepcold:{name:'Deep Cold',text:'The front line of the Frost Hold: every hit it lands leaves 2 frost marks instead of 1 (3 marks freeze), and it deals 1 more damage to frozen enemies.'},
   shatterfall:{name:'Shatterfall',text:'When it kills a frozen enemy, the shards fly: every enemy next to the fallen unit is chilled.'},
-  stonesleep:{name:'Stone Sleep',text:'When it dies it turns into a statue on its hex (5 HP, 0 DEF): it blocks the hex, can’t act and can be smashed (no Ultimate charge for it). Every spell a friendly mage casts while standing within 2 of the statue adds that spell’s AP cost to it; at 4 the Gargoyle rises there with half the max HP it had (16, then 8, then 4). A Gargoyle of 4 max HP that dies, or a smashed statue, is gone for good.'},
+  stonesleep:{name:'Stone Sleep',text:'When it dies it turns into a statue on its hex (5 HP, 0 DEF): it blocks the hex, can’t act and can be smashed (no Ultimate charge for it). Every spell a friendly mage casts while standing within 2 of the statue adds that spell’s cost to it; at 4 the Gargoyle rises there with half the max HP it had (16, then 8, then 4). A Gargoyle of 4 max HP that dies, or a smashed statue, is gone for good.'},
   statue:{name:'Statue',text:'A sleeping Gargoyle. Can’t move or act. Mages casting spells within 2 of it wake it; smash it first and the Gargoyle is gone.'},
   splits:{name:'Shatters apart',text:'When it dies it breaks into smaller ice: a Frost Colossus (2 hexes, 14 HP, 4 ATK) becomes 2 Ice Brutes (7 HP, 4 ATK each); each Ice Brute becomes 1 Ice Shard (4 HP, 3 ATK). The pieces appear where it stood and act from your next turn.'},
   emptysuit:{name:'Empty suit',text:'A Mech Suit waiting for its pilot: it never fires. A Mechanic (any gnome with Field Workshop) steps onto it to climb in.'},
@@ -1215,7 +1215,7 @@ const TRAITS={
   spring:{name:'Spring',text:'At the start of your turn every ally within 2 of this Water Elemental heals 1.'},
   bedrock:{name:'Bedrock',text:'Holds the line: enemies next to this Earth Elemental can’t walk past it.'},
   windwalk:{name:'Windwalk',text:'After casting a spell, this Air Elemental gets a free move (once per turn).'},
-  lord:{name:'Master of the Elements',text:'Appears when all four elements have ascended. Casts one spell of each element (1 AP each, every turn) and Convergence, all four at once.'},
+  lord:{name:'Master of the Elements',text:'Appears when all four elements have ascended. Casts one spell of each element every turn and Convergence, all four at once.'},
   dread:{name:'Dread',text:'Fear: an enemy that starts its turn next to this Dread Fiend is Terrified: it flees 1 hex away and, for that turn, can’t attack the Fiend or aim anything at it.'},
   devourer:{name:'Soul Devourer',text:'Every enemy that dies next to it feeds it: +1 ATK for the rest of the game, with no limit, and that death counts as 2 souls toward the Archdemon.'},
   ghoul:{name:'Mindless hunger',text:'Obeys no one: at the start of every Pale Covenant turn it walks up to 2 hexes toward the closest enemy and bites it (2 damage minus DEF, at least 1), leaving Grave Fever (a weak rot of its own). Rose from the corpse of an enemy that carried two or more different rots.'},
@@ -1727,7 +1727,7 @@ function machineFire(p,name,tag){
 const MODES={
   regicide:{name:'Regicide',desc:'Lose your Leader and your whole army is out. Last side standing wins.'},
   annihilation:{name:'Annihilation',desc:'You are out only when every unit you own has fallen. Last side standing wins.'},
-  warlord:{name:'Warlord',desc:`Two ways to win: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games) or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out on the fallen wall in round ${RULES.BEAST_AT} and the Throne opens: whoever sits on it is crowned King, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing; in a 2-player duel flags give Ultimate charge only); your King sitting on the Throne at the start of your turn scores 1 (every turn; whoever kills the King scores ${RULES.KING_KILL}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Throne and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless, without the Leader\u2019s +${RULES.LEADER_AP} AP and scoring no points, until one of its units is crowned King: the King becomes its new Leader.`},
+  warlord:{name:'Warlord',desc:`Two ways to win: reach ${RULES.WARLORD_TARGET} Warlord points (10 with 4 or more players in free-for-all, 12 in team games) or be the last side standing. The game runs in three acts: the centre is walled until round ${RULES.CENTRE_FROM} while armies take the flags, a Wellspring rises on the outer ring in round ${RULES.SPRING_AT}, the Rift Beast breaks out on the fallen wall in round ${RULES.BEAST_AT} and the Throne opens: whoever sits on it is crowned King, then the Collapse closes the board. Points: owning MORE flags than any other side at the start of your turn scores 1 (from round ${RULES.FLAG_FROM}; flags stay yours until an enemy steps on them; a tie scores nothing; in a 2-player duel flags give Ultimate charge only); your King sitting on the Throne at the start of your turn scores 1 (every turn; whoever kills the King scores ${RULES.KING_KILL}); killing an enemy Leader scores 2 at once; the killing blow on the Rift Beast scores ${RULES.BEAST_PTS}. A team scores its Throne and flag points once per round. Losing your Leader doesn\u2019t knock you out: your army fights on leaderless and scores no points, until one of its units is crowned King: the King becomes its new Leader.`},
   conquest:{name:'Conquest',desc:`Hold the Heart at the start of your turn to score 1 point. First side to ${RULES.TARGET} wins, or be the last side standing.`},
 };
 // Board radius per player count. 4 players need an even radius so the cross layout is exactly symmetric.
@@ -2645,7 +2645,7 @@ function beginTurn(){
   const apNo=Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP+bank);
   // Banked Time tracking: AP the bank actually added this turn (the cap can eat some), as 'Banked Time (passive)' apGranted, one use per turn with a bank.
   if(bank&&trk()&&!SIM){const got=apNo-Math.min(RULES.AP_CAP,RULES.BASE_AP+G.apParts.leader+G.apParts.throne+relicAP);const e=tFx(p.fac,'','Banked Time (passive)');if(e){e.uses++;e.apGranted+=Math.max(0,got)}}
-  G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP+(p.lootAP||0)+gemAP);G.ap=G.apMax;if(G.realm){G.apMax=G.ap=99}// v74 the Realm: no AP, every unit moves once and acts once
+  G.apMax=Math.min(RULES.AP_CAP,apNo+wellAP+(p.lootAP||0)+gemAP);G.ap=G.apMax;if(G.realm||G.tutorial){G.apMax=G.ap=99}/* v169: the tutorial has no AP either */// v74 the Realm: no AP, every unit moves once and acts once
   if(wellAP){const O=tObj();if(O){const e=O.well[p.id]=O.well[p.id]||{caps:0,ap:0,turns:0};e.turns++;e.ap+=G.apMax-apNo}}
   const target=heartTarget();const s0=G.score[p.team]||0;
   G.scoredAt=G.scoredAt||{};
@@ -4084,7 +4084,7 @@ function useUlt(team){
 const RELICS={
   banner:{name:'War Banner',icon:'banner',col:'#ff7a59',text:'Carrier +2 ATK. Allies next to it +1 ATK.'},
   aegis:{name:'Aegis',icon:'shield',col:'#7fd4ff',text:'Carrier +2 DEF and can’t be pushed, pulled or thrown.'},
-  hourglass:{name:'Sand of Ages',icon:'hourglass',col:'#ff9be8',text:'Its side gets +1 AP at the start of each turn.'},
+  hourglass:{name:'Sand of Ages',icon:'hourglass',col:'#ff9be8',text:'Its side gets one more action at the start of each turn (old boards only).'},
   idol:{name:'Storm Idol',icon:'lightning',col:'#ffd766',text:'Its side gets +1 Ultimate charge at the start of each turn.'},
   shatter:{name:'Shatterglass',icon:'burst',col:'#e6f0ff',text:'The carrier\u2019s attacks and abilities ignore DEF.'},
   ash:{name:'Ashen Brand',icon:'flame',col:'#ff8a5c',text:'Every enemy the carrier damages is Seared: it can\u2019t be healed until the end of its next turn.'},
@@ -8755,7 +8755,7 @@ function unitRow(F,d,k,i){
   const tag=d.leader?'Leader · ':d.pawn?'Pawn · ':'';
   return `<div class="urow" role="button" tabindex="0" data-fac="${k}" data-u="${i}" aria-label="Preview ${d.name}" title="Tap to preview ${d.name}"><img src="${iconURL(d.icon,INK,F.color)}" alt=""><span><b>${d.name}</b> <span class="glyph hint">${glyphOf(d)}︎</span>
     <span class="sub">${tag}${d.hp} HP · ${d.atk} ATK · ${d.def} DEF · ${atk}</span>
-    ${HOME_COMPACT?`<span class="sub">${d.book?d.book.map(x=>ABIL[x].name).join(' / '):[d.ab,d.ab2].filter(Boolean).map(x=>ABIL[x].name).join(' + ')||'<span class="none">No ability</span>'}</span>`:d.book?`<span class="sub">Spellbook (one shared rest): ${d.book.map(x=>`${ABIL[x].name} · ${ABIL[x].cost} AP · rests ${ABIL[x].cd}`).join(' | ')}</span>`:A?`<span class="sub">${A.name} · ${A.cost} AP · ${A.cd?'rests '+A.cd:'once per turn'}${A.free?' · free action':''}</span>`:`<span class="sub none">No ability</span>`}${d.ab2&&!HOME_COMPACT?`<span class="sub">${ABIL[d.ab2].name} · ${ABIL[d.ab2].cost} AP · ${ABIL[d.ab2].cd?'rests '+ABIL[d.ab2].cd:'once per turn'}</span>`:''}${d.trait&&!HOME_COMPACT?`<span class="sub trait" title="${TRAITS[d.trait].text}">✦ ${TRAITS[d.trait].name}: ${TRAITS[d.trait].text}</span>`:''}</span><span class="c">×${d.n||1}</span></div>`;
+    ${HOME_COMPACT?`<span class="sub">${d.book?d.book.map(x=>ABIL[x].name).join(' / '):[d.ab,d.ab2].filter(Boolean).map(x=>ABIL[x].name).join(' + ')||'<span class="none">No ability</span>'}</span>`:d.book?`<span class="sub">Spellbook (one shared rest): ${d.book.map(x=>`${ABIL[x].name} · rests ${ABIL[x].cd}`).join(' | ')}</span>`:A?`<span class="sub">${A.name} · ${A.cd?'rests '+A.cd:'once per turn'}${A.free?' · free action':''}</span>`:`<span class="sub none">No ability</span>`}${d.ab2&&!HOME_COMPACT?`<span class="sub">${ABIL[d.ab2].name} · ${ABIL[d.ab2].cd?'rests '+ABIL[d.ab2].cd:'once per turn'}</span>`:''}${d.trait&&!HOME_COMPACT?`<span class="sub trait" title="${TRAITS[d.trait].text}">✦ ${TRAITS[d.trait].name}: ${TRAITS[d.trait].text}</span>`:''}</span><span class="c">×${d.n||1}</span></div>`;
 }
 /* One plain sentence per army card: how that army wins. Interface text only (the rules live in engine.js). */
 // v46: how each army is beaten (shown on the home page cards)
@@ -8796,7 +8796,7 @@ function attackWords(d){const r=d.rng;
   if(d.aoe&&AOE[d.aoe])s+=`, ${AOE[d.aoe].name.toLowerCase()}`;return s}
 function statWords(d){return `${d.hp} HP, ${d.atk} ATK, ${d.def} DEF, ${moveWords(d)}, ${attackWords(d)}`}
 function pvAbil(A,key){if(!A)return '';
-  const pills=[`${A.cost} AP`,A.cd?`cooldown ${A.cd} turn${A.cd>1?'s':''}`:'once per turn'];if(A.free)pills.push('free action');
+  const pills=[A.cd?`cooldown ${A.cd} turn${A.cd>1?'s':''}`:'once per turn'];if(A.free)pills.push('free action');
   const aim=(()=>{try{const a=aimText(A),sh=A.shape==='aura'?'':shapeText(A);return a+(sh?' · '+sh:'')}catch(e){return ''}})();
   const M=A.machine&&MACHINES[A.machine];
   return `<div class="pv-ab"><div class="pv-abh"><b>${A.name}</b>${pills.map(p=>`<span class="pill">${p}</span>`).join('')}</div>
@@ -9335,7 +9335,7 @@ function refresh(){
     ub.disabled=!canUlt(G.cur);ub.classList.toggle('ready',canUlt(G.cur));ub.classList.toggle('team',team);
     if(RULES.SHAMANS&&p.fac==='mage'){const nd=elNeed(p),ic={fire:'🔥',water:'💧',earth:'🪨',air:'🌪️'};const bars=EL_KEYS.map(k=>ic[k]+((p.evo&&p.evo[k])?'✓':((p.el&&p.el[k])||0)+'/'+nd)).join(' ');ub.innerHTML=G.realm?`⚡ <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':'ready'):ch+'/'+need} · ${bars}</span>`:`🌀 <span class="un">Ascension</span> <span class="hint">${bars}</span>`;ub.title=U.text}else
     ub.innerHTML=`⚡${team?'⚡':''} <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':G.ap>=RULES.ULT_COST?(team?'team ready':'ready'):'needs '+RULES.ULT_COST+' AP'):ch+'/'+need}</span>`;ub.title=U.text}}
-  if(G.realm&&!G.phase)realmBar();
+  if(G.realm&&!G.phase)realmBar();else if(G.tutorial){const ab=$('#apBox');if(ab)ab.innerHTML=''}/* v169: no AP diamonds in the tutorial */
   if(G.phase==='deploy')$('#apBox').innerHTML=`<span class="aplabel"><b>Deployment</b> · ${G.players.filter(x=>x.deployed).length}/${G.players.length} ready</span>`;
   const eb=$('#endBtn');eb.textContent=G.phase==='deploy'?'Done deploying':'End turn';eb.disabled=!isHumanTurn();eb.classList.toggle('endglow',isHumanTurn()&&!G.phase&&nothingLeft());/* v99 (owner): the End turn button glows when every move and attack is done */
   const hs=G.holder!==null?`held by <b style="color:${teamColor(G.holder)}">${teamName(G.holder)}</b>`:G.contested?'<b>contested</b>':'unclaimed';
@@ -9463,7 +9463,7 @@ function statusChips(u,long){const L=unitStatuses(u);if(!L.length)return '';
   const nTxt=n=>typeof n==='number'?(long?`${n} turn${n>1?'s':''}`:String(n)):n;
   return `<div class="schips">${L.map(x=>`<span class="schip ${x.good?'good':'bad'}" style="--c:${x.col}" title="${x.nm}: ${x.tip}"><i aria-hidden="true">${x.ic}</i>${x.nm}${x.n!=null?` <small>${nTxt(x.n)}</small>`:''}</span>`).join('')}</div>`}
 // v74 the Realm: no AP. The AP box shows the reserve instead: one button per unit type you can call into your base this turn.
-function REALM_HINT(){return `Four armies arrive through their portals in the corners. At once the Rift Beast falls on the city in the middle, the land cracks into wasteland and four Crown Stones are flung onto the roads. No AP: every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn; the fallen are gone for good. Clear camps for buffs and heals, carry the stones, hunt the Beast's spawns, and kill the Beast to be crowned King on the Throne. Points come from the Throne, enemy Leaders and the King, the Elder Drakes, the last spawn wave, the Beast and razing an enemy Keep (where the stones your rivals carried home are kept). First to ${REALM.target} wins.`}
+function REALM_HINT(){return `Four armies arrive through their portals in the corners. At once the Rift Beast falls on the city in the middle, the land cracks into wasteland and four Crown Stones are flung onto the roads. Every unit moves once and acts once each turn. You start with your Leader and ${REALM.start} units and call one more each turn; the fallen are gone for good. Clear camps for buffs and heals, carry the stones, hunt the Beast's spawns, and kill the Beast to be crowned King on the Throne. Points come from the Throne, enemy Leaders and the King, the Elder Drakes, the last spawn wave, the Beast and razing an enemy Keep (where the stones your rivals carried home are kept). First to ${REALM.target} wins.`}
 function realmBar(){const pp=P(G.cur),box=$('#apBox');if(!box||!pp)return;const can=isHumanTurn()&&realmCanSummon(pp),res=pp.reserve||[];
   const hpOf=d=>Math.round((d.hp||0)*REALM.hpMul),names=[...new Set(res)],btn=n=>{const d=FAC[pp.fac].units.find(x=>x.name===n)||{};const c=res.filter(x=>x===n).length;return `<button class="abtn sumglow" data-sum="${n}" style="padding:4px 9px;margin:2px;min-width:0" title="${hpOf(d)} HP, ${d.atk} ATK, ${d.def} DEF">${n}${c>1?' ×'+c:''}${pp.fac==='mage'&&d.el&&pp.evo&&pp.evo[d.el]&&typeof ELEMENTALS!=='undefined'&&ELEMENTALS[d.el]?' → '+ELEMENTALS[d.el].name:''}<small>${hpOf(d)} HP · ${d.atk} ATK</small></button>`};
   const scrapN=pp.fac==='gnomes'?`<span class="aplabel">Scrap: ${pp.scrap||0}</span>`:'';
@@ -9474,7 +9474,7 @@ function realmBar(){const pp=P(G.cur),box=$('#apBox');if(!box||!pp)return;const 
     box.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{const a=b.dataset.at;if(a==='x'){REALM_PICK=null;refresh();return}call(REALM_PICK,a==='base'?null:sites[+a])});return}
   box.querySelectorAll('[data-sum]').forEach(b=>b.onclick=()=>{if(sites.length){REALM_PICK=b.dataset.sum;refresh();return}call(b.dataset.sum,null)})}
 let REALM_PICK=null;
-const noAP=s=>G&&G.realm?s.replace(/ · \d+ AP/g,''):s;
+const noAP=s=>apFree()?s.replace(/ \(no AP\)/g,'').replace(/ · \d+ AP/g,''):s;/* v169: the Realm and the tutorial show no AP */
 function renderDock(){
   const bar=$('#actionBar'),strip=$('#unitStrip');if(!bar||!strip)return;
   const human=isHumanTurn();const p=P(G.cur);
@@ -9497,7 +9497,7 @@ function renderDock(){
     bar.querySelectorAll('[data-tal]').forEach(b=>b.onclick=()=>{P(G.cur).talent=b.dataset.tal;refresh();netPush()});
     return}
   if(!u||u.kind==='wall'){
-    bar.innerHTML=`<div class="ab-sub">${human?`<b>Your turn.</b>${G.realm?'':` ${G.ap} AP left.`} Tap a unit, or press Next to cycle through units that can still act.`:(p.ctrl==='bot'?'A bot is playing.':'Waiting for Player '+(p.id+1)+'.')+' Tap any unit to see what it does.'}</div>${human?`<div class="ab-btns"><button class="abtn next" id="abNext">Next unit ▸<small>${readyUnits().length} can still act</small></button></div>`:''}`;const nb=$('#abNext');if(nb)nb.onclick=nextUnit;return}
+    bar.innerHTML=`<div class="ab-sub">${human?`<b>Your turn.</b>${apFree()?'':` ${G.ap} AP left.`} Tap a unit, or press Next to cycle through units that can still act.`:(p.ctrl==='bot'?'A bot is playing.':'Waiting for Player '+(p.id+1)+'.')+' Tap any unit to see what it does.'}</div>${human?`<div class="ab-btns"><button class="abtn next" id="abNext">Next unit ▸<small>${readyUnits().length} can still act</small></button></div>`:''}`;const nb=$('#abNext');if(nb)nb.onclick=nextUnit;return}
   const F=facOf(u),pct=Math.max(0,u.hp/u.maxhp),ab=abState(u),A=u.ability?ABIL[u.ability]:null,AM=G.amode?ABIL[G.amode]:null;
   const head=`<div class="ab-head">${uIcon(u,38)}<div style="min-width:0;flex:1"><div class="ab-name" style="color:${F.color}">${u.name}${u.leader?' ♚':''}</div>
     <div class="ab-sub">${(()=>{const x=xpOf(u);return x?`<b style="color:#ffd766">Lv ${x.lv} · ${fmt(x.xp)}/${x.hi} XP</b> · `:''})()}${fmt(u.hp)}/${u.maxhp} HP · ATK ${effAtk(u)} · DEF ${effDef(u)} · move ${u.mt==='knight'?'jump':effMov(u)} · ${u.at==='none'||u.relq?'no attack':ATTACKS[u.at].label.toLowerCase()+' '+effRng(u)}${u.book?(()=>{const st=abState(u);return ` · <b style="color:${st.ready?'#ffd766':'#ffb3b3'}">Spellbook (${u.book.length} spells, one shared rest): ${st.text}</b>`})():abilsOf(u).map(k=>{const st=abState(u,k);return ` · <b style="color:${st.ready?'#ffd766':'#ffb3b3'}">${ABIL[k].name}: ${st.text}</b>`}).join('')}${u.statue?` · <b style="color:#cfd3dc">Stone Sleep ${summonBadge(u)} AP</b>`:''}</div></div>
@@ -9509,7 +9509,7 @@ function renderDock(){
   /* Action buttons: icon, name, AP cost and a one-line state. Colour says whether it can be used now:
      gold = ready, red = attack ready, green = can move, grey with an hourglass = resting, dark red = not enough AP, faded = used/nothing to do.
      Each button carries a plain description shown in the line under the buttons when you hover or touch it. */
-  DOCK_DESC.length=0;const desc=t=>{DOCK_DESC.push(t);return `data-d="${DOCK_DESC.length-1}"`};
+  DOCK_DESC.length=0;const desc=t=>{DOCK_DESC.push(noAP(t));return `data-d="${DOCK_DESC.length-1}"`};/* v169: button descriptions carry no AP either */
   const abBtn=(cls,id,icon,name,sub,d,dis)=>`<button class="abtn ${cls}" ${id?`id="${id}"`:''} ${d?desc(d):''} ${dis?'disabled':''}><b><i class="ic">${icon}</i>${name}</b><small>${sub}</small></button>`;
   const rg=effRng(u),atkDesc=u.machine?`<b>Fires on its own</b> at the start of each gnome turn, for no AP: ${u.at==='none'?'1 damage ignoring DEF to every enemy within 2':`${ATTACKS[u.at].label.toLowerCase()} reach ${rg}, ${effAtk(u)} minus the target's DEF${u.aoe?` (${AOE[u.aoe].text.toLowerCase()})`:''}`}. It finishes a kill if it can, otherwise it shoots the enemy Leader, otherwise the weakest enemy in reach.${u.at==='none'?'':` It can also make <b>one basic attack of its own</b> each turn for ${atkCost(u)} AP, at a target you choose.`}`:u.at==='none'||u.relq?`<b>It does not attack.</b> ${u.relq?(u.size===2?'The relic is inside it: its two hexes and the eight around them are ':'It carries the relic: the seven hexes around it are ')+(u.shadow?'profaned':'holy')+' ground.':''}`:`<b>${ATTACKS[u.at].label} attack</b>, reach ${rg}: hits for ${effAtk(u)} minus the target's DEF. ${u.at==='lob'?ATTACKS[u.at].text(rg,u.rmin):ATTACKS[u.at].text(rg)}${u.aoe?` <b>${AOE[u.aoe].name}:</b> ${AOE[u.aoe].text}`:''}`;
   const abDescOf=k=>{const A=ABIL[k];return `<b>${A.name}</b> · ${abilCost(u,k)} AP · ${A.cd?`rests ${A.cd} turn${A.cd>1?'s':''} after use`:'once per turn'}${u.book?' (the whole spellbook rests with it)':''}${A.dmg?` · ${A.dmg} damage${focused(u,A)?' +1 Arcane Focus':''}`:''}: ${A.desc} <span class="hint">Target: ${aimText(A).toLowerCase()}${shapeText(A)?' · '+shapeText(A).toLowerCase():''}.</span>`};
@@ -9633,7 +9633,7 @@ function abilBlock(u,k){
     else if(!G.amode)ctrl=`<div class="row" style="margin-top:8px"><button class="btn sm primary" data-useab="${k}" id="${idx>0?'useAb'+(idx+1):'useAb'}" ${canAbil(u,k)?'':'disabled'}>Aim ${A.name}</button>${why?`<span class="hint">${why}</span>`:''}</div>`;
   }
   return `<div class="abil"><div class="row between"><span class="n">${A.name}</span>${pill}</div>
-    <div class="hint" style="margin-top:2px">${cost} AP${cost<A.cost?' (home ground discount)':''} · ${A.cd?`rests ${A.cd} turn${A.cd>1?'s':''} after use`:'once per turn'}${A.free?' · uses neither its move nor its action':''}${A.dmg?` · <b style="color:#ffb35c">${A.dmg} spell damage</b>${A.pierce?' (ignores DEF)':''}`:''}</div>
+    <div class="hint" style="margin-top:2px">${apFree()?'':`${cost} AP${cost<A.cost?' (home ground discount)':''} · `}${A.cd?`rests ${A.cd} turn${A.cd>1?'s':''} after use`:'once per turn'}${A.free?' · uses neither its move nor its action':''}${A.dmg?` · <b style="color:#ffb35c">${A.dmg} spell damage</b>${A.pierce?' (ignores DEF)':''}`:''}</div>
     <div class="hint">${shape}</div>
     <div style="color:var(--soft);margin-top:4px">${A.desc}</div>${ctrl}</div>`;
 }
@@ -9722,8 +9722,8 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   else if(u.summon)tags.push(`<span class="tag">Built: falls apart in ${u.ttl} turn${u.ttl>1?'s':''}${u.machine?' · never moves · fires on its own for free at the start of the gnome turn'+(u.at==='none'?'':' · its free shot deals 1 damage; a commanded attack costs 2 AP')+' · no charge or star for killing it':''}</span>`);
   if(u.machine&&u.owner===G.cur)tags.push(`<span class="tag">Workshop: ${machineCount(u.owner)} of ${machineCap(u.owner)} machines out</span>`);
   if(u.kind!=='wall'&&!u.summon&&F.cover)tags.push(covered(u)?'<span class="tag good">Cover: next to a machine, basic attacks deal 1 less (never below 1)</span>':'Cover: no machine beside it');
-  if(u.freeAtk>0)tags.push(`<span class="tag good">Quickened${u.freeAtk>1?' ×'+u.freeAtk:''}: ${u.freeAtk>1?u.freeAtk+' free basic attacks':'one free basic attack'} this turn (no AP)</span>`);
-  if(u.freeMove>0)tags.push('<span class="tag good">Rewound: one free move this turn (no AP), even after moving</span>');
+  if(u.freeAtk>0)tags.push(`<span class="tag good">Quickened${u.freeAtk>1?' ×'+u.freeAtk:''}: ${u.freeAtk>1?u.freeAtk+' free basic attacks':'one free basic attack'} this turn</span>`);
+  if(u.freeMove>0)tags.push('<span class="tag good">Rewound: one free move this turn, even after moving</span>');
   if(u.st.rush)tags.push('<span class="tag good">Clockwork Rush +1 ATK</span>');
   if(u.poss)tags.push(`<span class="tag curse">Possessed: it fights for P${u.owner+1} until it dies or the Possessor steps out (1 damage at each of their turn starts)</span>`);
   if(u.st.duel){const c=byId(u.st.duel.by);tags.push(`<span class="tag bad">Challenged${c?' by the '+c.name:''}: basic attacks only at the Champion (${u.st.duel.ttl} turn${u.st.duel.ttl>1?'s':''})</span>`)}
@@ -9827,13 +9827,39 @@ function showOver(){
 function closeModal(){$('#overlay').hidden=true;if(G&&G.over&&screen==='game')showOver();else if(G&&G.paused&&screen==='game')showPause()}
 /* v46 How to play, rewritten (owner 3 Oct 2026): the Crown Wilds first, short and in the order a game goes. The older full text (every edge case and
    the random board) sits folded underneath. Uses constants only, so it also opens before a game exists. */
+/* v169 (owner 10 Nov 2026: "AP is in some text when it shouldn't be; delete any mention of AP in the game"): on the Realm, How to play shows the Realm
+   rules and these common sections only; the Crown Wilds text and the old random-board rules (both written for AP) are no longer shown there. */
+function apFree(){return !!(typeof G!=='undefined'&&G&&(G.realm||G.tutorial))}
+function realmNow(){return !!((typeof G!=='undefined'&&G&&G.realm)||((typeof G==='undefined'||!G)&&cfg.map==='realm')||(typeof REALM_ONLY!=='undefined'&&REALM_ONLY&&!(G&&G.map)))}
+function rosterNames(set){const out=[];for(const k of FKEYS)for(const d of FAC[k].units)if(set.has(d.name)&&!out.includes(d.name))out.push(d.name);return out}
+function listWords(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1]}
+function realmCommon(){const rip=rosterNames(RIPOSTE),hold=rosterNames(HOLD);return `
+  <h3>Your turn</h3><ul>
+  <li><b>One move and one action.</b> Each of your units may move once and act once per turn (a basic attack <i>or</i> an ability), in either order.</li>
+  <li>Abilities then <b>rest</b> for a few turns: the number on the unit.</li>
+  <li>Your army's <b>Ultimate</b> charges as you fight. When it is full, press the ⚡ button to cast it, once per turn.</li>
+  <li>Round ${RULES.TRUCE} is a truce: nobody can attack.</li></ul>
+  <h3>Reading the board</h3><ul>
+  <li>Tap one of your units: <b>dots</b> show where it can walk. A <b style="color:#ff6b5b">red dot</b> means an enemy could hit it there next turn; a white dot is out of reach.</li>
+  <li>Enemies you can hit right now are marked red, with the damage you will deal. Tap one to attack.</li>
+  <li>Tap any unit, also an enemy, to read its card. If a tap does nothing, a message tells you why.</li>
+  <li><b>Pills on a piece</b> show what holds it and for how many turns: ice block = frozen, star = stunned, snowflake = chilled, 1/3 and 2/3 = frost marks (the third freezes), one skull per curse.</li>
+  <li>At the start of your turn a box sums up what happened since your last one.</li></ul>
+  <h3>Fighting</h3><ul>
+  <li><b>Damage = ATK minus DEF</b>, at least 1. Abilities work the same way with their own damage.</li>
+  ${rip.length?`<li>Most units <b>cannot hit back</b>. Only the sturdy ones do (<b>Riposte</b>, half damage): ${listWords(rip)}.</li>`:''}
+  ${hold.length?`<li>You may always walk away from a fight, except from a <b>guard</b> (<b>Hold the Line</b>): next to an enemy ${listWords(hold)} you can only step 1 hex.</li>`:''}
+  <li><b>Pursuit:</b> a melee unit that hit an enemy moves 1 hex further next turn, toward that enemy.</li>
+  <li>Two-hex <b>giants</b> squeeze through one-hex gaps at the cost of 2 moves.</li></ul>
+  <h3>The armies</h3>
+  <p>Ten armies, each with its own way to win and its own weakness: see the cards on the home page, and tap any unit there to look at it in 3D.</p>`}
 function rulesTop(){
-  if((G&&G.realm)||(!G&&cfg.map==='realm'))return realmRules()+'<hr>'+rulesTop0();
+  if(realmNow())return realmRules()+realmCommon();
   return rulesTop0()}
 
 function storyRules(){return `<h3>The Realm: the story</h3><ul>
   <li><b>The Fall.</b> A peaceful planet kept its power in the five stones of its crown. One alien race sent the Rift Beast to take them; it fell on the city on the very first round, crushed the tower and broke the wall in four places, one breach facing each army. Four stones were thrown out onto the roads; the fifth is in its belly. The other races, your armies, come through their portals (your bases) to take the stones and the throne for themselves.</li>
-  <li><b>No AP.</b> Every unit may move once and act once each turn. Call one unit a turn from your reserve to your portal or a spawn site you own. The fallen are gone for good. Units in your home valley heal ${REALM.heal} a turn.</li>
+  <li><b>One move, one action.</b> Every unit may move once and act once each turn. Call one unit a turn from your reserve to your portal or a spawn site you own. The fallen are gone for good. Units in your home valley heal ${REALM.heal} a turn.</li>
   <li><b>The Rift Beast</b> never moves. Its max HP starts at ${REALM.storyBeastHp} and falls ${REALM.beastDecay} every round as the Rift closes. Once a round, after the last player, it makes one attack: a <b>tentacle sweep</b> through a breach whenever units stand in one (the red cones on the board: ${REALM.sweepDmg} minus DEF, shoved 1 hex); when no breach holds anyone, the stronger of <b>rift spit</b> at one unit ${REALM.spitMin} to ${REALM.spitMax} hexes from its body (${REALM.spitDmg} ignoring DEF, ${REALM.spitSplash} to its neighbours), or <b>roar</b> (${REALM.roarDmg} ignoring DEF to everyone within ${REALM.roarReach}, knocked back).</li>
   <li><b>The spawns.</b> Twice, in rounds ${REALM.waves.join(' and ')}, the Beast tears one spawn per player off its body, each bound to one Crown Stone. A spawn fetches its stone and runs it back; the Beast swallows it (+1 damage on all its attacks, +${REALM.stoneHp} HP). Whoever carries a stone is hunted by its spawn. The first wave are <b>stone-thieves</b> (${REALM_MON.spawn3.hp} HP): they spit from 3 hexes; killing one gives the killer +1 ATK and denies the Beast its stone. The second wave are <b>hunters</b> (${REALM_MON.spawn4.hp} HP): they sweep a cone; killing one gives ${REALM_MON.spawn4.pts} point and +2 max HP to the killer's whole army. Spawns never hunt the King and take double damage from him.</li>
   <li><b>Crown Stones.</b> Walk onto one to carry it; it does nothing yet. A carrier that dies drops it. When one of your units is crowned, every stone your side carries goes into the crown: <b>+1 ATK and +1 max HP for the King per stone</b>, and stones your side picks up later go in too.</li>
@@ -9847,7 +9873,7 @@ function storyRules(){return `<h3>The Realm: the story</h3><ul>
   <li><b>Light and fast, heavy and slow.</b> Units with no armour move 1 more, units with 2+ DEF move 1 less; giants walk 4 and never stop on mountains or rivers. Blows struck from next to the target deal 1 more; shots from afar deal 1 less.</li><li><b>The Keep and its supplies</b> (v149). The Keep stands on the middle hex of your base: ${REALM.keep.hp} HP, ${REALM.keep.def} DEF, it never strikes and your own units cannot touch it. An enemy that razes it scores <b>${REALM.keep.pts} points</b>, every Crown Stone stored inside falls out for the raider, your Fountain runs dry and your supplies stop. A Crown Stone carried into your base is stored in the Keep: safe from the spawns (who then come for the Keep itself), and it goes into the crown when a unit of yours is crowned. THE SUPPLY WAGON (v161): once your reserve is empty (every unit called), the Keep sends a wagon, one at a time. At the start of each of your turns it rolls ${REALM.wagon.speed} hexes toward your unit ${wagonWho()}, and that unit takes it when the wagon reaches it. An enemy that steps on the wagon destroys it. The next wagon leaves the Keep ${REALM.wagon.load} rounds after the last one was taken or destroyed. What it carries, by army: ${Object.entries(SUPPLY).map(([f,S])=>`<b>${FAC[f].name}</b> ${S.name} (${S.text})`).join('; ')}. The Riftwalkers and the Ooze have none yet.</li>
 </ul>`}
 function realmRules(){if(typeof STORY==='function'&&RULES.STORY2)return storyRules();return `<h3>The Realm (test board)</h3><ul>
-  <li><b>No AP.</b> Every unit may move once and act once (attack or ability) each turn. Abilities only rest.</li>
+  <li><b>One move, one action.</b> Every unit may move once and act once (attack or ability) each turn. Abilities rest after use.</li>
   <li><b>Your army grows.</b> You start with your Leader and ${REALM.start} units. Once per turn, tap a unit in the reserve bar (above the board) to call it into your base; if you forget, the first one comes at the end of your turn. The fallen are gone for good.</li>
   <li><b>Home valley and the Healing Fountain.</b> Your base sits in a corner valley ringed by broken mountains. The fountain stands just outside the keep, on the road to the centre (nobody can stand on it): every unit of yours next to it heals ${REALM.heal} at the start of your turn. Two Valley Camps live there (tier 1): the unit that lands the killing blow gains +${REALM.t1Hp} max HP and +${REALM.t1Atk} ATK for good, so choose who strikes last, and the camp becomes your <b>spawn site</b>. Camps never come back.</li>
   <li><b>Spawn sites.</b> A cleared tier-1 or tier-2 camp is yours: when you call a unit you may put it next to any spawn site you own. A site stays yours until an enemy unit stands on it.</li>
@@ -9933,7 +9959,7 @@ function showRules(){
   const mv=Object.entries(MOVES).filter(([k])=>k!=='fly').map(([k,m])=>`<li><span class="glyph">${m.glyph}︎</span> <b>${m.free?'Free':'Pattern'}</b>: ${m.text(k==='march'?2:3)}</li>`).join('');
   const cs=COLLAPSE_START;
   o.innerHTML=`<div class="modal"><h2>How to play</h2>${rulesTop()}
-  <details class="more"><summary>Every detailed rule, and the random board</summary>
+  ${realmNow()?'':`<details class="more"><summary>Every detailed rule, and the random board</summary>
   <p>Hexmarch is chess on a hex board for 2 to 6 players, with hit points instead of instant captures. Every game turns on three things worth fighting for: <b>the Centre</b> (the Heart and its Throne), <b>the Flanks</b> (flags, the Wellspring and Relics), and <b>the Ultimates</b>, army-wide spells that can turn a game around in one move.</p>
   <h3>A game in three acts</h3><ul>
   <li><b>Crown Wilds (board choice in the setup, 4 players).</b> A hand-made map instead of the round board. Each army starts around its own open base of 7 hexes on the edge of the map, with three roads: to the Throne Hall, to its Vault, and past its Crypt to the Standing Stones. Rivers and rubble block walking; flyers cross them and fly over walls.
@@ -10026,15 +10052,15 @@ function showRules(){
   <h3>Traits</h3><ul>${Object.values(TRAITS).map(t=>`<li><b>${t.name}</b>: ${t.text}</li>`).join('')}</ul>
   <h3>Modes</h3><ul>${Object.values(MODES).map(m=>`<li><b>${m.name}</b>: ${m.desc}</li>`).join('')}</ul>
   <h3>Teams of 2</h3><p>With 4 or 6 players, partners start side by side and share a win. You can't attack your partner, but Gizmo Bombs hit everyone.</p>
-  </details>
+  </details>`}
   <div class="row" style="margin-top:14px"><button class="btn primary" id="closeM">Got it</button></div></div>`;
   o.hidden=false;$('#closeM').onclick=closeModal;rulesTools(o,[(G&&G.realm)||(!G&&cfg.map==='realm')?'The Realm':'Crown Wilds','How you score','Your turn','Moving','Fighting','Abilities','Statuses','The armies']);
 }
 function showQuick(){
-  const o=$('#overlay');const row=(a,b)=>`<tr><th>${a}</th><td>${b}</td></tr>`;
+  const o=$('#overlay');const AP_RE=/(^|[^A-Za-z_])AP([^A-Za-z_]|$)/;const row=(a,b)=>realmNow()&&AP_RE.test(a+' '+b)?'':`<tr><th>${a}</th><td>${b}</td></tr>`;/* v169: no AP rows on the Realm */
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
-  ${G&&G.realm?row('The Realm',`No AP: every unit moves once and acts once · call 1 unit a turn, to your base or a spawn site you own · fallen units are gone · heal ${REALM.heal} a turn in your valley · camps: Valley Camp (+${REALM.t1Hp} HP, +${REALM.t1Atk} ATK to the killer, spawn site), Healing Spring (army heals ${REALM.springHeal}, spawn site), Ogre (+${REALM.ogreAtk} ATK to the killer, spawn site), Ruin (a relic) · points only from: King 1 a turn, Drake ${REALM_MON.drake.pts} (and a fallen unit returns), Wanderer ${REALM.wanderPts} (2 levers of 2 sides wake it), Rift Beast ${RULES.BEAST_PTS} · first to ${REALM.target} · no armour +1 move, 2+ DEF −1 move · close hits +1, far hits −1`):''}
+  ${G&&G.realm?row('The Realm',`Every unit moves once and acts once · call 1 unit a turn, to your base or a spawn site you own · fallen units are gone · heal ${REALM.heal} a turn in your valley · camps: Valley Camp (+${REALM.t1Hp} HP, +${REALM.t1Atk} ATK to the killer, spawn site), Healing Spring (army heals ${REALM.springHeal}, spawn site), Ogre (+${REALM.ogreAtk} ATK to the killer, spawn site), Ruin (a relic) · points only from: King 1 a turn, Drake ${REALM_MON.drake.pts} (and a fallen unit returns), Wanderer ${REALM.wanderPts} (2 levers of 2 sides wake it), Rift Beast ${RULES.BEAST_PTS} · first to ${REALM.target} · no armour +1 move, 2+ DEF −1 move · close hits +1, far hits −1`):''}
   ${row('Three acts',`Round ${RULES.FLAG_FROM}: flags score · round ${RULES.SPRING_AT}: the Wellspring rises on the outer ring · round ${RULES.CENTRE_FROM}: the wall around the Heart falls and the Rift Beast breaks out beside the Heart · then the Collapse closes the board, slower as it goes`)}
   ${row('AP per turn',`${RULES.BASE_AP} base · +${RULES.LEADER_AP} Leader alive (+${RULES.LEADERLESS_AP} without) · +1 Wellspring · +1 Sand of Ages · max ${RULES.AP_CAP}`)}
   ${row('Costs','Move 1 · Attack 2 · Ability 0–3 · Ultimate '+RULES.ULT_COST+' (team '+RULES.TEAM_ULT_COST+') · gnome machines fire for free for 1 damage, and may attack at full strength once for 2 AP')}
@@ -10718,8 +10744,8 @@ document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement
 document.addEventListener('pointerdown',e=>{if(document.body.classList.contains('drawer')&&!e.target.closest('aside.side')&&!e.target.closest('#abInfo')&&!e.target.closest('#infoBtn')){document.body.classList.remove('drawer');if(lpInsp&&G){lpInsp=false;G.inspect=null;refresh()}}});
 $('#endBtn').onclick=()=>{if(!isHumanTurn())return;if(G.phase==='deploy'){curtain=null;deployReady();refresh();netPush();return}recapSnap(G.cur);endTurn()};
 $('#ultBtn').onclick=()=>{if(G&&G.stormPick){G.stormPick=null;toast('Rift Storm cancelled.',1800);refresh();return}if(!isHumanTurn()||!canUlt(G.cur))return;const p=P(G.cur),U=ULTS[p.fac],o=$('#overlay');const q=canTeamUlt(G.cur)?partnerOf(G.cur):null;
-  o.innerHTML=`<div class="modal" style="max-width:460px"><div class="label">Ultimate · ${RULES.ULT_COST} AP · cast #${(p.ultN||0)+1} (next one needs ${ultNeed(p)+RULES.ULT_STEP} charge)</div><h2 style="color:${FAC[p.fac].color}">⚡ ${U.name}</h2><p>${U.text}</p>
-    ${q?`<div class="abil" style="border-color:${FAC[q.fac].color}"><b>Team Ultimate available</b> · ${RULES.TEAM_ULT_COST} AP<br>Your partner's <b style="color:${FAC[q.fac].color}">${ULTS[q.fac].name}</b> is charged too. Fire both at once: ${ULTS[q.fac].text} Every unit on both your sides also heals 2. Uses both charges.</div>`:''}
+  o.innerHTML=`<div class="modal" style="max-width:460px"><div class="label">Ultimate · ${apFree()?'':RULES.ULT_COST+' AP · '}cast #${(p.ultN||0)+1} (next one needs ${ultNeed(p)+RULES.ULT_STEP} charge)</div><h2 style="color:${FAC[p.fac].color}">⚡ ${U.name}</h2><p>${U.text}</p>
+    ${q?`<div class="abil" style="border-color:${FAC[q.fac].color}"><b>Team Ultimate available</b>${apFree()?'':' · '+RULES.TEAM_ULT_COST+' AP'}<br>Your partner's <b style="color:${FAC[q.fac].color}">${ULTS[q.fac].name}</b> is charged too. Fire both at once: ${ULTS[q.fac].text} Every unit on both your sides also heals 2. Uses both charges.</div>`:''}
     <div class="row" style="margin-top:14px">${q&&G.ap>=RULES.TEAM_ULT_COST?`<button class="btn primary" id="ultTeam">⚡⚡ Team: ${U.name} + ${ULTS[q.fac].name}</button>`:''}${U.pick4&&G.realm?ult4Buttons(p):`<button class="btn ${q?'':'primary'}" id="ultGo">Unleash ${U.name}</button>`}<button class="btn" id="ultNo">Not yet</button></div></div>`;
   o.querySelectorAll('[data-el]').forEach(b=>b.onclick=()=>{o.hidden=true;if(!canUlt(G.cur))return;G.ultEl=b.dataset.el;useUlt(false)});
   o.hidden=false;if($('#ultGo'))$('#ultGo').onclick=()=>{o.hidden=true;if(!canUlt(G.cur))return;if(ULTS[p.fac].pick&&RULES.RIFTKIT){G.sel=null;G.amode=null;G.aim=null;G.stormPick=[];toast('Rift Storm: tap 3 empty hexes, at least 3 apart, to open the holes.',5000);refresh();return}useUlt(false)};$('#ultNo').onclick=()=>{o.hidden=true};
@@ -10768,13 +10794,13 @@ window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.ho
    with an arrow marks where to tap, in both views. The enemy side's turns pass at once (botLoop checks G.tutorial). */
 var TUT={on:false,i:0,timer:0,mem:{}};
 const TUT_STEPS=[
-  {t:'Welcome to Hexmarch',s:'You lead the <b>Iron Warband</b>. Every turn you get a pool of <b>action points (AP)</b>, shown as diamonds at the top. This short lesson shows you the moves you need for a real game.',next:1},
+  {t:'Welcome to Hexmarch',s:'You lead the <b>Iron Warband</b>. Every turn each of your units may <b>move once and act once</b> (attack or use an ability). This short lesson shows you the moves you need for a real game.',next:1},
   {t:'Select a unit',s:'Tap your <b>Berserker</b> (marked with the gold ring). Its card opens and the board shows what it can do.',at:()=>U('Berserker'),done:()=>G.sel===U('Berserker').id},
-  {t:'Move',s:'The white dots show where it can walk. Move the Berserker to the marked hex, next to the enemy Frostling. A move costs <b>1 AP</b>. Each unit can move once and act once per turn.',at:()=>[2,2],done:()=>U('Berserker').moved},
-  {t:'Attack',s:'Enemies you can hit right now are marked red. Tap the <b>Frostling</b> to attack it (<b>2 AP</b>). Damage is your ATK minus its DEF.',at:()=>E('Frostling'),done:()=>{const f=E('Frostling');return !f||f.hp<f.maxhp}},
+  {t:'Move',s:'The white dots show where it can walk. Move the Berserker to the marked hex, next to the enemy Frostling. Each unit can move once and act once per turn.',at:()=>[2,2],done:()=>U('Berserker').moved},
+  {t:'Attack',s:'Enemies you can hit right now are marked red. Tap the <b>Frostling</b> to attack it. Damage is your ATK minus its DEF.',at:()=>E('Frostling'),done:()=>{const f=E('Frostling');return !f||f.hp<f.maxhp}},
   {t:'Hit and run',s:'Nobody is pinned: a unit next to an enemy may still walk away. Most units cannot hit back, but a few sturdy ones (like the <b>Frost Warden</b>) have <b>Riposte</b> and strike back for half. A melee unit that hit someone gets <b>Pursuit</b> next turn: 1 extra hex toward that enemy.',next:1},
   {t:'Use an ability',s:'Tap your <b>Warlord</b> and press <b>Rally</b> in the action bar: every Warband unit within 2 hexes gets +1 ATK. Abilities then rest for a few turns (the number on the unit).',at:()=>U('Warlord'),done:()=>G.units.some(u=>u.owner===0&&(u.cd>0||u.cd2>0))},
-  {t:'End your turn',s:'When you have spent your AP, press <b>End turn</b>. The other players move, then your AP refills. Unused AP is lost (only the Hourglass Order can keep some).',done:()=>G.round>TUT.mem.round0&&G.cur===0},
+  {t:'End your turn',s:'When your units have done what you want, press <b>End turn</b>. The other players move, then all your units are ready again.',done:()=>G.round>TUT.mem.round0&&G.cur===0},
   {t:'Your Ultimate',s:'Kills, losses, flags and the Throne fill your <b>Ultimate</b> charge. I filled it for you: press the <b>⚡ Ultimate</b> button. The Warband’s <b>Warhorn</b> gives your whole army all three orders for a round: +1 ATK and +1 move this turn, 1 less from every hit until your next turn.',done:()=>(P(0).ultN||0)>0,enter:()=>{const p=P(0);p.ult=ultNeed(p)}},
   {t:'Take the Throne',s:'The golden hex in the centre is the <b>Throne</b>. Walk your <b>Raider</b> onto it: the first unit to sit there is crowned <b>King</b> (+1 ATK, +1 DEF for life).',at:()=>[0,0],done:()=>{const k=kingOf();return !!k&&k.owner===0}},
   {t:'Win the game',s:'In <b>Warlord</b> you win by points: the King scores 1 at the start of your turn while it sits on the Throne, killing the King gives 1, killing an enemy Leader gives 2, the side with the most flags scores, and slaying the Rift Beast gives 3. If your Leader falls, crown a new King and it leads your army.',next:1},
@@ -10787,7 +10813,7 @@ function startTutorial(){
   labClear();G.tutorial=true;G.noWall=true;G.round=5;G.cur=0;
   for(const [n,q,r] of [['Warlord',0,5],['Berserker',2,4],['Spearman',1,4],['Shieldbearer',-1,5],['Raider',-1,3]])labUnit(0,n,q,r,{dir:4});
   for(const [n,q,r] of [['Ice Queen',0,-6],['Frostling',2,1],['Frost Warden',4,0]])labUnit(1,n,q,r,{dir:1});
-  G.ap=G.apMax=6;G.apParts={base:4,leader:2,throne:0,relic:0,bank:0,first:0,well:0,loot:0};
+  G.ap=G.apMax=99;/* v169: no AP in the tutorial */G.apParts={base:4,leader:2,throne:0,relic:0,bank:0,first:0,well:0,loot:0};
   TUT.on=true;TUT.i=0;TUT.mem={round0:G.round};
   if(window.innerWidth<700&&!document.body.classList.contains('focus'))setFocus(true);
   faceHome(0);CAM.az=CAM.azT;layout();centerBoard();refresh();
