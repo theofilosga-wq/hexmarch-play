@@ -1821,7 +1821,8 @@ function distUU(a,b){let d=99;for(const x of cells(a))for(const y of cells(b))d=
 function distUC(u,q,r){let d=99;for(const x of cells(u))d=Math.min(d,hd(x[0],x[1],q,r));return d}
 function unitAt(q,r){return occ().get(key(q,r))||null}
 function byId(id){return G.units.find(u=>u.id===id)||null}
-function isFoe(u,v){return v.kind==='wall'?!(v.keepOf!=null&&u.owner>=0&&tm(v.keepOf)===tm(u.owner)):tm(v.owner)!==tm(u.owner)}/* v149: nobody attacks their own Keep */
+const godOurs=(u,v)=>{if(!v||!v.god||!u||u.owner<0)return false;const K=kingOf();return !!K&&tm(K.owner)===tm(u.owner)};/* v162b: the Old God serves the King; the King's side cannot strike it */
+function isFoe(u,v){return v.kind==='wall'?!(v.keepOf!=null&&u.owner>=0&&tm(v.keepOf)===tm(u.owner))&&!godOurs(u,v):tm(v.owner)!==tm(u.owner)}/* v149: nobody attacks their own Keep */
 /* Claiming ground: at the end of your turn, every hex your units stand on becomes your colour.
    Neutral ground flips at once; an enemy's ground must be held through 2 of your turn-ends. The Heart and no man's land can't be claimed. */
 function claimable(q,r){return solid(q,r)&&featAt(q,r)!=='rock'&&!isNoMans(q,r)}
@@ -3034,7 +3035,7 @@ function attackTargets(u){
 const lineUp=(a,b,V)=>{for(const [aq,ar] of cells(a))for(const [bq,br] of b)for(const [dq,dr] of V){const sq=bq-aq,sr=br-ar;const n=dq?sq/dq:sr/dr;if(n>0&&Number.isInteger(n)&&sq===dq*n&&sr===dr*n)return true}return false};
 function whyNoAttack(u,t){
   if(!u||!t||u.kind==='wall')return null;const nm=u.name;
-  if(!isFoe(u,t))return t.kind==='wall'?(t.monster==='keep'?'That is your own Keep.':null):`The ${t.name} is on your side.`;
+  if(!isFoe(u,t))return t.kind==='wall'?(t.monster==='keep'?'That is your own Keep.':t.god?'The Old God serves your King: your side cannot strike it.':null):`The ${t.name} is on your side.`;
   if(u.at==='none'||u.egg)return `The ${nm} has no basic attack${u.ability||u.book?': use its ability instead':''}.`;
   if(truce())return `Round ${RULES.TRUCE} is a truce: nobody can attack yet.`;
   if(u.st.frozen)return `The ${nm} is ${u.st.stun?'stunned':'frozen'} and loses this turn.`;
@@ -5039,7 +5040,8 @@ function realmSlain(t,R,k){
   if(R&&(R.tier===1||R.tier===2)){G.outposts=G.outposts||[];if(!G.outposts.some(o=>o[0]===R.c[0]&&o[1]===R.c[1]))G.outposts.push([R.c[0],R.c[1]]);G.flagOwner=G.flagOwner||{};G.flagOwner[key(R.c[0],R.c[1])]=p.id}
   {const ch=REALM.charge[M.tier]-(t.halfCh||0);if(ch>0)addCharge(p.id,ch)}
   if(trk()){const O=tObj();if(O){O.realm=O.realm||[];O.realm.push({m:t.monster,pid:p.id,round:G.round})}}
-  realmPts(p.id,Math.max(0,(t.spawnW===2&&!RULES.SPAWN_PTS?0:M.pts)-(t.halfPts||0)),'camp'+M.tier,`${F.name} take the ${t.name}`)}
+  const ownGod=t.god&&kingOf()&&tm(kingOf().owner)===tm(p.id);/* v162b: no points for the King's side if an area effect of its own kills the Old God */
+  realmPts(p.id,ownGod?0:Math.max(0,(t.spawnW===2&&!RULES.SPAWN_PTS?0:M.pts)-(t.halfPts||0)),'camp'+M.tier,`${F.name} take the ${t.name}`)}
 /* v117 (owner: "camps have 2 phases like some Elden Ring bosses, and drop half the reward at half HP and the rest when they die"): at half HP a tier-2/3 camp ENRAGES
    (REALM.phase2: +ATK, the Drake also strikes everyone next to it) and the side whose hit broke it takes half the reward at once: the Spring's heal and half its charge,
    the Drake's first point and half its charge. The killing blow takes the rest (the spawn site; the Drake's other points and the fallen unit back). */
@@ -5126,7 +5128,7 @@ function realmGoalText(m){if(m.monster==='cracked')return {todo:`break the crack
   return {todo:`land the killing blow on the ${m.name} (${m.maxhp} HP${m.def?', '+m.def+' DEF':''}). ${hits}${back}`,get}}
 // Bots: where a unit heads on the Realm when no fight is close.
 function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.machine)return null;
-  if(RULES.KEEP&&p.fount&&!p.keepDown&&u.kind!=='wall'&&!u.leader&&!lootOf(u)){const foeNear=G.units.some(v=>v.kind!=='wall'&&!inert(v)&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)<=3);const kg=kingOf(),race=kg&&tm(kg.owner)!==tm(u.owner)&&teamScore(tm(kg.owner))>=heartTarget()-6;/* v161: nobody walks home while an enemy King is six points from winning */if(race)u.goHome=0;else if(u.hp<=u.maxhp*0.4&&!foeNear)u.goHome=1;else if(u.hp>=u.maxhp*0.7||(foeNear&&u.hp>u.maxhp*0.6))u.goHome=0;if(u.goHome)return [p.fount[0],p.fount[1],6]}/* v149 bots: retreat to the Fountain, come back with the supplies */
+  if(RULES.KEEP&&p.fount&&!p.keepDown&&u.kind!=='wall'&&!u.leader&&!lootOf(u)){const foeNear=G.units.some(v=>v.kind!=='wall'&&!inert(v)&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)<=3);const kg=kingOf(),race=kg&&tm(kg.owner)!==tm(u.owner)&&onThrone(kg);/* v162b: nobody walks home while an enemy King sits the Throne (v161 waited until he was six points from winning, which was too late to walk back) */if(race)u.goHome=0;else if(u.hp<=u.maxhp*0.4&&!foeNear)u.goHome=1;else if(u.hp>=u.maxhp*0.7||(foeNear&&u.hp>u.maxhp*0.6))u.goHome=0;if(u.goHome)return [p.fount[0],p.fount[1],6]}/* v149 bots: retreat to the Fountain, come back with the supplies */
   const hurtN=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall').reduce((s,v)=>s+(v.maxhp-v.hp),0);
   /* v151 RAIDING PARTY: from round 12 a third of the army (never the Leader) walks to the nearest standing enemy Keep: 3 points and the stones inside are the
      points the scarce board no longer hands out at the centre. The rest of the army keeps fighting where it is. */
