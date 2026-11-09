@@ -947,6 +947,10 @@ const ABIL={
     desc:'An ally within 4 and every ally next to it get +3 DEF until your next turn.'},
   e_stonegrip:{name:'Stone Grip',cost:2,cd:1,aim:'unit',range:4,hits:'foe',special:'stonegrip',dmg:2,pierce:1,spread:1,el:'earth',spell:1,
     desc:'An enemy within 4 and every enemy next to it take 2 (ignoring DEF) and can’t move on their next turn.'},
+  e_flamewall:{name:'Flame Wall',cost:1,cd:3,aim:'dir',shape:'line',size:3,hits:'none',special:'shape',el:'fire',spell:1,bot:'shape',desc:'The Elemental shapes the land: a line of 3 hexes in the chosen direction catches fire for 3 turns, the same fire as the Ember Court’s (1 damage to any unit still standing in it at the end of its turn). Laid over water it makes steam, over a wind lane wildfire, over a stone wall lava. One shape per Elemental: a new one dissolves its old one.'},
+  e_river:{name:'River',cost:1,cd:3,aim:'dir',shape:'line',size:4,hits:'none',special:'shape',el:'water',spell:1,bot:'shape',desc:'The Elemental shapes the land: a line of 4 empty hexes in the chosen direction becomes water for 3 turns: nobody walks through (flyers and giants cross, Frost units walk on it and freeze it); a hex with a unit on it stays dry. Water puts out fire. Laid over fire it makes steam, over a stone wall mud, over a wind lane rain. One shape per Elemental.'},
+  e_stonewall:{name:'Stone Wall',cost:1,cd:3,aim:'dir',shape:'arc',hits:'none',special:'shape',el:'earth',spell:1,bot:'shape',desc:'The Elemental shapes the land: the 3 hexes in front rise into a stone wall for 3 turns, 6 HP each, that nobody walks through. Laid over water it makes mud, over fire lava, over a wind lane dust. One shape per Elemental.'},
+  e_windlane:{name:'Wind Lane',cost:1,cd:3,aim:'dir',shape:'line',size:5,hits:'none',special:'shape',el:'air',spell:1,bot:'shape',desc:'The Elemental shapes the land: a line of 5 hexes becomes a wind lane for 3 turns: whoever moves onto it is carried 2 hexes further downwind (crashing into walls or units hurts). Laid over fire it makes wildfire, over water rain, over a stone wall dust. One shape per Elemental.'},
   e_tailwind:{name:'Tailwind',cost:1,cd:0,aim:'unit',range:5,hits:'ally',special:'tailwind',spread:1,el:'air',spell:1,
     desc:'An ally within 5 and every ally next to it get a free move this turn and +1 ATK until the start of your next turn.'},
   e_gust:{name:'Gust',cost:2,cd:1,aim:'unit',range:5,hits:'foe',special:'gust',push:4,spread:1,el:'air',spell:1,
@@ -1307,7 +1311,7 @@ const FAC={
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
     theme:'Five walking fortresses that start strong: they stride over mountains and rivers and leave stones for their kin.',
     passive:'Giants fill two hexes, move 3 (4 on the Realm) and walk over mountains and rivers (never through the Heart’s wall). Pushes and pulls move them half as far; they fall only into two holes in a row. Giant Remains: a fallen giant leaves 2 stones on its hexes; a giant of its army that steps on one heals 10, gains +4 max HP and +2 ATK and learns the fallen giant’s ability; one reward for each fallen giant (it keeps its own rests; one action a turn still). Only giants can touch the stones. Lone Giants: a giant with no other giant of yours within 3 has +1 ATK and +1 DEF. Last of the Old Ones: when a giant falls, every giant still standing heals 3 and gains +1 ATK. Swarmed: +1 damage taken from melee while 2 or more enemies stand next to it.',gateBlock:1,swarmed:1,
-    home:'Stone ground: giants can’t be chilled, frozen or mired there.',homeRealm:'No home ground on the Realm.',stoneFoot:1,
+    home:'Stone ground: giants can’t be chilled, frozen or mired there.',homeRealm:'Sons of the Earth: every giant ability breaks the ground it hits into stone for 4 turns. A giant standing on stone hits for 1 more and heals 1 at the start of your turn, and can’t be chilled, frozen or mired there.',stoneFoot:1,
     units:[
       {name:'Mountain King',icon:'crown',leader:1,hp:16,atk:4,def:2,mov:2,mt:'walk',at:'melee',rng:1,ab:'mountainfall'},
       {name:'Boulder Hurler',icon:'boulder',hp:10,atk:5,def:1,mov:2,mt:'walk',at:'lob',rng:3,rmin:2,ab:'boulder'},/* v95 (owner): 3 ATK; v129 (owner): walks, no more diagonal jumps */
@@ -1526,10 +1530,10 @@ function splitUnit(t){const S=SPLITS[t.name];if(!RULES.SPLITTERS||!S||t.kind==='
 /* v68 Ascension. p.el = bars, p.evo = elements already ascended, p.evoN = how many. Units carry u.el (their element). */
 const EL_KEYS=['fire','water','earth','air'];const EL_NAME={fire:'Fire',water:'Water',earth:'Earth',air:'Air'};const EL_COL={fire:'#ff6a2a',water:'#3fa8ff',earth:'#8a6a3a',air:'#d8eef2'};
 const EL_NEED=[2,3,4,5];
-const ELEMENTALS={fire:{name:'Fire Elemental',icon:'flame',hp:14,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_flare','e_flamelash'],trait:'livingflame'},
-  water:{name:'Water Elemental',icon:'wave',hp:15,atk:1,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_cleanwave','e_healtide'],trait:'spring'},
-  earth:{name:'Earth Elemental',icon:'boulder',hp:17,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,book:['e_stoneskin','e_stonegrip'],trait:'bedrock'},
-  air:{name:'Air Elemental',icon:'wing',hp:12,atk:2,def:0,mov:4,mt:'fly',at:'bolt',rng:2,book:['e_tailwind','e_gust'],trait:'windwalk'}};
+const ELEMENTALS={fire:{name:'Fire Elemental',icon:'flame',hp:14,atk:3,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_flamewall','e_flamelash'],trait:'livingflame'},
+  water:{name:'Water Elemental',icon:'wave',hp:15,atk:1,def:0,mov:3,mt:'walk',at:'bolt',rng:2,book:['e_river','e_healtide'],trait:'spring'},
+  earth:{name:'Earth Elemental',icon:'boulder',hp:17,atk:2,def:1,mov:2,mt:'walk',at:'melee',rng:1,book:['e_stonewall','e_stonegrip'],trait:'bedrock'},
+  air:{name:'Air Elemental',icon:'wing',hp:12,atk:2,def:0,mov:4,mt:'fly',at:'bolt',rng:2,book:['e_windlane','e_gust'],trait:'windwalk'}};
 const ELEMENTAL_LORD={name:'Elemental Lord',icon:'crystal',hp:18,atk:4,def:1,mov:3,mt:'walk',at:'melee',rng:1,book:['inferno','greattide','mountaingrip','tempest'],ab2:'convergence',trait:'lord'};
 const elNeed=p=>Math.max(2,(G&&G.realm?[3,4,5,6]:EL_NEED)[Math.min(3,p.evoN||0)]-(talent(p,'earlyrising')?1:0));/* v134 Early Rising */// v75 (brief): 3, 4, 5, 6 on the Realm
 const lordPow=(u,el)=>{const p=G.players[u.owner];return p&&p.lordPow?Math.floor((p.lordPow[el]||0)/2):0};// v75: +1 per 2 Elemental spells of that element
@@ -1871,6 +1875,66 @@ function territoryLeader(){const t=territory();let best=null,bv=-1,tie=false;for
 function terrAt(q,r){const k=key(q,r);const p=G.paint[k];return p?p.fac:G.terr[k]}
 // Red ground under the unit (Ember Court's painted or home ground): Fire-blooded (Salamander, v25).
 const onRed=u=>u.kind!=='wall'&&cells(u).some(([q,r])=>terrAt(q,r)==='fire');
+
+/* v168 THE ELEMENTALS SHAPE THE LAND (owner 9 Nov 2026: 'Elementals that shape hexes: water = river/lake, earth = stone wall, fire = lava, air = a wind lane that pushes
+   movers; and combine on the same hexes'; his rules: one shape per Elemental, nothing permanent; the fire hex is the same fire as the Ember Court's; Steam and Dust added).
+   Shaping is the reward for ascending: each Elemental trades its smaller shaman spell for a shape (RULES.SHAPES). A River is a real river (G.feat, so every water rule
+   applies: Frost walks on it and freezes it, giants and flyers cross), a Stone Wall is a wall unit like the Ice Wall, the rest is painted ground with its own colour.
+   Combinations: water+earth Mud (a unit that enters stops, a unit starting in it walks 1 less), fire+air Wildfire (spreads one hex a turn down the lane), water+air Rain
+   (puts out fire, allies in it heal 1 a turn), earth+fire Lava (walkable, 4 damage to whoever enters or ends its turn there), fire+water Steam (hides like a bush),
+   earth+air Dust (nobody in it shoots or is shot from more than 2 hexes). RULES.SHAPE_SAFE refuses a river or wall that would cut a walker off from the others. */
+const SHAPE_COMBO={'fire|water':'steam','air|fire':'wildfire','earth|fire':'lava','earth|water':'mud','air|water':'rain','air|earth':'dust'};
+const SHAPE_COL={steam:'#e3e8ee',lava:'#ff6a1a',mud:'#7a5a33',rain:'#5f8fe0',dust:'#cbb47a',wind:'#bfe6ff'};
+const SHAPE_WORD={steam:'Steam: hidden beyond 2 hexes',lava:'Lava: 4 damage to whoever enters or ends a turn here',mud:'Mud: entering stops you; starting here you walk 1 less',rain:'Rain: puts out fire, the shaper’s allies heal 1 a turn',dust:'Dust: no shots in or out beyond 2 hexes',wind:'Wind lane: whoever moves onto it is carried 2 hexes downwind',wildfire:'Wildfire: burning, and it spreads down the lane',flame:'Burning ground'};
+function shapesOn(){return !!(RULES.SHAPES&&G&&G.realm)}
+function paintKind(q,r){const pt=G.paint[key(q,r)];return pt?(pt.kind||(pt.fac==='fire'?'flame':null)):null}
+function shapeAtU(u,kind){return !!(u&&u.kind!=='wall'&&cells(u).some(([q,r])=>paintKind(q,r)===kind))}
+const mudAt=(q,r)=>shapesOn()&&paintKind(q,r)==='mud';
+const shapeHides=v=>shapesOn()&&v.kind!=='wall'&&(shapeAtU(v,'steam')||shapeAtU(v,'dust'));
+const dustCap=u=>shapesOn()&&shapeAtU(u,'dust')?2:99;
+function shapeReg(u,k,o){if(!G.shapes)G.shapes={};G.shapes[k]=Object.assign({by:u.id,owner:u.owner,ttl:REALM.shape.ttl},o);u.shaped=(u.shaped||[]).concat([k])}
+function shapeClear(k){const sh=G.shapes&&G.shapes[k];if(!sh)return;const [q,r]=k.split(',').map(Number);if(sh.el==='water'){if(sh.prev)G.feat[k]=sh.prev;else delete G.feat[k]}
+  const pt=G.paint[k];if(pt&&pt.shape)delete G.paint[k];if(sh.wall!=null){const i=G.units.findIndex(w=>w.id===sh.wall);if(i>=0)G.units.splice(i,1)}delete G.shapes[k];const by=byId(sh.by);if(by&&by.shaped)by.shaped=by.shaped.filter(x=>x!==k)}
+function shapeDissolve(u){for(const k of (u.shaped||[]).slice())shapeClear(k);u.shaped=[]}
+function shapePaint(u,k,o){G.paint[k]=Object.assign({ttl:REALM.shape.ttl,owner:u.owner,shape:1},o)}
+function shapeLayCombo(u,k,kind,dir){const base={fac:'mage',kind,col:SHAPE_COL[kind]};if(kind==='wildfire')Object.assign(base,{fac:'fire',col:undefined,wind:dir,spread:1});if(kind==='rain'){const pt=G.paint[k];if(pt&&pt.fac==='fire'&&!pt.shape)delete G.paint[k]}
+  shapePaint(u,k,base);shapeReg(u,k,{el:'combo',kind,dir});if(trk()&&!SIM){const e=tFx(G.players[u.owner].fac,u.name,'Shapes combined: '+kind);if(e)e.uses++}}
+function shapeLay(u,el,a,b,dir){const k=key(a,b);if(!inR(a,b)||solid&&!solid(a,b))return 0;const ex=G.shapes&&G.shapes[k];
+  if(ex&&ex.el!=='combo'&&ex.el!==el){const kind=SHAPE_COMBO[[ex.el,el].sort().join('|')];const d=ex.dir!=null?ex.dir:dir;shapeClear(k);if(!passable(a,b))return 0;shapeLayCombo(u,k,kind,d);return 2}
+  if(ex)shapeClear(k);const pt=G.paint[k];
+  if(el==='fire'){if(!passable(a,b)||(pt&&(pt.kind==='rain'||pt.sanct)))return 0;if(pt&&!pt.perm)delete G.paint[k];shapePaint(u,k,{fac:'fire',kind:'flame'});shapeReg(u,k,{el:'fire'});return 1}
+  if(el==='water'){if(!passable(a,b)||unitAt(a,b)||isTrap(a,b)||featAt(a,b)==='river'||featAt(a,b)==='ford'||(pt&&pt.sanct))return 0;if(pt)delete G.paint[k];shapeReg(u,k,{el:'water',prev:G.feat[k]});G.feat[k]='river';return 1}
+  if(el==='earth'){if(!passable(a,b)||unitAt(a,b)||isTrap(a,b))return 0;if(pt&&!pt.perm)delete G.paint[k];const w={id:G.nid++,kind:'wall',wall:'stone',owner:-1,creator:u.owner,by:u.id,abil:'Stone Wall',q:a,r:b,dir:0,size:1,hp:REALM.shape.wallHp,maxhp:REALM.shape.wallHp,def:0,ttl:REALM.shape.ttl,st:{},name:'Stone wall',shapeOf:u.id};G.units.push(w);shapeReg(u,k,{el:'earth',wall:w.id});return 1}
+  if(el==='air'){if(!passable(a,b)||(pt&&pt.sanct))return 0;if(pt&&!pt.perm)delete G.paint[k];shapePaint(u,k,{fac:'mage',kind:'wind',wind:dir,col:SHAPE_COL.wind});shapeReg(u,k,{el:'air',dir});return 1}
+  return 0}
+/* would this river or wall cut a walker off from the others, or box one into a pocket? */
+function shapeSafe(u,k,q,r){const A=ABIL[k];if(!A||A.special!=='shape'||!RULES.SHAPE_SAFE)return true;if(A.el!=='water'&&A.el!=='earth')return true;
+  const block=new Set();for(const [a,b] of shapeCells(u,k,q,r)){if(!inR(a,b)||!passable(a,b)||unitAt(a,b))continue;block.add(key(a,b))}if(!block.size)return true;
+  const walkers=G.units.filter(v=>v.kind!=='wall'&&v.owner>=0&&v.size===1&&v.mt!=='fly'&&alive(v));
+  const comp=blk=>{const id=new Map();let n=0;for(const v of walkers){const k0=key(v.q,v.r);if(id.has(k0))continue;n++;let size=0;const st=[[v.q,v.r]];id.set(k0,n);while(st.length){const [a,b]=st.pop();size++;for(const [dq,dr] of DIRS){const c=a+dq,d=b+dr,kk=key(c,d);if(id.has(kk)||!inR(c,d)||!passable(c,d)||blk.has(kk))continue;id.set(kk,n);st.push([c,d])}}if(size<REALM.shape.pocket)return -1}return n};
+  const before=comp(new Set());if(before<0)return true;const after=comp(block);return after>=0&&after<=before}
+function shapeLand(u){if(!shapesOn()||!u||u.kind==='wall'||!alive(u))return;const pts=cells(u).map(([q,r])=>G.paint[key(q,r)]).filter(Boolean);
+  const wind=pts.find(p=>p.wind!=null&&(p.kind==='wind'||p.kind==='wildfire'));if(wind&&u.size===1&&!u.shapeBlown){const src=byId(G.shapes&&G.shapes[key(u.q,u.r)]&&G.shapes[key(u.q,u.r)].by)||null;u.shapeBlown=1;try{if(!SIM)fx(u,'carried by the wind','#bfe6ff');pushUnit(u,wind.wind,REALM.shape.windPush,src,true)}finally{u.shapeBlown=0}}
+  const lava=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(p=>p&&p.kind==='lava');if(lava){const o=[CUR_SRC,CUR_TAG,CUR_NAME];const sh=G.shapes&&G.shapes[key(u.q,u.r)];CUR_SRC=sh?byId(sh.by):null;CUR_TAG='Abil';CUR_NAME='Lava';hurt(u,REALM.shape.lava,'#ff6a1a');[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!SIM)fx(u,'lava!','#ff6a1a')}}
+function shapeEndTurn(u){if(!shapesOn()||!u||u.kind==='wall'||!alive(u))return;const lava=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(p=>p&&p.kind==='lava');if(!lava)return;const o=[CUR_SRC,CUR_TAG,CUR_NAME];const sh=G.shapes&&G.shapes[key(u.q,u.r)];CUR_SRC=sh?byId(sh.by):null;CUR_TAG='Abil';CUR_NAME='Lava';hurt(u,REALM.shape.lava,'#ff6a1a');[CUR_SRC,CUR_TAG,CUR_NAME]=o}
+function shapeTick(p){if(!shapesOn()||!G.shapes)return;
+  for(const k of Object.keys(G.shapes)){const sh=G.shapes[k];if(sh.owner!==p.id)continue;if(--sh.ttl<=0)shapeClear(k)}
+  /* wildfire creeps one hex down the lane at the shaper's turn start */
+  for(const k of Object.keys(G.paint)){const pt=G.paint[k];if(!pt||pt.kind!=='wildfire'||pt.owner!==p.id||pt.wind==null||pt.spreadT===G.round)continue;const [q,r]=k.split(',').map(Number);const a=q+DIRS[pt.wind][0],b=r+DIRS[pt.wind][1],kk=key(a,b);const nx=G.paint[kk];if(!nx||nx.kind!=='wind'||!passable(a,b))continue;
+    const u=byId(G.shapes[k]&&G.shapes[k].by)||G.units.find(v=>v.owner===p.id&&v.kind!=='wall');if(!u)break;shapeClear(kk);shapePaint(u,kk,{fac:'fire',kind:'wildfire',wind:pt.wind,spread:1,spreadT:G.round,ttl:pt.ttl});shapeReg(u,kk,{el:'combo',kind:'wildfire',dir:pt.wind,ttl:pt.ttl});if(!SIM)addLog(p.id,'The wildfire creeps down the lane.')}
+  /* rain: the shaper's allies standing in it heal 1 */
+  for(const u of G.units){if(u.owner!==p.id||u.kind==='wall'||!alive(u)||u.hp>=u.maxhp)continue;const rain=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.kind==='rain'&&tm(x.owner)===p.team);if(!rain)continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=byId(G.shapes[key(u.q,u.r)]&&G.shapes[key(u.q,u.r)].by)||u;CUR_TAG='Abil';CUR_NAME='Rain';healUnit(u,1,'#5f8fe0','Rain');[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
+function shapeStatus(u){if(!shapesOn()||!u||u.kind==='wall')return null;for(const [q,r] of cells(u)){const kd=paintKind(q,r);if(kd&&SHAPE_WORD[kd]&&kd!=='flame')return {kind:kd,text:SHAPE_WORD[kd]}}return null}
+/* v167 SONS OF THE EARTH (owner 9 Nov 2026: the Stone Giants are the Titans of Greek myth; of the synergies offered he took only this one, after Antaeus,
+   who was strong while he touched the earth): every giant ability breaks the ground it hits into stone for REALM.sons.ttl turns; a giant standing on stone
+   hits for 1 more (basic attacks and abilities) and heals 1 at the start of its turn. The set-up is breaking the ground, the pay-off is standing on it. */
+function sonsOn(){return !!(RULES.SONS&&G&&G.realm)}
+function onStone(u){if(!sonsOn()||!u||u.kind==='wall'||!facOf(u).stoneFoot)return false;return cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return !!(pt&&pt.fac==='giants'&&pt.kind==='stone')})}
+function sonsBreak(u,list){if(!sonsOn()||!u||!facOf(u).stoneFoot)return 0;let n=0;const seen=new Set();for(const [q,r] of list){const k=key(q,r);if(seen.has(k)||!inR(q,r)||!passable(q,r))continue;seen.add(k);const pt=G.paint[k];if(pt&&(pt.perm||pt.sanct||pt.icew))continue;G.paint[k]={fac:'giants',ttl:REALM.sons.ttl,owner:u.owner,kind:'stone'};n++}
+  if(n&&trk()&&!SIM){const e=tFx(G.players[u.owner].fac,u.name,'Sons of the Earth (ground broken)');if(e){e.uses++;e.moved+=n}}return n}
+function sonsCells(u,k,q,r){const A=ABIL[k];if(!A)return [];if(A.special==='mountainfall')return ringCells().filter(([a,b])=>hd(a,b,q,r)<=1);
+  if(A.special==='bulwark'){const d=aimDir(u,q,r);const out=cells(u).slice();if(d>=0)for(const [a,b] of cells(u))for(let s=1;s<=3;s++)out.push([a+DIRS[d][0]*s,b+DIRS[d][1]*s]);return out}
+  if(A.special)return [[q,r]];return shapeCells(u,k,q,r)}
 function onHome(u){if(u.kind==='wall')return false;const f=G.players[u.owner].fac;return cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return pt&&pt.kind==='grove'?G.terr[key(q,r)]===f:terrAt(q,r)===f})}
 // Grove (Circle of Priests): painted holy ground, G.paint[k].kind==='grove'. Heals every unit on it 1 at the start of its owner's turn.
 const onGrove=u=>u.kind!=='wall'&&cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return !!(pt&&pt.kind==='grove')});
@@ -2044,7 +2108,7 @@ function covered(t){if(RULES.HEAVY)return false;if(t.kind==='wall'||t.summon||!f
 const kingsGuard=u=>!!RULES.KINGSGUARD&&u.king&&u.kind!=='wall'&&G.players[u.owner]&&G.players[u.owner].fac==='warband'&&G.units.some(v=>v!==u&&v.kind!=='wall'&&!v.summon&&v.owner===u.owner&&distUU(u,v)===1)?1:0;
 function effAtk(u){
   if(u.kind==='wall')return 0;const F=facOf(u);
-  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(u.st.ordStrike?1:0)+(u.st.hornA?1:0)+(hasTrait(u,'templar')&&onSanct(u)?1:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine&&MACHINES[u.wpn]?MACHINES[u.wpn].atk:0)+(RULES.FORTRESS&&u.name==='Grenadier'&&u.wpn&&fortSecret(u)?1:0)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.fed||0)+loneGiant(u)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.cry>0?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)-(u.st.dusk>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
+  const a=u.atk+(heartBuff(u)?1:0)+(u.st.emp?2:0)+(u.st.ordStrike?1:0)+(u.st.hornA?1:0)+(onStone(u)?REALM.sons.atk:0)+(hasTrait(u,'templar')&&onSanct(u)?1:0)+(F.homeAtk&&onHome(u)?F.homeAtk:0)+(hasTrait(u,'fireblood')&&onRed(u)?1:0)+(F.line?lineBonus(u):0)+(u.rage&&u.hp*2<=u.maxhp?2:0)+(onThrone(u)&&oldCentre()?THRONE.atk:0)+kingStat(u,'atk')+kingsGuard(u)+(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine&&MACHINES[u.wpn]?MACHINES[u.wpn].atk:0)+(RULES.FORTRESS&&u.name==='Grenadier'&&u.wpn&&fortSecret(u)?1:0)+(RULES.PHALANX_ATK&&inPhalanx(u)?RULES.PHALANX_ATK:0)+(u.fed||0)+loneGiant(u)+(u.stars||0)+(hasRelic(u,'banner')?2:0)+(u.machine&&u.st.rush?1:0)+(u.st.rally?1:0)+(u.st.cry>0?1:0)+(u.st.bless>0?1:0)+(u.st.blessU>0?1:0)-(u.st.dusk>0?1:0)+(G.relics&&G.relics.some(x=>x.kind==='banner'&&x.carrier!=null&&x.carrier!==u.id&&(()=>{const c=byId(x.carrier);return c&&tm(c.owner)===tm(u.owner)&&distUU(c,u)===1})())?1:0)-(hasCurse(u,'feeble')&&!RULES.ROT_CURSES?1:0)-(u.st&&u.st.hex>0?2:0);// Hex (Enchanter): -2 ATK
   return Math.max(0,a+synB(u,'atk')+(u.parts&&u.parts<=5&&talent(G.players[u.owner],'acidic')?1:0)+(u.owner>=0&&G.players[u.owner]&&G.players[u.owner].lootAtk||0)+wildsAtk(u)+(u.oldAtk||0)-(hasCurse(u,'frailty')?Math.max(1,u.st.frailN||0):0));// v75 Frailty: −1 ATK per stack
 }
 function effDef(u){const oath=(u.kind!=='wall'&&hasTrait(u,'templar')&&onSanct(u)?1:0)+(u.kind!=='wall'&&u.st&&u.st.ordHold?1:0)+(u.kind!=='wall'&&u.st&&u.st.hornH?1:0);/* v163 the Templar's oath; v165 the order Hold */
@@ -2086,7 +2150,7 @@ function cleanse(u,t){const d=debuffOf(t);if(!d)return null;const s=t.st;
 function cleanseValue(t){const d=debuffOf(t);if(!d)return 0;const w=Math.min(worth(t),40);
   if(d==='stun'||d==='frozen')return 3+w*0.12;if(d==='curse:silence')return t.ability?3:0.5;if(d.startsWith('curse:'))return 1+Math.min(4,pendingDot(t)*0.6);
   if(d==='seared')return t.hp<t.maxhp?1.2:0.3;if(d==='hex')return 1+Math.min(2,t.atk)*0.6;if(d==='sunder')return 1.5;if(d==='delay')return 0.8+(t.st.dl||0)*0.6;if(d==='chill')return 0.8;return 0}
-function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&oldCentre()?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill'||featAt(q,r)==='tower')?1:0))}
+function effRng(u){const F=facOf(u);const ranged=!meleeAt(u.at)&&u.at!=='none';return Math.min(dustCap(u),Math.max(1,u.rng-(perched(u)?1:0)+(F.homeRng&&onHome(u)&&ranged?F.homeRng:0)+(ranged&&onThrone(u)&&oldCentre()?THRONE.rng:0)+(ranged&&cells(u).some(([q,r])=>featAt(q,r)==='hill'||featAt(q,r)==='tower')?1:0)))}
 // A flyer can perch on a rock: out of reach of walkers, but its attacks lose 1 range.
 const perched=u=>u.mt==='fly'&&u.kind!=='wall'&&featAt(u.q,u.r)==='rock';
 function abilCost(u,k){const F=facOf(u);if(RULES.SHAMANS&&u.elemental){const A=ABIL[k];if(A.cost===1&&A.el&&utal(u,'wellspring')&&onElHex(u,A.el))return 0;if(A.cost===2&&u.st&&u.st.surgeFree)return 0}if((k==='march'&&utal(u,'warchief'))||((k==='quicken'||k==='clock')&&utal(u,'echo')))return 0;return Math.max(0,ABIL[k].cost-(spellEcho(u)?1:0))}// v45: magenta ground taxes enemy abilities
@@ -2114,7 +2178,7 @@ function movBase(u){if(G&&G.realm&&RULES.WILDS_MOV)return u.size===2&&u.kind!=='
 const isRiftSrc=src=>!!RULES.RIFTKIT&&!!src&&src.kind!=='wall'&&!!G.players[src.owner]&&G.players[src.owner].fac==='rift';
 function rMark(t,src){if(!RULES.RIFTKIT||!t||t.kind==='wall'||!alive(t)||!isRiftSrc(src)||tm(t.owner)===tm(src.owner))return;const fresh=!(t.st.rmark>0);t.st.rmark=2;t.st.rmBy=src.owner;
   if(fresh&&!SIM){fx(t,'rift-marked','#12d69a');if(trk()){const e=tFx('rift','','Rift Mark (enemies marked)');if(e)e.uses++}}}
-function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov+synB(u,'mov')+(u.st&&u.st.ordAdv?1:0)+(u.st&&u.st.hornA?1:0)+(u.trait==='icestatue'&&queenNear(u)?1:0)-(u.relq&&u.trait!=='reliquary'?REALM.relicSlow:0);/* v163: a unit that picked the relic up walks 1 less *//* v161: statues near their witch walk 2 */return Math.max(0,base+(hasTrait(u,'freeblade')&&comradesAdj(u)>=1?1:0)-(u.st.chill>0&&!tough?1:0)-(u.st.tslow?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine?1:0)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
+function effMov(u){const F=facOf(u);if(!u.mov)return 0;if(u.st&&u.st.anchor>0)return 0;const tough=hasTrait(u,'unstoppable');const base=u.mov+synB(u,'mov')+(u.st&&u.st.ordAdv?1:0)+(u.st&&u.st.hornA?1:0)-(shapesOn()&&u.kind!=='wall'&&shapeAtU(u,'mud')?1:0)+(u.trait==='icestatue'&&queenNear(u)?1:0)-(u.relq&&u.trait!=='reliquary'?REALM.relicSlow:0);/* v163: a unit that picked the relic up walks 1 less *//* v161: statues near their witch walk 2 */return Math.max(0,base+(hasTrait(u,'freeblade')&&comradesAdj(u)>=1?1:0)-(u.st.chill>0&&!tough?1:0)-(u.st.tslow?1:0)-(hasCurse(u,'mire')&&!tough&&!(F.stoneFoot&&onHome(u))?1:0)+(F.homeMov&&!u.summon&&onHome(u)?F.homeMov:0)+(onRoad(u)?RULES.ROAD:0)-(relicOf(u)&&u.mov>1?1:0)+(u.suitHp>0&&u.suitItem==='boots'?1:0)+movBonus(u)-redSlow(u)-(RULES.HEAVY&&!RULES.FORTRESS&&u.wpn&&!u.machine?1:0)-(u.st&&u.st.rmark>0&&RULES.RIFTKIT?RULES.RMARK_MOV:0))}
 // Flank roads: the two outermost rings still standing. Starting a move there gives +1 move.
 function outerRing(){return G.col?Math.min(G.R,G.col.ring):G.R}
 const isRoad=(q,r)=>G.map?!!(G.roads&&G.roads[key(q,r)]):hd(q,r,0,0)>=outerRing()-1&&solid(q,r);
@@ -2528,11 +2592,12 @@ function beginTurn(){
     if(v&&v.kind!=='wall'&&!voidWalk(v)){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=by;CUR_TAG='Abil';CUR_NAME=ABIL.sinkhole.name;fallKill(v,q,r,by);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
   for(const w of G.units.filter(w=>w.kind==='wall'&&w.creator===p.id)){w.ttl--;if(w.ttl<=0){G.units.splice(G.units.indexOf(w),1);addLog(p.id,w.wall==='light'?'A Wall of Light fades.':`A ${w.wall} wall ${w.wall==='ice'?'melts':'crumbles'}.`)}}
   for(const k of Object.keys(G.paint)){const pt=G.paint[k];if(pt.perm)continue;if(pt.icew){const [a,b]=k.split(',').map(Number);if(unitAt(a,b))continue}/* v164: ice never melts under a unit */if(pt.owner===p.id&&--pt.ttl<=0)delete G.paint[k]}
+  shapeTick(p);/* v168 */
   if(p.fac==='ice')for(const u of G.units)if(u.owner===p.id)frostWater(u);/* v164: Frost units keep the water under and beside them frozen */
   for(const v of G.units)if(v.owner===p.id&&v.st&&v.st.ordHold)v.st.ordHold=0;for(const v of G.units)if(v.owner===p.id&&v.st&&v.st.hornH)v.st.hornH=0;/* v165: the order Hold ends when its side's next turn begins */
   sanctAll();/* v163: the sanctuary is where the relic is */
   emberKeep();/* v161: the soul fires burn for good unless another army painted over them */
-  const fireIn=G.players.some(x=>x.alive&&x.fac==='fire');
+  const fireIn=G.players.some(x=>x.alive&&(x.fac==='fire'||x.fac==='mage'));
   const coldIn=G.players.some(x=>x.alive&&x.fac==='ice'&&x.team!==p.team);
   const F=FAC[p.fac];
   for(const u of G.units.filter(u=>u.owner===p.id&&u.kind!=='wall')){
@@ -2547,6 +2612,7 @@ function beginTurn(){
     if(F.homeHeal&&onHome(u))healUnit(u,F.homeHeal,'#5fd68e','Indigo ground (home)');
     if(G.realm&&!u.machine&&p.fount&&!p.keepDown&&featAt(p.fount[0],p.fount[1])==='fountain'&&distUC(u,p.fount[0],p.fount[1])<=1&&u.hp<u.maxhp){if(healUnit(u,REALM.heal,'#5fd68e','Healing Fountain'))vfx({k:'buff',at:[u.q,u.r],col:'#9fe8ff'})}/* v135 (owner): the fountain heals the units next to it (was the whole valley) */
     else if(G.realm&&!u.machine&&!(p.fount&&featAt(p.fount[0],p.fount[1])==='fountain')&&inValley(p,u.q,u.r)&&u.hp<u.maxhp)healUnit(u,REALM.heal,'#5fd68e','Home valley');
+    if(onStone(u)&&u.hp<u.maxhp){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=u;CUR_TAG='Abil';CUR_NAME='Sons of the Earth';if(healUnit(u,REALM.sons.heal,'#d9a45b','Sons of the Earth'))vfx({k:'buff',at:[u.q,u.r],col:'#d9a45b'});[CUR_SRC,CUR_TAG,CUR_NAME]=o}/* v167 */
     // Grove (Circle of Priests): holy ground heals 1 at the start of its owner's turn, friend or foe; credited to the Druid who raised it.
     if(u===G.units.find(x=>x.owner===p.id))blightTick(p);/* v132: once per turn start */
     {const g=cells(u).map(([q,r])=>groveAt(q,r)).find(Boolean);
@@ -2615,7 +2681,7 @@ function endTurn(){
   if(!G.realm)claimGround(p);// v77 (owner): no home ground on the Realm, only ground that abilities paint
   if(RULES.PILOTS2)for(const u of G.units)if(u.owner===p.id&&isGnome(u)&&u.build==='still'){if(!u.moved&&key(u.q,u.r)===u.buildPos)u.build='done';else{u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'build delayed','#ff6ec7')}}
   iceGround(p);/* v164: ending a turn on the Frost Hold's frozen ground costs a frost mark */
-  {const fireIn=G.players.some(x=>x.alive&&x.fac==='fire');if(fireIn&&p.fac!=='fire')for(const u of G.units.slice()){if(u.owner!==p.id||u.kind==='wall'||!alive(u)||!cells(u).some(([q,r])=>terrAt(q,r)==='fire'))continue;const kp=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.kindle);CUR_SRC=kp?(G.units.find(v=>v.owner===kp.owner&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===kp.owner&&v.kind!=='wall')||null):null;CUR_NAME=kp?'Kindle ground':'Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;CUR_SRC=null}}/* v130 (owner): fire burns whoever still stands in it when its turn ENDS */
+  {const fireIn=G.players.some(x=>x.alive&&(x.fac==='fire'||x.fac==='mage'));if(fireIn&&p.fac!=='fire')for(const u of G.units.slice()){if(u.owner!==p.id||u.kind==='wall'||!alive(u)||!cells(u).some(([q,r])=>terrAt(q,r)==='fire'))continue;const kp=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.kindle);CUR_SRC=kp?(G.units.find(v=>v.owner===kp.owner&&v.leader&&v.kind!=='wall')||G.units.find(v=>v.owner===kp.owner&&v.kind!=='wall')||null):null;CUR_NAME=kp?'Kindle ground':'Burning ground';hurt(u,1,'#ff4a3d',true);CUR_NAME=null;CUR_SRC=null}}/* v130 (owner): fire burns whoever still stands in it when its turn ENDS */
   for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'){u.rested=(!u.moved&&!u.acted)?1:0;/* v130 Old Mountain */
     // Defender Barrier (v25): a unit that made no basic attack and used no ability this turn has a Barrier until an enemy hit breaks it.
     {const had=!!u.bar;u.bar=barrierAble(u)&&!u.fought;u.fought=false;if(u.bar&&!had&&!SIM&&trk()){const s=tStat(u);const e=s&&tFx(s.fac,s.name,'Barrier');if(e)e.raised=(e.raised||0)+1}}
@@ -2628,7 +2694,7 @@ function endTurn(){
     if(hasTrait(u,'tempo')&&u.kt>0&&!u.st.stealth){u.st.stealth=1;fx(u,'stealth','#c81ca6');addLog(u.owner,`${u.name} fades into stealth.`);tFxBy(u.id,p.fac,'Stealth','uses',1)}
     // Hourglass combo tracking (v28): a Second Hand turn with at least one Quicken on it counts as a combo turn; hits = its basic attacks that turn.
     if(hasTrait(u,'tempo')&&u.qk>0&&trk()&&!SIM){const e=tFx(p.fac,u.name,'Combo turn (Quickened)');if(e){e.uses++;e.hits+=u.swings||0}}
-    u.st.emp=0;u.st.rush=0;u.st.clock=0;u.st.sand=0;u.st.echo=0;u.swings=0;u.freeAtk=0;u.freeMove=0;u.qk=0;u.st.ordStrike=0;u.st.ordAdv=0;u.st.hornA=0;/* v165: Strike and Advance last the turn; Hold lasts until the next one */
+    u.st.emp=0;u.st.rush=0;u.st.clock=0;u.st.sand=0;u.st.echo=0;u.swings=0;u.freeAtk=0;u.freeMove=0;u.qk=0;u.st.ordStrike=0;u.st.ordAdv=0;u.st.hornA=0;/* v165: Strike and Advance last the turn; Hold lasts until the next one */shapeEndTurn(u);/* v168 lava */
     // Bless counts down at the end of each of the owner's turns (not the turn it was cast in); Hallowed Dawn's +1 ATK lasts this turn and the next.
     if(u.st.bless>0){if(u.st.blessNew)u.st.blessNew=0;else if(--u.st.bless<=0){u.st.bless=0;delete u.st.blessBy}}
     if(u.st.blessU>0)u.st.blessU--;
@@ -3022,7 +3088,7 @@ function moveOpts(u,ignoreState){
           const a=q+dq,b=r+dr,k=key(a,b);
           if(seen.has(k)||!freeFor(m,u,a,b))continue;
           if(u.mt==='march'&&!G.map&&fwdDot(u,dq,dr)<-0.1)continue;
-          seen.add(k);nx.push([a,b]);if(s<N0||!prey||distUC(prey,a,b)<distUU(u,prey))add(a,b);
+          seen.add(k);if(!mudAt(a,b))nx.push([a,b]);/* v168: mud stops you */if(s<N0||!prey||distUC(prey,a,b)<distUU(u,prey))add(a,b);
         }fr=nx}
     }else if(u.mt==='line'||u.mt==='diag'){
       // v44: a diagonal mover may also take one plain step in any direction (on the Crown Wilds it was shut out of two thirds of the map)
@@ -3052,7 +3118,7 @@ function doMove(u,o){
   if(o.merge!=null){newDoMove(u,o);G.amode=null;G.aim=null;afterAction();return}// v111 Ooze merge
   {const pm=o.pilot!=null?byId(o.pilot):null;if(pm&&pilotable(u,pm)){if(RULES.FORTRESS&&pm.machine==='suit')walkerIn(u,pm);else if(RULES.HEAVY)pickUpWeapon(u,pm);else walkerIn(u,pm)}}
   if(o.board!=null){const b=byId(o.board);if(b&&b.behemoth){const i=G.units.indexOf(u);if(i>=0)G.units.splice(i,1);u.moved=true;b.crew=(b.crew||[]).concat([u]);if(!SIM){addLog(u.owner,`The ${u.name} climbs into the Behemoth (${b.crew.length} inside).`);fx(b,'crew '+b.crew.length,'#ff6ec7');if(trk()){const e=tFx('gnomes','','Behemoth boardings');if(e)e.uses++}}if(G.sel===u.id)G.sel=null;G.amode=null;G.aim=null;afterAction();return}}
-  {const was=cells(u);u.q=o.q;u.r=o.r;u.dir=o.dir;frostWater(u);/* v164 */if(hasTrait(u,'mammoth'))mammothMarks(u,was);if(hasTrait(u,'trail'))hellTrail(u,was[0],[o.q,o.r])}if(o.portal!=null)newDoMove(u,o);if(o.gate)G.gateUsed=true;G.amode=null;G.aim=null;braceCheck(u);afterAction();
+  {const was=cells(u);u.q=o.q;u.r=o.r;u.dir=o.dir;frostWater(u);/* v164 */shapeLand(u);/* v168 */if(hasTrait(u,'mammoth'))mammothMarks(u,was);if(hasTrait(u,'trail'))hellTrail(u,was[0],[o.q,o.r])}if(o.portal!=null)newDoMove(u,o);if(o.gate)G.gateUsed=true;G.amode=null;G.aim=null;braceCheck(u);afterAction();
 }
 /* v86 HELLFIRE TRAIL (owner 18 Oct 2026): the Pit Lord sets every hex of its path alight for 1 turn (red ground, ttl 1: it burns through the other sides' turns and dies at the start of the Pit Lord's next turn). The path is the straight hex line from where it stood to where it stops. */
 function hellTrail(u,from,to){let n=0;for(const [q,r] of hexLine(from,to)){if(!solid(q,r)||isHeart(q,r))continue;const k=key(q,r),p=G.paint[k];if(p&&p.fac==='fire'&&p.ttl>1)continue;G.paint[k]={fac:'fire',ttl:1,owner:u.owner};n++}
@@ -3101,7 +3167,7 @@ const inForest=v=>v.kind!=='wall'&&cells(v).some(([q,r])=>featAt(q,r)==='forest'
 const onHill=v=>v.kind!=='wall'&&cells(v).some(([q,r])=>featAt(q,r)==='hill');
 // Stealth (Second Hand, v21): same rule as a forest, from any hex: only attacks and aimed abilities from 2 hexes or closer can pick it.
 const stealthed=v=>v.kind!=='wall'&&!!(v.st&&v.st.stealth);
-const hidden=(u,v)=>(inForest(v)||stealthed(v))&&distUU(u,v)>RULES.FOREST_HIDE;
+const hidden=(u,v)=>(inForest(v)||stealthed(v)||shapeHides(v))&&distUU(u,v)>RULES.FOREST_HIDE;/* v168: steam and dust hide too */
 function targetsIn(u,set){return G.units.filter(v=>v!==u&&isFoe(u,v)&&!hidden(u,v)&&cells(v).some(([q,r])=>set.has(key(q,r))))}
 function attackTargetsIgnoring(u){const a=u.acted,m=u.moved;u.acted=false;u.moved=false;try{return attackTargets(u)}finally{u.acted=a;u.moved=m}}
 function attackTargets(u){
@@ -3211,6 +3277,7 @@ const onClaimOf=(t,fac)=>RULES.GROUND2&&RULES.GROUND3&&t&&t.kind!=='wall'&&G.pla
 /* v146 NAMED DUOS (research: Duelyst keywords, Hades duo boons, Engage's Break): the set-up another unit left on the target and the pay-off this hit gets from it,
    as one short label for the damage tag. Interface only: nothing here changes a number. */
 function duoLabel(u,t,A){if(u&&t&&t.kind!=='wall'&&t.owner===u.owner&&A&&A.cleanse&&G.realm&&t.st&&t.st.bless>0)return {t:'BLESSED +'+REALM.blessMend,c:'#ffe9a8'};/* v163 */if(!u||!t||t.kind==='wall'||t.owner===u.owner)return null;const st=t.st||{};
+  if(onStone(u)&&(!A||A.dmg||A.useAtk)&&!(A&&A.useAtk))return {t:'ON STONE +1',c:'#d9a45b'};/* v167 */
   if(!A&&G.players[u.owner]&&G.players[u.owner].fac==='warband'){/* v166 (owner: 'the phalanx is the set-up and the orders are the pay-off'): the Warband's stack shows on the attack tag */const ps=[];if(lineBonus(u))ps.push('FORMATION +1');if(u.st&&u.st.ordStrike)ps.push('ORDER +1');if(u.st&&u.st.hornA)ps.push('WARHORN +1');if(spearOverShield(u,t))ps.push('OVER SHIELD +1');if(ps.length)return {t:ps.join(' · '),c:'#eef0f4'}}
   if(A&&A.special==='shwither'&&G.realm&&st.dusk>0)return {t:'SHROUDED +'+REALM.duskWither,c:'#b06bff'};
   try{
@@ -3359,7 +3426,7 @@ function aimCells(u,k){
   const A=ABIL[k],m=occ(),rmin=A.rmin||0,R=spellRange(u,A);
   const inRange=(q,r)=>{const d=distUC(u,q,r);return d>=rmin&&d<=R};
   if(A.aim==='self')return [[u.q,u.r]];
-  if(A.aim==='dir')return DIRS.map(([dq,dr])=>[u.q+dq,u.r+dr]).filter(([q,r])=>inR(q,r));
+  if(A.aim==='dir')return DIRS.map(([dq,dr])=>[u.q+dq,u.r+dr]).filter(([q,r])=>inR(q,r)&&(A.special!=='shape'||shapeSafe(u,k,q,r)));
   if(A.aim==='hex')return allCells().filter(([q,r])=>inRange(q,r)&&(A.special!=='riftmark'||(solid(q,r)&&!isHeart(q,r))));
   if(A.special==='mountainfall'){const mm=new Map(m);for(const c of cells(u))mm.delete(key(c[0],c[1]));return allCells().filter(([q,r])=>inRange(q,r)&&!(q===u.q&&r===u.r)&&freeFor(mm,u,q,r)&&DIRS.some(([a,b])=>freeFor(mm,u,q+a,r+b)))}
   if(A.aim==='empty')return allCells().filter(([q,r])=>inRange(q,r)&&passable(q,r)&&!m.get(key(q,r))&&(!A.lineOnly||lineFrom(u,q,r)>=0)&&!(A.special==='trap'&&(isHeart(q,r)||(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)))&&!(A.special==='blockmove'&&RULES.MARCH&&!marchPlan(u,[q,r]).moves.length));/* v128: only destinations where at least one unit can march */
@@ -3495,6 +3562,7 @@ function hitDmg(u,t,A){
   if(A.spell&&u.st&&u.st.empower>0&&u.st.empT===G.tok)base+=u.st.empower;// v68 Spirit Flame
   if(G.realm){if(coldDouble(t,A))base*=2;if(!A.noShatter&&iceShatter(u,t))base+=2}else if(coldDouble(t,A)||(!A.noShatter&&iceShatter(u,t)))base*=2;
   if(hasTrait(u,'deepcold')&&t.st&&t.st.frozen>0)base+=1;// v61 Deep Cold: +1 against frozen enemies
+  if(!A.useAtk&&onStone(u))base+=REALM.sons.atk;/* v167 Sons of the Earth */
   if(G.realm&&A.special==='shwither'&&t.st&&t.st.dusk>0)base+=REALM.duskWither;/* v163: Wither on a Shrouded enemy, the dark mirror of Mend on a Blessed ally */
   if(RULES.HEAVY&&A.carried&&G.players[u.owner]&&G.players[u.owner].secret&&(!RULES.FORTRESS||A.grenade))base+=1;// v65 Secret Weapon// Ice Lance (chilled or frozen), Shatter Strike (frozen), and since v50 every Frost ability on a frozen enemy
   if(hasRelic(u,'spellstone'))base+=1;// Spellstone relic (v36)
@@ -3682,6 +3750,7 @@ function useAbility(u,k,q,r,dest){
   if(!SIM&&(A.special==='gainap'||A.special==='quicken'))G.combo=true;// Hourglass plan check: the rest of this turn is a combo turn
   addLog(u.owner,`${u.name} uses ${A.name}.`);
   const tgt=unitAt(q,r);
+  if(sonsOn()&&F.stoneFoot){const n=sonsBreak(u,sonsCells(u,k,q,r));if(n&&!SIM)fx(u,'the ground breaks','#d9a45b')}/* v167 */
   if(!SIM){const area=A.special?[]:shapeCells(u,k,q,r);vfx({k:'ab',ab:k,shape:A.shape||A.special,from:[u.q,u.r],to:[q,r],cells:area.slice(0,40),col:F.color,fac:G.players[u.owner].fac,push:!!(A.push||A.pull),curse:!!A.curse,heal:!!(A.heal||A.shield||A.guard)})}
   switch(A.special){
     case 'gainap':{const g=Math.min(A.amount,RULES.AP_CAP-G.ap);G.ap+=Math.max(0,g);tSup('apGranted',g);fx(u,`+${A.amount} AP`,'#c81ca6');break}
@@ -3822,6 +3891,7 @@ function useAbility(u,k,q,r,dest){
       for(const v of P0.grp)v.moved=true;tSup('moved',moved.size);if(!SIM){addLog(u.owner,`The phalanx moves as one: ${moved.size} unit${moved.size===1?'':'s'} advance ${P0.steps} hex${P0.steps===1?'':'es'}.`);for(const v of moved)braceCheck(v)}break}
     case 'stampede':{const d=aimDir(u,q,r);if(d<0)break;const hit=[];const n=bulwarkCharge(u,d,false,false,REALM.stampede.steps,hit);let k2=0;for(const v of hit){if(!alive(v)||v.kind==='wall'||tm(v.owner)===tm(u.owner))continue;hurt(v,Math.max(1,REALM.stampede.dmg-effDef(v)),F.color);k2++;if(alive(v)&&v.st)frostMark(u,v,REALM.stampede.marks-1)/* a Frost hit already leaves one mark */}
       frostWater(u);if(!SIM){addLog(u.owner,n?`The Rime Mammoth stampedes ${n} hex${n===1?'':'es'}: ${k2} trampled.`:'The Rime Mammoth cannot charge that way.');if(n)vfx({k:'ab',ab:'bulwark',shape:'line',from:[u.q,u.r],to:[u.q+DIRS[d][0]*n,u.r+DIRS[d][1]*n],cells:[],col:F.color,cam:1})}u.moved=true;break}
+    case 'shape':{if(!shapesOn())break;const d=aimDir(u,q,r);shapeDissolve(u);let n=0,c=0;for(const [a,b] of shapeCells(u,k,q,r)){const x=shapeLay(u,A.el,a,b,d);if(x===2)c++;if(x)n++}if(!SIM){addLog(u.owner,`${u.name} shapes the land: ${n} hex${n===1?'':'es'}${c?`, ${c} combined`:''}.`);fx(u,A.name,F.color)}break}
     case 'icewall':{let n=0;for(const [a,b] of shapeCells(u,k,q,r)){if(!passable(a,b)||unitAt(a,b)||isTrap(a,b))continue;G.units.push({id:G.nid++,kind:'wall',wall:'ice',owner:-1,creator:u.owner,by:u.id,abil:A.name,q:a,r:b,dir:0,size:1,hp:REALM.iceWall.hp,maxhp:REALM.iceWall.hp,def:0,ttl:REALM.iceWall.ttl,st:{},name:'Ice wall'});n++}
       if(!SIM){addLog(u.owner,`${u.name} raises a wall of ice: ${n} piece${n===1?'':'s'}.`);vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[q,r],cells:shapeCells(u,k,q,r),col:F.color})}break}
     case 'bulwark':{const d=aimDir(u,q,r);if(d<0)break;const n=bulwarkCharge(u,d,false);if(!SIM){addLog(u.owner,n?`The Rampart charges ${n} hex${n===1?'':'es'}, shoving everything aside.`:'The Rampart cannot charge that way.');if(n)vfx({k:'ab',ab:'bulwark',shape:'line',from:[u.q,u.r],to:[u.q+DIRS[d][0]*n,u.r+DIRS[d][1]*n],cells:[],col:F.color,cam:1})}u.moved=true;break}
@@ -3958,7 +4028,7 @@ function ultEffect(p){
       for(const kk of spread)G.paint[kk]={fac:'fire',ttl:2,owner:p.id};
       if(!SIM&&trk()){const e=tFx('fire','','Wildfire: ground set ablaze (hexes)');if(e)e.uses+=spread.size}addLog(p.id,`Wildfire: ${burning.length} burning hex${burning.length===1?'':'es'} erupt (${hit} hit) and the fire spreads to ${spread.size} more.`);break}// v77 (owner): the fire you made erupts and spreads; nothing burns, nothing happens
     case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,2);if(ice.some(i=>distUU(i,v)<=1))freezeT(v,false)}break}/* v161 (owner: a little strong): only enemies NEXT TO a Frost unit freeze (was within 2) */
-    case 'giants':{/* v129 (owner): all giants jump and land; damage per giant in range, double under two */const gs=mine().filter(x=>alive(x)&&x.size===2);const R=RULES.QUAKE_R+(talent(p,'avalanche')?1:0);for(const v of foes()){const near=gs.filter(x=>distUU(x,v)<=R).sort((a,b)=>distUU(a,v)-distUU(b,v));if(!near.length)continue;const n=near.length;/* v129b (owner): no cap, no armour: 2 per giant */hurt(v,RULES.QUAKE_DMG*n,F.color);if(n>1&&!SIM)fx(v,`under ${n} giants`,'#d9a45b');
+    case 'giants':{/* v129 (owner): all giants jump and land; damage per giant in range, double under two */const gs=mine().filter(x=>alive(x)&&x.size===2);if(sonsOn()&&gs.length){const cl=[];for(const x of gs)for(const [a,b] of ringCells())if(distUC(x,a,b)<=1)cl.push([a,b]);sonsBreak(gs[0],cl)}/* v167: the quake breaks the ground round every giant */const R=RULES.QUAKE_R+(talent(p,'avalanche')?1:0);for(const v of foes()){const near=gs.filter(x=>distUU(x,v)<=R).sort((a,b)=>distUU(a,v)-distUU(b,v));if(!near.length)continue;const n=near.length;/* v129b (owner): no cap, no armour: 2 per giant */hurt(v,RULES.QUAKE_DMG*n,F.color);if(n>1&&!SIM)fx(v,`under ${n} giants`,'#d9a45b');
       if(alive(v)){const g=near[0];const [cq,cr]=nearCell(g,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,g)}}break}
     // Clockwork Rush: AP, every gnome may move again, and every machine (they never move) is repaired to full, gets +1 ATK this turn and fires again at once (timers do not reset). The volley is tracked under the Ultimate.
     // v22b: 2 AP plus 1 per 2 machines of this side on the board, at most 5 (Clockwork Surge: 1 more, at most 6).
@@ -4868,7 +4938,7 @@ Object.assign(REALM,{soulFires:3,/* every soul past the tenth: three separate he
 Object.assign(REALM,{holyHeal:1,blessMend:2,duskWither:2,relicSlow:1});/* v163 the procession */
 REALM.startBy.warband=1;/* v165: both Warlord brothers start on the board, with one soldier: three bodies like every other army */
 Object.assign(REALM,{ice:{ttl:2,mark:1},stampede:{steps:4,dmg:3,marks:2},iceWall:{hp:6,ttl:2}});/* v164 the Frost ground, the Mammoth's charge, the Warden's wall */
-RULES.HORN_ORDERS=1;RULES.MARCH2=1;/* v165d: the army marches at the pace of its slowest unit *//* v165c: the Warhorn gives the three orders */RULES.OLD_ONES=0;RULES.WAGON=1;RULES.ICE_STATUES=0;/* v161 (owner): no limit on Ice Statues */
+RULES.HORN_ORDERS=1;RULES.MARCH2=1;RULES.SONS=1;REALM.sons={ttl:4,atk:1,heal:1};RULES.SHAPES=1;RULES.SHAPE_SAFE=1;REALM.shape={ttl:3,wallHp:6,lava:4,windPush:2,pocket:12};/* v168 the Elementals shape the land *//* v167 Sons of the Earth *//* v165d: the army marches at the pace of its slowest unit *//* v165c: the Warhorn gives the three orders */RULES.OLD_ONES=0;RULES.WAGON=1;RULES.ICE_STATUES=0;/* v161 (owner): no limit on Ice Statues */
 Object.assign(REALM.desire,{totemCharge:3,crackHp:8,cracksPerQuarter:2});/* v159 the objects of the clearings: the Rift Totem (+3 Ultimate charge, once), the cracked wall (a shortcut for whoever breaks it) */
 Object.assign(LOOT,{reliquary:{name:'The Relic',col:'#ffe9a8',text:'the relic of the Circle of Priests, fallen with its bearer: a unit of theirs that steps here carries it on and the sanctuary walks again; an enemy that steps here smashes it for good'},totem:{name:'Rift Totem',col:'#d08cff',text:'a shard of the Beast\'s power: the first unit to step on it gives its army +3 Ultimate charge, then it is spent'}});REALM.keep={hp:30,def:1,pts:3};REALM.sweepFirst=1;/* v154 (owner): the Beast sweeps the breach whenever units stand in one; it spits or roars only when no breach holds anyone, so the city's doorways are the danger, not the open field */REALM.jungle={rx:19.2,ry:16.2,wob:2.1,corr:1.75,cliff:3.7,ford:1.6,lakeIn:11.5,lakeOutX:17.5,lakeOutY:15.2,lakeW:3.2};/* v155: the lakes at the rivers' heads */REALM.stoneDist=11;/* v150: the stones land where the roads cross the ring *//* v150 THE JUNGLE RING (owner 4 Nov 2026, layout B on the objectives page): the ring corridor's ellipse, its wobble, half width and cliff band, in hex-pixel units *//* v149 (owner 4 Nov 2026): the KEEP stands on the base's middle hex (razing it: 2 points, the Fountain runs dry, the supplies stop) and SUPPLIES: once the reserve is empty the Keep sends one thing a turn that feeds the army's engine; a unit at home takes it */
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
@@ -5324,8 +5394,8 @@ function throwSetups(team){
   return s}
 function cloneU(u){const c=Object.assign({},u);c.st=Object.assign({},u.st);if(u.cdx)c.cdx=Object.assign({},u.cdx);if(u.st&&u.st.curses)c.st.curses=Object.assign({},u.st.curses);delete c.anim;return c}
 function simScore(team,fn){
-  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields,cpot:G.cpot};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
-  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.sinks=Object.assign({},G.sinks||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;G.cpot=G.cpot?Object.assign({},G.cpot):G.cpot;
+  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields,cpot:G.cpot,shapes:G.shapes,feat:G.feat};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
+  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.sinks=Object.assign({},G.sinks||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;G.cpot=G.cpot?Object.assign({},G.cpot):G.cpot;G.shapes=Object.assign({},G.shapes||{});G.feat=Object.assign({},G.feat||{});/* v168 */
   SIM=true;let v;
   try{fn();v=evaluate(team)}finally{SIM=false;Object.assign(G,save);BEAST_Q=bq;BAR_Q=barq}
   return v;
@@ -5470,6 +5540,11 @@ function heuristic(u,k,q,r,ctx,dest){
     case 'blight':{let s=0;const area=shapeCells(u,k,q,r);for(const [a,b] of area){const v=ctx.m.get(key(a,b));if(v&&v.kind!=='wall'){if(tm(v.owner)!==team)s+=2+(v.hp<=2?2:0)+(v.leader?1.5:0);else s-=1.5}}return s>=3?s:0}
     case 'dusk':{const t=unitAt(q,r);if(!t||t.kind==='wall'||tm(t.owner)===team||(t.st&&t.st.dusk>0))return 0;return 2+(t.leader?2:0)+Math.min(2,t.atk)*0.8}
     case 'howl':{let n=0;for(const f of ctx.foes)if(f.owner>=0&&f.size!==2&&distUU(f,u)<=2)n+=(f.leader?2:1)+(distUU(f,u)===1?0.5:0);return n>=2?n*1.4:0}
+    case 'shape':{if(!shapesOn())return 0;const d=aimDir(u,q,r);if(d<0)return 0;const cl=shapeCells(u,k,q,r).filter(([a,b])=>inR(a,b)&&passable(a,b));if(!cl.length)return 0;const foes=ctx.foes.filter(f=>f.owner>=0);let combo=0;for(const [a,b] of cl){const sh=G.shapes&&G.shapes[key(a,b)];if(sh&&sh.el!=='combo'&&sh.el!==A.el)combo++}
+      const near=n=>foes.filter(f=>cl.some(([a,b])=>distUC(f,a,b)<=n)).length;const mineNear=G.units.filter(v=>v.owner===u.owner&&v.kind!=='wall'&&v!==u&&cl.some(([a,b])=>distUC(v,a,b)<=2)).length;let s=0;
+      if(A.el==='fire')s=near(1)*1.0+near(2)*0.3;else if(A.el==='air')s=near(1)*0.8;else s=near(2)*0.9*(mineNear?1:0.4)+near(3)*0.2;
+      if(A.el==='water'||A.el==='earth')for(const v of G.units)if(v.owner===u.owner&&v.kind!=='wall'&&cl.some(([a,b])=>distUC(v,a,b)<=1)&&foes.some(f=>distUU(f,v)<=2))s-=0.3;/* do not wall our own fighters in */
+      s+=combo*1.5;if(u.shaped&&u.shaped.length&&G.shapes&&u.shaped.some(x=>G.shapes[x]))s-=0.8;/* laying again dissolves the old shape */return s}
     case 'bulwark':{const d=aimDir(u,q,r);if(d<0)return 0;const sim=bulwarkCharge(u,d,true,true);if(!sim||!sim.steps)return 0;let s=0;for(const v of sim.shoved){if(v.kind==='wall')continue;s+=tm(v.owner)!==team?(v.leader?3:1.6)+(v.hp<=1?2:0):-1.2}const end={q:u.q+DIRS[d][0]*sim.steps,r:u.r+DIRS[d][1]*sim.steps,dir:u.dir};s+=Math.max(-2,moveEval(u,end,ctx))*0.5;return s>=2?s:0}
     case 'devour':{const t=unitAt(q,r);if(!t||t.kind==='wall'||t.leader||t.size===2||t.hp>6||tm(t.owner)===team)return 0;return 6+worth(t)*0.3}
     case 'mountainfall':{let n=0;for(const f of ctx.foes)if(f.owner>=0&&distUC(f,q,r)<=2)n+=f.leader?2:1;return n>=2?3+n*2:0}
@@ -5577,7 +5652,8 @@ function countTargets(v,m){const set=atkCells(v,m);let n=0;for(const f of G.unit
 // v54: a unit walks out of a Rift Storm's reach (added on top of the normal move value)
 function stormEsc(u,o){if(!RULES.RIFTKIT||!G.traps||voidWalk(u)||u.size===2)return 0;let sd=0;for(const [k,t] of Object.entries(G.traps)){if(!t.storm||tm(t.owner)===tm(u.owner))continue;const [hq,hr]=k.split(',').map(Number);
     const R=RULES.STORM_R+(talent(P(t.owner),'gravitylord')?1:0),dn=hd(o.q,o.r,hq,hr),d0=hd(u.q,u.r,hq,hr),w=d=>d===1?8+worth(u)*0.6:d<=R?2.5:0;sd+=w(d0)-w(dn)}return sd}
-function moveEval(u,o,ctx){return moveEval0(u,o,ctx)+stormEsc(u,o)+(G.realm?newBotMove(u,o,ctx):0)}
+function moveEval(u,o,ctx){return moveEval0(u,o,ctx)+stormEsc(u,o)+(G.realm?newBotMove(u,o,ctx):0)+sonsMove(u,o)}
+function sonsMove(u,o){if(!sonsOn()||!facOf(u).stoneFoot||o.q==null)return 0;const c=cells(Object.assign({},u,{q:o.q,r:o.r,dir:o.dir!=null?o.dir:u.dir}));return c.some(([q,r])=>{const pt=G.paint[key(q,r)];return pt&&pt.fac==='giants'&&pt.kind==='stone'})?0.8:0}
 // v76: what a Second Hand could deal this turn from hex v with the helpers that can still reach it (bots only)
 function comboPotential(u,v){const helpers=G.units.filter(w=>w.owner===u.owner&&w.kind!=='wall'&&!w.st.frozen&&w.at==='none'&&(w.cd||0)<=0&&!w.acted&&distUU(w,v)<=3+(w.moved?0:effMov(w)));
   const q=helpers.filter(w=>w.ability==='quicken').length,tick=helpers.some(w=>w.ability==='overwind')?1:0,sand=helpers.some(w=>w.ability==='sand')?2:0;
@@ -6927,7 +7003,7 @@ function glTileKind(q,r,k){const T=THREE;const tint=new T.Color('#ffffff');let k
   if(isHeart(q,r)){kind='heart';if(isCentreWall(q,r))tint.multiplyScalar(0.55)}
   if(G.map){const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){tint.set(GROUND.hidden).multiplyScalar(1.2);return {kind,tint}}}
   if(kind==='river'&&G.paint[k]&&G.paint[k].icew){kind='paint';tint.set('#e4f6ff')}/* v164: water frozen by the Frost Hold is a pale sheet of ice */
-  const tf=terrAt(q,r);if(tf&&kind!=='heart'&&kind!=='river'&&!(G.paint[k]&&G.paint[k].icew)){if(ARMY_TILE[tf])kind=ARMY_TILE[tf];else if(G.paint[k]){kind='paint';tint.set(GROUND_PAINT[tf]||FAC[tf].color).multiplyScalar(0.8)}else tint.lerp(new T.Color(FAC[tf].color),0.3)}// v82d (owner: 'I didn't see hexes turn into their colours'): ability-made ground is painted in a strong, bright colour per army until each army has its own tile art
+  const tf=terrAt(q,r);if(tf&&kind!=='heart'&&kind!=='river'&&!(G.paint[k]&&G.paint[k].icew)){if(ARMY_TILE[tf])kind=ARMY_TILE[tf];else if(G.paint[k]){kind='paint';tint.set(G.paint[k].col||GROUND_PAINT[tf]||FAC[tf].color).multiplyScalar(0.8)}else tint.lerp(new T.Color(FAC[tf].color),0.3)}// v82d (owner: 'I didn't see hexes turn into their colours'): ability-made ground is painted in a strong, bright colour per army until each army has its own tile art
   const of=GL.occ&&GL.occ.get(k);if(of&&kind!=='heart')tint.lerp(new T.Color(FAC[of].color),0.62);// v78e (owner): the hex under a piece keeps its own ground and turns the army's colour; only burning ground becomes the lava tile
   if(isDoomed(q,r))tint.lerp(new T.Color('#ff3c28'),0.4);
   return {kind,tint}}
@@ -7400,7 +7476,7 @@ function glSetGhost(fig,on){if(fig.userData.ghost===on)return;fig.userData.ghost
 function glSpent(fig,on){if(fig.userData.spent===on)return;fig.userData.spent=on;fig.traverse(o=>{if(o.userData&&o.userData.rim){o.userData.rimMat=o.userData.rimMat||o.material;o.material=on?gMat('#3a3a3a'):o.userData.rimMat}
   else if(fig.userData.model&&o.isMesh&&o.material&&o.material.color){if(!o.userData.col0)o.userData.col0=o.material.color.clone();o.material.color.copy(o.userData.col0).multiplyScalar(on?0.5:1);if(o.material.emissiveIntensity!=null){if(o.userData.em0==null)o.userData.em0=o.material.emissiveIntensity;o.material.emissiveIntensity=on?o.userData.em0*0.4:o.userData.em0}}})}// v78c: a spent real model darkens (it has no rim)
 function glStaticSig(){let n=(G.midUp?1000:0)+(G.throneBeast?3000:0)+(G.cityDown?7000:0),f='';for(const [q,r] of ringCells()){const t=featAt(q,r);if(t){n++;f+=t[0]}}return [G.R,G.map||'',Object.keys(G.voids).length,centreWalled()?1:0,n,f.length,G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0].join('|')}
-function glTerrSig(){let h=(typeof fallPre==='function'&&fallPre())?977:0;h+=(typeof window!=='undefined'&&window.QUAKE&&G&&G.realm)?Math.floor(Math.min(1.05,Math.max(-0.05,(Date.now()-window.QUAKE.t0)/window.QUAKE.dur))*24):0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
+function glTerrSig(){let h=(typeof fallPre==='function'&&fallPre())?977:0;h+=(typeof window!=='undefined'&&window.QUAKE&&G&&G.realm)?Math.floor(Math.min(1.05,Math.max(-0.05,(Date.now()-window.QUAKE.t0)/window.QUAKE.dur))*24):0;for(const [q,r] of ringCells()){const k=key(q,r),t=terrAt(q,r);h=(h*31+(t?t.charCodeAt(0)+t.length*7:0)+(G.paint[k]?3:0)+(G.shapes&&G.shapes[k]?17:0)+(G.paint[k]&&G.paint[k].kind?G.paint[k].kind.length:0)+(isDoomed(q,r)?5:0)+(G.claim&&G.claim[k]?11:0))|0}return h+'|'+Object.keys(G.voids).length+'|'+(G.map&&G.rooms?G.rooms.filter(r=>r.seen).length:0)}
 function glProps(){if(GL.props)GL.scene.remove(GL.props);const g=new THREE.Group();GL.props=g;GL.scene.add(g);if(!G.realm||!G.players)return;
   for(const p of G.players){const MD=BASE_MODELS[p.fac];if(!MD||!p.base||!p.base.length)continue;const c=p.base.map(k=>k.split(',').map(Number)).sort((a,b)=>hd(b[0],b[1],0,0)-hd(a[0],a[1],0,0))[0];
     glModel(MD.file).then(src=>{if(GL.props!==g)return;const o=src.clone();const bb=src.userData.bb;let sc=MD.h/bb.h;if(MD.w)sc=Math.min(sc,MD.w/Math.max(bb.w||1,bb.d||1));o.scale.setScalar(sc);const [x,z]=world(c[0],c[1]);o.position.set(x-bb.cx*sc,0.03-bb.y0*sc,z-bb.cz*sc);o.rotation.y=Math.atan2(-x,-z)+(MD.rot||0);
@@ -8664,7 +8740,7 @@ function homeText(F){return ((G&&G.realm)||(!G&&cfg.map==='realm'))&&F.homeRealm
 const PASSIVE_SHORT={
   fire:'Souls: your dead and your kills feed the Archdemon (10 souls), and every soul after that sets 3 hexes of the Realm on fire for good; the Archdemon grows without limit with every unit it wounds that dies. Dying demons burst in flame; Imps can detonate.',
   ice:'Every Frost hit leaves a frost mark; 4 marks freeze. A frozen enemy stays frozen and takes +2 from every Frost hit. Frost units walk on water and leave it frozen; ending a turn on frozen ground costs an enemy a mark. Enemies that die frozen rise as Ice Statues, with no limit: they are the Ice Queen’s army, and they shatter if she dies.',
-  giants:'Five two-hex giants that move 3 and walk over mountains and rivers. Pushed half as far. A fallen giant leaves stones that heal its kin, grow them and pass on its ability: the last giant can carry all five.',
+  giants:'Five two-hex giants that move 3 and walk over mountains and rivers. Pushed half as far. Sons of the Earth: their abilities break the ground into stone, and a giant standing on stone hits for 1 more and heals 1 a turn. A fallen giant leaves stones that heal its kin, grow them and pass on its ability.',
   gnomes:'Pilots: build your machine (one still turn), climb in, fight; a wreck throws the pilot clear and leaves scrap. 3 scrap build a Behemoth.',
   arcane:'The procession: the ground around the Walking Sanctuary, a two-hex shrine on legs, is holy and walks with it (allies heal 1, enemies burn 1, heals land 1 stronger, other ground is cleansed). Healing beyond full HP burns the nearest enemy. Faith from healing brings the last fallen unit back (16, 22, 28).',
   warband:'Shields in front soak 1 from every hit on whoever stands behind them; spears strike over the wall (+1 over a Shieldbearer) and pierce the unit behind; two Warlord brothers lead as equals: each gives one free order a turn to the block he stands in (Hold, Strike or Advance); together one block gets both, apart each block gets one, and if one falls the other’s order reaches the whole army. Move as One marches the army into the right formation for the ground; the Warhorn makes every unit strike a random enemy in reach at once.',
@@ -9332,6 +9408,8 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
 function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn and stays frozen until the end of the freezer’s next turn; any Frost Hold hit on it deals double (Shatter)')}
   if(u.relq)add('relic','✚','Carries the relic',null,'#ffe9a8',1,u.shadow?'the ground around it is profaned: enemies on it take 2 and cannot be healed; it cannot attack':'the ground around it is holy: your units heal 1, enemies burn 1, heals land 1 stronger; it cannot attack');/* v163 */
+  {const sh=typeof shapeStatus==='function'?shapeStatus(u):null;if(sh)add('shape',sh.kind==='lava'?'🌋':sh.kind==='mud'?'🟤':sh.kind==='rain'?'🌧':sh.kind==='steam'?'🌫':sh.kind==='dust'?'🌪':sh.kind==='wildfire'?'🔥':'💨',sh.text.split(':')[0],null,'#8dff9a',sh.kind==='rain',sh.text)}
+  if(typeof onStone==='function'&&onStone(u))add('sons','⛰','On stone',null,'#d9a45b',1,'Sons of the Earth: standing on broken ground it hits for 1 more and heals 1 at the start of your turn');
   if(s.ordHold)add('ordhold','⛨','Order: Hold',null,'#eef0f4',1,'its Warlord’s order: it takes 1 less from every hit until your next turn');if(s.ordStrike)add('ordstrike','⚔','Order: Strike',null,'#eef0f4',1,'its Warlord’s order: it hits for 1 more this turn');if(s.ordAdv)add('ordadv','➤','Order: Advance',null,'#eef0f4',1,'its Warlord’s order: it moves 1 further this turn');/* v165 */
   if(s.icecart)add('icecart','🧱','Ice block',null,'#bfefff',1,'from the supplies: its next hit leaves one extra frost mark');/* v149 */
   if(u.kind!=='wall'&&typeof inForest==='function'&&inForest(u))add('cover','🌲','In cover',null,'#6fbf73',1,`+1 DEF, and it cannot be targeted from more than ${RULES.FOREST_HIDE} hexes away while it stays in the forest`);/* v119 (owner: shade units that have cover) */
@@ -10334,7 +10412,7 @@ function draw(now){
     hexPath(x,y,SZ*0.97);ctx.fillStyle=G.realm?realmTile(q,r):SHADE[((q-r)%3+3)%3];ctx.fill();
     const tf=terrAt(q,r),painted=!!G.paint[k];
     if(isNoMans(q,r)&&!isHeart(q,r)){hexPath(x,y,SZ*0.97);ctx.fillStyle=NOMANS;ctx.fill()}
-    if(tf){hexPath(x,y,SZ*0.97);ctx.fillStyle=hexA(FAC[tf].color,painted?0.55+0.15*flick:terrAlpha(tf));ctx.fill();hexPath(x,y,SZ*0.8);ctx.strokeStyle=hexA(FAC[tf].color,.6);ctx.lineWidth=1;ctx.stroke();
+    if(tf){const pcol=(painted&&G.paint[k].col)||FAC[tf].color;hexPath(x,y,SZ*0.97);ctx.fillStyle=hexA(pcol,painted?0.55+0.15*flick:terrAlpha(tf));ctx.fill();hexPath(x,y,SZ*0.8);ctx.strokeStyle=hexA(pcol,.6);ctx.lineWidth=1;ctx.stroke();
       if(painted&&SZ>10){ctx.fillStyle=hexA('#ffb347',0.55+0.3*flick);for(const [ox,oy] of [[-0.35,0.3],[0.3,0.35],[0,-0.35]]){ctx.beginPath();ctx.arc(x+ox*SZ,y+oy*SZ,SZ*0.07,0,7);ctx.fill()}}}
     if(isHeart(q,r)){hexPath(x,y,SZ*0.97);ctx.fillStyle=q===0&&r===0?'rgba(255,221,120,.7)':'rgba(255,221,120,.42)';ctx.fill()}
     const ft=featAt(q,r);if(ft)drawFeature2D(ft,x,y,SZ,q,r);
