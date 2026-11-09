@@ -3170,6 +3170,7 @@ const onClaimOf=(t,fac)=>RULES.GROUND2&&RULES.GROUND3&&t&&t.kind!=='wall'&&G.pla
 /* v146 NAMED DUOS (research: Duelyst keywords, Hades duo boons, Engage's Break): the set-up another unit left on the target and the pay-off this hit gets from it,
    as one short label for the damage tag. Interface only: nothing here changes a number. */
 function duoLabel(u,t,A){if(u&&t&&t.kind!=='wall'&&t.owner===u.owner&&A&&A.cleanse&&G.realm&&t.st&&t.st.bless>0)return {t:'BLESSED +'+REALM.blessMend,c:'#ffe9a8'};/* v163 */if(!u||!t||t.kind==='wall'||t.owner===u.owner)return null;const st=t.st||{};
+  if(!A&&G.players[u.owner]&&G.players[u.owner].fac==='warband'){/* v166 (owner: 'the phalanx is the set-up and the orders are the pay-off'): the Warband's stack shows on the attack tag */const ps=[];if(lineBonus(u))ps.push('FORMATION +1');if(u.st&&u.st.ordStrike)ps.push('ORDER +1');if(spearOverShield(u,t))ps.push('OVER SHIELD +1');if(ps.length)return {t:ps.join(' · '),c:'#eef0f4'}}
   if(A&&A.special==='shwither'&&G.realm&&st.dusk>0)return {t:'SHROUDED +'+REALM.duskWither,c:'#b06bff'};
   try{
     if(A&&coldDouble(t,A))return {t:A.cold2==='frozen'?'SHATTER x2':'COLD TARGET x2',c:'#5cc8ff'};
@@ -3196,6 +3197,8 @@ function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
   // Swarmed giant: a two-hex body takes +1 from a melee basic attack while 2 or more enemies touch it.
   if(t.size===2&&facOf(t).swarmed&&meleeAt(u.at)&&distUU(u,t)===1){let n=0;for(const v of G.units){if(v.kind==='wall'||inert(v)||tm(v.owner)===tm(t.owner))continue;if(distUU(v,t)===1&&++n>=2)break}if(n>=2)o.push(['Swarmed giant (+1)',1])}
   return o}
+/* v166: is this a spear thrust that passes over a Shieldbearer of its own side? (+1; one function for the blow and for its preview) */
+function spearOverShield(u,t){if(!u||!t||u.at!=='reach'||u.size!==1||t.size!==1||distUU(u,t)!==2)return 0;const mq=(u.q+t.q)/2,mr=(u.r+t.r)/2;if(!Number.isInteger(mq)||!Number.isInteger(mr))return 0;const mu=unitAt(mq,mr);return mu&&mu.kind!=='wall'&&mu.owner===u.owner&&hasTrait(mu,'shieldwall')?1:0}
 function basicDmg(u,t,ret){
   const F=facOf(u);let dmg=Math.max(1,afterDef(effAtk(u),(hasRelic(u,'shatter')||(u.st&&u.st.sand))&&t.kind!=='wall'?0:effDef(t)));// v76 Hourglass Sand ignores DEF
   if(G.realm&&!ret&&u.kind!=='wall')dmg=Math.max(1,dmg+(meleeAt(u.at)&&distUU(u,t)<=1?REALM.near:-REALM.far));// v74c the Realm: blows up close +1, shots from afar -1
@@ -3252,7 +3255,7 @@ function attack(u,t){
   let bg=bodyguardFor(u,t);const guarded=!!(bg&&bg.st&&bg.st.guard>0&&t.book&&!hasTrait(bg,'bodyguard'));if(bg){addLog(bg.owner,`${bg.name} steps in front of ${t.name}!`);fx(bg,guarded?'guard':'bodyguard','#e8b84e');t=bg}
   if(u.st&&u.st.stealth){u.st.stealth=0;fx(u,'revealed','#c81ca6')}// Stealth ends when the blade strikes
   const F=facOf(u);let dmg=basicDmg(u,t);const d0s=sunderGain(t,()=>basicDmg(u,t));
-  let overShield=0;if(u.at==='reach'&&u.size===1&&t.size===1&&distUU(u,t)===2){const mq=(u.q+t.q)/2,mr=(u.r+t.r)/2;if(Number.isInteger(mq)&&Number.isInteger(mr)){const mu=unitAt(mq,mr);if(mu&&mu.kind!=='wall'&&mu.owner===u.owner&&hasTrait(mu,'shieldwall')){dmg+=1;overShield=1;fx(u,'over the shield +1','#eef0f4')}}}// v81 (owner): the spear thrust over the Shieldbearer hits harder
+  let overShield=spearOverShield(u,t);if(overShield){dmg+=1;fx(u,'over the shield +1','#eef0f4')}// v81 (owner): the spear thrust over the Shieldbearer hits harder
   // Cover (gnomes): a gnome next to one of its own machines takes 1 less from a hostile basic attack, never below 1.
   let cov=0;if(dmg>1&&t.kind!=='wall'&&tm(u.owner)!==tm(t.owner)&&covered(t)){dmg-=1;cov=1;fx(t,'cover','#ff6ec7')}
   const extra=splashTargets(u,t),bonuses=hitBonuses(u,t,false),hp0=t.hp,lb=F.line?lineBonus(u):0,ra=u.st.rally?1:0,fb=hasTrait(u,'fireblood')&&onRed(u)?1:0;CUR_SRC=u;CUR_TAG='Basic';CUR_NAME='Basic attack';
@@ -9410,8 +9413,8 @@ function renderDock(){
       else if(A.afterAtk&&!u.atkd)abSub='only after a basic attack';
       else if(truce()&&hostileAbil(A))abSub='truce in round 1';
       else if(G.ap<cost){abCls='noap';abSub=`needs ${cost} AP, you have ${G.ap}`}
-      else if(canAbil(u,k)){abCls='go ready';abSub='ready: tap to aim'}
-      else abSub=A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`workshop full: at most ${machineCap(u.owner)}`:A.special==='march'?'nobody can step':A.special==='rally'?'no comrade within 2':A.special==='surge'?'no resting mage within 3':A.special==='dismantle'?'no machine of yours within 4':'no target in reach';
+      else if(canAbil(u,k)){abCls='go ready';abSub=A.special==='order'?(()=>{const n=orderGroup(u).length;return `free · reaches ${n} unit${n===1?'':'s'}${otherBrother(u)?'':' (the whole army)'}`})():'ready: tap to aim'}/* v166: an order says how far it reaches right now */
+      else abSub=A.special==='order'?'one order a turn: already given':A.special==='build'&&machineCount(u.owner)>=machineCap(u.owner)?`workshop full: at most ${machineCap(u.owner)}`:A.special==='march'?'nobody can step':A.special==='rally'?'no comrade within 2':A.special==='surge'?'no resting mage within 3':A.special==='dismantle'?'no machine of yours within 4':'no target in reach';
       return abBtn(abCls,id,abIc,`${A.name} · ${cost} AP`,abSub,abDescOf(k),!canAbil(u,k))};
     btns=abBtn(u.moved&&!(u.freeMove>0)?'used':moves?'mv':'used',null,'➤',u.freeMove>0?'Move · free':'Move · 1 AP',u.moved&&!(u.freeMove>0)?'already moved':moves?moves+' spot'+(moves>1?'s':'')+': tap a dot':G.ap<1?'no AP left':'no room to move',mvDesc,true)+
       (u.machine&&u.at==='none'?abBtn('atk used',null,'⚙','Fires on its own','at the start of your turn',atkDesc,true):abBtn('atk'+(tg.length?' ready':u.acted?' used':' used'),'abAtk','⚔',`Attack · ${atkCost(u)?atkCost(u)+' AP':'free'}`,u.acted&&!(u.freeAtk>0)?'already acted':tg.length?tg.length+' target'+(tg.length>1?'s':'')+' below':truce()?'truce in round 1':G.ap<atkCost(u)?`needs ${atkCost(u)} AP, you have ${G.ap}`:'nothing in reach',atkDesc,!tg.length))+
@@ -10007,7 +10010,7 @@ const FIG_K=()=>WIDE()?1.15:1.1,TOKEN_K=()=>0.56;// v44: smaller tokens, more he
 // How far from a piece a tap still counts as that piece, in px.
 function tapTol(){const S=VIEW==='3d'?CAM.S:SZ;return Math.max(window.innerWidth<1000?46:34,S*1.3)}
 // The damage a basic attack would deal, as a red tag beside each piece you can attack now.
-function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTurn()||u.owner!==G.cur)return;let d,jn=0;try{jn=phalanxJoin(u,t);d=basicDmg(u,t)+jn}catch(e){return}if(!(d>0))return;
+function dmgTag(x,y,fs,t){const u=G.sel!=null?byId(G.sel):null;if(!u||!isHumanTurn()||u.owner!==G.cur)return;let d,jn=0;try{jn=phalanxJoin(u,t);d=basicDmg(u,t)+jn+spearOverShield(u,t)/* v166: the preview counts the thrust over a shield, as the blow does */}catch(e){return}if(!(d>0))return;
   let rb=0;try{rb=d>=t.hp?0:retaliation(u,t)}catch(e){}// v40: a Riposte target shows what it hits back
   let dl=null;try{dl=duoLabel(u,t,null)}catch(e){}/* v146 named duos */
   const tx=(d>=t.hp?'KILL ':'')+'-'+fmt(d)+(jn?` (+${jn} ⚔⚔)`:'')+(dl?'  '+dl.t:'')+(rb?`  ↩ ${fmt(rb)}`:'');ctx.font=`900 ${fs}px Oxanium, sans-serif`;const w=ctx.measureText(tx).width+fs*0.7,h=fs*1.3;
@@ -10958,7 +10961,9 @@ function kbDraw(now){if(!KB.on||!KB.cur||!G)return;const p=0.55+0.45*Math.sin(no
 
 /* ---------- hooks ---------- */
 // drawn on the board after the effects, in both views
-function uxDraw(now){if(!G)return;try{uxDragDraw();uxGiantFoot();uxThreatPills();uxAimTags();kbDraw(now);uxRingPlace()}catch(e){}}
+/* v166: with a Warlord selected, the block his order would reach is outlined, so you see who is in and who stands one hex too far */
+function uxBlock(){const u=uxSel();if(!u||G.amode||!u.ability||!ABIL[u.ability]||ABIL[u.ability].special!=='order')return;let g=[];try{g=orderGroup(u)}catch(e){return}ctx.save();ctx.shadowColor='#eef0f4';ctx.shadowBlur=6;for(const v of g)for(const [q,r] of cells(v))uxOutline(q,r,'#eef0f4',2,'rgba(238,240,244,.14)');ctx.restore()}
+function uxDraw(now){if(!G)return;try{uxDragDraw();uxGiantFoot();uxBlock();uxThreatPills();uxAimTags();kbDraw(now);uxRingPlace()}catch(e){}}
 {const r0=refresh;refresh=function(){r0.apply(this,arguments);try{uxRingBuild()}catch(e){}}}
 {const a0=aimAbil;aimAbil=function(u,k){a0(u,k);try{uxAutoAim(u,k);refresh()}catch(e){}}}
 
