@@ -2594,7 +2594,7 @@ function beginTurn(){
   if(RULES.PILOTS2)for(const u of G.units.filter(u=>u.owner===p.id&&isGnome(u))){if(u.build==='done')walkerIn2(u);else if(u.build==='started'){u.build='still';u.buildPos=key(u.q,u.r);if(!SIM)fx(u,'stand still','#ff6ec7')}}
   machineFire(p,'Auto-fire','Basic');supplyTurn(p);ghoulTurn(p);elementalTurn(p);resolveBeast();resolveBarrier();
   // Act 1: units standing on a flag or the Wellspring at the start of their side's turn capture it (before charge, AP and points are counted).
-  captureObjectives(p.id);wildsTick(true);kingCrown();kingScore(p);if(G.over)return;
+  captureObjectives(p.id);holdSync();wildsTick(true);kingCrown(p.id);kingScore(p);if(G.realm&&RULES.BOT_STANCE)p.stance=realmStance(p);if(G.over)return;
   // Wall gates: count the hexes next to each giant that walls deny it this turn (tracking only; the rule itself lives in freeFor).
   if(FAC[p.fac].gateBlock&&trk()&&!SIM){const m=occ();for(const u of G.units){if(u.owner!==p.id||u.size!==2)continue;let n=0;for(const [q,r] of cells(u))for(const [dq,dr] of DIRS){const a=q+dq,b=r+dr;if(passable(a,b)&&!m.get(key(a,b))&&gated(m,a,b))n++}if(n){const e=tFx(p.fac,u.name,'Gated by walls');if(e){e.blocked+=n;e.uses++}}}}
   for(const u of G.units)if(u.cut===p.id)delete u.cut;// Final Second stamps from this side's previous turn
@@ -2699,8 +2699,8 @@ function endTurn(){
   if(realmCanSummon(p)){const u=realmSummon(p,p.reserve[0],true);if(u){u.moved=true;u.acted=true}}// v74: a turn that forgot to summon calls the first unit of the reserve
   p.bank=Math.max(0,Math.min(G.ap,bankOf(p)));tReady(p);G.combo=false;newTurnEnd(p);
   if(RULES.DREAD)for(const v of G.units)if(v.owner===p.id&&v.st&&v.st.terror!=null)v.st.terror=null;// v72 Dread ends with the victim's turn
-  if(RULES.RIFTKIT)for(const v of G.units){if(!v.st)continue;if(v.st.rmark>0&&v.st.rmBy===p.id){v.st.rmark--;if(!v.st.rmark)v.st.rmBy=null}
-    if(v.owner===p.id){if(v.st.anchor>0){v.st.anchor=0;v.st.anchorImm=2}else if(v.st.anchorImm>0)v.st.anchorImm--}}
+  if(RULES.RIFTKIT)for(const v of G.units){if(!v.st)continue;if(v.st.rmark>0&&v.st.rmBy===p.id){v.st.rmark--;if(!v.st.rmark)v.st.rmBy=null}}
+  for(const v of G.units){if(!v.st||v.owner!==p.id)continue;if(v.st.anchor>0){v.st.anchor=0;v.st.anchorImm=2}else if(v.st.anchorImm>0)v.st.anchorImm--}/* fix 10 Nov 2026: a grip (Anchor, the Earth surge and spells, Mountain's Fall) ends with the victim's next turn; the release sat inside RULES.RIFTKIT, off since v111, so every grip lasted the whole game */
   if(RULES.RIFTKIT)stormTick(p);
   if(RULES.FREEZE_HOLD)for(const v of G.units){if(!v.st||!(v.st.frozen>0)||v.st.frzBy!==p.id||!v.st.frzLost)continue;v.st.frozen=0;v.st.frzBy=null;v.st.frzLost=0;v.st.fimm=1;if(!v.st.stun)v.st.chill=Math.max(v.st.chill||0,1);v.st.stun=0;if(!SIM)fx(v,'thaws','#bfefff')}
   if(RULES.PHALANX&&FAC[p.fac].phalanx&&!SIM&&trk()){const n=G.units.filter(u=>u.kind!=='wall'&&u.owner===p.id&&inPhalanx(u)).length;const e=tFx(p.fac,'','Phalanx: turns ended in formation');if(e){e.turns=(e.turns||0)+1;if(n){e.uses++;e.hits+=n}}}
@@ -2792,7 +2792,7 @@ function kindleBlast(t){if(!RULES.KINDLE_BLAST||t.kind==='wall'||!(CUR_NAME==='K
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src;CUR_TAG='Abil';CUR_NAME='Kindle: hellfire burst';for(const v of vs)if(alive(v))hurt(v,RULES.KINDLE_BLAST,'#ff4a3d');[CUR_SRC,CUR_TAG,CUR_NAME]=o}
 function kill(t){
   const i=G.units.indexOf(t);if(i<0)return;soulCount(t);
-  G.units.splice(i,1);newKill(t,CUR_SRC);shadowKill(t);/* v132 */
+  G.units.splice(i,1);newKill(t,CUR_SRC);shadowKill(t);/* v132 */if(RULES.HOLDINGS&&G.realm)holdKill(t,CUR_SRC);/* v171 */
   {const s=CUR_SRC;if(RULES.SHAMANS&&s&&s.kind!=='wall'&&s.elemental&&s.el&&alive(s)&&G.players[s.owner]&&talent(G.players[s.owner],'fury')&&(t.kind!=='wall'||t.monster)&&!(t.kind!=='wall'&&tm(t.owner)===tm(s.owner))){surgeOf(s,s.el);if(!SIM)fx(s,'fury!',EL_COL[s.el])}}/* v134 Elemental Fury */if(RULES.KINDLE_BLAST)kindleBlast(t);// v62: an enemy killed by the Kindle bursts
   if(RULES.SPLITTERS&&SPLITS[t.name])splitUnit(t);// v64: the Frost Colossus breaks into smaller pieces
   if(t.behemoth)behemothDown(t);
@@ -3077,7 +3077,7 @@ function healUnit(t,n,col,name,by){
 function sanctSync(){if(!G||!G.realm)return;let ch=false;for(const v of G.units)if(v.relq&&(v.sq!==v.q||v.sr!==v.r||v.ssh!==!!v.shadow)){v.sq=v.q;v.sr=v.r;v.ssh=!!v.shadow;ch=true}if(ch)sanctAll()}/* v163: repaint the sanctuary when its carrier has moved */
 function afterAction(){
   sanctSync();
-  resolveBeast();resolveBarrier();captureObjectives(G.cur);
+  resolveBeast();resolveBarrier();captureObjectives(G.cur);holdSync();
   pickupRelics();wildsTick(false);kingCrown();computeHolder();
   if(SIM)return;
   if(checkVictory())return;
@@ -4792,8 +4792,8 @@ function storyFall(){
   const city=allCells().filter(([q,r])=>hd(q,r,0,0)<=G.heartR).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0));
   const b=spawnBeast(city);if(b){b.hp=b.maxhp=REALM.storyBeastHp;b.def=0;G.beast.room='throne'}
   G.belly=1;G.eaten=0;G.crown=0;G.waveN=0;G.loot=G.loot||[];
-  for(const br of G.breaches){const c=allCells().filter(([q,r])=>hd(q,r,0,0)===REALM.stoneDist&&passable(q,r)&&!unitAt(q,r)&&!G.loot.some(x=>x.q===q&&x.r===r)).sort((x,y)=>angGap(storyAng(...x),br.ang)-angGap(storyAng(...y),br.ang))[0];
-    if(c)G.loot.push({id:G.nid++,kind:'stone',q:c[0],r:c[1],carrier:null,road:br.pid})}
+  {const sh=[];for(const br of G.breaches){const c=allCells().filter(([q,r])=>hd(q,r,0,0)===REALM.stoneDist&&passable(q,r)&&!unitAt(q,r)&&!G.loot.some(x=>x.q===q&&x.r===r)&&!sh.some(s=>s[0]===q&&s[1]===r)).sort((x,y)=>angGap(storyAng(...x),br.ang)-angGap(storyAng(...y),br.ang))[0];
+    if(c){if(RULES.HOLDINGS)sh.push(c);else G.loot.push({id:G.nid++,kind:'stone',q:c[0],r:c[1],carrier:null,road:br.pid})}}if(RULES.HOLDINGS){G.belly=0;holdsSetup(sh)}}/* v171: with holdings the stones sink into Stone Shrines */
   if(!SIM){addLog(null,'The sky cracks and the Rift Beast falls on the city! The tower of the crown is crushed, the wall breaks in four places, and four Crown Stones are thrown out onto the roads. The fifth is in the Beast\'s belly.');
     vfx({k:'thefall',at:[0,0],portals:G.players.map(p=>({at:p.camp,col:FAC[p.fac].color})),stones:(G.loot||[]).filter(x=>x.kind==='stone').map(x=>[x.q,x.r])});announce({k:'note',col:'#b06bff',t:'The Fall',s:'The Rift Beast crushes the city and an earthquake rolls across the land: the green fields crack into wasteland and the ground round the city starts to rot. The crown\'s stones scatter onto the roads. The Beast cannot move, but it strikes whoever comes close, and every few rounds it sends spawns to fetch the stones.'});
     const O=tObj();if(O){O.story={waves:[],eaten:0,crowned:[],spawnKills:{},beastDead:null,blast:0,god:null}}}}
@@ -4821,7 +4821,7 @@ function storyBeastAct(){const b=storyBeast();if(!b)return;if(b.st&&b.st.frozen>
 // round start on the Realm (STORY): the Rift closes, the Beast attacks, waves are born, spawns act, the Drakes wake, the Old God walks
 function storyRound(){const b=storyBeast();
   if(b){b.maxhp=Math.max(REALM.beastFloor,b.maxhp-REALM.beastDecay);b.hp=Math.min(b.hp,b.maxhp);storyBeastAct()}
-  storyWaves();storySpawns();storyGodTurn();
+  storyWaves();riftClaims();storySpawns();storyGodTurn();
   if(G.round===REALM.drakeAt)for(const R of G.rooms||[])if(R.state==='sleeping'&&R.enc==='drake'){const m=makeMonster('drake',R.c[0],R.c[1],R.id);m.tier=R.tier;const m0=occ();for(let d=0;d<6;d++){const a=R.c[0]+DIRS[d][0],c=R.c[1]+DIRS[d][1];if(passable(a,c)&&!m0.get(key(a,c))){m.size=2;m.dir=d;break}}
     if(unitAt(R.c[0],R.c[1]))continue;G.units.push(m);R.state='active';R.monMax=m.maxhp;if(!SIM){addLog(null,`An Elder Drake wakes on its hoard at the edge of the map: ${REALM_MON.drake.pts} points for the killing blow.`);vfx({k:'buff',at:R.c,col:'#ff9a3d',cam:1})}}
   if(G.round===REALM.drakeAt&&!SIM)announce({k:'note',col:'#ff9a3d',t:'The Elder Drakes wake',s:`At the north and south edges. The killing blow: ${REALM_MON.drake.pts} points and your strongest fallen unit back. They strike only the last unit that hit them.`})}
@@ -4911,9 +4911,10 @@ function kingStat(u,k){if(!u.king||u.kind==='wall'||oldCentre())return 0;if(G.ma
 const heartFoes=team=>RULES.KING_ADJ!==2&&G.units.some(v=>v.kind!=='wall'&&!v.statue&&tm(v.owner)!==team&&cells(v).some(([q,r])=>RULES.KING_ADJ?hd(q,r,0,0)===1:isHeart(q,r)));// v40: only an enemy next to the Throne challenges the King
 // Crowning. Crown Wilds: the first unit to sit the Throne, then the next after the King falls. Random board: whoever sits the Throne takes the crown
 // (from a living King too, if the King has left the Throne).
-function kingCrown(){
+function kingCrown(startPid){
   if(oldCentre()||!throneOpen()||SIM)return;
   const u=unitAt(0,0);if(!u||u.kind==='wall'||u.summon||u.statue||u.egg||u.king||u.machine||(u.walker&&!RULES.WALKER_KING)||u.name==='Archdemon'||u.name==='Time Wraith')return;// v58 (owner): summoned units (Archdemon, Time Wraith, machines, walkers) are never crowned
+  if(RULES.SUCCESSION&&G.realm&&G.kingDied){if(startPid==null||u.owner!==startPid||G.round<(G.crownDark||0))return;if(G.units.some(v=>v.kind!=='wall'&&!v.statue&&!v.summon&&v.owner>=0&&tm(v.owner)!==tm(u.owner)&&cells(v).some(([q,r])=>hd(q,r,0,0)===1)))return}/* v171 the slower succession */
   const old=kingOf();if(old&&G.map)return;
   if(old){old.king=false;addLog(old.owner,`${old.name} loses the crown.`)}
   u.king=true;const F=FAC[G.players[u.owner].fac];storyCrown(u);
@@ -4934,12 +4935,56 @@ function kingScore(p){
   const k=kingOf();if(!k||k.owner!==p.id||!onThrone(k))return;
   if(heartFoes(p.team)){addLog(p.id,`The King is challenged: ${RULES.KING_ADJ?'an enemy stands next to the Throne':'enemies stand on the Heart'}, so no point this turn${G.map?'':' (it fights at +2 ATK, +2 DEF on the Throne)'}.`);return}
   G.scoredAt=G.scoredAt||{};if(G.scoredAt[p.team]===G.round)return;G.scoredAt[p.team]=G.round;// a team scores once per round
+  if(RULES.CROWN_POT&&G.realm&&RULES.KINGDOM&&kdOn()){/* v171: the King is paid by his side's holdings */const nH=holdsOf(p.team),nT=kingdomTribute(p.team),KS=kdStats();if(KS)KS.tribute[p.team]=(KS.tribute[p.team]||0)+nT;
+    if(!nT){if(!SIM){addLog(p.id,'The King holds the city but no land: no tribute this turn. Take a Stone Shrine, a Healing Spring or a Drake Lair.');if(KS)KS.zero++}return}
+    G.cpot=Object.assign({pot:0,n:0},G.cpot||{});for(let i=0;i<nT;i++){G.cpot.n++;tPts(p.id,'throne',1);if(G.cpot.pot>=REALM.potMax)G.score[p.team]=(G.score[p.team]||0)+1;else G.cpot.pot++}
+    if(!SIM)addLog(p.id,`The King rules ${nH} holding${nH>1?'s':''}: +${nT} (${G.score[p.team]||0} banked, ${G.cpot.pot} in the crown, ${teamScore(p.team)}/${heartTarget()}).`);
+    if(teamScore(p.team)>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}return}
   if(RULES.CROWN_POT&&G.realm){G.cpot=Object.assign({pot:0,n:0},G.cpot||{});G.cpot.n++;tPts(p.id,'throne',1);
     if(G.cpot.pot>=REALM.potMax){/* v161 (owner): the crown holds two points at most; every Throne point after that is safe */G.score[p.team]=(G.score[p.team]||0)+1;addLog(p.id,`The King holds the Throne: this point is banked for good (${G.score[p.team]} banked, ${G.cpot.pot} in the crown, ${teamScore(p.team)}/${heartTarget()}).`)}
     else{G.cpot.pot++;addLog(p.id,`The King holds the Throne: +1 into the crown (${G.cpot.pot} in the crown, lost if the King is killed; ${G.score[p.team]||0} banked; ${teamScore(p.team)}/${heartTarget()}).`)}
     if(teamScore(p.team)>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}return}
   G.score[p.team]=(G.score[p.team]||0)+1;tPts(p.id,'throne',1);addLog(p.id,`The King holds the Throne: ${G.score[p.team]}/${heartTarget()}.`);
   if(teamScore(p.team)>=heartTarget()&&!G.over){G.over={team:p.team,how:'heart'};HOOKS.over()}}
+/* v171 THE KINGDOM (PROTOTYPE, owner 10 Nov 2026: "if you control more places you get more points per round; it's a siege: you can hold the city but if
+   you don't control any of the countryside you don't get rewards"; "we need to test ideas before implementing"). Every piece behind its own switch, all OFF:
+   RULES.HOLDINGS   eight holdings: the four Stone Shrines (the Crown Stones sink into the roads where they land after the Fall; nobody carries them, so the
+                    old spawn waves that fetched them no longer come), the two Healing Springs and the two Drake Lairs once their monster is slain (the killer's
+                    side takes it). A holding is your side's from the moment one of your units stands on it until an enemy unit does.
+   RULES.KINGDOM    the King on the Throne is paid by his side's holdings: REALM.kingdom.scale[n] points a turn (none without any holding).
+   RULES.HOLD_SUPPLY each holding your side owns makes your Keep load the next supply wagon one round sooner (the owner's idea).
+   RULES.SUCCESSION when a King dies the crown lies dark for REALM.kingdom.dark rounds; after that a unit is crowned only by starting its side's turn on the
+                    Throne with no enemy next to it.
+   RULES.RIFT_CLAIM from round claimFrom, every claimEvery rounds, the Rift sends one spawn per living player onto the open holdings nearest the city, announced
+                    a round before; a holding under a spawn belongs to nobody; the spawn's killer takes the holding and claimCharge Ultimate charge. */
+function kdOn(){return !!(RULES.HOLDINGS&&G&&G.realm)}
+function holdsOf(team){return kdOn()?(G.holds||[]).filter(h=>h.open&&!h.claim&&h.owner!=null&&tm(h.owner)===team).length:0}
+function kingdomTribute(team){const S=REALM.kingdom.scale;return S[Math.min(holdsOf(team),S.length-1)]}
+function kdStats(){if(SIM||!trk())return null;const O=tObj();if(!O)return null;O.kingdom=O.kingdom||{deaths:[],flips:0,zero:0,tribute:{},claims:0,claimKills:0,opened:0,guards:[]};return O.kingdom}
+function holdsSetup(stones){G.holds=[];for(const [q,r] of stones){const h={id:G.holds.length,kind:'shrine',name:'Stone Shrine',q,r,owner:null,open:true};G.holds.push(h);
+    /* RULES.SHRINE_GUARD (owner 10 Nov 2026, "test the guarded shrines"): each Shrine starts under a Rift guardian that never moves and strikes back like a camp
+       monster; its killer's side takes the Shrine and REALM.kingdom.guardCharge Ultimate charge; after that it is an ordinary holding (the Rift never returns) */
+    if(RULES.SHRINE_GUARD&&!unitAt(q,r)){const m=makeMonster(REALM.kingdom.guard,q,r,null);m.name='Shrine Guardian';m.guardOf=h.id;G.units.push(m);h.open=false;h.guard=m.id}}
+  for(const R of G.rooms||[]){if(R.type==='heal')G.holds.push({id:G.holds.length,kind:'spring',name:'Healing Spring',q:R.c[0],r:R.c[1],owner:null,open:false,room:R.id});
+    if(R.type==='t3')G.holds.push({id:G.holds.length,kind:'lair',name:'Drake Lair',q:R.c[0],r:R.c[1],owner:null,open:false,room:R.id})}}
+function holdSync(){if(!kdOn()||!G.holds)return;for(const h of G.holds){if(!h.open)continue;const u=unitAt(h.q,h.r);
+  if(u&&u.riftClaim===h.id){h.claim=1;h.owner=null;continue}if(h.claim)h.claim=0;
+  if(!u||u.kind==='wall'||u.owner<0||u.statue)continue;if(h.owner!=null&&tm(h.owner)===tm(u.owner))continue;
+  const had=h.owner;h.owner=u.owner;if(!SIM){addLog(u.owner,`The ${u.name} takes the ${h.name} for the ${FAC[G.players[u.owner].fac].name}${had!=null&&G.players[had]?` from the ${FAC[G.players[had].fac].name}`:''}.`);const K=kdStats();if(K)K.flips++}}}
+function holdKill(t,k){if(!kdOn())return;const K=kdStats();
+  if(t.king&&RULES.SUCCESSION){G.crownDark=G.round+REALM.kingdom.dark;G.kingDied=1;if(!SIM)addLog(null,`The crown lies dark on the Throne: nobody can be crowned before round ${G.crownDark}, and then only by starting a turn on the Throne with no enemy next to it.`)}
+  if(t.king&&K)K.deaths.push(G.round);
+  if(t.monster&&t.room){const h=(G.holds||[]).find(x=>x.room===t.room&&!x.open);if(h){h.open=true;if(k&&k.kind!=='wall'&&k.owner>=0)h.owner=k.owner;if(!SIM){addLog(k&&k.owner>=0?k.owner:null,`The ${h.name} is free: it becomes a holding${h.owner!=null?` of the ${FAC[G.players[h.owner].fac].name}`:''}.`);if(K)K.opened++}}}
+  if(t.guardOf!=null){const h=(G.holds||[])[t.guardOf];if(h&&!h.open){h.open=true;h.guard=null;if(k&&k.kind!=='wall'&&k.owner>=0){h.owner=k.owner;addCharge(k.owner,REALM.kingdom.guardCharge,'Shrine Guardian')}
+    if(!SIM){addLog(h.owner!=null?h.owner:null,`The Shrine Guardian falls: the ${h.name} becomes a holding${h.owner!=null?` of the ${FAC[G.players[h.owner].fac].name}`:''}.`);if(K){K.opened++;K.guards.push({round:G.round,pid:h.owner})}}}}
+  if(t.riftClaim!=null){const h=(G.holds||[])[t.riftClaim];if(h){h.claim=0;h.owner=null;if(k&&k.kind!=='wall'&&k.owner>=0){h.owner=k.owner;addCharge(k.owner,REALM.kingdom.claimCharge,'Rift spawn')}if(K)K.claimKills++}}}
+function riftClaims(){if(!RULES.RIFT_CLAIM||!kdOn())return;const KD=REALM.kingdom,r=G.round,on=x=>x>=KD.claimFrom&&(x-KD.claimFrom)%KD.claimEvery===0;
+  const pick=()=>(G.holds||[]).filter(h=>h.open&&!h.claim&&!unitAt(h.q,h.r)).sort((a,b)=>(a.owner==null)-(b.owner==null)||hd(a.q,a.r,0,0)-hd(b.q,b.r,0,0)||a.id-b.id).slice(0,KD.claimN);/* owned holdings first (the Rift takes land back from the conquerors), nearest the city first */
+  if(on(r+1)&&!SIM){const hs=pick();if(hs.length){addLog(null,`The Rift stirs: next round its spawns rise on ${hs.map(h=>'the '+h.name).join(', ')}.`);announce({k:'note',col:'#b06bff',t:'The Rift stirs',s:`Next round its spawns rise on ${hs.map(h=>h.name).join(', ')}. A holding with a spawn on it belongs to nobody until the spawn is killed.`})}}
+  if(!on(r))return;const w=Math.floor((r-KD.claimFrom)/KD.claimEvery),kind=w===0?'spawn2':'spawn3';const K=kdStats();
+  for(const h of pick()){const m=makeMonster(kind,h.q,h.r,null);m.riftClaim=h.id;m.hp=m.maxhp=m.maxhp+KD.claimGrow*Math.max(0,w-1);G.units.push(m);h.claim=1;h.owner=null;if(K)K.claims++;
+    if(!SIM){addLog(null,`A Rift spawn rises on the ${h.name}: it belongs to nobody until the spawn is killed.`);vfx({k:'buff',at:[h.q,h.r],col:'#b06bff',cam:1})}}}
+function wagonLoad(p){return RULES.HOLD_SUPPLY&&kdOn()?Math.max(1,REALM.wagon.load-holdsOf(p.team)):REALM.wagon.load}
 /* ---------- The Realm (v74, owner 17 Oct 2026): the first playable test of the big redesign ----------
    A big rectangular board with the four bases in the corners, each inside a home valley walled by broken mountains (three wide exits and holes).
    Everything but the bases is rolled every game and mirrored, so every player gets the same distances. Four rings: the home valley (two tier-1
@@ -4964,7 +5009,7 @@ Object.assign(REALM,{soulFires:3,/* every soul past the tenth: three separate he
 Object.assign(REALM,{holyHeal:1,blessMend:2,duskWither:2,relicSlow:1});/* v163 the procession */
 REALM.startBy.warband=1;/* v165: both Warlord brothers start on the board, with one soldier: three bodies like every other army */
 Object.assign(REALM,{ice:{ttl:2,mark:1},stampede:{steps:4,dmg:3,marks:2},iceWall:{hp:6,ttl:2}});/* v164 the Frost ground, the Mammoth's charge, the Warden's wall */
-RULES.HORN_ORDERS=1;RULES.MARCH2=1;RULES.SONS=1;REALM.sons={ttl:4,atk:1,heal:1};RULES.SHAPES=1;RULES.SHAPE_SAFE=1;REALM.shape={ttl:3,wallHp:6,lava:4,windPush:2,pocket:12};/* v168 the Elementals shape the land *//* v167 Sons of the Earth *//* v165d: the army marches at the pace of its slowest unit *//* v165c: the Warhorn gives the three orders */RULES.OLD_ONES=0;RULES.WAGON=1;RULES.ICE_STATUES=0;/* v161 (owner): no limit on Ice Statues */
+RULES.HORN_ORDERS=1;RULES.MARCH2=1;RULES.SONS=1;REALM.sons={ttl:4,atk:1,heal:1};REALM.kingdom={scale:[0,1,1,2,2,3],dark:2,claimFrom:6,claimEvery:4,claimN:2,claimCharge:2,claimGrow:8,guard:'spawn2',guardCharge:2};RULES.SHRINE_GUARD=0;RULES.BOT_STANCE=0;REALM.bot={danger:7,contestW:6,crownW:6,guardW:3.5,ring:3,campNear:3,minArmy:3,leaderK:0.4};RULES.HOLDINGS=0;RULES.KINGDOM=0;RULES.HOLD_SUPPLY=0;RULES.SUCCESSION=0;RULES.RIFT_CLAIM=0;/* v171 the Kingdom prototype: all off */RULES.SHAPES=1;RULES.SHAPE_SAFE=1;REALM.shape={ttl:3,wallHp:6,lava:4,windPush:2,pocket:12};/* v168 the Elementals shape the land *//* v167 Sons of the Earth *//* v165d: the army marches at the pace of its slowest unit *//* v165c: the Warhorn gives the three orders */RULES.OLD_ONES=0;RULES.WAGON=1;RULES.ICE_STATUES=0;/* v161 (owner): no limit on Ice Statues */
 Object.assign(REALM.desire,{totemCharge:3,crackHp:8,cracksPerQuarter:2});/* v159 the objects of the clearings: the Rift Totem (+3 Ultimate charge, once), the cracked wall (a shortcut for whoever breaks it) */
 Object.assign(LOOT,{reliquary:{name:'The Relic',col:'#ffe9a8',text:'the relic of the Circle of Priests, fallen with its bearer: a unit of theirs that steps here carries it on and the sanctuary walks again; an enemy that steps here smashes it for good'},totem:{name:'Rift Totem',col:'#d08cff',text:'a shard of the Beast\'s power: the first unit to step on it gives its army +3 Ultimate charge, then it is spent'}});REALM.keep={hp:30,def:1,pts:3};REALM.sweepFirst=1;/* v154 (owner): the Beast sweeps the breach whenever units stand in one; it spits or roars only when no breach holds anyone, so the city's doorways are the danger, not the open field */REALM.jungle={rx:19.2,ry:16.2,wob:2.1,corr:1.75,cliff:3.7,ford:1.6,lakeIn:11.5,lakeOutX:17.5,lakeOutY:15.2,lakeW:3.2};/* v155: the lakes at the rivers' heads */REALM.stoneDist=11;/* v150: the stones land where the roads cross the ring *//* v150 THE JUNGLE RING (owner 4 Nov 2026, layout B on the objectives page): the ring corridor's ellipse, its wobble, half width and cliff band, in hex-pixel units *//* v149 (owner 4 Nov 2026): the KEEP stands on the base's middle hex (razing it: 2 points, the Fountain runs dry, the supplies stop) and SUPPLIES: once the reserve is empty the Keep sends one thing a turn that feeds the army's engine; a unit at home takes it */
 // v75 (brief): startBy = armies that begin with fewer than REALM.start units; xp = the Iron Warband's veteran ladder (cumulative XP per level)// near/far (owner): close-range hits +1, long-range hits -1; light units (no armour) move 1 more, heavy ones (2+ DEF) 1 less
@@ -5284,7 +5329,7 @@ function supplyTurn(p){if(!RULES.SUPPLY||!G.realm||!p||!p.alive||SIM)return;G.lo
   for(const x of G.loot.slice()){if(x.kind!=='supply'||tm(x.owner)===tm(p.id))continue;const u=unitAt(x.q,x.r);if(u&&u.kind!=='wall'&&tm(u.owner)===tm(p.id)){G.loot.splice(G.loot.indexOf(x),1);addLog(p.id,`The ${u.name} destroys the ${FAC[G.players[x.owner].fac].name}'s supplies.`);if(trk()){const e=tFx(p.fac,u.name,'Enemy supplies destroyed');if(e)e.uses++}}}
   const S=SUPPLY[p.fac];if(!S||p.keepDown||!p.camp||!p.reserve||p.reserve.length)return;
   let x=G.loot.find(y=>y.kind==='supply'&&y.owner===p.id);
-  if(!x&&RULES.WAGON&&p.wagonEver){if(p.wagonGone==null)p.wagonGone=G.round;if(G.round-p.wagonGone<REALM.wagon.load)return}/* v161: the Keep loads the next wagon */
+  if(!x&&RULES.WAGON&&p.wagonEver){if(p.wagonGone==null)p.wagonGone=G.round;if(G.round-p.wagonGone<wagonLoad(p))return}/* v161: the Keep loads the next wagon; v171: holdings load it faster */
   if(!x){const m=occ();const spot=allCells().filter(([q,r])=>hd(q,r,p.camp[0],p.camp[1])===1&&passable(q,r)&&!m.get(key(q,r))&&!G.loot.some(y=>y.carrier==null&&y.q===q&&y.r===r)).sort((a,b)=>hd(a[0],a[1],0,0)-hd(b[0],b[1],0,0)||a[0]-b[0]||a[1]-b[1])[0];
     if(spot){x={id:G.nid++,kind:'supply',owner:p.id,q:spot[0],r:spot[1],carrier:null};G.loot.push(x);p.wagonEver=1;p.wagonGone=null;if(!p.supplyTold){p.supplyTold=1;addLog(p.id,`Your reserve is empty: from now on the Keep sends a supply wagon, ${S.name} (${S.text}). It rolls ${REALM.wagon.speed} hexes a turn toward your unit ${wagonWho()}, and that unit takes it. An enemy that steps on the wagon destroys it; the next wagon leaves ${REALM.wagon.load} rounds after the last one was taken or destroyed; a razed Keep sends nothing.`);announce({k:'note',col:FAC[p.fac].color,t:`${FAC[p.fac].name}: a supply wagon leaves the Keep`,s:`${S.name.charAt(0).toUpperCase()+S.name.slice(1)}: ${S.text}. It rolls to your unit closest to the base.`})}else addLog(p.id,`A supply wagon leaves the Keep: ${S.name}.`);vfx({k:'buff',at:spot,col:'#ffd766'})}}
   if(x){const u=RULES.WAGON?wagonRoll(p,x):G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon&&!v.statue&&distUC(v,x.q,x.r)<=1).sort((a,b)=>(b.maxhp-b.hp)-(a.maxhp-a.hp)||a.id-b.id)[0];if(u)supplyTake(x,u)}}
@@ -5331,26 +5376,49 @@ function realmGoalText(m){if(m.monster==='cracked')return {todo:`break the crack
     return {todo:`two phases. Bring it to half HP (${Math.ceil(m.maxhp/2)}): it ENRAGES (+${P2.atk} ATK${P2.around?', strikes everyone next to it':''}) ${m.enraged?'(it is enraged now)':''}. Then land the killing blow. ${hits}${back}`,get:`HALF when your hit breaks it: ${half}. THE KILL: ${rest}.`}}
   return {todo:`land the killing blow on the ${m.name} (${m.maxhp} HP${m.def?', '+m.def+' DEF':''}). ${hits}${back}`,get}}
 // Bots: where a unit heads on the Realm when no fight is close.
-function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.machine)return null;
+/* v172 THE BOTS READ THE RACE (owner 10 Nov 2026: "bots are not trained to adjust their strategy and they end up waiting and doing nothing").
+   Every bot side reads the score at the start of its turn (beginTurn sets player.stance) and picks one stance for the whole turn:
+     guard    our King sits the Throne: the army walks into a ring of REALM.bot.ring hexes round it and fights from there
+     contest  an enemy King sits the Throne and his side leads the race or is within REALM.bot.danger points of the target: the army walks on him;
+              with holdings on, the countryside third takes HIS holdings to cut his pay (the siege)
+     crown    the Throne is empty after the Beast, or its King stepped off: walk there and sit it
+     expand   anything else: the old goals (camps, holdings, stones, the Beast, Keeps)
+   In guard, contest and crown a camp or a Keep further than REALM.bot.campNear hexes no longer distracts a unit. */
+function realmStance(p){const team=p.team,B=REALM.bot,K=kingOf(),kt=K?tm(K.owner):null,kOn=!!(K&&onThrone(K));
+  const n=G.units.filter(u=>u.owner===p.id&&alive(u)&&u.kind!=='wall'&&!u.summon&&!u.statue).length;
+  if(K&&kt===team)return kOn?'guard':'crown';
+  if(K&&n>=B.minArmy){const ks=teamScore(kt);let best=0;for(const x of G.players)if(x.alive&&x.team!==kt)best=Math.max(best,teamScore(x.team));
+    if(!kOn)return 'crown';if(ks>=REALM.target-B.danger||ks>=best)return 'contest'}
+  const sb=STORY()&&storyBeast();if(!K&&G.throneOpen&&!sb&&n>=1)return 'crown';
+  return 'expand'}
+function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.machine)return null;const ST=RULES.BOT_STANCE&&G.realm?p.stance:null;
   if(RULES.KEEP&&p.fount&&!p.keepDown&&u.kind!=='wall'&&!u.leader&&!lootOf(u)){const foeNear=G.units.some(v=>v.kind!=='wall'&&!inert(v)&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)<=3);const kg=kingOf(),race=kg&&tm(kg.owner)!==tm(u.owner)&&onThrone(kg);/* v162b: nobody walks home while an enemy King sits the Throne (v161 waited until he was six points from winning, which was too late to walk back) */if(race)u.goHome=0;else if(u.hp<=u.maxhp*0.4&&!foeNear)u.goHome=1;else if(u.hp>=u.maxhp*0.7||(foeNear&&u.hp>u.maxhp*0.6))u.goHome=0;if(u.goHome)return [p.fount[0],p.fount[1],6]}/* v149 bots: retreat to the Fountain, come back with the supplies */
   {/* v163 the procession */const lost=(G.loot||[]).find(x=>x.kind==='reliquary'&&x.carrier==null);if(lost&&u.kind!=='wall'){if(lost.owner===u.owner){if(!u.leader||distUC(u,lost.q,lost.r)<=3)return [lost.q,lost.r,7]}else if(tm(lost.owner)!==tm(u.owner)&&distUC(u,lost.q,lost.r)<=5)return [lost.q,lost.r,5]}
     if(p.fac==='arcane'&&!u.relq){const B=G.units.find(v=>v.owner===p.id&&v.relq&&alive(v));if(B&&distUU(u,B)>2)return [B.q,B.r,2.4]}}
   const hurtN=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall').reduce((s,v)=>s+(v.maxhp-v.hp),0);
   /* v151 RAIDING PARTY: from round 12 a third of the army (never the Leader) walks to the nearest standing enemy Keep: 3 points and the stones inside are the
      points the scarce board no longer hands out at the centre. The rest of the army keeps fighting where it is. */
-  if(RULES.KEEP&&G.round>=REALM.open+2&&!u.leader&&u.id%3===0&&!lootOf(u)){const ks=G.units.filter(m=>m.monster==='keep'&&alive(m)&&m.keepOf!=null&&tm(m.keepOf)!==tm(p.id)&&G.players[m.keepOf]&&G.players[m.keepOf].alive);
+  if(RULES.KEEP&&G.round>=REALM.open+2&&!u.leader&&u.id%3===0&&!lootOf(u)&&(!ST||ST==='expand')){const ks=G.units.filter(m=>m.monster==='keep'&&alive(m)&&m.keepOf!=null&&tm(m.keepOf)!==tm(p.id)&&G.players[m.keepOf]&&G.players[m.keepOf].alive);
     if(ks.length){const k=ks.sort((x,y)=>wildsDist([x.q,x.r],u.q,u.r,u)-wildsDist([y.q,y.r],u.q,u.r,u))[0];return [k.q,k.r,6]}}
   const opts=[];{const g=newGoal(u,p);if(g)opts.push(g)}// v111 contracts
   for(const m of G.units){if(!m.monster||!alive(m))continue;const R=(G.rooms||[]).find(r=>r.id===m.room);if(!R)continue;
     let w=R.type==='t1'?(inValley(p,m.q,m.r)?2.2:0.3):R.type==='heal'?(hurtN>=16?2.4:1.4):R.type==='ogre'?(G.round>=3?1.7:0.8):R.type==='t3'?(G.round>=6?1.4:0.3):1.1;
     if(u.leader)w*=0.6;opts.push([m.q,m.r,w])}
   for(const [q,r] of G.outposts||[]){const o=flagOwner(q,r);if(o!=null&&o!==p.id&&!inValley(G.players[o],q,r))opts.push([q,r,1.5])}
+  if(kdOn()&&G.holds){const K=kingOf(),kt=K?tm(K.owner):null;for(const h of G.holds){const job=!u.leader&&u.id%3===1;/* a third of each army works the countryside */if(!h.open&&h.guard!=null){const m=byId(h.guard);if(m&&alive(m))opts.push([m.q,m.r,u.leader?0.8:job?4.5:1.7]);continue}if(!h.open)continue;if(h.claim){opts.push([h.q,h.r,u.leader?0.8:job?4.5:1.7]);continue}if(h.owner!=null&&tm(h.owner)===p.team)continue;let w=(job?4.2:1.8)+(kt===p.team?1.2:0)+(h.owner!=null&&tm(h.owner)===kt&&kt!==p.team?1.0:0);if(u.leader)w*=0.5;opts.push([h.q,h.r,w])}}/* v171 bots: take the holdings */
   if(RULES.DESIRE&&G.realm&&u.id%4===1&&!u.leader&&G.round<REALM.open)for(const m of G.units){if(m.monster!=='cracked'||!alive(m))continue;const d=hd(u.q,u.r,m.q,m.r);if(d<=10)opts.push([m.q,m.r,1.3])}/* v159: every fourth unit opens a nearby shortcut before the city falls */
   if(RULES.KEEP&&G.round>=REALM.open)for(const m of G.units){if(m.monster!=='keep'||!alive(m)||m.keepOf==null||tm(m.keepOf)===tm(p.id))continue;const o=G.players[m.keepOf];if(!o||!o.alive)continue;const weak=G.units.filter(v=>v.owner===o.id&&v.kind!=='wall'&&!v.summon).length<=4;const K=kingOf();opts.push([m.q,m.r,(weak?2.8:(K&&tm(K.owner)!==tm(p.id)?2.0:1.2))+0.4*(o.stones||0)])}/* v149: a late target, tempting when its army is thin or someone else is King; v151: more so with stones inside */
   if(!G.wander&&u.id%5===2)for(const k of Object.keys(G.feat))if(G.feat[k]==='lever'&&G.levers[k]!==p.team){const [q,r]=k.split(',').map(Number);if(hd(q,r,p.camp[0],p.camp[1])<=16)opts.push([q,r,1.8])}
   {const L=lootOf(u);if(L&&L.kind==='stone')return G.beast&&G.beast.dead?[0,0,9]:[p.camp[0],p.camp[1],9]}// v98: a stone carrier keeps it safe until the throne is open
   for(const x of G.loot||[]){if(x.carrier!=null)continue;if(x.kind==='totem'&&u.kind!=='wall'&&!u.summon)opts.push([x.q,x.r,(p.ult||0)<RULES.ULT?2.0:0.6]);/* v159 */if(x.kind==='stone'&&canCarry(u)&&!lootOf(u)&&!u.leader)opts.push([x.q,x.r,3.4]);if(x.kind==='remains'&&u.size===2&&tm(x.owner)===p.team)opts.push([x.q,x.r,4])/* v108: the Remains heal, raise ATK and HP and teach an ability */;if(x.kind==='scrap'&&isGnome(u)&&tm(x.owner)===p.team)opts.push([x.q,x.r,u.walker?1.2:2.2])}// v75c bots: giants fetch their Remains, gnomes their scrap
   if(G.throneBeast){const k=kingOf();const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon).length;const late=Math.min(2,Math.max(0,(G.round-REALM.open)/6))+(mine<=4?1.5:0);{const sb=STORY()&&storyBeast();opts.push([0,0,sb&&sb.hp>30&&G.round<10?1.0:(G.throneOpen&&!k?3.8:k&&k.owner!==p.id?3.2:2.6)+late])}}else if(G.round>=REALM.open-2)opts.push([0,0,1.4]);
+  if(ST&&ST!=='expand'){const B=REALM.bot,K=kingOf();/* v172: no far camp or Keep distracts the army now */
+    for(let i=opts.length-1;i>=0;i--){const g=opts[i];if(g[0]===0&&g[1]===0)continue;const m=unitAt(g[0],g[1]);if(m&&m.monster&&hd(u.q,u.r,g[0],g[1])>B.campNear)opts.splice(i,1)}
+    const lw=u.leader?B.leaderK:1;
+    if(ST==='guard'){if(!(K&&K.id===u.id)){if(hd(u.q,u.r,0,0)>B.ring)opts.push([0,0,B.guardW*lw]);else return null}}/* inside the ring: no goal, it fights from where it stands */
+    else if(ST==='contest'){const job=!u.leader&&u.id%3===1,hs=job&&kdOn()&&K&&G.holds?G.holds.filter(h=>h.open&&!h.claim&&h.owner!=null&&tm(h.owner)===tm(K.owner)):[];
+      if(hs.length)for(const h of hs)opts.push([h.q,h.r,B.contestW]);else opts.push([K?K.q:0,K?K.r:0,B.contestW*lw])}
+    else opts.push([0,0,B.crownW*lw])}
   let best=null,bs=1e9;for(const g of opts){const d=wildsDist(g,u.q,u.r,u);const sc=d/g[2]+(u.id%3)*0.7*(g[2]<1.5?1:0);if(sc<bs){bs=sc;best=g}}return best}
 /* ---------- lab helpers: headless only (sim/playbook.js, sim/power.js build scripted positions); the game never calls them ---------- */
 function labClear(){G.sinks={};G.objOff=true;G.flagOwner={};G.flagEver={};G.spring=null;G.springDone=false;G.beast=null;BEAST_Q=[];BAR_Q=[];G.units=[];G.eggs=[];G.wells=[];G.relics=[];G.traps={};G.paint={};G.terr={};G.feat={};G.voids={};G.col=null;G.claim={};G.holder=null;G.contested=false}
@@ -5389,6 +5457,7 @@ function evaluate(team){
    const so=springOwner();if(so!=null)s+=tm(so)===team?5:-2;
    if(RULES.DESIRE&&G.realm)for(const m of G.units){if(m.monster!=='cracked')continue;s+=0.3*(m.maxhp-Math.max(0,m.hp))+(m.hp<=0?2:0)}/* v159: a shortcut being opened is worth a little */
    if(G.beast){const b=G.beast,gate=G.map&&b.room==='throne';s+=((b.dmgT&&b.dmgT[team])||0)*(gate?2.2:0.9);if(b.dead&&b.killTeam===team)s+=gate?20:10}}// on the Crown Wilds the Beast guards the Throne: worth much more
+  if(kdOn()&&G.holds){const K=kingOf(),kt=K?tm(K.owner):null;for(const h of G.holds){if(!h.open||h.claim||h.owner==null)continue;const mine=tm(h.owner)===team;s+=mine?(kt===team?7:4):(tm(h.owner)===kt?-5:-2)}for(const m of G.units)if((m.riftClaim!=null||m.guardOf!=null)&&m.hp>0)s-=m.hp*0.8+4;if(K&&RULES.KINGDOM){const nT=kingdomTribute(kt);s+=kt===team?nT*5:-nT*3}}/* v171 bots: holdings */
   if(G.map){for(const x of G.loot||[]){if(x.carrier==null)continue;const c=byId(x.carrier);if(c&&c.kind!=='wall')s+=tm(c.owner)===team?8:-6}
     if(STORY()){for(const m of G.units)if(m.spawnW&&m.hp>0)s-=m.hp*0.7+(m.spawnW>=3?6:0);for(const x of G.loot||[])if(x.kind==='stone'&&x.carrier!=null){const c=G.units.find(v=>v.id===x.carrier);if(c&&c.kind!=='wall'&&tm(c.owner)===team)s+=5}}// v98 bots: spawns are worth killing, stones worth holding
     for(const R of G.rooms||[]){if(R.state!=='active'||!R.monMax)continue;let left=0;for(const m of G.units)if(m.monster&&m.room===R.id)left+=Math.max(0,m.hp);s+=(R.monMax-left)*(R.type==='lair'?0.8:0.5)+(left<=0?(R.type==='lair'?14:6):0)}
@@ -5420,8 +5489,8 @@ function throwSetups(team){
   return s}
 function cloneU(u){const c=Object.assign({},u);c.st=Object.assign({},u.st);if(u.cdx)c.cdx=Object.assign({},u.cdx);if(u.st&&u.st.curses)c.st.curses=Object.assign({},u.st.curses);delete c.anim;return c}
 function simScore(team,fn){
-  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields,cpot:G.cpot,shapes:G.shapes,feat:G.feat};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
-  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.sinks=Object.assign({},G.sinks||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;G.cpot=G.cpot?Object.assign({},G.cpot):G.cpot;G.shapes=Object.assign({},G.shapes||{});G.feat=Object.assign({},G.feat||{});/* v168 */
+  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields,cpot:G.cpot,shapes:G.shapes,feat:G.feat,holds:G.holds,crownDark:G.crownDark,kingDied:G.kingDied};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
+  G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.sinks=Object.assign({},G.sinks||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;G.cpot=G.cpot?Object.assign({},G.cpot):G.cpot;G.shapes=Object.assign({},G.shapes||{});G.feat=Object.assign({},G.feat||{});/* v168 */if(G.holds)G.holds=G.holds.map(h=>Object.assign({},h));/* v171 */
   SIM=true;let v;
   try{fn();v=evaluate(team)}finally{SIM=false;Object.assign(G,save);BEAST_Q=bq;BAR_Q=barq}
   return v;
@@ -5678,7 +5747,8 @@ function countTargets(v,m){const set=atkCells(v,m);let n=0;for(const f of G.unit
 // v54: a unit walks out of a Rift Storm's reach (added on top of the normal move value)
 function stormEsc(u,o){if(!RULES.RIFTKIT||!G.traps||voidWalk(u)||u.size===2)return 0;let sd=0;for(const [k,t] of Object.entries(G.traps)){if(!t.storm||tm(t.owner)===tm(u.owner))continue;const [hq,hr]=k.split(',').map(Number);
     const R=RULES.STORM_R+(talent(P(t.owner),'gravitylord')?1:0),dn=hd(o.q,o.r,hq,hr),d0=hd(u.q,u.r,hq,hr),w=d=>d===1?8+worth(u)*0.6:d<=R?2.5:0;sd+=w(d0)-w(dn)}return sd}
-function moveEval(u,o,ctx){return moveEval0(u,o,ctx)+stormEsc(u,o)+(G.realm?newBotMove(u,o,ctx):0)+sonsMove(u,o)}
+function moveEval(u,o,ctx){return moveEval0(u,o,ctx)+stormEsc(u,o)+(G.realm?newBotMove(u,o,ctx):0)+sonsMove(u,o)+kdMove(u,o)}
+function kdMove(u,o){if(!kdOn()||!G.holds||o.q==null||u.summon||u.statue)return 0;const h=G.holds.find(x=>x.open&&!x.claim&&x.q===o.q&&x.r===o.r);if(!h||(h.owner!=null&&tm(h.owner)===tm(u.owner)))return 0;const K=kingOf();return 4+(K&&tm(K.owner)===tm(u.owner)?2:0)+(h.owner!=null&&K&&tm(h.owner)===tm(K.owner)?2:0)}/* v171 bots: step onto a holding that is not yours */
 function sonsMove(u,o){if(!sonsOn()||!facOf(u).stoneFoot||o.q==null)return 0;const c=cells(Object.assign({},u,{q:o.q,r:o.r,dir:o.dir!=null?o.dir:u.dir}));return c.some(([q,r])=>{const pt=G.paint[key(q,r)];return pt&&pt.fac==='giants'&&pt.kind==='stone'})?0.8:0}
 // v76: what a Second Hand could deal this turn from hex v with the helpers that can still reach it (bots only)
 function comboPotential(u,v){const helpers=G.units.filter(w=>w.owner===u.owner&&w.kind!=='wall'&&!w.st.frozen&&w.at==='none'&&(w.cd||0)<=0&&!w.acted&&distUU(w,v)<=3+(w.moved?0:effMov(w)));
