@@ -625,6 +625,7 @@ details.fac .facbody details.more[open]{display:block;margin-top:6px;color:var(-
 #tutBox.min p,#tutBox.min .tut-row{display:none}
 #tutBox.min h3{font-size:14px;margin:0}
 #tutBox.min .tut-k::after{content:" · tap to read"}
+body:not(.home) #histTopBtn{display:none}/* v170b: match history lives on the home page header only */
 
 </style>
 
@@ -634,6 +635,7 @@ details.fac .facbody details.more[open]{display:block;margin-top:6px;color:var(-
     <div class="row">
       <button class="btn sm" id="rulesBtn">How to play</button>
       <button class="btn sm" id="quickBtn">Quick reference</button>
+      <button class="btn sm" id="histTopBtn" title="Every game played on this device: a photo per round, the battle log, exports">Match history</button>
       <button class="btn sm" id="sndBtn" aria-label="Sound on or off">Sound on</button>
       <button class="btn sm" id="annBtn" aria-label="Announcements on or off" title="Big banners for points, fallen leaders, Ultimates and the acts">Announcements on</button>
 
@@ -10989,7 +10991,8 @@ async function histList(el){const all=await histAll();const kb=m=>Math.round(JSO
 function showHistory(){const o=document.querySelector('#overlay');o.innerHTML=`<div class="modal"><h2>Match history</h2><div id="histList"><p class="hint">Loading…</p></div><div class="row" style="margin-top:14px"><button class="btn primary" id="closeM">Close</button></div></div>`;o.hidden=false;o.querySelector('#closeM').onclick=closeModal;histList(o.querySelector('#histList'))}
 // the home page gets a Match history card under the learn card
 function histHomeCard(){const lc=document.querySelector('#learnCard');if(!lc||document.querySelector('#histCard'))return;const c=document.createElement('div');c.className='card';c.id='histCard';c.innerHTML='<div class="label">Match history</div><div id="histHome"><p class="hint">Loading…</p></div>';lc.after(c);histList(c.querySelector('#histHome'))}
-{const rs0=renderSetup;renderSetup=function(){rs0();histHomeCard()}}histHomeCard();
+/* v170b (owner 10 Nov 2026: "match history should be hidden or a separate tab"): no card on the home page; the header's Match history button opens the list in its own window (same list, exports and folder choice) */
+{const hb=document.getElementById('histTopBtn');if(hb)hb.onclick=()=>showHistory()}
 /* v112 (owner 22 Oct 2026: "when I export, the files should go straight to my match history folder"): Chrome and Edge on a computer let the page write into a folder
    picked once (File System Access API). The folder handle is kept in its own IndexedDB ('hexmarch-folder'). Exports go there; every finished game is also saved there
    on its own when the browser still allows writing (no prompt is possible without a click). Everything else (phones, Firefox, Safari) keeps the normal download. */
