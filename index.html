@@ -846,7 +846,7 @@ const ABIL={
   // Frost Hold (v19): chill, freeze, then cash in. Chilled = 1 less move for 2 turns. Frozen = loses its next turn, then chilled for 1.
   // v50 the Ice Queen's swing (owner's design): 2 frost marks on every enemy within 3; an enemy that is already frozen takes 4 damage instead.
   deepwinter:{name:'Deep Winter',cost:2,cd:3,aim:'self',shape:'aura',size:3,hits:'foe',special:'deepwinter',noShatter:1,bot:'deepwinter',
-    desc:'Every enemy within 3 hexes of the Ice Queen is chilled and gets 2 frost marks (the third mark freezes). An enemy that is already frozen takes 4 damage minus DEF instead (and stays frozen).'},
+    desc:'Every enemy within 3 hexes of the Ice Queen is chilled and gets 2 frost marks (4 marks freeze). An enemy that is already frozen takes 4 damage minus DEF instead (and stays frozen).'},
   command:{name:'Command the Frozen',cost:2,cd:3,aim:'self',size:4,special:'command',noShatter:1,
     desc:'The witch commands her army: every Ice Statue of yours within 4 hexes of the Ice Queen strikes at once. Each one hits every enemy next to it for 3 damage minus DEF and leaves 2 frost marks. An enemy between several statues is struck by each. Needs at least one statue within 4.'},
   blizzardburst:{name:'Blizzard Burst',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',special:'burst',
@@ -860,9 +860,9 @@ const ABIL={
   coldfront:{name:'Cold Front',cost:2,cd:2,aim:'dir',shape:'arc',hits:'foe',fbMarks:2,chill:1,
     desc:'Every enemy in the 3 hexes in front of the Warden gets 2 Frostbite marks and is chilled. At 3 marks a unit freezes.'},
   icelance:{name:'Ice Lance',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',dmg:4,pierce:1,cold2:'chill',chainFreeze:1,/* v145: rests 3 (was 2), the Hailcaller shoots 4 at 2 instead */
-    desc:'4 damage ignoring DEF to one enemy within 3, doubled to 8 if it is chilled or frozen. On a frozen target the lance carries on: the enemy directly behind it (one hex further on the line from the Hailcaller) is frozen too.'},
+    desc:'4 damage ignoring DEF to one enemy within 3, doubled to 8 if it is chilled or frozen (a frozen enemy also takes the +2 of every Frost hit: 10). On a frozen target the lance carries on: the enemy directly behind it (one hex further on the line from the Hailcaller) is frozen too.'},
   shatterstrike:{name:'Shatter Strike',cost:2,cd:2,aim:'unit',hits:'foe',los:'lob',range:1,shape:'single',dmg:4,cold2:'frozen',
-    desc:'Strike an adjacent enemy for 4 damage minus DEF, doubled to 8 minus DEF if it is frozen.'},
+    desc:'Strike an adjacent enemy for 4 damage minus DEF. On a frozen enemy it doubles to 8, and the +2 every Frost hit deals to a frozen enemy and the Knight’s Deep Cold +1 come on top: 11 minus DEF, plus 1 for striking up close (11 against 1 DEF).'},
 
   // Stone Giants (v19): few, slow, and every ability is one big blow on a long rest.
   stomp:{name:'Earthshaker',cost:2,cd:5,aim:'self',shape:'aura',size:2,hits:'foe',dmg:2,stun:1,paint:'head',
@@ -1231,7 +1231,7 @@ const TRAITS={
   egg:{name:'Burning Heart',text:'Can\u2019t move or act. The Ash Demon grows back around it after 3 turns unless it is broken first.'},
   construct:{name:'Construct',text:'A built machine: it never moves and has no attack button. At the start of its owner’s turn it fires on its own, for free, at what it can reach. Cold and shocks don’t reach its gears: it can’t be chilled, frozen or stunned. It falls apart when its timer runs out, gives no Ultimate charge and no veteran star when destroyed, claims no ground, carries no relics, can’t be possessed and doesn’t keep its side alive.'},
   tesla:{name:'Tesla Coil',text:'Can’t move. At the start of its owner’s turn every enemy within 2 hexes takes 1 damage ignoring DEF, for free. Construct rules apply.'},
-  deepcold:{name:'Deep Cold',text:'The front line of the Frost Hold: every hit it lands leaves 2 frost marks instead of 1 (3 marks freeze), and it deals 1 more damage to frozen enemies.'},
+  deepcold:{name:'Deep Cold',text:'The front line of the Frost Hold: every hit it lands leaves 2 frost marks instead of 1 (4 marks freeze), and it deals 1 more damage to frozen enemies.'},
   shatterfall:{name:'Shatterfall',text:'When it kills a frozen enemy, the shards fly: every enemy next to the fallen unit is chilled.'},
   stonesleep:{name:'Stone Sleep',text:'When it dies it turns into a statue on its hex (5 HP, 0 DEF): it blocks the hex, can’t act and can be smashed (no Ultimate charge for it). Every spell a friendly mage casts while standing within 2 of the statue adds that spell’s cost to it; at 4 the Gargoyle rises there with half the max HP it had (16, then 8, then 4). A Gargoyle of 4 max HP that dies, or a smashed statue, is gone for good.'},
   statue:{name:'Statue',text:'A sleeping Gargoyle. Can’t move or act. Mages casting spells within 2 of it wake it; smash it first and the Gargoyle is gone.'},
@@ -1324,7 +1324,7 @@ const FAC={
       {name:'Brimstone Demon',icon:'drake',hp:7,atk:4,def:0,mov:3,mt:'fly',at:'lob',rng:3,rmin:2,ab:'drakeball'}]},
   ice:{name:'Frost Hold',color:'#5cc8ff',
     theme:'The ice witch and her army of the frozen. Marks, then freeze, then shatter: move as a group and cast on the same target. The dead you froze rise as Ice Statues, without limit, and they are hers: kill the Ice Queen and they all fall.',
-    passive:'Frostbite: every Frost hit chills and leaves a frost mark; at 4 marks the enemy freezes and loses its next turn. A frozen enemy stays frozen until the end of the Frost Hold’s next turn and does not thaw when hit: every Frost hit on it deals +2 (Ice Lance and Shatter Strike still double). Ice Statues: an enemy unit that dies frozen becomes an Ice Statue on your side (9 HP, 2 ATK, 1 DEF, slow, every hit leaves a mark), with no limit on how many; they never melt. The Ice Queen is their witch: statues within 3 hexes of her walk 1 hex further and leave 2 marks a hit, her Command the Frozen makes every statue within 4 of her strike all enemies beside it, and if she dies every statue shatters (enemies beside it take 3 minus DEF and 2 marks). Frozen water: Frost units walk across rivers and lakes, and the water under and beside them stays frozen for 2 turns: a bridge anyone can use. An enemy that ends its turn on your frozen ground (blue ground or frozen water) takes a frost mark. The Rime Mammoth stampedes through enemy lines and the Frost Wardens raise walls of ice.',
+    passive:'Frostbite: every Frost hit chills and leaves a frost mark; at 4 marks the enemy freezes and loses its next turn. A frozen enemy stays frozen until the end of the Frost Hold’s next turn and does not thaw when hit: every Frost hit on it deals +2 (Ice Lance and Shatter Strike double as well; Deep Winter and Command the Frozen deal their own numbers). Ice Statues: an enemy unit that dies frozen becomes an Ice Statue on your side (9 HP, 2 ATK, 1 DEF, slow, every hit leaves a mark), with no limit on how many; they never melt. The Ice Queen is their witch: statues within 3 hexes of her walk 1 hex further and leave 2 marks a hit, her Command the Frozen makes every statue within 4 of her strike all enemies beside it, and if she dies every statue shatters (enemies beside it take 3 minus DEF and 2 marks). Frozen water: Frost units walk across rivers and lakes, and the water under and beside them stays frozen for 2 turns: a bridge anyone can use. An enemy that ends its turn on your frozen ground (blue ground or frozen water) takes a frost mark. The Rime Mammoth stampedes through enemy lines and the Frost Wardens raise walls of ice.',
     home:'Blue ground: any enemy that starts its turn on blue ground is chilled. Chilling or freezing an enemy turns its hex blue for 2 turns.',
     homeRealm:'Frozen ground: the water under and beside your units freezes for 2 turns and anyone may walk on it; chilling or freezing an enemy turns its hex blue for 2 turns. An enemy that ends its turn on frozen ground takes a frost mark. No home ground on the Realm.',homeChill:1,
     units:[
@@ -2187,7 +2187,7 @@ function spellRange(u,A){const F=facOf(u);return A.range+(A.spell&&F.spellRng&&A
 // Stone Sleep: AP of spells a statue needs to rise (Stone Legion: 3).
 const statueNeed=s=>talent(G.players[s.owner],'stonelegion')?3:4;
 // The number on a summon's badge: turns left for machines and eggs, spell AP poured in for a Gargoyle statue.
-const summonBadge=u=>u.statue?`${u.stone||0}/${statueNeed(u)}`:u.ttl;
+const summonBadge=u=>u.statue?`${u.stone||0}/${statueNeed(u)}`:u.ttl>=999?'∞':u.ttl;/* v178: an endless summon showed 9999 */
 // Inert pieces: an ember egg or a Gargoyle statue (they engage nobody, surround nobody, hold nothing).
 const inert=v=>!!(v&&(v.egg||v.statue));
 // Chilled: 1 less move while st.chill > 0 (it counts down at the end of the unit's own turn).
@@ -2931,9 +2931,14 @@ function spawnArchdemon(p,at){if(!RULES.ARCHDEMON||!p||p.fac!=='fire'||p.demon)r
    (never crowned, gone with the Covenant). */
 /* v161 the army of the frozen: a statue strikes everything next to it (Command the Frozen, or its last act when the Ice Queen dies) */
 const queenNear=u=>G.realm&&G.units.some(v=>v.owner===u.owner&&v.name==='Ice Queen'&&alive(v)&&distUU(u,v)<=REALM.statueAura);
-function statueBurst(s){let n=0;const vs=G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(s.owner)&&!v.statue&&!v.egg:(v.beast||v.monster)&&v.monster!=='cracked'&&v.monster!=='crate')&&distUU(s,v)===1);
+/* v178: whom a statue strikes: enemies beside it, camp monsters and the Beast; never its own side's Keep or the Old God serving its King */
+const statueFoes=s=>G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(s.owner)&&!v.statue&&!v.egg:(v.beast||v.monster)&&v.monster!=='cracked'&&v.monster!=='crate'&&isFoe(s,v))&&distUU(s,v)===1);
+/* v178: the statues Command the Frozen would call, and how many blows each enemy would take (the aim preview and its damage tags) */
+const commandStatues=u=>G.units.filter(v=>v.owner===u.owner&&v.trait==='icestatue'&&alive(v)&&distUU(u,v)<=REALM.commandR);
+function commandPlan(u){const m=new Map();for(const s of commandStatues(u))for(const v of statueFoes(s))m.set(v,(m.get(v)||0)+1);return m}
+function statueBurst(s){let n=0;const vs=statueFoes(s);
   if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[s.q,s.r],to:[s.q,s.r],cells:DIRS.map(([a,b])=>[s.q+a,s.r+b]),col:'#5cc8ff'});
-  for(const v of vs){if(!alive(v))continue;hurt(v,Math.max(1,REALM.commandDmg-effDef(v)),'#5cc8ff');n++;if(alive(v)&&v.st)frostMark(s,v,REALM.commandMarks-1)/* every Frost hit already leaves one mark */}return n}
+  for(const v of vs){if(!alive(v))continue;const hp0=v.hp;hurt(v,Math.max(1,REALM.commandDmg-effDef(v)),'#5cc8ff');n++;if(s.hitLog)s.hitLog.push(v.name+' −'+Math.round(hp0-(alive(v)?v.hp:0)));if(alive(v)&&v.st)frostMark(s,v,REALM.commandMarks-1)/* every Frost hit already leaves one mark */}return n}
 function queenFalls(t){if(!G.realm||!t||t.name!=='Ice Queen'||t.owner<0)return;const ss=G.units.filter(v=>v.owner===t.owner&&v.trait==='icestatue'&&alive(v));if(!ss.length)return;
   if(!SIM)addLog(t.owner,`The Ice Queen falls and her army of the frozen shatters: ${ss.length} statue${ss.length===1?'':'s'} burst.`);const o=[CUR_SRC,CUR_TAG,CUR_NAME];
   for(const s of ss){if(G.units.indexOf(s)<0)continue;CUR_SRC=s;CUR_TAG='Abil';CUR_NAME='Ice Statue shatters';statueBurst(s);CUR_SRC=null;if(G.units.indexOf(s)>=0)kill(s)}[CUR_SRC,CUR_TAG,CUR_NAME]=o}
@@ -3028,6 +3033,8 @@ function hurt(t,n,col,tick){
   if(G.realm&&(t.monster||t.beast)&&t.monster!=='chest'&&t.monster!=='cracked'&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]){const p=G.players[CUR_SRC.owner],eff=Math.min(n,Math.max(0,t.hp));p.campDmg=(p.campDmg||0)+eff;let g=0;while(p.campDmg>=REALM.dmgCharge){p.campDmg-=REALM.dmgCharge;g++}
     if(g){addCharge(p.id,g,'camp damage');if(!SIM){fx(CUR_SRC,'+'+g+' charge','#ffd766');if(trk()){const e=tFx(p.fac,CUR_SRC.name,'Camp work (charge per damage)');if(e)e.uses+=g}}}}
   if(t.kind==='wall'&&t.by!=null&&hostile)tSupBy(t.by,null,t.abil,'blocked',Math.min(n,Math.max(0,t.hp)));
+  /* v178: damage to camp monsters, spawns, Drakes and the Rift Beast was never recorded (Command the Frozen showed 0 after hitting a Rift Spawn): kept apart as mdmg so the army-vs-army numbers stay comparable */
+  if(trk()&&!SIM&&(t.monster||t.beast)&&t.monster!=='cracked'&&t.monster!=='crate'&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]){const eff=Math.min(n,Math.max(0,t.hp)),sc=tStat(CUR_SRC);if(sc)sc.mdmg=(sc.mdmg||0)+eff;const e=srcFx();if(e){e.mdmg=(e.mdmg||0)+eff;e.mhits=(e.mhits||0)+1}}
   if(trk()&&!SIM&&t.kind!=='wall'){const d=tStat(t),sc=tStat(CUR_SRC),eff=Math.min(n,Math.max(0,t.hp));d.taken+=eff;
     if(sc&&CUR_SRC!==t&&tm(CUR_SRC.owner)!==tm(t.owner)){sc.dmg+=eff;sc['dmg'+(tick?'Dot':CUR_TAG||'Other')]+=eff;const e=srcFx();if(e){e.dmg+=eff;e.hits++}planDmg(sc.fac,CUR_SRC,t,eff,tick)}
     else if(!sc&&CUR_NAME==='Burning ground'){const e=tFx('fire','','Burning ground');e.dmg+=eff;e.hits++;planDmg('fire',null,t,eff,true)}
@@ -3312,7 +3319,7 @@ function duoLabel(u,t,A){if(u&&t&&t.kind!=='wall'&&t.owner===u.owner&&A&&A.clean
   if(A&&A.special==='shwither'&&G.realm&&st.dusk>0)return {t:'SHROUDED +'+REALM.duskWither,c:'#b06bff'};
   try{
     if(A&&coldDouble(t,A))return {t:A.cold2==='frozen'?'SHATTER x2':'COLD TARGET x2',c:'#5cc8ff'};
-    if(iceShatter(u,t))return {t:G.realm?'SHATTER +2':'SHATTER x2',c:'#5cc8ff'};
+    if(iceShatter(u,t)&&!(A&&A.noShatter))return {t:G.realm?'SHATTER +2':'SHATTER x2',c:'#5cc8ff'};
     if(A&&A.special==='requiem'&&t.curses&&t.curses.length)return {t:'REAP THE ROTS',c:'#c9c22e'};
     if(A&&A.special==='devour'&&t.hp<=6)return {t:'DEVOUR: DIES',c:'#ff4a3d'};
     if(typeof isSyn==='function'&&isSyn(u)&&G.players[u.owner].contract&&G.players[u.owner].contract.id===t.id)return {t:'CONTRACT',c:'#c81ca6'};
@@ -3512,6 +3519,7 @@ function shapeCells(u,k,q,r){
     case 'arc':{if(d<0)return [];const o=arcOrigin(u,d),own=new Set(cells(u).map(c=>key(c[0],c[1])));return [-1,0,1].map(i=>{const dd=(d+i+6)%6;return [o[0]+DIRS[dd][0],o[1]+DIRS[dd][1]]}).filter(([a,b])=>inR(a,b)&&!own.has(key(a,b)))}
   }
   if(A.special==='requiem')return ringCells().filter(([a,b])=>{const dd=distUC(u,a,b);return dd>=1&&dd<=A.range});
+  if(A.special==='command'){const o=new Map();for(const s of commandStatues(u)){o.set(key(s.q,s.r),[s.q,s.r]);for(const [dq,dr] of DIRS){const a=s.q+dq,b=s.r+dr;if(inR(a,b))o.set(key(a,b),[a,b])}}return o.size?[...o.values()]:[[q,r]]}/* v178 */
   return [[q,r]];
 }
 function areaUnits(u,A,area){
@@ -3528,6 +3536,7 @@ function areaUnits(u,A,area){
 function abilityTargets(u,k,q,r){
   const A=ABIL[k];
   if(A.special==='requiem')return G.units.filter(v=>(v.kind!=='wall'?tm(v.owner)!==tm(u.owner):wildsCreature(v))&&curseCount(v)>0&&distUU(u,v)<=A.range);
+  if(A.special==='command')return [...commandPlan(u).keys()];/* v178 */
   if(A.aim==='unit'||A.special==='dash'||A.special==='swap'){const t=unitAt(q,r);return t?[t]:[]}
   return areaUnits(u,A,shapeCells(u,k,q,r));
 }
@@ -3791,10 +3800,10 @@ function useAbility(u,k,q,r,dest){
     case 'riftmark':{G.paint[key(q,r)]={fac:'rift',ttl:3,owner:u.owner};fx({q,r},'rift mark','#12d69a');vfx({k:'buff',at:[q,r],col:'#12d69a'});break}
     case 'clock':if(tgt&&tgt!==u){tgt.st.clock=1;tgt.clockBy=u.id;fx(tgt,'chase the clock','#c81ca6')}break;
     // Blizzard Burst: damage by how cold each enemy already is (1, 2 if chilled, 3 if frozen), then chill it.
-    case 'deepwinter':{const vs=G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(u.owner)&&!v.statue&&!v.egg:wildsCreature(v))&&distUU(u,v)<=A.size);
+    case 'deepwinter':{const vs=G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(u.owner)&&!v.statue&&!v.egg:wildsCreature(v)&&isFoe(u,v))&&distUU(u,v)<=A.size);
       if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[u.q,u.r],cells:ringCells().filter(([a,b])=>hd(a,b,u.q,u.r)<=A.size).slice(0,40),col:F.color});
       for(const v of vs){if(!alive(v))continue;if(v.st.frozen>0&&!v.st.stun)hurt(v,Math.max(1,4-effDef(v)),F.color);else{chillT(v,2);frostMark(u,v,2)}}break}
-    case 'command':{const ss=G.units.filter(v=>v.owner===u.owner&&v.trait==='icestatue'&&alive(v)&&distUU(u,v)<=REALM.commandR);let n=0;for(const s of ss)n+=statueBurst(s);if(!SIM)addLog(u.owner,`Command the Frozen: ${ss.length} statue${ss.length===1?'':'s'} strike, ${n} hit${n===1?'':'s'}.`);break}
+    case 'command':{const ss=commandStatues(u);let n=0;const hl2=[];for(const s of ss){s.hitLog=hl2;n+=statueBurst(s);delete s.hitLog}if(!SIM)addLog(u.owner,`Command the Frozen: ${ss.length} statue${ss.length===1?'':'s'} strike, ${n} hit${n===1?'':'s'}${hl2.length?': '+hl2.join(', '):''}.`);break}
     case 'burst':{const area=shapeCells(u,k,q,r);vfx({k:'ab',ab:k,shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:F.color});
       for(const t of areaUnits(u,A,area)){const d=t.st.frozen>0?3:t.st.chill>0?2:1,hp0=t.hp;hurt(t,d,F.color);if(d>1)tBonus(u,'Blizzard Burst (cold bonus)',d-1,hp0);if(alive(t))chillT(t,2)}break}
     // Chain Hook: drag a one-hex enemy to the free hex beside the Rampart nearest to it, then 2 damage ignoring DEF.
@@ -9887,6 +9896,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   for(const tr of [u.trait2,u.trait])if(tr&&TRAITS[tr])tags.unshift(`<span class="tag trait">✦ ${TRAITS[tr].name}: ${TRAITS[tr].text}</span>`);// v77: a unit may carry two traits
   if(u.inh&&u.inh.length)tags.unshift(`<span class="tag good">Old Ones’ legacy: ${u.inh.map(k=>ABIL[k]?ABIL[k].name:k).join(', ')} inherited from fallen kin</span>`);// v79
   if(u.statue)tags.push(`<span class="tag" style="color:#cfd3dc">Stone Sleep: ${u.stone||0} of ${statueNeed(u)} AP of spells poured in. Every spell a friendly mage casts within 2 hexes adds its AP cost; at ${statueNeed(u)} the Gargoyle rises here with ${Math.floor((u.hatch?u.hatch.maxhp:16)/2)} HP. Smash the statue and it is gone for good (no Ultimate charge for it).</span>`);
+  else if(u.summon&&u.ttl>=999)tags.push(`<span class="tag">${u.trait==='icestatue'?'Ice Statue: an enemy that died frozen, now fighting for you until it is destroyed or the Ice Queen dies':'Summoned: stays until it is destroyed'}</span>`);/* v178: no more 'falls apart in 99999 turns' */
   else if(u.summon)tags.push(`<span class="tag">Built: falls apart in ${u.ttl} turn${u.ttl>1?'s':''}${u.machine?' · never moves · fires on its own for free at the start of the gnome turn'+(u.at==='none'?'':' · its free shot deals 1 damage; a commanded attack costs 2 AP')+' · no charge or star for killing it':''}</span>`);
   if(u.machine&&u.owner===G.cur)tags.push(`<span class="tag">Workshop: ${machineCount(u.owner)} of ${machineCap(u.owner)} machines out</span>`);
   if(u.kind!=='wall'&&!u.summon&&F.cover)tags.push(covered(u)?'<span class="tag good">Cover: next to a machine, basic attacks deal 1 less (never below 1)</span>':'Cover: no machine beside it');
@@ -9977,7 +9987,7 @@ function showScoreCard(){
     ${rows.map(r=>`<tr class="${r.p.alive?'':'out'}"><td class="pl"><span class="dot" style="background:${FAC[r.p.fac].color}"></span>P${r.p.id+1} ${FAC[r.p.fac].name}${G.teams?` <small>${teamName(r.p.team)}</small>`:''}${!r.p.alive?' <small>out</small>':!r.leader?' <small>no leader</small>':''}</td>
       ${war?cell(r.heart,r.heart===mx('heart')&&r.heart>0):''}<td>${r.alive}/${r.start}</td>${cell(r.kills,r.kills===mx('kills')&&r.kills>0)}${cell(Math.round(r.dmg),r.dmg===mx('dmg')&&r.dmg>0)}<td>${fmt(Math.round(r.taken))}</td><td>${fmt(Math.round(r.heal))}</td><td>${r.ults}</td>${cell(r.ground,r.ground===mx('ground')&&r.ground>0)}</tr>`).join('')}</tbody></table></div>
     <h3>Stars so far</h3><div class="sc-stars">${rows.filter(r=>r.best&&r.best.dmg>0).map(r=>`<div><span class="dot" style="background:${FAC[r.p.fac].color}"></span><b>${r.best.name}</b> ${Math.round(r.best.dmg)} dmg, ${r.best.kills} kill${r.best.kills===1?'':'s'}${r.best.died!=null?' <small>(fell in round '+r.best.died+')</small>':''}</div>`).join('')||'<div class="hint">No damage dealt yet.</div>'}</div>
-    ${top.length?`<h3>Hardest-hitting effects</h3><div class="sc-fx">${top.map(([k,v])=>`<div>${nm(k)}<span>${Math.round(v.dmg)} dmg${v.kills?` · ${v.kills} kill${v.kills>1?'s':''}`:''}</span></div>`).join('')}</div>`:''}
+    ${top.length?`<h3>Hardest-hitting effects</h3><div class="sc-fx">${top.map(([k,v])=>`<div>${nm(k)}<span>${Math.round(v.dmg)} dmg${v.mdmg?` (+${Math.round(v.mdmg)} on monsters)`:''}${v.kills?` · ${v.kills} kill${v.kills>1?'s':''}`:''}</span></div>`).join('')}</div>`:''}
     <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary" id="scClose">${G.over?'Back':'Close'}</button></div></div>`;
   o.hidden=false;$('#scClose').onclick=()=>{o.hidden=true;if(G.over)showOver()}}
 function showOver(){
@@ -11234,6 +11244,8 @@ function uxDragDraw(){const d=UX.drag;if(!d||!d.on||!UX.dragTo)return;const u=by
 function uxAimTags(){const u=uxSel();if(!u||!G.amode||!hl.hitIds.size)return;const A=ABIL[G.amode];if(!A)return;const fs=Math.max(11,(VIEW==='3d'?CAM.S:SZ)*0.42);
   for(const id of hl.hitIds){const t=byId(id);if(!t||!alive(t))continue;const ally=t.owner>=0&&tm(t.owner)===tm(u.owner);const [x,y]=uxHead(t);
     if(ally){if(hostileAbil(A)&&t!==u)uxPill(x,y-fs*0.9,'⚠ ally','#ffb35c','#1a1206',fs);else if(A.heal&&A.overheal&&t.hp>=t.maxhp)uxPill(x,y-fs*0.9,'OVERFLOW → enemy','#ffd766','#1a1206',fs)}
+    else if(A.special==='command'){/* v178: the blows of every statue beside it */const n=commandPlan(u).get(t)||0,dm=n*Math.max(1,REALM.commandDmg-effDef(t));if(dm>0)uxPill(x,y-fs*0.9,(dm>=t.hp?`KILL (${dm})`:`−${dm}`)+(n>1?` · ${n} STATUES`:''),dm>=t.hp?'#ff6161':'#5cc8ff','#1a1206',fs)}
+    else if(A.special==='deepwinter'&&t.st){/* v178: frozen = 4 minus DEF; otherwise 2 marks, and the 4th freezes */if(t.st.frozen>0&&!t.st.stun){const dm=Math.max(1,4-effDef(t));uxPill(x,y-fs*0.9,(dm>=t.hp?`KILL (${dm})`:`−${dm}`)+' · STAYS FROZEN',dm>=t.hp?'#ff6161':'#5cc8ff','#1a1206',fs)}else{const m=(t.st.fb||0)+2;uxPill(x,y-fs*0.9,m>=frostNeed()?'FREEZES':`+2 MARKS (${m}/${frostNeed()})`,'#5cc8ff','#1a1206',fs)}}
     else if(A.dmg||A.useAtk){let dm=0;try{dm=hitDmg(u,t,A)}catch(e){dm=0}let dl=null;try{dl=duoLabel(u,t,A)}catch(e){}if(dm>0)uxPill(x,y-fs*0.9,(dm>=t.hp?`KILL (${dm})`:`−${dm}`)+(dl?' '+dl.t:''),dm>=t.hp?'#ff6161':dl?dl.c:'#ffd766','#1a1206',fs)}
     else{let dl=null;try{dl=duoLabel(u,t,A)}catch(e){}if(dl)uxPill(x,y-fs*0.9,dl.t,dl.c,'#1a1206',fs)}}}
 /* v146 telegraphed threats: a number on every move dot = the damage the selected unit would take there next turn; its own hex says here -N or here safe */
