@@ -1524,7 +1524,7 @@ Object.assign(ULTS,{
   ooze:{name:'The Tide Rises',text:'For this turn and your next one, Spawn has no rest and costs no HP: the Mother may pour out droplets every turn (the 10-part limit still holds).'},
 });
 Object.assign(TALENTS,{
-  chrono:[{k:'doublebounty',name:'Double Bounty',text:'The first contract of the game pays two steps of the bounty ladder.'},
+  chrono:[{k:'doublebounty',name:'Double Bounty',text:'The first bounty of the game climbs two rungs of the ladder.'},
           {k:'nowitness',name:'No Witnesses',text:'A crew member that collects a bounty may Phase Walk again at once, even if it had moved.'},
           {k:'coldtrail',name:'Cold Trail',text:'When a Stasis Field goes off, enemies standing next to its 7 hexes are held too.'}],/* v134 (owner) */
   rift:[{k:'opendoors',name:'Open Doors',text:'Enemies no longer shut your portal ends by standing next to them.'},
@@ -2851,7 +2851,7 @@ function kill(t){
     for(const v of G.units)if(v.kind!=='wall'&&tm(v.owner)!==tm(k.owner)&&distUC(v,t.q,t.r)===1&&chillT(v,2,{fac:G.players[k.owner].fac,unit:k.name,name:'Shatterfall (chain chill)'})){n++;fx(v,'chilled','#5cc8ff')}
     if(n){addLog(k.owner,`Shatterfall: ${n} enem${n>1?'ies are':'y is'} chilled by the shards.`);vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[t.q,t.r],to:[t.q,t.r],cells:DIRS.map(([a,b])=>[t.q+a,t.r+b]),col:'#5cc8ff'});tFxBy(k.id,G.players[k.owner].fac,'Shatterfall (chain chill)','uses',1)}}
   // v74 the Realm: last hits score. An enemy unit 1 point (a Leader REALM.leaderPts, below); the fallen are remembered (a Drake Lair can bring one back).
-  if(G.realm&&!t.summon&&!t.machine&&t.owner>=0){const p0=G.players[t.owner];if(p0&&!SIM){(p0.fallen=p0.fallen||[]).push(t.name);p0.fallenAt=(p0.fallenAt||[]).concat([{name:t.name,q:t.q,r:t.r,leader:!!t.leader}])}
+  if(G.realm&&!t.summon&&!t.machine&&t.owner>=0){const p0=G.players[t.owner];if(p0&&!SIM){(p0.fallen=p0.fallen||[]).push(t.name);p0.fallenAt=(p0.fallenAt||[]).concat([{name:t.name,q:t.q,r:t.r,leader:!!t.leader,round:G.round}])}
     if(k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner]&&G.players[k.owner].alive){if(t.leader){addCharge(k.owner,REALM.leaderCharge);if(!SIM)addLog(k.owner,`The ${k.name} takes down the enemy Leader: +${REALM.leaderCharge} Ultimate charge.`)}else realmPts(k.owner,REALM.killPts,'kill',`${k.name} lands the killing blow on the ${t.name}`)}}
   // Warlord: a Leader takedown scores 2 points for the killer's side, checked against the target at once.
   if(G.mode==='warlord'&&(!G.realm||REALM.leaderPts>0)&&t.leader&&k&&k.kind!=='wall'&&tm(k.owner)!==tm(t.owner)&&G.players[k.owner].alive){const kt=tm(k.owner),LP=G.realm?REALM.leaderPts:2;/* v96 (owner): on the Realm killing an enemy Leader scores REALM.leaderPts; other units score nothing */G.score[kt]=(G.score[kt]||0)+LP;tPts(k.owner,'takedown',LP);
@@ -3331,6 +3331,7 @@ function duoLabel(u,t,A){if(u&&t&&t.kind!=='wall'&&t.owner===u.owner&&A&&A.clean
     if(st.terrified>0&&A&&A.hits==='foe')return {t:'TERRIFIED',c:'#ff7a5c'};
   }catch(e){}return null}
 function hitBonuses(u,t,ret){const o=[];if(t.kind==='wall'||ret)return o;
+  if(RULES.SYN2&&u.owner>=0&&G.players[u.owner]){const sp=G.players[u.owner];if(syn2(sp)&&sp.contract&&sp.contract.id===t.id){const e=synEdge(sp);if(e)o.push(['Chrono edge (contract)',e])}}/* v181 prototype */
   if(G.players[u.owner]&&G.players[u.owner].fac==='warband'&&onClaimOf(t,'warband'))o.push(['Bone ground (enemy on it)',1]);
   if(u.machine&&onClaimOf(t,'gnomes'))o.push(['Pink ground (enemy on it)',1]);
   if(hasTrait(u,'tempo')&&(u.swings||0)>0&&!G.realm)o.push(['Tempo (later strikes)',Math.min(2,u.swings)]);
@@ -3603,7 +3604,7 @@ function farGuard(u,t){return !!(t&&t.leader&&t.kind!=='wall'&&G.players.length>
 function hitDmg(u,t,A){
   let base=A.useAtk?effAtk(u)+(A.atkBonus||0):(A.dmg||0);
   if(base<=0)return 0;
-  base+=synB(u,'abd');/* v111 Syndicate bounty: +ability damage */
+  base+=synB(u,'abd');/* v111 Syndicate bounty: +ability damage */if(RULES.SYN2&&u.owner>=0&&G.players[u.owner]){const sp=G.players[u.owner];if(syn2(sp)&&sp.contract&&t&&sp.contract.id===t.id)base+=synEdge(sp)}/* v181 prototype: the Chrono edge on abilities too */
   if(A.spell&&u.st&&u.st.empower>0&&u.st.empT===G.tok)base+=u.st.empower;// v68 Spirit Flame
   if(G.realm){if(coldDouble(t,A))base*=2;if(!A.noShatter&&iceShatter(u,t))base+=2}else if(coldDouble(t,A)||(!A.noShatter&&iceShatter(u,t)))base*=2;
   if(hasTrait(u,'deepcold')&&t.st&&t.st.frozen>0)base+=1;// v61 Deep Cold: +1 against frozen enemies
@@ -4031,7 +4032,7 @@ function useAbility(u,k,q,r,dest){
 }
 
 /* ---------- Ultimates ---------- */
-function canUlt(pid){const p=G.players[pid];return !!p&&p.alive&&!(RULES.SHAMANS&&p.fac==='mage'&&!G.realm)&&!(RULES.HEAVY&&p.fac==='gnomes'&&p.secret)&&(p.ult||0)>=ultNeed(p)&&G.cur===pid&&G.ap>=(p.fac==='chrono'&&talent(p,'paradox')?0:RULES.ULT_COST)&&!truce()&&!G.over&&!p.ultThisTurn}
+function canUlt(pid){const p=G.players[pid];return !!p&&p.alive&&!(RULES.SHAMANS&&p.fac==='mage'&&!G.realm)&&!(RULES.HEAVY&&p.fac==='gnomes'&&p.secret)&&(syn2(p)?synAnyBuy(p):(p.ult||0)>=ultNeed(p))&&G.cur===pid&&G.ap>=(p.fac==='chrono'&&talent(p,'paradox')?0:RULES.ULT_COST)&&!truce()&&!G.over&&!p.ultThisTurn}
 function partnerOf(pid){if(!G.teams)return null;const p=G.players[pid];return G.players.find(x=>x.id!==pid&&x.team===p.team&&x.alive)||null}
 // Team Ultimate: when both partners are charged, the one whose turn it is fires both at once.
 function canTeamUlt(pid){const q=partnerOf(pid);return !!q&&canUlt(pid)&&(q.ult||0)>=ultNeed(q)&&G.ap>=RULES.TEAM_ULT_COST}
@@ -5038,7 +5039,7 @@ function wagonLoad(p){const L=RULES.HOLD_SUPPLY&&kdOn()?Math.max(1,REALM.wagon.l
    Unit HP x REALM.hpMul on this board; units heal REALM.heal a turn inside their home valley. Monsters never move: at each round start they
    strike the last unit that hit them (within 2, or 3 for tier 2+) and tier 2+ also strike every unit standing next to them. */
 const REALM={phase2:{warden:{atk:2},drake:{atk:2,around:1}},HW:28,HH:25,VR:7,open:10,target:15,hpMul:1.5,start:2,heal:2,killPts:0,leaderPts:1,burst:1,kingPts:2,leaderCharge:4,charge:{1:1,2:3,3:4,w:3},respawn:0,springHeal:3,t1Hp:2,t1Atk:1,ogreAtk:2,wanderHp:36,wanderPts:3,beastHp:36,storyBeastHp:60,beastDecay:2,beastFloor:15,sweepDmg:4,sweepDeep:3,spitDmg:5,spitSplash:2,spitMin:4,spitMax:8,roarDmg:2,roarReach:2,stoneDist:9,stoneHp:10,waves:[4,11],waveKinds:[3,4]/* v157 (owner: four waves are not useful): TWO waves, the stone-thieves (kind 3: spit from 3, fetch the stones) at 4 and the hunters (kind 4: sweep a cone, 1 point and +2 max HP) at 11 */,drakeAt:10,/* v152 (owner 4 Nov 2026: longer games, the Throne a solid income): the story clock a quarter slower; the wall and the Drakes at round 10, waves 4/8/11/15, the Beast decays 2 a round */godHeal:2,godRoar:1,godEvery:3,godMove:3,blastDist:15,beastAtk:3,beastCone:3,beastReach:4,dmgCharge:6,hurtCharge:10,potBank:3,suitHp:12,
-  comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:1.7},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
+  comboBase:3,sacSouls:2,demonSouls:10,hpBy:{giants:1.8,rift:1.6,fire:1.7,chrono:2.0/* v181 (owner: 'slightly buff the stats of the units to compensate for the ladder rewards changing'): 1.7 to 2.0, about +2 HP a crew member and +4 for the Broker; measured on the 24 test games, place 2.9 to 2.7 (the old ladder's), damage 101 to 110 */},faith:[16,22,28],faithStep:6,soulMode:'both',sacStack:0,near:1,far:1,startBy:{giants:1},xp:{kill:2,leader:3,camp:1,fallen:2,bloodlust:4,steps:[4,9,15,22,30,39,49,60]}/* v109 (owner): fallen comrades teach the survivors; cheaper levels */,armies:['fire','ice','gnomes','warband']};
 Object.assign(RULES,{KEEP:1,SUPPLY:1,JUNGLE:1,DESIRE:1});/* v158: RULES.DESIRE draws the Realm from the desire lines (REALM.desire); JUNGLE stays for comparison (TWEAK RULES.DESIRE=0) */
 REALM.desire={nodes:{B:{x:26,y:24,k:'base'},A1:{x:19.1,y:24,k:'camp'},A2:{x:26.8,y:10.5,k:'camp'},N1:{x:20.5,y:19,k:'nest'},W:{x:24.5,y:15.3,k:'well'},H1:{x:13,y:22.5,k:'shrine'},L1:{x:8,y:22.5,k:'well'},T:{x:7,y:14.5,k:'well'},BR2:{x:3.1,y:14.4,k:'bridge'},D:{x:0,y:15.5,k:'drake'},R2:{x:1.8,y:9.5,k:'well'},S:{x:13.3,y:13.3,k:'stone'},C1:{x:9.3,y:9.3,k:'chest'},G:{x:5.6,y:5.2,k:'gate'},N2:{x:15,y:7.5,k:'nest'},BR1:{x:16.6,y:2.9,k:'bridge'},SP:{x:15.5,y:0,k:'heal'},R1:{x:10,y:2.5,k:'well'},H2:{x:24,y:5,k:'shrine'},L2:{x:22,y:9.5,k:'lookout'},E1:{x:2.6,y:23.2,k:'bridge',rad:2.0},P1:{x:0,y:23.6,k:'post'},E2:{x:27,y:1.9,k:'bridge',rad:2.0},P2:{x:27.3,y:0,k:'post'}},
   edges:[['B','A1'],['B','N1'],['B','W'],['W','A2'],['N1','W'],['N1','S'],['N1','H1'],['A1','H1'],['A1','N1'],['H1','L1'],['L1','T'],['H1','T'],['T','BR2'],['BR2','D'],['S','T'],['S','C1'],['C1','G'],['S','N2'],['N2','BR1'],['BR1','SP'],['H2','BR1',[21,7]],['A2','H2'],['H2','L2'],['N2','H2'],['SP','R1'],['R1','G'],['D','R2',[0.9,12.6]],['R2','G'],['L2','N2'],['A2','L2'],['N1','L2'],['C1','R1'],['C1','R2'],['T','R2'],['N2','R1'],['L1','E1',[5.4,23.6]],['E1','P1',[1.3,23.9]],['A2','E2',[27.4,6.3]],['E2','P2',[27.6,1.0]]],/* v160 the border roads: along each shared edge from one base's side to the neighbour's, over the river mouths on bridges, so neighbours can be attacked from the outer side without passing the middle */
@@ -5060,7 +5061,7 @@ const CROWN_RUNGS=[{n:1,t:'+1 Ultimate charge every turn'},{n:2,t:'your Keep hea
 function crownRung(team){if(!RULES.CROWN_LADDER||!G||!G.realm||team==null||team<0)return 0;const K=kingOf();if(!K||tm(K.owner)!==team)return 0;return Math.min(5,G.crown||0)}
 function crownTurn(p){if(!p||!p.alive||SIM)return;const r=crownRung(p.team);if(!r)return;const L=REALM.crownLadder,o=[CUR_SRC,CUR_TAG,CUR_NAME];
   const row=nm=>trk()?tFx(p.fac,'','Crown ladder: '+nm):null;
-  if(r>=1){addCharge(p.id,L.charge,'the crown');const e=row('charge');if(e){e.uses++;e.apGranted=(e.apGranted||0)+L.charge}}
+  if(r>=1){if(syn2(p))synCoin(p,L.charge);else addCharge(p.id,L.charge,'the crown');const e=row('charge');if(e){e.uses++;e.apGranted=(e.apGranted||0)+L.charge}}
   if(r>=2){const K=G.units.find(v=>v.monster==='keep'&&v.keepOf===p.id&&alive(v));if(K&&K.hp<K.maxhp){const h=Math.min(L.keepHeal,K.maxhp-K.hp);K.hp+=h;fx(K,'+'+h,'#ffd766');const e=row('Keep heals');if(e){e.uses++;e.heal+=h}}}
   if(r>=4)for(const u of G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&alive(v)&&v.hp<v.maxhp)){CUR_SRC=u;CUR_TAG='Abil';CUR_NAME='Crown ladder: heal';healUnit(u,L.heal,'#ffd766','Crown ladder: heal')}
   [CUR_SRC,CUR_TAG,CUR_NAME]=o}/* v179 the stone road; the Rampart's charge; the boulder that stays */REALM.kingdom={scale:[0,1,1,2,2,3],dark:2,claimFrom:6,claimEvery:4,claimN:2,claimCharge:2,claimGrow:8,guard:'spawn2',guardCharge:2};RULES.SHRINE_GUARD=0;RULES.BOT_STANCE=1;REALM.mapDefault='roads';RULES.HORN_CHARGE=1;Object.assign(RULES,{ULT_CURVE:1,ULT_START:24,ULT_FALL:1,ULT_MIN:10,ULT_STEP2:2});/* v177 the Ultimate curve, curve A of sim/ult_curve.js on 16 measured games: early casts 3.6 -> 1.8 a game, rounds 9-16 4.8 -> 7.8, 17+ 2.5 -> 3.9, first cast round 7.2 -> 8.6 */
@@ -5408,7 +5409,7 @@ const SUPPLY={
   giants:{name:'a cairn stone',text:'the giant that takes it heals 3',f:(p,u)=>{healUnit(u,3,'#b9a98c','Supplies');return `the ${u.name} heals 3`}},
   curse:{name:'a corpse',text:'a Ghoul rises beside the unit that receives it',f:(p,u)=>{p.ghoulQ=(p.ghoulQ||[]).concat([[u.q,u.r,'a corpse',['rot']]]);return 'a Ghoul rises from the corpse'}},
   mage:{name:'an offering',text:'one notch on the element bar of the unit that takes it (the Elder Shaman: your lowest bar)',f:(p,u)=>{p.el=Object.assign({fire:0,water:0,earth:0,air:0},p.el);const k=u.el&&!(p.evo&&p.evo[u.el])?u.el:EL_KEYS.filter(e=>!(p.evo&&p.evo[e])).sort((a,b)=>p.el[a]-p.el[b])[0];if(!k)return 'nothing: every element has ascended';p.el[k]+=1;const need=elNeed(p);if(p.el[k]>=need)ascend(p,k);return `${k} +1 (${Math.min(p.el[k],need)}/${need})`}},
-  chrono:{name:'a tip-off',text:'the next bounty pays one step more',f:(p,u)=>{p.tipoff=(p.tipoff||0)+1;return 'the next bounty pays one step more'}}};
+  chrono:{name:'a tip-off',text:'the next bounty climbs one rung more',f:(p,u)=>{p.tipoff=(p.tipoff||0)+1;return 'the next bounty climbs one rung more'}}};
 function supplyTake(x,u){const p=G.players[x.owner];const S=p&&SUPPLY[p.fac];if(!S)return;G.loot.splice(G.loot.indexOf(x),1);const what=S.f(p,u);
   if(!SIM){addLog(p.id,`The ${u.name} takes the supplies (${S.name}): ${what}.`);fx(u,'supplies','#ffd766');vfx({k:'buff',at:[u.q,u.r],col:'#ffd766'});if(trk()){const e=tFx(p.fac,u.name,'Supplies taken');if(e)e.uses++}}}
 function supplyTurn(p){if(!RULES.SUPPLY||!G.realm||!p||!p.alive||SIM)return;G.loot=G.loot||[];
@@ -6105,8 +6106,8 @@ function contractTarget(p){const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=
   return G.units.filter(t=>ok(t)&&near(t)<=8).sort((a,b)=>a.hp-b.hp||near(a)-near(b)||a.id-b.id)[0]||null}
 function contractTick(p){if(!G.realm||p.fac!=='chrono'||!p.alive)return;
   if(p.contract){const t=byId(p.contract.id);if(!t||!alive(t)){p.contract=null}else{p.contract={id:p.contract.id,left:p.contract.left-1};if(p.contract.left<=0){if(!SIM){addLog(p.id,`The contract on the ${t.name} runs out.`);nTrk('chrono','','Contracts failed',e=>e.uses++)}p.contract=null}}}
-  if(!p.contract){const t=contractTarget(p);if(t){p.contract={id:t.id,left:talent(p,'longcon')?7:5};if(!SIM){addLog(p.id,`New contract: the ${t.name} (${Math.ceil(t.hp)} HP). Kill it within 5 of your turns.`);fx(t,'contract','#ffd766');announce({k:'note',col:FAC.chrono.color,t:'New contract',s:`The Chrono Syndicate marks the ${t.name}. Whoever of the crew kills it collects the bounty.`});nTrk('chrono','','Contracts posted',e=>e.uses++)}}}}
-function bounty(p,t,k){const first=!(p.bounty||0);p.bounty=(p.bounty||0)+1;let steps=((talent(p,'biggame')&&t&&(t.leader||t.king))||(first&&talent(p,'doublebounty')))?2:1;/* v134 Double Bounty */if(p.tipoff){steps+=p.tipoff;p.tipoff=0}/* v149 supplies */
+  if(!p.contract){const inf=synHas(p,'informants');const t=(inf&&synContract(p))||contractTarget(p);if(t){p.contract={id:t.id,left:talent(p,'longcon')?7:5};if(inf&&!SIM&&p.ctrl==='human'){const c=synCands(p).map(v=>v.id);if(c.length>1)p.cpick={tok:G.tok,ids:c}}/* v181: the Informants let a human choose */if(!SIM){addLog(p.id,`New contract: the ${t.name} (${Math.ceil(t.hp)} HP). Kill it within 5 of your turns.`);fx(t,'contract','#ffd766');announce({k:'note',col:FAC.chrono.color,t:'New contract',s:`The Chrono Syndicate marks the ${t.name}. Whoever of the crew kills it collects the bounty.`});nTrk('chrono','','Contracts posted',e=>e.uses++)}}}}
+function bounty(p,t,k){if(syn2(p))return syn2Bounty(p,t,k);/* v181 prototype */const first=!(p.bounty||0);p.bounty=(p.bounty||0)+1;let steps=((talent(p,'biggame')&&t&&(t.leader||t.king))||(first&&talent(p,'doublebounty')))?2:1;/* v134 Double Bounty */if(p.tipoff){steps+=p.tipoff;p.tipoff=0}/* v149 supplies */
   if(k&&alive(k)&&talent(p,'nowitness')){k.moved=false;k.blockT=null;if(!SIM)fx(k,'no witnesses: move again','#ffd766')}/* v134 No Witnesses */
   for(let s=0;s<steps;s++){const n=(p.bStep||0)+1;p.bStep=n;const R=CONTRACT_LADDER[n-1];const sb=Object.assign({hp:0,atk:0,mov:0,rest:0,abd:0},p.sb||{});
     if(R){for(const k in R)sb[k]+=R[k];p.sb=sb;if(R.hp)for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&!v.summon){v.maxhp+=R.hp;v.hp+=R.hp}}
@@ -6115,7 +6116,63 @@ function bounty(p,t,k){const first=!(p.bounty||0);p.bounty=(p.bounty||0)+1;let s
       addLog(p.id,`Bounty ${n} collected: ${txt} for the whole crew.`);announce({k:'note',col:FAC.chrono.color,t:`Bounty ${n}`,s:`The Chrono Syndicate collects: ${txt}.`});nTrk('chrono','','Bounties collected',e=>e.uses++)}}}
 function synKill(t,k){if(!G.realm||!k||!isSyn(k))return;const p=G.players[k.owner];if(!p)return;if(t.summon||t.decoy||t.statue||t.egg)return;
   const hit=p.contract&&p.contract.id===t.id;const os=p.osTok===G.tok&&!t.monster&&t.kind!=='wall'&&tm(t.owner)!==tm(p.id);
-  if(hit||os){if(hit)p.contract=null;bounty(p,t,k)}}
+  if(hit||os){if(hit)p.contract=null;bounty(p,t,k)}
+  else if(syn2(p)&&t.monster&&!t.beast&&!['keep','chest','cracked','oldgod'].includes(t.monster)&&!t.spawnW)synCoin(p,REALM.syn2.campCoin);/* v181: a camp monster pays a coin */
+  if(syn2(p)&&p.hourTok===G.tok&&!t.monster)nTrk('chrono','','The Stolen Hour: kills',e=>e.uses++)}
+
+/* v181 THE SYNDICATE'S LADDER AND BUY TIME (RULES.SYN2; owner 12 Nov 2026: "the ladder was supposed to be their going-infinite mechanic; the coins should be used
+   to buy the effects of your Ultimate"; he approved variant E of the 24-game test). THE LADDER: one rung per bounty (an enemy unit or a camp monster on contract),
+   each adding to the ones below in REALM.syn2.order (informants: choose the contract among the 3 weakest targets within 10; hazard: +2 max HP; edge: +2 on every
+   crew hit on the contract target; blades: +1 ATK; rigs: +1 teleport; debt: every rest 1 shorter), and after the last rung every bounty adds +1 to the edge, without end.
+   BUY TIME, the Ultimate (replaces Open Season): paid in coins (1 a bounty; the crown's rung 1 pays a coin), never in charge; one purchase a turn:
+   Favour (1: one crew member's abilities are ready again), Rewind (3: a crew member that fell this round or last comes back where it fell with half HP),
+   The Stolen Hour (5, then 3 more each time: every crew member may move and act again this turn). */
+RULES.SYN2=1;REALM.syn2={order:['informants','hazard','edge','blades','rigs','debt'],range:10,pick:3,edge:2,edgeGrow:1,hp:2,favour:1,rewind:3,hour:5,hourStep:3,campCoin:0,window:1,campRung:1};/* the v181 test's variant E; campRung 0 = only enemy units climb, campCoin = coins for camp monsters killed off contract */
+if(RULES.SYN2){ULTS.chrono={name:'Buy Time',coins:1,text:`Paid in coins, never in charge: every bounty puts 1 coin in the purse. One purchase a turn. Favour (${REALM.syn2.favour} coin): one crew member's abilities are ready again. Rewind (${REALM.syn2.rewind} coins): a crew member that fell this round or last comes back where it fell, with half its HP. The Stolen Hour (${REALM.syn2.hour} coins, then ${REALM.syn2.hourStep} more each time): the whole crew moves and acts again this turn.`};
+  FAC.chrono.passive=`Phase Walk: every unit moves by teleporting to any free hex within its move range. Contracts: when you have none, the weakest enemy unit or camp monster within 8 hexes of your crew becomes your contract for 5 of your turns. Kill it with any crew member to collect the bounty: 1 coin for Buy Time and one rung of the ladder, for the rest of the game, each rung adding to the ones below: 1 Informants (you choose each new contract among the 3 weakest targets within 10 hexes), 2 Hazard pay (+${REALM.syn2.hp} max HP for the crew), 3 Chrono edge (+${REALM.syn2.edge} on every crew hit on the contract target), 4 Phase blades (+1 ATK), 5 Phase rigs (teleport 1 hex further), 6 Time debt (every rest 1 turn shorter); every bounty after that adds +${REALM.syn2.edgeGrow} to the Chrono edge, without end.`}
+const SYN_RUNG_TEXT={informants:'Informants: you choose each new contract from the 3 weakest enemies within 10 hexes',rigs:'Phase rigs: every crew member teleports 1 hex further',edge:'Chrono edge: every crew hit on the contract target deals +2',debt:'Time debt: every ability rests 1 turn less',hazard:'Hazard pay: +2 max HP for the whole crew',blades:'Phase blades: every crew member hits for 1 more'};
+const syn2=p=>!!(RULES.SYN2&&G&&G.realm&&p&&p.fac==='chrono');
+function synHas(p,k){if(!syn2(p))return false;const i=REALM.syn2.order.indexOf(k);return i>=0&&(p.rung||0)>i}
+function synEdge(p){if(!synHas(p,'edge'))return 0;return REALM.syn2.edge+Math.max(0,(p.rung||0)-REALM.syn2.order.length)*REALM.syn2.edgeGrow}
+function synCoin(p,n){if(!syn2(p)||!(n>0))return;p.coins=(p.coins||0)+n;nTrk('chrono','','Coins earned',e=>{e.uses+=n})}
+function synRungUp(p){const n=(p.rung||0)+1;p.rung=n;const k=REALM.syn2.order[n-1];
+  if(k==='rigs'||k==='debt'||k==='hazard'||k==='blades'){const sb=Object.assign({hp:0,atk:0,mov:0,rest:0,abd:0},p.sb||{});if(k==='rigs')sb.mov+=1;if(k==='blades')sb.atk+=1;if(k==='debt')sb.rest+=1;if(k==='hazard'){sb.hp+=REALM.syn2.hp;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&!v.summon){v.maxhp+=REALM.syn2.hp;v.hp+=REALM.syn2.hp}}p.sb=sb}
+  const txt=k?SYN_RUNG_TEXT[k]:`the Chrono edge grows to +${synEdge(p)}`;nTrk('chrono','','Ladder rungs',e=>e.uses++);
+  if(!SIM){addLog(p.id,`Rung ${n} of the ladder: ${txt}.`);announce({k:'note',col:FAC.chrono.color,t:`The Syndicate climbs to rung ${n}`,s:txt+'.'})}}
+function syn2Bounty(p,t,k){const army=!!(t&&((!t.monster&&t.kind!=='wall')||(REALM.syn2.campRung&&t.monster)));p.bounty=(p.bounty||0)+1;synCoin(p,1);let steps=army?1:0;
+  if(army&&((talent(p,'biggame')&&(t.leader||t.king))||(!(p.rung)&&talent(p,'doublebounty'))))steps=2;if(p.tipoff&&army){steps+=p.tipoff;p.tipoff=0}
+  if(k&&alive(k)&&talent(p,'nowitness')){k.moved=false;k.blockT=null;if(!SIM)fx(k,'no witnesses: move again','#ffd766')}
+  nTrk('chrono','','Bounties collected',e=>e.uses++);if(!army){if(!SIM)addLog(p.id,`Bounty on the ${t?t.name:'mark'}: +1 coin (${p.coins} in the purse). Only enemy units climb the ladder.`);return}
+  for(let i=0;i<steps;i++)synRungUp(p);if(!SIM)addLog(p.id,`Bounty on the ${t.name}: +1 coin (${p.coins} in the purse).`)}
+/* the contract with Informants: the 3 weakest targets within reach (synCands); a bot takes the one the crew can best get at (synContract), a human chooses (synPickContract) */
+function synNear(p){const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon);return t=>mine.length?Math.min(...mine.map(v=>distUU(v,t))):99}
+function synCands(p){const near=synNear(p);if(!G.units.some(v=>v.owner===p.id&&v.kind!=='wall'&&!v.summon))return [];
+  const camp=t=>REALM.syn2.campRung&&t.monster&&alive(t)&&!t.beast&&!t.spawnW&&!['keep','chest','cracked','oldgod'].includes(t.monster);
+  return G.units.filter(t=>(camp(t)||(alive(t)&&t.kind!=='wall'&&t.owner>=0&&!t.summon&&!t.statue&&!t.egg&&!t.decoy&&tm(t.owner)!==tm(p.id)))&&near(t)<=REALM.syn2.range).sort((a,b)=>a.hp-b.hp||near(a)-near(b)||a.id-b.id).slice(0,REALM.syn2.pick)}
+function synContract(p){const c=synCands(p);if(!c.length)return null;const near=synNear(p);const sc=t=>t.hp+1.5*near(t)-(t.leader?3:0)-(t.king?3:0);return c.slice().sort((a,b)=>sc(a)-sc(b)||a.id-b.id)[0]}
+/* the human's choice: offered at the turn start the contract was posted (p.cpick), open until a crew member moves or acts this turn */
+function synPickOpen(p){return !!(p&&p.cpick&&p.cpick.tok===G.tok&&G.cur===p.id&&p.contract&&!G.units.some(v=>v.owner===p.id&&v.kind!=='wall'&&(v.moved||v.acted)&&!v.statue))}
+function synPickContract(pid,id){const p=G.players[pid];if(!synPickOpen(p)||!p.cpick.ids.includes(id))return false;const t=byId(id);if(!t||!alive(t))return false;
+  const old=byId(p.contract.id);p.contract={id,left:p.contract.left};p.cpick=null;if(!SIM){if(old!==t){addLog(p.id,`The informants' tip: the contract moves to the ${t.name} (${Math.ceil(t.hp)} HP).`);fx(t,'contract','#ffd766')}nTrk('chrono','','Contracts chosen',e=>e.uses++)}return true}
+function synPrice(p,it){const S=REALM.syn2;return it==='favour'?S.favour:it==='rewind'?S.rewind:it==='hour'?S.hour+S.hourStep*(p.hourN||0):99}
+const synFavourUnits=p=>G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&alive(v)&&abilsOf(v).some(k=>cdOf(v,k)>0));
+const synRewindList=p=>(p.fallenAt||[]).filter(f=>f.round!=null&&G.round-f.round<=REALM.syn2.window&&FAC[p.fac].units.some(d=>d.name===f.name));
+function synCanBuy(p,it){if(!syn2(p)||(p.coins||0)<synPrice(p,it))return false;if(it==='favour')return synFavourUnits(p).length>0;if(it==='rewind')return synRewindList(p).length>0;return it==='hour'}
+const synAnyBuy=p=>['favour','rewind','hour'].some(it=>synCanBuy(p,it));
+function synBest(p,foes){foes=foes||G.units.filter(v=>v.kind!=='wall'&&v.owner>=0&&tm(v.owner)!==tm(p.id));const crew=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&alive(v));let best={it:null,arg:null,s:0};
+  if(synCanBuy(p,'rewind')){const fs=synRewindList(p);const f=fs.find(x=>x.leader)||fs[fs.length-1];best={it:'rewind',arg:f.name,s:12+(f.leader?10:0)}}
+  if(synCanBuy(p,'hour')){const acted=crew.filter(v=>v.acted).length,ready=crew.filter(v=>!v.st.frozen&&foes.some(f=>distUU(v,f)<=effMov(v)+1)).length;if(acted>=Math.max(2,Math.ceil(crew.length*0.6))&&ready>=3){const sc=10+ready*3;if(sc>best.s)best={it:'hour',arg:null,s:sc}}}
+  if(!best.it&&synCanBuy(p,'favour')&&(p.coins||0)-REALM.syn2.favour>=synPrice(p,'hour')){const u=synFavourUnits(p).find(v=>!v.acted&&!v.st.frozen&&foes.some(f=>distUU(v,f)<=effMov(v)+3));if(u)best={it:'favour',arg:u.id,s:6}}
+  return best}
+function synBuy(p,it,arg){if(!synCanBuy(p,it))return false;const price=synPrice(p,it);p.coins-=price;nTrk('chrono','','Buy Time: '+({favour:'Favour',rewind:'Rewind',hour:'The Stolen Hour'})[it],e=>{e.uses++;e.apGranted=(e.apGranted||0)+price});
+  if(it==='favour'){let u=arg!=null?byId(arg):null;if(!u||u.owner!==p.id||!synFavourUnits(p).includes(u))u=synFavourUnits(p)[0];for(const k of abilsOf(u))if(cdOf(u,k)>0)setCd(u,k,0);if(!SIM){fx(u,'favour: ready','#ffd766');addLog(p.id,`Buy Time: a Favour. The ${u.name} is ready again (${p.coins} coins left).`)}}
+  else if(it==='rewind'){const fs=synRewindList(p);const f=fs.find(x=>x.name===arg)||fs.find(x=>x.leader)||fs[fs.length-1];const d=FAC[p.fac].units.find(x=>x.name===f.name);const u=makeUnit(p,d);const m=occ();const c=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))).sort((a,b)=>hd(a[0],a[1],f.q,f.r)-hd(b[0],b[1],f.q,f.r))[0];
+    if(!c){p.coins+=price;return false}p.fallenAt=(p.fallenAt||[]).filter(x=>x!==f);const i=(p.fallen||[]).indexOf(f.name);if(i>=0)p.fallen=p.fallen.slice(0,i).concat(p.fallen.slice(i+1));
+    u.q=c[0];u.r=c[1];u.hp=Math.ceil(u.maxhp/2);u.moved=true;u.acted=true;if(f.leader){u.leader=true;p.leaderless=false}G.units.push(u);tStat(u);
+    if(!SIM){addLog(p.id,`Buy Time: Rewind. The ${u.name} never fell: it is back where it stood, with ${u.hp} HP (${p.coins} coins left).`);fx(u,'rewound','#ffd766');vfx({k:'buff',at:c,col:FAC.chrono.color,cam:1})}}
+  else{p.hourN=(p.hourN||0)+1;p.hourTok=G.tok;for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'&&alive(v)){v.moved=false;v.acted=false;v.freeMove=0;v.swings=0}
+    if(!SIM){addLog(p.id,`Buy Time: The Stolen Hour. The crew plays a second turn (${p.coins} coins left; the next Hour costs ${synPrice(p,'hour')}).`);announce({k:'note',col:FAC.chrono.color,t:'The Stolen Hour',s:'The Chrono Syndicate buys a second turn: every crew member may move and act again.'})}}
+  return true}
 function synDash(u,A,tgt){if(!tgt)return;const m=occ();const spots=[];for(const [cq,cr] of cells(tgt))for(const [dq,dr] of DIRS){const a=cq+dq,b=cr+dr;if(freeHex(a,b,m)||(a===u.q&&b===u.r))spots.push([a,b])}
   spots.sort((x,y)=>hd(x[0],x[1],u.q,u.r)-hd(y[0],y[1],u.q,u.r));const s=spots[0];if(!s)return;
   if(!u.dashFrom)u.dashFrom=[u.q,u.r];if(!(s[0]===u.q&&s[1]===u.r))placeAt(u,s[0],s[1]);applyHit(u,tgt,A)}
@@ -6323,12 +6380,14 @@ const twoHex=A=>!!A&&(A.special==='twingates'||A.special==='lifegate'||A.special
 function pick1(u,k,q,r){return twoHex(ABIL[k])?{q,r,hexOnly:1}:unitAt(q,r)}
 function blinkObj(){if(G.blinkT==null)return null;if(typeof G.blinkT==='string'){const [q,r]=G.blinkT.slice(1).split(',').map(Number);return {q,r,hexOnly:1}}return byId(G.blinkT)}
 function newUlt(p){const F=FAC[p.fac];
+  if(p.fac==='chrono'&&G.realm&&syn2(p)){const it=G.synBuy&&synCanBuy(p,G.synBuy)?G.synBuy:synBest(p).it||['rewind','hour','favour'].find(x=>synCanBuy(p,x));synBuy(p,it,G.synArg);G.synBuy=null;G.synArg=null;return true}/* v181 prototype: Buy Time */
   if(p.fac==='chrono'&&G.realm){p.osTok=G.tok;if(!SIM){addLog(p.id,'Open Season: every enemy the crew kills this turn pays a bounty.');announce({k:'note',col:F.color,t:'Open Season',s:'Every kill the Chrono Syndicate makes this turn collects a bounty.'})}return true}
   if(p.fac==='rift'&&G.realm){G.portals=(G.portals||[]).map(P=>P.owner===p.id?Object.assign({},P,{ttl:P.ttl+2}):P);p.rsTok=G.tok;for(const v of G.units)if(v.owner===p.id)v.riftRe=null;if(!SIM){addLog(p.id,'Rift Surge: the portals hold 2 rounds longer and every Riftwalker coming out of one may move again this turn.');announce({k:'note',col:F.color,t:'Rift Surge',s:'The Riftwalker portals hold longer and the crossings are free this turn.'})}return true}
   if(p.fac==='ooze'&&SLIME){p.tide=2;for(const v of G.units)if(v.owner===p.id&&v.ability==='slimespawn')setCd(v,'slimespawn',0);if(!SIM){addLog(p.id,'The Tide Rises: Spawn has no rest and no price this turn and the next.');announce({k:'note',col:F.color,t:'The Tide Rises',s:'The Ooze Mother pours out droplets every turn for two turns.'})}return true}
   if(p.fac==='ooze'){p.huTok=G.tok;for(const v of G.units.slice())if(v.owner===p.id&&isOoze(v))oozeGrow(v,1);if(!SIM){addLog(p.id,'Hunger: every blob grows a part, and kills feed double this turn.');announce({k:'note',col:F.color,t:'Hunger',s:'The Ooze swells; every kill this turn adds 2 parts.'})}return true}
   return false}
 function newUltScore(p,foes){const mine=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall');
+  if(p.fac==='chrono'&&syn2(p)){const b=synBest(p,foes);G.synBuy=b.it;G.synArg=b.arg;return b.s}/* v181 prototype */
   if(p.fac==='chrono'){const n=foes.filter(f=>f.owner>=0&&!f.summon&&mine.some(v=>!v.acted&&distUU(v,f)<=effMov(v)+1&&f.hp<=effAtk(v)+6)).length;return n?8+n*6:0}
   if(p.fac==='rift'){const n=(G.portals||[]).filter(P=>P.owner===p.id).length;return n>=2?6+n*3:0}
   if(p.fac==='ooze'){const n=mine.filter(isOoze).length;return n>=3?n*2.5:0}return 0}
@@ -8956,7 +9015,7 @@ const PASSIVE_SHORT={/* v170: one short paragraph per army, kept in step with FA
   ooze:'The Ooze Mother arrives alone and spawns droplets every other turn, paying 2 HP each time. Droplets merge into bigger blobs (up to 3 parts) and keep growing on their own kills. Every kill heals the Mother.',
   rift:'Portals: any unit that steps on a portal end comes out of the other, and a Riftwalker that comes out may move again. Gatekeepers open the gates, the Abductor drops enemies from the sky, the Banisher kicks them through the doors and the Rift Lancer shoots through them.',
   curse:'Six rots: the more different rots a victim carries, the more it takes each turn, and the Lich King reaps them all at once. A victim that dies carrying 2 or more rots rises as a Ghoul for the Covenant, with no limit.',
-  chrono:'A crew of time thieves that teleport when they move. The weakest enemy nearby is always their contract: kill it and the whole crew gets a reward for the rest of the game, ten steps up the ladder and then a heal for every bounty.',
+  chrono:'A crew of time thieves that teleport when they move. The weakest target nearby is always their contract: kill it and the whole crew climbs one rung of a ladder that never ends, and every bounty pays a coin to Buy Time.',
   mage:'Shamans fill four element bars and ascend into Elementals that shape the land: walls of fire, rivers, stone walls and wind lanes, which combine into mud, wildfire, rain, lava, steam and dust. When all four have ascended the Elemental Lord appears.',
 };
 function unitRow(F,d,k,i){
@@ -8978,7 +9037,7 @@ const LOSE_LINES={/* v170: how each army is beaten */
   warband:'Strong only in formation: hit the block with area damage, drag one warrior out, and never feed them kills. The Blade Warlord is fragile: kill him and the block loses Strike. Kill both brothers and the Warband stops learning.',
   rift:'Thin bodies (8 to 11 HP): stand next to their portal ends to shut the doors, and catch the Gatekeepers before they open more.',
   curse:'Fragile casters behind two Grave Knights: rush the casters before the rots stack, keep your units apart so Plague can’t spread, and cleanse Decay first.',
-  chrono:'A thin crew (6 to 8 HP): stay grouped so your weakest unit is never alone, and kill the Accelerator and the Timekeeper first.',
+  chrono:'Fragile thieves that grow with every bounty: kill the crew early, keep your weak units out of their reach, run from the stasis device, and watch their purse: 3 coins bring a fallen thief back.',
   ooze:'Kill the Ooze Mother: she makes everything, and every kill heals her. Area damage melts the droplets before they merge.',
   mage:'Kill the shamans before they ascend, hold their shrines, stay off their shapes, and finish the Elemental Lord before its spells have grown.',
 };
@@ -8991,7 +9050,7 @@ const WIN_LINES={/* v170: one sentence per army: how it wins */
   warband:'Wins by standing together: the block marches and strikes as one under its two Warlords’ orders.',
   rift:'Wins by moving the board: open portals, step through and strike again, and throw enemies where you want them.',
   curse:'Wins by rot: stack different rots on one target, reap them, and let the cursed dead rise as Ghouls.',
-  chrono:'Wins by hunting: pick off the weakest enemy again and again and grow the crew with every bounty.',
+  chrono:'Wins by hunting: pick off the weakest target again and again, climb the ladder with every bounty and spend the coins on a Rewind or a Stolen Hour.',
   ooze:'Wins by swarming: pour out droplets, merge them into big blobs and let the blobs grow on their kills.',
   mage:'Wins by ascending: turn the shamans into Elementals, reshape the land, and bring out the Elemental Lord.',
 };
@@ -9239,7 +9298,7 @@ HOOKS.turn=()=>{
   else if(n!=null&&G.round===n-1&&(G.cur===0||!G.players.slice(0,G.cur).some(p=>p.alive)))toast('Warning: the edge collapses next round')}
   const p=P(G.cur);
   if(isHumanTurn()&&CAM.follow)faceHome(p.id);
-  if(isHumanTurn()){const pid=G.cur;setTimeout(()=>{if(G&&G.cur===pid&&isHumanTurn())frameArmy(pid)},120);recapShow(pid)}
+  if(isHumanTurn()){const pid=G.cur;setTimeout(()=>{if(G&&G.cur===pid&&isHumanTurn())frameArmy(pid)},120);recapShow(pid);if(typeof synPickShow==='function')setTimeout(()=>{try{synPickShow(pid)}catch(e){}},700)}/* v181 the Informants' choice */
   if(isHumanTurn()&&typeof openingShow==='function'){const pid=G.cur;setTimeout(()=>{try{openingShow(pid)}catch(e){}},200)}/* v122 the opening choice */
   setTimeout(()=>{if(G&&screen==='game')camTurnStart()},130);
   netPush();
@@ -9524,7 +9583,7 @@ function renderScoreStrip(){const el=$('#scoreStrip');if(!el)return;if(G.phase){
   const engPills=G.realm?G.players.filter(p=>p.alive).map(enginePill).filter(Boolean).join(''):'';/* v162 (owner: 'let's make the other counters visible') */// v89: the owner wants the souls counter very visible
   el.onclick=()=>showScoreCard();el.title='Tap for the score card';el.innerHTML=`<span class="rd">Round ${G.round}</span>${soulPills}<span class="hs">${!live?`<span class="wallnote">⛫ ${G.map?'Throne Hall falls':'Wall falls'} round ${RULES.CENTRE_FROM}</span>`:G.mode!=='conquest'?(()=>{const K=kingOf();return K?`♛ <span style="color:${FAC[P(K.owner).fac].color}">${FAC[P(K.owner).fac].name}</span> King${onThrone(K)?(kingChallenged(K)?' · challenged':' · on the Throne'):' · off the Throne'}`:throneOpen()?'Throne free':'Throne hidden'})():G.holder!=null?`<span style="color:${teamColor(G.holder)}">${teamName(G.holder)}</span> holds the Heart`:G.contested?'Heart contested':'Heart empty'}</span>${war?'<span class="lbl">Points</span>':''}${ts.map(side).join('')}<span class="scbtn">Score card ›</span>`;
   /* v162: the engine counters get a row of their own under the strip (on a phone the strip is one scrolling line) */
-  let er=document.getElementById('engRow');if(!er){er=document.createElement('div');er.id='engRow';er.className='engrow';el.insertAdjacentElement('afterend',er);er.onclick=()=>showScoreCard()}er.innerHTML=engPills;er.hidden=!engPills}
+  let er=document.getElementById('engRow');if(!er){er=document.createElement('div');er.id='engRow';er.className='engrow';el.insertAdjacentElement('afterend',er);er.onclick=()=>{const q=G&&P(G.cur);if(q&&isHumanTurn()&&typeof synPickOpen==='function'&&synPickOpen(q)){synPickShow(G.cur,0,true);return}showScoreCard()}}er.innerHTML=engPills;er.hidden=!engPills}
 function refresh(){
   if(!G)return;
   {const o=$('#overlay');if(G.paused&&screen==='game'&&!G.over&&o&&(o.hidden||o.dataset.kind!=='pause'))showPause();else if(!G.paused&&o&&o.dataset.kind==='pause'){o.hidden=true;o.dataset.kind=''}}
@@ -9553,6 +9612,7 @@ function refresh(){
   const pa=G.apParts||{};$('#apBox').innerHTML=pips+`<span class="aplabel">${G.ap} AP</span><span class="aplabel">(${[pa.base+' base',pa.leader?'+'+pa.leader+(P(G.cur).leaderless?' (no Leader)':' Leader'):'no Leader',pa.throne?'+'+pa.throne+' Throne':'',pa.well?'+'+pa.well+' Wellspring':'',pa.bank?'+'+pa.bank+' banked':''].filter(Boolean).join(' ')})</span>`+(bankOf(P(G.cur))&&!G.phase?`<span class="aplabel bankl" title="Banked Time: unspent AP carry over to your next turn">⏳ Banked Time: keeps ${Math.min(G.ap,bankOf(P(G.cur)))} of up to ${bankOf(P(G.cur))} unspent</span>`:'');
   {const ub=$('#ultBtn');if(ub){const U=ULTS[p.fac],ch=p.ult||0,need=ultNeed(p),team=canTeamUlt(G.cur);ub.hidden=!isHumanTurn()||!!G.phase;
     ub.disabled=!canUlt(G.cur);ub.classList.toggle('ready',canUlt(G.cur));ub.classList.toggle('team',team);
+    if(syn2(p)){const c=p.coins||0;ub.innerHTML=`⚡ <span class="un">${U.name}</span> <span class="hint">${p.ultThisTurn?'used this turn':synAnyBuy(p)?c+' coin'+(c===1?'':'s')+' · ready':c+' coin'+(c===1?'':'s')}</span>`;ub.title=U.text}else
     if(RULES.SHAMANS&&p.fac==='mage'){const nd=elNeed(p),ic={fire:'🔥',water:'💧',earth:'🪨',air:'🌪️'};const bars=EL_KEYS.map(k=>ic[k]+((p.evo&&p.evo[k])?'✓':((p.el&&p.el[k])||0)+'/'+nd)).join(' ');ub.innerHTML=G.realm?`⚡ <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':'ready'):ch+'/'+need} · ${bars}</span>`:`🌀 <span class="un">Ascension</span> <span class="hint">${bars}</span>`;ub.title=U.text}else
     ub.innerHTML=`⚡${team?'⚡':''} <span class="un">${U.name}</span> <span class="hint">${ch>=need?(p.ultThisTurn?'used this turn':G.ap>=RULES.ULT_COST?(team?'team ready':'ready'):'needs '+RULES.ULT_COST+' AP'):ch+'/'+need}</span>`;ub.title=U.text}}
   if(G.realm&&!G.phase)realmBar();else if(G.tutorial){const ab=$('#apBox');if(ab)ab.innerHTML=''}/* v169: no AP diamonds in the tutorial */
@@ -10498,7 +10558,7 @@ function enginePill(p){const col=FAC[p.fac].color,mine=G.units.filter(u=>u.owner
     case 'arcane':{const i=p.faithN||0,need=REALM.faith[i]!=null?REALM.faith[i]:REALM.faith[REALM.faith.length-1]+REALM.faithStep*(i-REALM.faith.length+1),fl=(p.fallenAt||[]).length;const rel=p.relicLost?' · relic smashed':(G.loot||[]).some(x=>x.kind==='reliquary'&&x.owner===p.id)?' · relic on the ground':mine.some(u=>u.relq)?'':' · no relic';return pill('✚',p.faith||0,`/${need} Faith${fl?'':' · nobody fallen'}${rel}`,'Faith: healing while one of your units lies fallen fills it; when it is full the last fallen unit rises.')}
     case 'warband':{const lv=mine.reduce((s,u)=>s+(u.lvl||0),0),led=warbandLed(p);return pill('⚔',lv,` veteran level${lv===1?'':'s'}${led?'':' · XP stopped'}`,'Veterans: kills and fallen comrades give XP, with no last level. If both Warlord brothers die, the Warband gains no more XP.',led?'':'off')}
     case 'curse':{const g=mine.filter(u=>u.ghoul).length;return pill('☠',g,` Ghoul${g===1?'':'s'}`,`Ghouls: an enemy that dies carrying ${REALM.ghoulRots} or more different rots rises as a Ghoul, with no limit. A Ghoul\'s bite leaves Grave Fever, which counts as one rot.`)}
-    case 'chrono':return pill('◈',p.bStep||0,'/10 bounties','The bounty ladder: every contract collected is a permanent bonus for the whole crew.');
+    case 'chrono':{if(syn2(p)){const n=p.rung||0,k=REALM.syn2.order[n],nx=k?SYN_RUNG_TEXT[k]:`the Chrono edge grows to +${synEdge(p)+REALM.syn2.edgeGrow}`;return pill('◈',n,` rung${n===1?'':'s'} · ${p.coins||0} coin${(p.coins||0)===1?'':'s'}`,`The ladder: every bounty is one more rung for the whole crew, for good, and 1 coin for Buy Time. Next rung: ${nx}.`)}return pill('◈',p.bStep||0,'/10 bounties','The bounty ladder: every contract collected is a permanent bonus for the whole crew.')}
     case 'mage':{const a=EL_KEYS.filter(k=>p.evo&&p.evo[k]).length,pw=p.lordPow?EL_KEYS.reduce((s,k)=>s+Math.floor((p.lordPow[k]||0)/2),0):0;return pill('▲',a,`/4 ascended${p.lord?` · Lord +${pw}`:''}`,'Ascension: a full element bar turns both shamans of that element into Elementals. After all four the Elemental Lord appears and grows with every 2 spells an Elemental casts.')}
   }return ''}
 function drawChest(c,x,y,S,col,now){c.save();c.shadowColor=col;c.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/240));const w=S*0.62,h=S*0.42;
@@ -11009,6 +11069,7 @@ document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement
 document.addEventListener('pointerdown',e=>{if(document.body.classList.contains('drawer')&&!e.target.closest('aside.side')&&!e.target.closest('#abInfo')&&!e.target.closest('#infoBtn')){document.body.classList.remove('drawer');if(lpInsp&&G){lpInsp=false;G.inspect=null;refresh()}}});
 $('#endBtn').onclick=()=>{if(!isHumanTurn())return;if(G.phase==='deploy'){curtain=null;deployReady();refresh();netPush();return}recapSnap(G.cur);endTurn()};
 $('#ultBtn').onclick=()=>{if(G&&G.stormPick){G.stormPick=null;toast('Rift Storm cancelled.',1800);refresh();return}if(!isHumanTurn()||!canUlt(G.cur))return;const p=P(G.cur),U=ULTS[p.fac],o=$('#overlay');const q=canTeamUlt(G.cur)?partnerOf(G.cur):null;
+  if(syn2(p)){synBuyShow(p);return}
   o.innerHTML=`<div class="modal" style="max-width:460px"><div class="label">Ultimate · ${apFree()?'':RULES.ULT_COST+' AP · '}cast #${(p.ultN||0)+1} (next one needs ${ultNeed(p,1)} charge${RULES.ULT_CURVE?' at today’s price, less every round':''})</div><h2 style="color:${FAC[p.fac].color}">⚡ ${U.name}</h2><p>${U.text}</p>
     ${q?`<div class="abil" style="border-color:${FAC[q.fac].color}"><b>Team Ultimate available</b>${apFree()?'':' · '+RULES.TEAM_ULT_COST+' AP'}<br>Your partner's <b style="color:${FAC[q.fac].color}">${ULTS[q.fac].name}</b> is charged too. Fire both at once: ${ULTS[q.fac].text} Every unit on both your sides also heals 2. Uses both charges.</div>`:''}
     <div class="row" style="margin-top:14px">${q&&G.ap>=RULES.TEAM_ULT_COST?`<button class="btn primary" id="ultTeam">⚡⚡ Team: ${U.name} + ${ULTS[q.fac].name}</button>`:''}${U.pick4&&G.realm?ult4Buttons(p):`<button class="btn ${q?'':'primary'}" id="ultGo">Unleash ${U.name}</button>`}<button class="btn" id="ultNo">Not yet</button></div></div>`;
@@ -11415,11 +11476,11 @@ function uxGiantFoot(){const u=uxSel();if(!u||u.size!==2||!isHumanTurn()||G.amod
    Loaded after ui.js, uxkit.js: it chains uxDraw (both board views), adds looks and the home-page text. Rules live in engine.js. */
 FAC.ooze.color=ARMY_COLORS.ooze='#6a5cff';
 Object.assign(PASSIVE_SHORT,{
-  chrono:'Phase Walk: every unit teleports when it moves. Contracts: the weakest enemy or camp monster near your crew is marked for 5 turns; kill it to climb the bounty ladder (+HP, +ATK, +move, shorter rests...) for the whole crew, for good.',
+  chrono:'Phase Walk: every unit teleports when it moves. Contracts: the weakest enemy or camp monster near your crew is marked for 5 turns; kill it for 1 coin and one rung of a ladder that never ends (you choose your contracts, +2 max HP, +2 on the mark, +1 ATK, teleport further, shorter rests, then the mark bonus grows with every bounty). The coins pay for Buy Time.',
   rift:'Portals: step on one end, come out of the other. A Riftwalker coming out of a portal may move again (once a turn). An enemy next to a portal end blocks the way in. Every portal is open to everyone.',
   ooze:'The Ooze Mother starts alone and pays 2 HP every other turn to pour out 2 droplets (9 HP, 2 ATK). Droplets merge up to 3 parts and grow past that only by their own kills. Acid Brewers throw flasks that also make droplets; the Gel Shaper pulls blobs together. Kills heal the Mother.'});
 Object.assign(LOSE_LINES,{
-  chrono:'Fragile thieves that grow with every bounty: kill the crew early, keep your weak units out of their reach, and run from the stasis device before it goes off.',
+  chrono:'Fragile thieves that grow with every bounty: kill the crew early, keep your weak units out of their reach, run from the stasis device, and watch their purse: 3 coins bring a fallen thief back.',
   rift:'Stand next to their portal ends to shut them, never fight beside an open portal when the Rift Sovereign can Collapse it, and catch the thin Lancers on their own.',
   ooze:'Go for the Mother: she pays HP for every spawn and starts alone, so pressure her early. Kill the casters and the tide stops; droplets are only 9 HP each, so area damage clears them.'});
 Object.assign(LOOK,{
@@ -11457,9 +11518,33 @@ function blockTag(){if(!G||G.amode!=='blockmove'||G.sel==null)return;const u=byI
 // Rift Shot: once the portal hex is picked, show every bullet path and who it hits
 function riftPreview(u,first,at,hl){if(!first||!at)return false;const d=aimDir(u,first.q,first.r);if(d<0)return false;const res=riftTrace(u.owner,[at[0],at[1]],d,u);for(const p of res.paths)for(const [q,r] of p)hl.area.add(key(q,r));for(const h of res.hits)hl.hitIds.add(h.t.id);return true}
 if(typeof ANN_SHORT!=='undefined')Object.assign(ANN_SHORT,{chrono:'Syndicate',ooze:'Ooze'});
+/* v181 THE LADDER AND BUY TIME on screen: the rules text, the Buy Time window and the Informants' choice of contract */
+function synRulesLi(){const S=REALM.syn2;const rungs=S.order.map((k,i)=>`<li><b>${i+1}.</b> ${SYN_RUNG_TEXT[k]}</li>`).join('');
+  return `<li><b>Contracts and the ladder</b> (Chrono Syndicate). When the Syndicate has no contract, the enemy unit or camp monster with the lowest HP within 8 hexes of its crew is marked (🎯 on the board) for 5 of its turns. Any crew member that kills it collects the bounty: <b>1 coin</b> and <b>one rung of the ladder</b> for the whole crew, for the rest of the game, each rung adding to the ones below:<ul>${rungs}</ul>Every bounty after the ${S.order.length}th adds +${S.edgeGrow} to the Chrono edge, without end. Every Syndicate unit teleports when it moves (Phase Walk).</li>
+  <li><b>Buy Time</b> (Chrono Syndicate Ultimate). Paid in coins, never in Ultimate charge (with the crown, its first rung pays the Syndicate a coin a turn instead of charge). One purchase a turn: <b>Favour</b> (${S.favour} coin): one crew member's abilities are ready again. <b>Rewind</b> (${S.rewind} coins): a crew member that fell this round or last comes back where it fell, with half its HP. <b>The Stolen Hour</b> (${S.hour} coins, then ${S.hourStep} more each time): the whole crew moves and acts again this turn.</li>`}
+function synBuyShow(p,step){const o=$('#overlay'),S=REALM.syn2,F=FAC.chrono,c=p.coins||0;
+  const btn=(it,ic,name,price,line,ok)=>`<button class="btn ${ok?'primary':''}" data-buy="${it}" ${ok?'':'disabled'} style="text-align:left;border-color:${F.color}">${ic} <b>${name}</b> · ${price} coin${price===1?'':'s'}<br><span class="hint" style="color:inherit;opacity:.85">${line}</span></button>`;
+  let body='';
+  if(step==='favour'){const us=synFavourUnits(p);body=`<p>Which crew member is ready again?</p><div style="display:grid;gap:8px">${us.map(u=>{const k=abilsOf(u).filter(k=>cdOf(u,k)>0);return `<button class="btn primary" data-arg="${u.id}" style="text-align:left">${u.name}<br><span class="hint" style="color:inherit;opacity:.85">${k.map(k=>ABIL[k].name+' rests '+cdOf(u,k)).join(', ')}${u.acted?' · has acted: the ability is ready for its next action':''}</span></button>`}).join('')}</div>`}
+  else if(step==='rewind'){const fs=synRewindList(p);body=`<p>Who comes back, where it fell, with half its HP?</p><div style="display:grid;gap:8px">${fs.map((f,i)=>`<button class="btn primary" data-arg="${i}" style="text-align:left">${f.name}${f.leader?' (Leader)':''}<br><span class="hint" style="color:inherit;opacity:.85">fell in round ${f.round}</span></button>`).join('')}</div>`}
+  else{const fs=synRewindList(p),fu=synFavourUnits(p),crew=G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&alive(v)),done=crew.filter(v=>v.moved||v.acted).length;
+    body=`<div style="display:grid;gap:8px">${btn('favour','⌛','Favour',synPrice(p,'favour'),fu.length?`${fu.length} crew member${fu.length===1?'':'s'} with a resting ability`:'no ability is resting',synCanBuy(p,'favour'))}${btn('rewind','⏪','Rewind',synPrice(p,'rewind'),fs.length?fs.map(f=>f.name).join(', ')+' can come back':'nobody fell this round or last',synCanBuy(p,'rewind'))}${btn('hour','⏳','The Stolen Hour',synPrice(p,'hour'),`${done} of ${crew.length} crew members have moved or acted; all of them go again`,synCanBuy(p,'hour'))}</div>`}
+  o.innerHTML=`<div class="modal" style="max-width:460px"><div class="label">Ultimate · paid in coins · ${c} coin${c===1?'':'s'} in the purse · one purchase a turn</div><h2 style="color:${F.color}">⚡ ${ULTS.chrono.name}</h2>${step?'':`<p>${ULTS.chrono.text}</p>`}${body}<div class="row" style="margin-top:14px">${step?'<button class="btn" id="buyBack">Back</button>':''}<button class="btn" id="ultNo">Not yet</button></div></div>`;
+  o.hidden=false;$('#ultNo').onclick=()=>{o.hidden=true};if($('#buyBack'))$('#buyBack').onclick=()=>synBuyShow(p);
+  const go=(it,arg)=>{o.hidden=true;if(!canUlt(G.cur)||!synCanBuy(p,it))return;G.synBuy=it;G.synArg=arg;useUlt(false)};
+  o.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const it=b.dataset.buy;if(it==='favour'&&synFavourUnits(p).length>1)return synBuyShow(p,'favour');if(it==='rewind'&&synRewindList(p).length>1)return synBuyShow(p,'rewind');go(it,it==='favour'?synFavourUnits(p)[0].id:it==='rewind'?synRewindList(p)[0].name:null)});
+  o.querySelectorAll('[data-arg]').forEach(b=>b.onclick=()=>{if(step==='favour')go('favour',+b.dataset.arg);else{const f=synRewindList(p)[+b.dataset.arg];go('rewind',f&&f.name)}})}
+const SYNPICK={};
+function synPickShow(pid,tries,force){const p=G&&G.players[pid];if(!p||!isHumanTurn()||G.cur!==pid||!synPickOpen(p))return;const k=pid+'|'+G.tok;if(SYNPICK[k]&&!force)return;
+  const o=$('#overlay'),ab=$('#annBanner');if(((ab&&!ab.hidden)||!o.hidden)&&(tries||0)<300){setTimeout(()=>synPickShow(pid,(tries||0)+1,force),600);return}if(!o.hidden)return;SYNPICK[k]=1;
+  const near=synNear(p),F=FAC.chrono,tip=p.contract.id;const who=t=>t.monster?'camp monster':FAC[G.players[t.owner].fac].name;
+  const rows=p.cpick.ids.map(byId).filter(t=>t&&alive(t)).map(t=>`<button class="btn ${t.id===tip?'primary':''}" data-pick="${t.id}" style="text-align:left;border-color:${F.color}">🎯 <b>${t.name}</b> · ${who(t)}<br><span class="hint" style="color:inherit;opacity:.85">${Math.ceil(t.hp)} HP · ${near(t)} hex${near(t)===1?'':'es'} from your crew${t.id===tip?' · the informants\' tip':''}${t.leader?' · a Leader':''}${t.king?' · the King':''}</span></button>`).join('');
+  o.innerHTML=`<div class="modal" style="max-width:440px"><div class="label">Informants · rung 1 of the ladder</div><h2 style="color:${F.color}">Choose the contract</h2><p>The three weakest targets within ${REALM.syn2.range} hexes. Kill your pick within ${p.contract.left} turns for 1 coin and one rung. You can change your mind until a crew member moves or acts (tap the ◈ counter).</p><div style="display:grid;gap:8px">${rows}</div><div class="row" style="margin-top:14px"><button class="btn" id="pickKeep">Keep the tip</button></div></div>`;
+  o.hidden=false;$('#pickKeep').onclick=()=>{o.hidden=true};
+  o.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{o.hidden=true;const id=+b.dataset.pick;if(id!==p.contract.id&&synPickContract(pid,id)){refresh();if(typeof netPush==='function')netPush();toast(`New contract: the ${byId(id).name}.`,2200)}})}
 // How to play: the rules the three new armies add to the Realm
 function armyRulesRealm(){return `<h3>Army rules</h3><ul>
-  <li><b>Contracts</b> (Chrono Syndicate). When the Syndicate has no contract, the enemy unit or camp monster with the lowest HP within 8 hexes of its crew is marked (🎯 on the board) for 5 of its turns. Any crew member that kills it collects a bounty for the whole crew, for the rest of the game: 1st +1 max HP, 2nd +1 ATK, 3rd +1 move, 4th every rest 1 shorter, 5th +2 max HP, 6th +1 ability damage, 7th +1 ATK, 8th rests 1 shorter, 9th +1 move and +2 max HP, 10th +1 ATK and +1 ability damage, then a heal of 1 per bounty. Every Syndicate unit teleports when it moves (Phase Walk).</li>
+  ${RULES.SYN2?synRulesLi():`<li><b>Contracts</b> (Chrono Syndicate). When the Syndicate has no contract, the enemy unit or camp monster with the lowest HP within 8 hexes of its crew is marked (🎯 on the board) for 5 of its turns. Any crew member that kills it collects a bounty for the whole crew, for the rest of the game: 1st +1 max HP, 2nd +1 ATK, 3rd +1 move, 4th every rest 1 shorter, 5th +2 max HP, 6th +1 ability damage, 7th +1 ATK, 8th rests 1 shorter, 9th +1 move and +2 max HP, 10th +1 ATK and +1 ability damage, then a heal of 1 per bounty. Every Syndicate unit teleports when it moves (Phase Walk).</li>`}
   <li><b>Stasis Field</b> (Field Engineer): the device lands now and goes off at the start of the Syndicate's next turn: every enemy still on its 7 hexes loses its next turn. <b>Holograms</b> (Holo-Tech) have 1 HP and hit for 1; they cannot take the Throne or carry anything, and killing one gives nothing.</li>
   <li><b>Portals</b> (Riftwalkers). A unit that walks onto a portal end may come out of the other end; anyone may use any portal. A Riftwalker that comes out of a portal may move again, once per turn. An enemy standing next to a portal end shuts that door. Gatekeeper gates last 3 rounds, a Lifegate 2 (allies passing heal 3, enemies take 2), a Rift Lancer's own pair until its next turn. A Banisher's basic attack kicks the enemy 3 hexes; a kick that crosses a portal end sends it through.</li>
   <li><b>Shadow Priests</b> (Circle of Priests). A priest whose light kills an enemy (overflowing light, Holy ground, Radiance) turns to its SHADOW form at once: its spell becomes the dark mirror of the light one, on the same rest. Sanctuary becomes Anathema (2 ignoring DEF to every enemy within 3 of your units, their rests grow by 2), Mend becomes Wither (3 ignoring DEF and Hex), Lay on Hands becomes Drain Touch (4, the Seraph heals what it dealt), Grove becomes Blight (enemies on it take 2 at your turn start and cannot be healed next turn), Bless becomes Dusk (1 less ATK and 1 damage a turn for 3 turns), Field Surgery becomes Butchery (3 to the target and 3 to the most wounded other neighbour). Overflowing dark: damage beyond a kill heals the nearest ally within 3. A Shadow Priest that kills an enemy returns to the light. Shadow heals give no Faith.</li>
