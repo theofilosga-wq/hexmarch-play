@@ -6483,7 +6483,7 @@ function realmHpOf(fac,d){const v=REALM_HP[fac+':'+d.name];return v!=null?v:Math
 REALM.burnDmg=2;REALM.wildErupt=4;REALM.shatterPlus=3;REALM.requiemPer=1;REALM.overflowK=2;REALM.holyTick=2;RULES.FROST_MARKS_REALM=3;
 var REALM_ROT0=1;/* the first rot's tick (was 0.5) */var REALM_EL_NEED=[2,3,4,5];/* the element bars on the Realm (were 3, 4, 5, 6) */
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v185 2026-11-13";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -11276,6 +11276,37 @@ function histPhoto(){try{const due=HIST.photoDue;HIST.photoDue=false;if(!HIST.ma
   HIST.match.photos[due]=c.toDataURL('image/jpeg',0.55);histSave()}catch(e){}}
 {const d0=draw;draw=function(now){d0(now);if(HIST.photoDue)histPhoto()}}
 {const r0=refresh;refresh=function(){r0();histTick()}}
+/* v185 THE TURN RECORDER (owner 13 Nov 2026: "do 3 and 2 and 1": teach the bots from the way people play). Every turn a person plays on this device
+   is kept in match.turns: the full board at the start of the turn (the engine state as the online sync sends it, without the statistics and the logs),
+   every action in order (move, attack, ability, Ultimate with its choice, a call from the reserve, the opening pick, a Syndicate contract pick) and a
+   compact snapshot at End turn. An undo takes the actions it reverses back out (each action keeps the length of the undo stack before it).
+   Nested calls (an ability that moves units, the next player's turn start) are never recorded as actions.
+   sim/exam_turns.js puts a bot in the same seat on the same board and compares its turn with the person's; sim/habits.js reads the habits. */
+const HREC={depth:0,tag:null,rec:null};
+function hrTag(){return G?G.tok+':'+G.round+':'+G.cur:null}
+function hrLive(){return typeof SIM!=='undefined'&&!SIM&&!!G&&!G.tutorial&&!G.phase&&!G.over&&HIST.on&&!!HIST.match&&HIST.match.id===G.histId&&typeof isHumanTurn==='function'&&isHumanTurn()}
+function hrState(){const o=Object.assign({},G,{sel:null,amode:null,aim:null,inspect:null,hover:null,tile:null,stats:null,log:[],fxLog:[],annLog:[]});o.units=G.units.map(u=>{const c=Object.assign({},u);delete c.anim;return c});return JSON.stringify(o)}
+function hrTurn(){const t=hrTag();if(HREC.tag===t&&HREC.rec)return HREC.rec;const p=G.players[G.cur];
+  const rec={r:G.round,pid:G.cur,fac:p.fac,ctrl:p.ctrl,t0:Date.now(),start:hrState(),acts:[],end:null};HREC.tag=t;HREC.rec=rec;
+  HIST.match.recV=2;(HIST.match.turns=HIST.match.turns||[]).push(rec);return rec}
+const hrId=u=>u&&typeof u==='object'?u.id:u;
+const hrUndoN=()=>typeof UNDO!=='undefined'&&UNDO.tag===undoTag()?UNDO.stack.length:0;
+const HR_ARGS={doMove:a=>({u:hrId(a[0]),o:a[1]?JSON.parse(JSON.stringify(a[1])):null}),attack:a=>({u:hrId(a[0]),t:hrId(a[1])}),
+  useAbility:a=>({u:hrId(a[0]),k:a[1],q:a[2],r:a[3],d:a[4]&&a[4].q!=null?{q:a[4].q,r:a[4].r}:null}),
+  useUlt:a=>({team:!!a[0],el:G.ultEl!=null?G.ultEl:null,buy:G.synBuy!=null?G.synBuy:null,arg:G.synArg!=null?G.synArg:null}),
+  realmSummon:a=>({n:a[1],at:Array.isArray(a[3])?[a[3][0],a[3][1]]:null}),realmOpening:a=>({tk:a[1]!=null?a[1]:null,names:(a[2]||[]).slice()}),
+  synPickContract:a=>({id:a[1]})};
+const HR_FAIL={realmSummon:r=>!r,realmOpening:r=>r===false,synPickContract:r=>r===false};
+for(const nm of Object.keys(HR_ARGS)){const f=window[nm];if(typeof f!=='function')continue;
+  window[nm]=function(){if(HREC.depth||!hrLive())return f.apply(this,arguments);
+    let rec=null,args=null,L=0;try{L=hrUndoN();args=HR_ARGS[nm](arguments);rec=hrTurn()}catch(e){rec=null}
+    HREC.depth++;let r;try{r=f.apply(this,arguments)}finally{HREC.depth--}
+    try{if(rec&&!(HR_FAIL[nm]&&HR_FAIL[nm](r)))rec.acts.push(Object.assign({a:nm,L,ms:Date.now()-rec.t0},args))}catch(e){}
+    return r}}
+{const u0=doUndo;doUndo=function(){const can=typeof canUndo==='function'&&canUndo();const r=u0.apply(this,arguments);
+  try{if(can&&HREC.rec&&HREC.tag===hrTag()){const n=hrUndoN();const A=HREC.rec.acts;while(A.length&&A[A.length-1].L>=n)A.pop()}}catch(e){}return r}}
+{const e0=endTurn;endTurn=function(){if(!HREC.depth&&hrLive()){try{const rec=hrTurn();rec.end=histSnap();rec.ms=Date.now()-rec.t0;histSave()}catch(e){}}
+  HREC.depth++;try{return e0.apply(this,arguments)}finally{HREC.depth--}}}
 // ---- the owner's side: list, export, share, delete ----
 const histName=m=>{const d=new Date(m.started);const dt=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});return `${dt} · ${m.seats.map(s=>FAC[s.fac]?FAC[s.fac].name:s.fac).join(', ')}`};
 const histFile=m=>{const d=new Date(m.started);const p=n=>String(n).padStart(2,'0');return `hexmarch-match-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}-${m.seats.map(s=>s.fac).join('-')}.json`};
@@ -11284,7 +11315,7 @@ function histDownload(m){const b=histBlob(m);const a=document.createElement('a')
 async function histShare(m){const f=new File([histBlob(m)],histFile(m),{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Hexmarch match'});return}catch(e){}}histDownload(m)}
 async function histList(el){const all=await histAll();const kb=m=>Math.round(JSON.stringify(m).length/1024);
   if(!all.length){el.innerHTML='<p class="hint">No matches recorded yet. Every game you play on this device is kept here (the last 40): a snapshot and a photo of the board at every round, the battle log and the final score.</p>';return}
-  el.innerHTML=`<p class="hint">${all.length} match${all.length>1?'es':''} on this device. Export a match and send me the file: I replay it round by round. <button class="linkbtn" data-h="all">Export all</button></p>`+all.map(m=>`<div class="hrow"><div><b>${histName(m)}</b><br><span class="hint">${m.board==='realm'?'The Realm':m.board==='wilds'?'Crown Wilds':'Random board'} · ${m.rounds.length?m.rounds[m.rounds.length-1].round:0} rounds · ${m.result?`${FAC[m.result.winners[0]]?FAC[m.result.winners[0]].name:m.result.winners[0]} won (${{heart:'points',leaders:'last Leader',last:'last side'}[m.result.how]||m.result.how})`:'unfinished'} · ${Object.keys(m.photos||{}).length} photos · ${kb(m)} KB</span></div><div class="row"><button class="btn sm" data-h="x" data-id="${m.id}">Export</button>${navigator.share?`<button class="btn sm" data-h="s" data-id="${m.id}">Share</button>`:''}<button class="btn sm" data-h="d" data-id="${m.id}">Delete</button></div></div>`).join('');
+  el.innerHTML=`<p class="hint">${all.length} match${all.length>1?'es':''} on this device. Export a match and send me the file: I replay it round by round. <button class="linkbtn" data-h="all">Export all</button></p>`+all.map(m=>`<div class="hrow"><div><b>${histName(m)}</b><br><span class="hint">${m.board==='realm'?'The Realm':m.board==='wilds'?'Crown Wilds':'Random board'} · ${m.rounds.length?m.rounds[m.rounds.length-1].round:0} rounds · ${m.result?`${FAC[m.result.winners[0]]?FAC[m.result.winners[0]].name:m.result.winners[0]} won (${{heart:'points',leaders:'last Leader',last:'last side'}[m.result.how]||m.result.how})`:'unfinished'} · ${Object.keys(m.photos||{}).length} photos${m.turns&&m.turns.length?` · ${m.turns.length} turns recorded`:''} · ${kb(m)} KB</span></div><div class="row"><button class="btn sm" data-h="x" data-id="${m.id}">Export</button>${navigator.share?`<button class="btn sm" data-h="s" data-id="${m.id}">Share</button>`:''}<button class="btn sm" data-h="d" data-id="${m.id}">Delete</button></div></div>`).join('');
   el.querySelectorAll('[data-h]').forEach(b=>b.onclick=async()=>{const k=b.dataset.h;if(k==='all'){const all=await histAll();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(all)],{type:'application/json'}));a.download='hexmarch-matches-all.json';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),2000);return}
     const m=await histGet(b.dataset.id);if(!m)return;if(k==='x')histDownload(m);else if(k==='s')histShare(m);else if(k==='d'){if(confirm('Delete this match from the history?')){await histDel(m.id);histList(el)}}})}
 function showHistory(){const o=document.querySelector('#overlay');o.innerHTML=`<div class="modal"><h2>Match history</h2><div id="histList"><p class="hint">Loading…</p></div><div class="row" style="margin-top:14px"><button class="btn primary" id="closeM">Close</button></div></div>`;o.hidden=false;o.querySelector('#closeM').onclick=closeModal;histList(o.querySelector('#histList'))}
