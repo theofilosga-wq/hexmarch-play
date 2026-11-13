@@ -4870,7 +4870,7 @@ function storyRound(){const b=storyBeast();
   storyWaves();riftClaims();storySpawns();storyGodTurn();
   if(G.round===REALM.drakeAt)for(const R of G.rooms||[])if(R.state==='sleeping'&&R.enc==='drake'){const m=makeMonster('drake',R.c[0],R.c[1],R.id);m.tier=R.tier;const m0=occ();for(let d=0;d<6;d++){const a=R.c[0]+DIRS[d][0],c=R.c[1]+DIRS[d][1];if(passable(a,c)&&!m0.get(key(a,c))){m.size=2;m.dir=d;break}}
     if(unitAt(R.c[0],R.c[1]))continue;G.units.push(m);R.state='active';R.monMax=m.maxhp;if(!SIM){addLog(null,`An Elder Drake wakes on its hoard at the edge of the map: ${REALM_MON.drake.pts} points for the killing blow.`);vfx({k:'buff',at:R.c,col:'#ff9a3d',cam:1})}}
-  if(G.round===REALM.drakeAt&&!SIM)announce({k:'note',col:'#ff9a3d',t:'The Elder Drakes wake',s:`At the north and south edges. The killing blow: ${REALM_MON.drake.pts} points and your strongest fallen unit back. They strike only the last unit that hit them.`})}
+  if(G.round===REALM.drakeAt&&!SIM)announce({k:'note',moment:1,col:'#ff9a3d',t:'The Elder Drakes wake',s:`At the north and south edges. The killing blow: ${REALM_MON.drake.pts} points and your strongest fallen unit back. They strike only the last unit that hit them.`})}
 function storyBreachFor(q,r){let best=null,bd=1e9;for(const br of G.breaches||[]){const d=hd(q,r,br.c[0],br.c[1]);if(d<bd){bd=d;best=br}}return best}
 function storyWaves(){const b=storyBeast();if(!b)return;const i=REALM.waves.indexOf(G.round);if(i<0)return;G.waveN=i+1;
   if(RULES.SPAWN_KEEP){/* v180: one spawn per standing Keep, born at the breach facing it; the last wave's survivors stay at their siege */const K=(REALM.waveKinds||[1,2,3,4])[i]||4;let born=0;
@@ -5383,8 +5383,10 @@ function realmSlain(t,R,k){
   else if(t.spawnW===4){for(const v of G.units)if(v.owner===p.id&&v.kind!=='wall'){v.maxhp+=2;v.hp+=2}what=`every ${F.name} unit gains +2 max HP for good`}
   else if(t.spawnW){what='a piece of the Beast is destroyed'}
   else if(t.god){G.god=null;what='the Old God falls and will not return'}
+  else if(t.monster==='cow'){what=`a point for the ${F.name}; the Elder Drake of this lair will wake hungry`}/* v190 */
   else if(t.monster==='chest'){const free=RKEYS.filter(r=>!(G.relics||[]).some(y=>y.kind===r));const rk=free.length?free[Math.floor(wildsHash(`${G.round}|${k.id}|${t.id}`)*free.length)]:null;
     if(rk&&canCarry(k)&&!relicOf(k)){G.relics=G.relics||[];G.relics.push({kind:rk,q:null,r:null,carrier:k.id});what=`the ${k.name} takes the ${RELICS[rk].name} (${RELICS[rk].text})`}else what='the chest holds nothing this unit can carry'}
+  if(t.gold&&RULES.COW)what+=`, and takes its hoard of gold (+${REALM.cow.gold} point)`;/* v190 */
   addLog(p.id,`The ${k.name} slays the ${t.name}: ${what}.`);fx(k,t.monster==='warden'?'healed':'reward','#ffd766');
   announce({k:'note',col:F.color,t:R?`${F.name} clear the ${ROOM_NAMES[R.type]}`:`${F.name} slay the ${t.name}`,s:what.charAt(0).toUpperCase()+what.slice(1)+'.'});
   vfx({k:'buff',at:[k.q,k.r],col:F.color,cam:1});
@@ -5392,7 +5394,7 @@ function realmSlain(t,R,k){
   {const ch=REALM.charge[M.tier]-(t.halfCh||0);if(ch>0)addCharge(p.id,ch)}
   if(trk()){const O=tObj();if(O){O.realm=O.realm||[];O.realm.push({m:t.monster,pid:p.id,round:G.round})}}
   const ownGod=t.god&&kingOf()&&tm(kingOf().owner)===tm(p.id);/* v162b: no points for the King's side if an area effect of its own kills the Old God */
-  realmPts(p.id,ownGod?0:Math.max(0,(t.spawnW===2&&!RULES.SPAWN_PTS?0:M.pts)-(t.halfPts||0)),'camp'+M.tier,`${F.name} take the ${t.name}`)}
+  realmPts(p.id,ownGod?0:Math.max(0,(t.spawnW===2&&!RULES.SPAWN_PTS?0:M.pts)+(t.gold&&RULES.COW?REALM.cow.gold:0)-(t.halfPts||0)),'camp'+M.tier,`${F.name} take the ${t.name}`)}
 /* v117 (owner: "camps have 2 phases like some Elden Ring bosses, and drop half the reward at half HP and the rest when they die"): at half HP a tier-2/3 camp ENRAGES
    (REALM.phase2: +ATK, the Drake also strikes everyone next to it) and the side whose hit broke it takes half the reward at once: the Spring's heal and half its charge,
    the Drake's first point and half its charge. The killing blow takes the rest (the spawn site; the Drake's other points and the fallen unit back). */
@@ -5506,7 +5508,7 @@ function realmGoal(u){const p=G.players[u.owner];if(!p||u.summon||u.statue||u.ma
     if(ks.length){const sc=k=>wildsDist([k.q,k.r],u.q,u.r,u)*(RULES.SPAWN_KEEP?0.4+0.6*k.hp/k.maxhp:1);/* v180: a worn-down Keep counts as nearer */const k=ks.sort((x,y)=>sc(x)-sc(y))[0];return [k.q,k.r,6]}}
   const opts=[];{const g=newGoal(u,p);if(g)opts.push(g)}// v111 contracts
   for(const m of G.units){if(!m.monster||!alive(m))continue;if(RULES.BOT_CAMP&&u.at==='none')break;/* v173: a unit with no attack is not sent to a camp */const R=(G.rooms||[]).find(r=>r.id===m.room);if(!R)continue;
-    let w=R.type==='t1'?(inValley(p,m.q,m.r)?2.2:0.3):R.type==='heal'?(hurtN>=16?2.4:1.4):R.type==='ogre'?(G.round>=3?1.7:0.8):R.type==='t3'?(RULES.BOT_HUNT?(G.round>=REALM.drakeAt?2.6:0.3):(G.round>=6?1.4:0.3)):1.1;
+    let w=R.type==='t1'?(inValley(p,m.q,m.r)?2.2:0.3):R.type==='heal'?(hurtN>=16?2.4:1.4):R.type==='ogre'?(G.round>=3?1.7:0.8):R.type==='t3'?(RULES.BOT_HUNT?(G.round>=REALM.drakeAt?2.6:0.3):(G.round>=6?1.4:0.3)):R.type==='cow'?(G.round<REALM.drakeAt?1.8:0):1.1;/* v190 the Money Cow */
     if(u.leader)w*=0.6;opts.push([m.q,m.r,w])}
   for(const [q,r] of G.outposts||[]){const o=flagOwner(q,r);if(o!=null&&o!==p.id&&!inValley(G.players[o],q,r))opts.push([q,r,1.5])}
   if(kdOn()&&G.holds){const K=kingOf(),kt=K?tm(K.owner):null;for(const h of G.holds){const job=!u.leader&&u.id%3===1;/* a third of each army works the countryside */if(!h.open&&h.guard!=null){const m=byId(h.guard);if(m&&alive(m))opts.push([m.q,m.r,u.leader?0.8:job?4.5:1.7]);continue}if(!h.open)continue;if(h.claim){opts.push([h.q,h.r,u.leader?0.8:job?4.5:1.7]);continue}if(h.owner!=null&&tm(h.owner)===p.team)continue;let w=(job?4.2:1.8)+(kt===p.team?1.2:0)+(h.owner!=null&&tm(h.owner)===kt&&kt!==p.team?1.0:0);if(u.leader)w*=0.5;opts.push([h.q,h.r,w])}}/* v171 bots: take the holdings */
@@ -6656,8 +6658,42 @@ NEW_TWO.add('frostmerge');NEW_BOT.add('frostmerge');
   const near=(x,d)=>ctx.foes.filter(f=>f.owner>=0&&!inert(f)&&distUU(f,x)<=d).length;
   if(t.trait==='icestatue')return 1.5+Math.min(3,near(t,3))*1.1;
   const heal=Math.min(s.hp,Math.max(0,t.maxhp-t.hp));return 1.5+heal*0.5+(t.leader?2:0)+(t.at!=='none'&&near(t,4)?1.5:0)+(t.iced?0:1)}}
+/* v190 (owner 13 Nov 2026): NO TRUCE ("the rule that none can attack on the first turn is stupid"), and THE MONEY COW: a cow grazes in front of each Drake lair.
+   Slay it: 1 point. When the Elder Drake wakes (REALM.drakeAt): if the cow still lives, the Drake eats it and settles on a pool of gold, asleep until a unit hits
+   it, and its killer takes the gold too (+REALM.cow.gold point); if the cow is dead, the Drake wakes hungry and strikes every unit in its lair at once.
+   A Drake whose lair centre is occupied when it should wake now wakes at the next round start that finds it free (it used to never come). */
+RULES.TRUCE=0;RULES.COW=1;
+REALM.cow={hp:25,pts:1,gold:1};
+REALM_MON.cow={name:'Money Cow',icon:'paw',hp:REALM.cow.hp,atk:0,def:0,tier:0,pts:REALM.cow.pts};MONSTERS.cow=REALM_MON.cow;
+ROOM_NAMES.cow='Cow Pasture';ENC_NAMES.cow='the Money Cow';
+function cowSpot(R){const lair=new Set(R.cells||[]),occ0=new Set(G.units.flatMap(u=>cells(u).map(c=>key(c[0],c[1]))));let best=null,bv=1e9;
+  /* the lair sits on a mirror line between two bases: the cow stands on that same line, so both neighbours walk equally far to it */
+  const X0=(R.c[0]+R.c[1]/2)*1.732,Y0=1.5*R.c[1],onX=Math.abs(X0)<Math.abs(Y0);
+  for(const [q,r] of allCells()){const d=hd(q,r,R.c[0],R.c[1]);if(d<2||d>3||lair.has(key(q,r))||occ0.has(key(q,r))||!passable(q,r)||G.feat[key(q,r)])continue;const off=onX?Math.abs((q+r/2)*1.732):Math.abs(1.5*r);const v=off*100+d*10+hd(q,r,0,0)*0.1;if(v<bv){bv=v;best=[q,r]}}return best}
+function addCows(){if(!G.realm||!RULES.COW||!G.rooms)return;let first=null;for(const R of G.rooms.filter(x=>x.enc==='drake')){/* the first lair picks the spot, the others take its mirror image so the map stays fair */
+  let s=null;if(first){const lair=new Set(R.cells||[]);s=wildsMirrors(...first).find(([q,r])=>inR(q,r)&&hd(q,r,R.c[0],R.c[1])>=2&&hd(q,r,R.c[0],R.c[1])<=3&&!lair.has(key(q,r))&&passable(q,r)&&!G.feat[key(q,r)]&&!unitAt(q,r))||null}
+  if(!s)s=cowSpot(R);if(!s)continue;if(!first)first=s;const id='cow#'+R.id;
+  G.rooms.push({id,type:'cow',c:s,cells:[key(s[0],s[1])],ways:[],seen:true,enc:'cow',loot:null,state:'active',holdTeam:null,holdN:0,tier:0,lair:R.id});
+  const m=makeMonster('cow',s[0],s[1],id);m.tier=0;m.lair=R.id;G.units.push(m);G.rooms[G.rooms.length-1].monMax=m.maxhp}}
+{const g0=genRealm;genRealm=function(){const r=g0.apply(this,arguments);try{addCows()}catch(e){}return r}}
+function drakeLate(R){if(unitAt(R.c[0],R.c[1]))return null;const m=makeMonster('drake',R.c[0],R.c[1],R.id);m.tier=R.tier;const m0=occ();for(let d=0;d<6;d++){const a=R.c[0]+DIRS[d][0],c=R.c[1]+DIRS[d][1];if(passable(a,c)&&!m0.get(key(a,c))){m.size=2;m.dir=d;break}}
+  G.units.push(m);R.state='active';R.monMax=m.maxhp;if(!SIM)addLog(null,'An Elder Drake wakes late: its lair was blocked until now.');return m}
+function cowOutcome(R){const m=G.units.find(x=>x.monster==='drake'&&x.room===R.id&&alive(x));if(!m)return;const cow=G.units.find(x=>x.monster==='cow'&&x.lair===R.id&&alive(x));
+  if(cow){G.units.splice(G.units.indexOf(cow),1);const CR=G.rooms.find(x=>x.id===cow.room);if(CR)CR.state='done';m.gold=1;
+    if(!SIM){addLog(null,'The Elder Drake devours the Money Cow and settles on a pool of gold. It sleeps until a unit hits it.');vfx({k:'slash',from:[m.q,m.r],to:[cow.q,cow.r],col:'#ffd766'});vfx({k:'buff',at:[m.q,m.r],col:'#ffd766',cam:1});
+      announce({k:'note',moment:1,at:[m.q,m.r],col:'#ffd766',t:'The Drake devours the Money Cow',s:`It settles on a pool of gold and sleeps until someone hits it. Its killing blow: ${REALM_MON.drake.pts} points and the gold, +${REALM.cow.gold} more.`})}
+    return}
+  const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG='Other';CUR_NAME='Hungry Drake';const lair=new Set(R.cells||[]);let n=0,tot=0;
+  for(const v of G.units.slice()){if(v.kind==='wall'||!alive(v)||v===m)continue;if(!(lair.has(key(v.q,v.r))||distUU(m,v)<=1))continue;const d=Math.max(1,m.atk-effDef(v));n++;tot+=d;if(!SIM){addLog(v.owner,`The hungry Elder Drake strikes the ${v.name} for ${d}.`);vfx({k:'slash',from:[m.q,m.r],to:[v.q,v.r],col:'#ff7a1a'})}hurt(v,d,'#ff7a1a')}
+  [CUR_SRC,CUR_TAG,CUR_NAME]=o;
+  if(!SIM)announce({k:'note',moment:1,at:[m.q,m.r],col:'#ff7a1a',t:'The Drake wakes hungry',s:n?`The Money Cow is gone, so it strikes everyone in its lair: ${n} unit${n>1?'s':''}, ${tot} damage.`:'The Money Cow is gone. Its lair is empty, for now.'})}
+{const s0=storyRound;storyRound=function(){const before=new Set((G.rooms||[]).filter(R=>R.enc==='drake'&&R.state==='sleeping').map(R=>R.id));s0.apply(this,arguments);
+  if(!G.realm||!RULES.COW)return;for(const R of G.rooms||[]){if(R.enc!=='drake'||!before.has(R.id))continue;if(R.state==='sleeping'&&G.round>REALM.drakeAt)drakeLate(R);if(R.state==='active')cowOutcome(R)}}}
+{const h0=hurt;hurt=function(t,n,...a){const r=h0(t,n,...a);if(t&&t.gold&&!t.woke&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]){t.woke=1;if(!SIM){addLog(CUR_SRC.owner,`The ${CUR_SRC.name} wakes the Elder Drake on its gold.`);announce({k:'note',at:[t.q,t.r],col:'#ffd766',t:'The Drake wakes on its gold',s:`The ${FAC[G.players[CUR_SRC.owner].fac].name} hit it first. From now on it strikes back at the last unit that hit it.`})}}return r}}
+{const f0=realmGoalText;realmGoalText=function(m){if(m&&m.monster==='cow')return {todo:`slay the Money Cow (${m.maxhp} HP). It never strikes back.`,get:`${REALM.cow.pts} point for the killing blow. But think about the Drake of this lair: if the cow still lives when it wakes in round ${REALM.drakeAt}, the Drake eats it and sleeps on a pool of gold until someone hits it, and its killer takes the gold too (+${REALM.cow.gold} point). If the cow is dead, the Drake wakes hungry and strikes everyone in its lair at once.`};
+  const r=f0(m);if(r&&m&&m.monster==='drake'){/* the Drake of the story strikes only the last unit that hit it until it is enraged */if(STORY()&&!m.enraged)r.todo=r.todo.replace('At each round start it strikes every unit next to it, and the last unit that hit it if that unit is within 3.','At each round start it strikes the last unit that hit it, if that unit is within 3 (once enraged, also every unit next to it).');r.get=r.get.replace(/\b1 points\b/g,'1 point');if(m.gold){r.todo=(m.woke?'':'it sleeps on a pool of gold until a unit hits it. ')+(m.woke?r.todo:r.todo.charAt(0).toUpperCase()+r.todo.slice(1));r.get+=` It lies on the gold of the Money Cow it ate: +${REALM.cow.gold} point more for the killing blow.`}}return r}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v189 2026-11-13";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v190 2026-11-14";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -7074,7 +7110,7 @@ const LOOK={
   'Captive':{body:'slim',head:'none',naked:1}, // a thin bare man in a loincloth, chains on his wrists
   'Ghoul':{body:'slim',head:'skullhelm',naked:1}, // v66: a hunched, half-naked corpse risen from a cursed enemy
   'Freedman':{body:'armor',head:'helm',hand:'sword',off:'buckler',tabard:1,cape:1}, // plate armour, a tabard and cape in his army's colour, a sword and a round shield
-  'Dragon':{body:'dragon'},'Stone Guardian':{body:'golem'},'Vault Golem':{body:'golem',horns:1},'Wanderer':{body:'hound'},'Locked Crate':{body:'crate'},'Valley Brute':{body:'hound'},'Spring Warden':{body:'golem'},'Ogre Warlord':{body:'golem',horns:1},'Elder Drake':{body:'dragon'},'Ruin Chest':{body:'crate'},'Cracked Wall':{body:'cracked'}, // the Gargoyle asleep in grey stone on a plinth; its eyes light up as spells pour in
+  'Dragon':{body:'dragon'},'Stone Guardian':{body:'golem'},'Vault Golem':{body:'golem',horns:1},'Wanderer':{body:'hound'},'Locked Crate':{body:'crate'},'Valley Brute':{body:'hound'},'Spring Warden':{body:'golem'},'Ogre Warlord':{body:'golem',horns:1},'Elder Drake':{body:'dragon'},'Ruin Chest':{body:'crate'},'Money Cow':{body:'cow'},'Cracked Wall':{body:'cracked'}, // the Gargoyle asleep in grey stone on a plinth; its eyes light up as spells pour in
 };
 const FIG_ACCENT={fire:'#ffb347',ice:'#e6fbff',giants:'#7fa35a',gnomes:'#ffd35c',arcane:'#d9c8ff',warband:'#b98a4a',rift:'#9ff5de',curse:'#fff6b0',chrono:'#ffe08a',mage:'#c8ffd4'};
 const LAMP='#ffd9a8'; // the warm lamp light of gnome machines (turret muzzle, Tesla globe, flame pilot light)
@@ -7156,6 +7192,16 @@ function drawMini(u,sx,sy,sc,col,spent,face,c2){
     case 'golem':{sphere(0,0.34,0.36,mix(col,'#3a1a0a',0.35));const k=0.5+0.5*Math.sin(t*3);line([[-0.2,0.2],[-0.05,0.4],[0.12,0.25],[0.25,0.45]],0.03,`rgba(255,${150+60*k},60,.95)`);
       if(L.horns){line([[-0.28,0.3],[-0.12,0.12],[0.02,0.18]],0.025,`rgba(255,${150+60*k},60,.9)`);for(const s of [-1,1])path([[s*0.07,0.86],[s*0.3,1.06],[s*0.24,0.9],[s*0.14,0.8]],'#2a1414','#000000')} // Infernal: more lava cracks and two black horns
       sphere(0,0.78,0.15,mix(col,'#3a1a0a',0.3));circ(-0.05,0.8,0.03,'#ffd35c',false);circ(0.06,0.8,0.03,'#ffd35c',false);if(L.horns){glow(-0.05,0.8,0.02,'#ffb347');glow(0.06,0.8,0.02,'#ffb347')}headY=null;height=L.horns?1.05:0.95;break}
+    case 'cow':{ // v190 the Money Cow: a fat golden cow with white horns, a bell, coins at its hooves
+      const gd='#e9b949',gdk='#8a5e10',lt='#ffe9a8';
+      for(const [x,d] of [[-0.25,0.01],[-0.14,-0.01],[0.12,0.01],[0.23,-0.01]])line([[x,0.27],[x+d,0.02]],0.075,gdk);
+      {const gr=ctx.createLinearGradient(X(-0.4),0,X(0.32),0);gr.addColorStop(0,gdk);gr.addColorStop(0.45,gd);gr.addColorStop(1,lt);path([[-0.4,0.3],[-0.36,0.5],[-0.1,0.56],[0.24,0.54],[0.32,0.42],[0.26,0.26],[-0.3,0.24]],gr)}
+      line([[-0.38,0.46],[-0.48,0.36],[-0.47,0.28]],0.025,gdk);circ(-0.47,0.27,0.03,gdk,false);
+      circ(0.36,0.5,0.12,gd);path([[0.4,0.46],[0.52,0.44],[0.52,0.38],[0.42,0.36]],'#f3d8a2');circ(0.395,0.53,0.018,'#2a1a06',false);
+      for(const s2 of [0,0.1])line([[0.3+s2,0.6],[0.27+s2,0.7],[0.31+s2,0.74]],0.03,'#fff6dc');
+      circ(0.24,0.33,0.035,'#c98a1a');
+      for(const [x,y] of [[-0.18,0.03],[0.02,0.02],[0.3,0.04]])glow(x,y,0.028,'#ffd766');
+      break}
     case 'hound':{ // Hellhound: a lean black-red hound on four legs, a mane of flame along its back, glowing eyes, jaws lit from inside, a whip tail
       const hide=mix(col,'#140606',0.62),dk=mix(hide,'#000000',0.45),k=Math.sin(t*9+u.id);
       line([[-0.28,0.34],[-0.44,0.42],[-0.52,0.56]],0.03,dk);glow(-0.53,0.58,0.03,'#ff7a2a'); // tail with a burning tip
@@ -7847,6 +7893,10 @@ function buildFigure0(u,fac){
         add(G3.cyl(0.1,0.08,0.5,6),sk,s*0.32,B+0.28,0.25);add(G3.cyl(0.1,0.08,0.5,6),sk,s*0.32,B+0.28,-0.45)}
       add(G3.cone(0.16,1.1,6),sk,0,B+0.55,-1.0,-Math.PI/2+0.3);for(let i=0;i<5;i++)add(G3.cone(0.06,0.22,4),horn,0,B+1.12-i*0.05,0.2-i*0.25);
       wings3d(g,'hell',B+1.15,2.0,gMat('#4a1410',{side:THREE.DoubleSide}));g.userData.top=B+2.0;break}
+    case 'cow':{const gd=gMat('#e9b949',{metalness:0.55,roughness:0.35}),dk=gMat('#7a5212',{metalness:0.3,roughness:0.6}),hn=gMat('#fff4d6');/* v190 the Money Cow */
+      add(G3.cyl(0.3,0.3,0.85,10),gd,0,B+0.6,0,Math.PI/2);for(const [x,z] of [[-0.18,0.28],[0.18,0.28],[-0.18,-0.28],[0.18,-0.28]])add(G3.cyl(0.07,0.06,0.45,6),gd,x,B+0.22,z);
+      add(G3.ball(0.22,10),gd,0,B+0.8,0.52);add(G3.cyl(0.12,0.14,0.16,8),dk,0,B+0.72,0.68,Math.PI/2);for(const s2 of [-1,1]){add(G3.cone(0.05,0.24,6),hn,s2*0.16,B+1.0,0.5);add(G3.ball(0.035),M('eye'),s2*0.1,B+0.86,0.7)}
+      add(G3.ball(0.07,8),dk,0,B+0.5,0.44);add(G3.cyl(0.03,0.03,0.4,5),dk,0,B+0.68,-0.48,0.6);g.userData.top=B+1.15;break}
     case 'crate':{const wd=gMat('#7a5232'),band=gMat('#c9a24a',{metalness:0.7,roughness:0.35});add(G3.box(0.8,0.6,0.6),wd,0,B+0.3,0);add(G3.box(0.84,0.08,0.64),band,0,B+0.45,0);add(G3.box(0.1,0.62,0.64),band,0,B+0.3,0);add(G3.box(0.14,0.14,0.04),gMat('#3a3436'),0,B+0.38,0.32);g.userData.top=B+0.75;break}
     case 'cracked':{const st=gMat('#8f8778'),cr=gMat('#ffb070',{emissive:'#ff7a2a',emissiveIntensity:0.8});add(G3.cyl(0.9,0.95,1.0,6),st,0,B+0.4,0);
       for(let i=0;i<5;i++)add(G3.box(0.04,0.4+((i*7)%3)*0.15,0.04),cr,Math.cos(i*1.3)*0.78,B+0.4+(i%2)*0.2,Math.sin(i*1.3)*0.78,0,(i-2)*0.4);g.userData.top=B+1.0;break}
@@ -10196,7 +10246,7 @@ function deployPanel(){
     <div class="label" style="margin-top:12px">Leader talent</div>
     <div class="forms">${TALENTS[p.fac].map(t=>`<button class="btn sm ${p.talent===t.k?'primary':''}" data-tal="${t.k}" title="${t.text}">${t.name}</button>`).join('')}</div>
     <p class="hint" style="margin:6px 0 0">${talentInfo(p)?talentInfo(p).text:''}</p>
-    <p class="hint" style="margin:6px 0 0">Round 1 is a truce: nobody can attack or target enemies until round 2.</p>`;
+    ${RULES.TRUCE?`<p class="hint" style="margin:6px 0 0">Round ${RULES.TRUCE} is a truce: nobody can attack or target enemies until round ${RULES.TRUCE+1}.</p>`:''}`;
 }
 function renderUnitCard(){
   if(!$('#drawerClose')){const b=document.createElement('button');b.id='drawerClose';b.className='btn sm';b.textContent='✕ Close';b.onclick=()=>{document.body.classList.remove('drawer');if(lpInsp&&G){lpInsp=false;G.inspect=null;refresh()}};$('aside.side').prepend(b)}
@@ -10416,7 +10466,7 @@ function storyRules(){/* v170 (owner 10 Nov 2026: "make sure the rules are updat
   <li><b>One move and one action.</b> Each of your units may move once and act once per turn (a basic attack <i>or</i> an ability), in either order. An ability then <b>rests</b> for a few turns: the number on the unit. Some abilities are free (the Warlords’ orders, Move as One) and use neither the move nor the action.</li>
   <li><b>Your army grows.</b> You start with your Leader and a couple of units (a giant army starts with one). From round 2 you may call one unit a turn from your reserve (the bar above the board) into your base, or next to a camp you own. The fallen are gone for good.</li>
   <li><b>Your Ultimate</b> charges as you fight: kills, your own losses, camps, every ${REALM.dmgCharge} damage your side deals to monsters, every ${REALM.hurtCharge} damage your units take, a Rift Totem. When it is full, press ⚡ to cast it: one strong round. It costs ${ultCostText()}.</li>
-  <li>Round ${RULES.TRUCE} is a truce: nobody can attack.</li></ul>
+  ${RULES.TRUCE?`<li>Round ${RULES.TRUCE} is a truce: nobody can attack.</li>`:''}</ul>
   <h3>How you score</h3>
   <table style="border-collapse:collapse;width:100%;max-width:560px">
   ${row('Your King sits on the Throne at the start of your turn','1 point, every turn')}
@@ -10477,7 +10527,7 @@ function rulesTop0(){
   <li><b>Move</b> a unit: 1 AP. <b>Attack</b>: 2 AP. <b>Ability</b>: its listed cost, then it rests a few turns (the number on the unit).</li>
   <li>Each unit may move once and act once per turn (attack <i>or</i> ability), in either order. Unspent AP is lost.</li>
   <li>Your army's <b>Ultimate</b> charges as you fight (kills, losses, the Throne). When it is full, the ⚡ button casts it for ${RULES.ULT_COST} AP.</li>
-  <li>Round ${RULES.TRUCE} is a truce: nobody can attack.</li></ul>
+  ${RULES.TRUCE?`<li>Round ${RULES.TRUCE} is a truce: nobody can attack.</li>`:''}</ul>
   <h3>Reading the board</h3><ul>
   <li>Tap one of your units: <b>dots</b> show where it can walk. A <b style="color:#ff6b5b">red dot</b> means an enemy could hit it there next turn; a white dot is out of reach.</li>
   <li>Enemies you can hit right now are marked red, with the damage you will deal. Tap one to attack.</li>
@@ -10547,7 +10597,7 @@ function showRules(){
   <li>Each army has up to 10 slots (a giant takes 2) and one Leader. Boards: radius 8 for 2–3 players, 9 for 4–6.</li>
   <li><b>Secret deployment.</b> Before round 1, each side arranges its army in its own glowing zone, hidden from the others. Formations (${Object.values(FORMATIONS).map(f=>f.name).join(', ')}) place everything in one tap; then move units or swap two of them. Armies are revealed together.</li>
   <li><b>Leader talent.</b> Each Leader picks 1 of 3 talents for its army (in setup or during deployment). Tap a Leader to see it.</li>
-  <li><b>Truce.</b> In round ${RULES.TRUCE} nobody can attack or target enemies: it is for marching into position.</li></ul>
+  ${RULES.TRUCE?`<li><b>Truce.</b> In round ${RULES.TRUCE} nobody can attack or target enemies: it is for marching into position.</li>`:''}</ul>
   <h3>Ground: your colour spreads</h3><ul>
   <li>At the end of your turn, every hex your units stand on becomes your colour, and so does any neutral hex next to them.</li>
   <li>An enemy's hex only flips if you still hold it at the end of your next turn too (a dashed ring marks a claim in progress). A partner's ground stays theirs. The Heart and grey no man's land can't be claimed.</li>
@@ -10631,7 +10681,7 @@ function showRules(){
 function showQuickRealm(){const o=$('#overlay'),M=REALM_MON,row=(a,b)=>`<tr><th>${a}</th><td>${b}</td></tr>`,rip=rosterNames(RIPOSTE),hold=rosterNames(HOLD);
   o.innerHTML=`<div class="modal quick"><h2>Quick reference</h2>
   <table class="qr"><tbody>
-  ${row('Your turn','Every unit: one move and one action (a basic attack or an ability), in either order · call 1 unit a turn from your reserve, from round 2 · round '+RULES.TRUCE+' is a truce')}
+  ${row('Your turn','Every unit: one move and one action (a basic attack or an ability), in either order · call 1 unit a turn from your reserve, from round 2'+(RULES.TRUCE?' · round '+RULES.TRUCE+' is a truce':''))}
   ${row('Damage','ATK − DEF, at least 1 · a basic attack from right next to the target +'+REALM.near+', any other basic attack −'+REALM.far+' · an ability next to the target +'+REALM.near+', from 3+ hexes −'+REALM.far)}
   ${row('Moving','No armour: +1 move · 2+ DEF: −1 move · giants walk 4 and squeeze through 1-hex gaps for 2 moves · Pursuit: a melee unit that hit someone moves 1 further toward it next turn')}
   ${hold.length?row('Guards','Next to an enemy '+listWords(hold)+' you can only step 1 hex'):''}
@@ -10705,7 +10755,7 @@ function showQuick(){if(realmNow()){showQuickRealm();return}
   ${row('Curses','1: 1 · 2: 2 · 3: 3 · +1 each (Leaders take 1 less, 2 less with 4 or more players each on their own; at least 0.5)')}
   ${row('Slam','2 damage (Riftwalkers 3) · off edge / void / Void Trap = dead')}
   ${row('Void Trap','Riftwalkers: a hex that is a void for 3 of their turns · nothing can step on it · pushed, pulled or dragged in = dead')}
-  ${row('Truce','Round '+RULES.TRUCE+': no attacks or hostile abilities')}
+  ${RULES.TRUCE?row('Truce','Round '+RULES.TRUCE+': no attacks or hostile abilities'):''}
   ${row('Ground','End your turn on a hex: it and neutral neighbours become yours. Enemy hexes need 2 turn-ends. Most ground: +1 charge')}
   ${row('Leader talent','Pick 1 of 3 per army at the start')}
   </tbody></table>
@@ -10846,7 +10896,7 @@ function enginePill(p){const col=FAC[p.fac].color,mine=G.units.filter(u=>u.owner
 function drawChest(c,x,y,S,col,now){c.save();c.shadowColor=col;c.shadowBlur=S*0.6*(0.6+0.4*Math.sin((now||0)/240));const w=S*0.62,h=S*0.42;
   c.fillStyle='#6b4423';c.fillRect(x-w/2,y-h*0.25,w,h*0.75);c.beginPath();c.ellipse(x,y-h*0.25,w/2,h*0.42,0,Math.PI,0);c.fillStyle='#8a5a2e';c.fill();c.shadowBlur=0;
   c.strokeStyle=col;c.lineWidth=Math.max(1.5,S*0.08);c.strokeRect(x-w/2,y-h*0.25,w,h*0.75);c.fillStyle=col;c.fillRect(x-S*0.06,y-h*0.2,S*0.12,S*0.16);c.restore()}
-const MON_GLYPH={keep:'⌂',guardian:'♜',golem:'♜',ghoul:'☠',crate:'▣',dragon:'♆',wanderer:'☄',cracked:'▦',brute:'♞',warden:'✚',ogre:'♜',drake:'♆',chest:'▣'};
+const MON_GLYPH={keep:'⌂',guardian:'♜',golem:'♜',ghoul:'☠',crate:'▣',dragon:'♆',wanderer:'☄',cracked:'▦',brute:'♞',warden:'✚',ogre:'♜',drake:'♆',chest:'▣',cow:'¤'};
 function drawMonster2D(c,u,x,y,S,now){if(!(S>0))return;/* v46: a monster badge scaled to nothing or behind the camera crashed the frame (negative radius) */const r=S*0.78,crate=u.monster==='crate';c.save();c.shadowColor='#9a7bff';c.shadowBlur=crate?0:S*0.4*(0.6+0.4*Math.sin(now/300+u.id));
   c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=crate?'#6b4423':'#2a2140';c.fill();c.shadowBlur=0;c.lineWidth=Math.max(2,S*0.1);c.strokeStyle=crate?'#e8b84e':'#b9a2ff';c.stroke();
   c.fillStyle=crate?'#f6e2b0':'#e6dcff';c.font=`700 ${r*1.15}px 'Segoe UI Symbol','Noto Sans Symbols 2',serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(MON_GLYPH[u.monster]||'?',x,y+1);
@@ -11409,6 +11459,15 @@ function funAsk(o){try{if(!G||!G.players.some(p=>p.ctrl==='human'&&(!netOnline()
     if(typeof funSave==='function')funSave(a);box.querySelector('#funMsg').textContent=a.best||a.boring||a.frustrating?'Saved with this match. Thank you!':'Nothing written yet.'}}catch(e){}}
 /* v189: the soul counter shows the soul only when its ghost arrives; each counter carries its player so the ghost knows where to fly */
 {const e0=enginePill;enginePill=function(p){const q=p&&p.fac==='fire'&&typeof soulShown==='function'?Object.assign({},p,{souls:soulShown(p)}):p;const h=e0(q);return h?h.replace('<span class="sc eng','<span data-pid="'+p.id+'" class="sc eng'):h}}
+/* v190: the pool of gold under an Elder Drake that ate the Money Cow (both views) */
+function goldDraw(now){if(!G||!G.realm||!G.rooms)return;const sh=0.5+0.5*Math.sin(now/500);ctx.save();
+  for(const m of G.units){if(m.monster!=='drake'||!m.gold||!alive(m))continue;const R=G.rooms.find(x=>x.id===m.room);if(!R)continue;
+    for(const k of R.cells||[]){const [q,r]=k.split(',').map(Number);if(VIEW==='3d')polyPath(hexTop(...world(q,r),0.92,0.03));else{const [x,y]=px(q,r);hexPath(x,y,SZ*0.92)}
+      ctx.fillStyle=`rgba(255,200,60,${0.22+0.1*sh})`;ctx.fill();ctx.strokeStyle='rgba(255,215,102,.55)';ctx.lineWidth=1.5;ctx.stroke()}
+    for(let i=0;i<6;i++){const k=(R.cells||[])[i%(R.cells||[]).length];if(!k)continue;const [q,r]=k.split(',').map(Number);const [x,y]=VIEW==='3d'?proj(...world(q,r),0.1):px(q,r);const a=0.5+0.5*Math.sin(now/300+i*1.7);
+      ctx.globalAlpha=a;ctx.fillStyle='#fff3c0';ctx.beginPath();ctx.arc(x+Math.cos(i*2.1)*6,y+Math.sin(i*1.3)*4,2.2,0,7);ctx.fill();ctx.globalAlpha=1}}
+  ctx.restore()}
+{const s0=storyZoneDraw;storyZoneDraw=function(now){s0(now);try{goldDraw(now)}catch(e){}}}
 
 /* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"; rebuilt on the Realm in v170). "Play the tutorial" on the home page starts a short guided game:
    the Iron Warband (the introductory army) on the Realm, the other armies passing their turns. A coach box at the top explains one thing at a time and
