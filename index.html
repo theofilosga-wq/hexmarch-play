@@ -626,6 +626,15 @@ details.fac .facbody details.more[open]{display:block;margin-top:6px;color:var(-
 #tutBox.min h3{font-size:14px;margin:0}
 #tutBox.min .tut-k::after{content:" · tap to read"}
 body:not(.home) #histTopBtn{display:none}/* v170b: match history lives on the home page header only */
+/* v189 big moments, the soul counter bump, the end-of-game questions */
+#annBanner.moment{padding:16px 22px;border-width:2px;box-shadow:0 0 0 2px var(--annc,#e8b84e),0 0 38px var(--annc,#e8b84e)}
+#annBanner.moment .ann-t{font-size:clamp(22px,4.6vw,34px);letter-spacing:.02em}
+#annBanner.moment .ann-s{font-size:clamp(14px,2.6vw,17px)}
+#engRow .sc.eng.bump{animation:engBump .6s ease-out}
+@keyframes engBump{0%{transform:scale(1)}35%{transform:scale(1.25);box-shadow:0 0 16px #ff6a3d}100%{transform:scale(1)}}
+.funbox{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12);display:grid;gap:4px;text-align:left}
+.funbox label{font-size:13px;opacity:.8;margin-top:6px}.funbox input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:inherit}
+@media (prefers-reduced-motion:reduce){#engRow .sc.eng.bump{animation:none}}
 
 </style>
 
@@ -847,6 +856,8 @@ const ABIL={
   // v50 the Ice Queen's swing (owner's design): 2 frost marks on every enemy within 3; an enemy that is already frozen takes 4 damage instead.
   deepwinter:{name:'Deep Winter',cost:2,cd:3,aim:'self',shape:'aura',size:3,hits:'foe',special:'deepwinter',noShatter:1,bot:'deepwinter',
     desc:'Every enemy within 3 hexes of the Ice Queen is chilled and gets 2 frost marks (3 marks freeze). An enemy that is already frozen takes 4 damage minus DEF instead (and stays frozen).'},
+  frostmerge:{name:'Merge the Frozen',cost:1,cd:2,aim:'unit',hits:'ally',range:4,special:'frostmerge',bot:'frostmerge',free:1,/* v189 (owner): the army that gains strength from the frost */
+    desc:'The witch shapes her frozen army. Pick one of your Ice Statues within 4 hexes, then a unit standing next to it. Another Ice Statue: the two become one bigger Ice Golem (their HP added together, and it hits 1 harder; a Golem can take in more statues). A Frost Hold unit: the statue melts into it and the unit is infused with ice for good: it gains the statue\u2019s HP (max and current) and +1 ATK, and the first infusion makes its hits leave 1 more frost mark. Free: the Queen can still move and act this turn. Rests 2 turns.'},
   command:{name:'Command the Frozen',cost:2,cd:3,aim:'self',size:4,special:'command',noShatter:1,
     desc:'The witch commands her army: every Ice Statue of yours within 4 hexes of the Ice Queen strikes at once. Each one hits every enemy next to it for 3 damage minus DEF and leaves 2 frost marks. An enemy between several statues is struck by each. Needs at least one statue within 4.'},
   blizzardburst:{name:'Blizzard Burst',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',special:'burst',
@@ -1330,7 +1341,7 @@ const FAC={
     home:'Blue ground: any enemy that starts its turn on blue ground is chilled. Chilling or freezing an enemy turns its hex blue for 2 turns.',
     homeRealm:'Frozen ground: the water under and beside your units freezes for 2 turns and anyone may walk on it; chilling or freezing an enemy turns its hex blue for 2 turns. An enemy that ends its turn on frozen ground takes a frost mark. No home ground on the Realm.',homeChill:1,
     units:[
-      {name:'Ice Queen',icon:'crown',leader:1,hp:15,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:3,ab:'command',ab2:'deepwinter'},/* v161 (owner): Command the Frozen replaces Blizzard Burst */
+      {name:'Ice Queen',icon:'crown',leader:1,hp:15,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:3,ab:'command',ab2:'deepwinter',ab3:'frostmerge'},/* v161 (owner): Command the Frozen replaces Blizzard Burst */
       // v64 (owner 6 Oct 2026): the Frostlings leave; a splitting Frost Colossus and a third Hailcaller take their places
       {name:'Rime Mammoth',icon:'crystal',size:2,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'stampede'},/* v164 (owner: the marking passive was boring): Stampede replaces it */// v75 (brief): the front line; 1 frost mark on every enemy it walks past or stands beside at its turn start
       {name:'Frost Warden',icon:'crystal',n:2,hp:11,atk:2,def:1,shell:1,/* v183 (owner 12 Nov 2026: 'a one-hit shield instead of high DEF'): DEF 2 to 1 and a Shell */mov:2,mt:'walk',at:'melee',rng:1,ab:'icewall'},/* v164 (owner: 'I like frost wall as an ability to play the board and protect your queen') */
@@ -2777,8 +2788,8 @@ function soulCount(t){if(!RULES.ARCHDEMON||t.kind==='wall'||t.summon||t.statue||
   const fp=G.players.filter(p=>p.fac==='fire'&&p.alive&&(!p.demon||G.realm));/* v161: on the Realm the souls go on after the Archdemon */for(const p of fp){
     const mine=t.owner===p.id,byMe=CUR_SRC&&CUR_SRC.kind!=='wall'&&CUR_SRC.owner===p.id&&tm(t.owner)!==p.team;if(!mine&&!byMe)continue;
     if(!mine&&G.realm&&REALM.soulMode==='own')continue;// v75 test switch: souls only from the Court's own dead
-    let ns=hasTrait(t,'wisp')?2:(t.sacrificed&&G.realm?REALM.sacSouls:1);if(!mine&&talent(p,'soultithe'))ns=Math.max(ns,2);/* v77 Soul Tithe */if(mine&&hasTrait(t,'rebirth')&&!t.fell&&solid(t.q,t.r))continue;/* v77: a Phoenix that will leave an egg is no soul */p.souls=(p.souls||0)+ns;soulFires(p,p.souls-ns,p.souls);if(p.demon)continue;if(mine)p.soulsLost=(p.soulsLost||0)+ns;else p.soulsKilled=(p.soulsKilled||0)+ns;
-    if(!SIM&&!p.demon){const nd=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;fx(t,`+${ns} soul${ns>1?'s':''}  ${Math.min(p.souls,nd)}/${nd}`,'#ff6a3d');vfx({k:'soul',at:[t.q,t.r],n:p.souls,need:nd,col:'#ff4a3d'});if(nd&&p.souls<nd&&nd-p.souls<=2){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall');if(L)fx(L,`the pit hungers: ${nd-p.souls} more`,'#ff4a3d')}}/* v89 (owner): a very visible souls counter */
+    let ns=hasTrait(t,'wisp')?2:(t.sacrificed&&G.realm?REALM.sacSouls:1);if(!mine&&talent(p,'soultithe'))ns=Math.max(ns,2);/* v77 Soul Tithe */if(mine&&hasTrait(t,'rebirth')&&!t.fell&&solid(t.q,t.r))continue;/* v77: a Phoenix that will leave an egg is no soul */p.souls=(p.souls||0)+ns;soulFires(p,p.souls-ns,p.souls);if(p.demon){if(!SIM){const D=G.units.find(x=>x.owner===p.id&&x.name==='Archdemon'&&x.kind!=='wall'&&alive(x));vfx({k:'soul',at:[t.q,t.r],n:p.souls,need:0,ns,pid:p.id,to:D?[D.q,D.r]:null,col:'#ff4a3d'})}/* v189: every soul shows, and a soul past the tenth flies into the Archdemon */continue}if(mine)p.soulsLost=(p.soulsLost||0)+ns;else p.soulsKilled=(p.soulsKilled||0)+ns;
+    if(!SIM&&!p.demon){const nd=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;fx(t,`+${ns} soul${ns>1?'s':''}  ${Math.min(p.souls,nd)}/${nd}`,'#ff6a3d');vfx({k:'soul',at:[t.q,t.r],n:p.souls,need:nd,ns,pid:p.id,col:'#ff4a3d'});if(nd&&p.souls<nd&&nd-p.souls<=2){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall');if(L)fx(L,`the pit hungers: ${nd-p.souls} more`,'#ff4a3d')}}/* v89 (owner): a very visible souls counter */
     const need=G.realm?REALM.demonSouls:RULES.DEMON_SOULS;const ready=need?p.souls>=need:(p.soulsLost||0)>=RULES.DEMON_LOST&&(p.soulsKilled||0)>=RULES.DEMON_KILLS;
     if(ready){const L=G.units.find(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&u!==t);const gate=talent(p,'hellsgate')&&byMe?[CUR_SRC.q,CUR_SRC.r]:null;G.demonDue=G.demonDue||[];G.demonDue.push({pid:p.id,at:gate||(L?[L.q,L.r]:[t.q,t.r])})}}}
 /* v100 (owner: "I went to 10 souls and the Archdemon was not summoned"): every soul gain checks the pit; a turn-start safety net catches anything missed */
@@ -2912,7 +2923,7 @@ function faithGain(p,n){if(!p||!(n>0))return;if(SIM){if((p.fallenAt||[]).length)
   if(p.faith<need)return;if(RULES.FAITH_FALLEN&&p.faithRound===G.round){p.faith=need;return}/* v94: one resurrection per round; the rest of the Faith waits */const fa=(p.fallenAt||[]).slice();let f=null;for(let i=fa.length-1;i>=0;i--){const dd=FAC[p.fac].units.find(x=>x.name===fa[i].name);if(dd&&dd.trait==='reliquary')continue;/* v163b: Faith raises priests, not the shrine */f=fa.splice(i,1)[0];break}if(!f)return;const d=FAC[p.fac].units.find(x=>x.name===f.name);if(!d)return;
   const u=makeUnit(p,d);const m=occ();const c=allCells().filter(([q,r])=>passable(q,r)&&!m.get(key(q,r))).sort((a,b)=>hd(a[0],a[1],f.q,f.r)-hd(b[0],b[1],f.q,f.r))[0];if(!c)return;
   p.faith-=need;p.faithN=(p.faithN||0)+1;p.faithRound=G.round;p.fallenAt=fa;const i=(p.fallen||[]).indexOf(f.name);if(i>=0)p.fallen.splice(i,1);u.q=c[0];u.r=c[1];u.moved=true;u.acted=true;if(f.leader){u.leader=true;p.leaderless=false}G.units.push(u);tStat(u);
-  addLog(p.id,`Faith (${need}) brings the ${u.name} back from the dead!`);fx(u,'risen','#ffe9a8');vfx({k:'buff',at:c,col:'#ffe9a8',cam:1});announce({k:'note',col:FAC.arcane.color,t:`Faith raises the ${u.name}`,s:`The Circle's healing brought it back where it fell. Next resurrection at ${REALM.faith[p.faithN]!=null?REALM.faith[p.faithN]:need+REALM.faithStep} Faith.`});
+  addLog(p.id,`Faith (${need}) brings the ${u.name} back from the dead!`);fx(u,'risen','#ffe9a8');vfx({k:'rise',at:c,col:'#ffe9a8',cam:1});announce({k:'note',moment:1,at:c,col:FAC.arcane.color,t:`Faith raises the ${u.name}`,s:`The Circle's healing brought it back where it fell. Next resurrection at ${REALM.faith[p.faithN]!=null?REALM.faith[p.faithN]:need+REALM.faithStep} Faith.`});
   if(trk()){const e=tFx('arcane','','Faith resurrections');if(e){e.uses++;e.round=G.round}}}
 function warbandLast(u){if(!u||!G.players[u.owner]||G.players[u.owner].fac!=='warband')return false;const p=G.players[u.owner];if((p.reserve||[]).length)return false;return !G.units.some(v=>v!==u&&v.owner===u.owner&&v.kind!=='wall'&&!v.summon&&alive(v))}
 /* v162 (owner): the Warband's off switch: with both the Warlord and the Captain dead its soldiers gain no more XP */
@@ -3058,7 +3069,7 @@ function hurt(t,n,col,tick){
   {const is=hostile&&!tick&&t.hp>0&&CUR_SRC&&CUR_SRC.kind!=='wall'&&G.players[CUR_SRC.owner]&&G.players[CUR_SRC.owner].fac==='ice'&&(CUR_TAG==='Basic'||CUR_TAG==='Abil')&&(t.kind!=='wall'||wildsCreature(t))?CUR_SRC:null;
     if(is){if(G.realm&&t.st.frozen>0&&!t.st.stun){if(!SIM&&trk()){const e=tFx('ice','','Deep freeze (+'+REALM.shatterPlus+' per hit, stays frozen)');if(e)e.uses++}
       if(utal(is,'permafrost')&&!t.st.pf&&t.st.frzLost){t.st.pf=1;t.st.frzLost=0;fx(t,'permafrost','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Permafrost (talent): frozen 1 turn longer');if(e)e.uses++}}}/* v77: the first Frost hit on a frozen enemy keeps it frozen through one more of its turns */else if(RULES.SHATTER&&t.st.frozen>0&&!t.st.stun){t.st.frozen=0;t.st.frzBy=null;t.st.frzLost=0;t.st.fimm=1;t.st.chill=Math.max(t.st.chill||0,1);fx(t,'shattered','#bfefff');if(!SIM&&trk()){const e=tFx('ice','','Shatter (double damage, thawed)');if(e)e.uses++}}
-      else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,(hasTrait(is,'deepcold')||(is.trait==='icestatue'&&queenNear(is))?2:1)+(is.st&&is.st.icecart?1:0));if(is.st&&is.st.icecart){is.st.icecart=0;if(!SIM)fx(t,'ice block: +1 mark','#bfefff')}}}}// v61: the Glacier Knight's Deep Cold leaves 2 marks
+      else{if(RULES.SHATTER)chillT(t,2);frostMark(is,t,(hasTrait(is,'deepcold')||(is.trait==='icestatue'&&queenNear(is))?2:1)+(is.st&&is.st.icecart?1:0)+(is.iced?1:0));/* v189: infused with ice */if(is.st&&is.st.icecart){is.st.icecart=0;if(!SIM)fx(t,'ice block: +1 mark','#bfefff')}}}}// v61: the Glacier Knight's Deep Cold leaves 2 marks
   if(t.hp>0&&rsrc){if(hasRelic(rsrc,'ash')){sear(rsrc,t);relicUse(rsrc,'ash')}}
   if(t.hp<0)shadowOver(t,-t.hp);/* v132 overflowing dark */
   if(t.hp<=0)kill(t);
@@ -3814,7 +3825,7 @@ function useAbility(u,k,q,r,dest){
     case 'deepwinter':{const vs=G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(u.owner)&&!v.statue&&!v.egg:wildsCreature(v)&&isFoe(u,v))&&distUU(u,v)<=A.size);
       if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[u.q,u.r],to:[u.q,u.r],cells:ringCells().filter(([a,b])=>hd(a,b,u.q,u.r)<=A.size).slice(0,40),col:F.color});
       for(const v of vs){if(!alive(v))continue;if(v.st.frozen>0&&!v.st.stun)hurt(v,Math.max(1,4-effDef(v)),F.color);else{chillT(v,2);frostMark(u,v,2)}}break}
-    case 'command':{const ss=commandStatues(u);let n=0;const hl2=[];for(const s of ss){s.hitLog=hl2;n+=statueBurst(s);delete s.hitLog}if(!SIM)addLog(u.owner,`Command the Frozen: ${ss.length} statue${ss.length===1?'':'s'} strike, ${n} hit${n===1?'':'s'}${hl2.length?': '+hl2.join(', '):''}.`);break}
+    case 'command':{const ss=commandStatues(u);let n=0;const hl2=[];for(const s of ss){s.hitLog=hl2;n+=statueBurst(s);delete s.hitLog}if(!SIM){addLog(u.owner,`Command the Frozen: ${ss.length} statue${ss.length===1?'':'s'} strike, ${n} hit${n===1?'':'s'}${hl2.length?': '+hl2.join(', '):''}.`);vfx({k:'frostcmd',from:[u.q,u.r],at:ss.map(s=>[s.q,s.r]),col:'#bfefff',cam:1});announce({k:'note',moment:1,at:[u.q,u.r],col:FAC.ice.color,t:'Command the Frozen',s:`${ss.length} statue${ss.length===1?'':'s'} of the witch strike as one: ${n} hit${n===1?'':'s'}.`})}break}
     case 'burst':{const area=shapeCells(u,k,q,r);vfx({k:'ab',ab:k,shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:F.color});
       for(const t of areaUnits(u,A,area)){const d=t.st.frozen>0?3:t.st.chill>0?2:1,hp0=t.hp;hurt(t,d,F.color);if(d>1)tBonus(u,'Blizzard Burst (cold bonus)',d-1,hp0);if(alive(t))chillT(t,2)}break}
     // Chain Hook: drag a one-hex enemy to the free hex beside the Rampart nearest to it, then 2 damage ignoring DEF.
@@ -4006,7 +4017,7 @@ function useAbility(u,k,q,r,dest){
     case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
       for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
-    case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':newUse(u,k,A,tgt,q,r,dest);break;// v111
+    case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
@@ -4084,7 +4095,7 @@ function ultEffect(p){
       for(const k of burning){const v=m.get(k);if(v&&v.kind!=='wall'&&alive(v)&&tm(v.owner)!==p.team&&!v.statue&&!v.egg){hurt(v,REALM.wildErupt||3,F.color);hit++}/* v184b: 4 (owner: buff Wildfire a bit) */}
       const spread=new Set();for(const k of burning){const [q,r]=k.split(',').map(Number);for(const [a,b] of DIRS){const kk=key(q+a,r+b);if(solid(q+a,r+b)&&!isHeart(q+a,r+b)&&!G.paint[kk])spread.add(kk)}}
       for(const kk of spread)G.paint[kk]={fac:'fire',ttl:2,owner:p.id};
-      if(!SIM&&trk()){const e=tFx('fire','','Wildfire: ground set ablaze (hexes)');if(e)e.uses+=spread.size}addLog(p.id,`Wildfire: ${burning.length} burning hex${burning.length===1?'':'es'} erupt (${hit} hit) and the fire spreads to ${spread.size} more.`);break}// v77 (owner): the fire you made erupts and spreads; nothing burns, nothing happens
+      if(!SIM){vfx({k:'wildwave',from:src?[src.q,src.r]:[0,0],cells:burning.slice(0,500),spread:[...spread].slice(0,500),col:'#ff6a1a',cam:1})}/* v189: the big moment */if(!SIM&&trk()){const e=tFx('fire','','Wildfire: ground set ablaze (hexes)');if(e)e.uses+=spread.size}addLog(p.id,`Wildfire: ${burning.length} burning hex${burning.length===1?'':'es'} erupt (${hit} hit) and the fire spreads to ${spread.size} more.`);break}// v77 (owner): the fire you made erupts and spreads; nothing burns, nothing happens
     case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,2);if(ice.some(i=>distUU(i,v)<=1))freezeT(v,false)}break}/* v161 (owner: a little strong): only enemies NEXT TO a Frost unit freeze (was within 2) */
     case 'giants':{/* v129 (owner): all giants jump and land; damage per giant in range, double under two */const gs=mine().filter(x=>alive(x)&&x.size===2);if(sonsOn()&&gs.length){const cl=[];for(const x of gs)for(const [a,b] of ringCells())if(distUC(x,a,b)<=1)cl.push([a,b]);sonsBreak(gs[0],cl)}/* v167: the quake breaks the ground round every giant */const R=RULES.QUAKE_R+(talent(p,'avalanche')?1:0);for(const v of foes()){const near=gs.filter(x=>distUU(x,v)<=R).sort((a,b)=>distUU(a,v)-distUU(b,v));if(!near.length)continue;const n=near.length;/* v129b (owner): no cap, no armour: 2 per giant */hurt(v,RULES.QUAKE_DMG*n,F.color);if(n>1&&!SIM)fx(v,`under ${n} giants`,'#d9a45b');
       if(alive(v)){const g=near[0];const [cq,cr]=nearCell(g,v);pushUnit(v,dirTo(cq,cr,v.q,v.r),1,g)}}break}
@@ -4135,7 +4146,7 @@ function useUlt(team){
     for(const v of G.units)if(v.kind!=='wall'&&(v.owner===p.id||v.owner===q.id)&&v.hp<v.maxhp)healUnit(v,2,'#5fd68e','Team Ultimate bond')
   }else{
     addLog(p.id,`${F.name} unleashes ${ULTS[p.fac].name}!`);
-    vfx({k:'ult',fac:p.fac,col:F.color,name:ULTS[p.fac].name});announce({k:'ult',fac:p.fac,name:ULTS[p.fac].name});
+    vfx({k:'ult',fac:p.fac,col:F.color,name:ULTS[p.fac].name});{const L0=G.units.find(v=>v.owner===p.id&&v.leader&&v.kind!=='wall'&&alive(v))||G.units.find(v=>v.owner===p.id&&v.kind!=='wall'&&alive(v));announce({k:'ult',fac:p.fac,name:ULTS[p.fac].name,at:L0?[L0.q,L0.r]:null})}
     ultEffect(p);
   }
   afterAction();
@@ -6614,8 +6625,39 @@ function soulFeed(p,before,after){if(!G||!G.realm||!p||!REALM.demonSoulHp||p.fac
   if(d){d.maxhp+=add;d.hp+=add;if(!SIM){fx(d,'+'+add+' HP','#ff6a3d');addLog(p.id,`${n>1?n+' souls feed':'A soul feeds'} the Archdemon: +${add} max HP (${Math.round(d.hp)} of ${d.maxhp}).`);if(trk()){const e=tFx('fire','Archdemon','Souls past the tenth: HP');if(e){e.uses+=n;e.heal=(e.heal||0)+add}}}}
   else if(!p.demon)p.demonHpDue=(p.demonHpDue||0)+add}
 {const d0=effDef;effDef=function(u){const d=d0(u);return G&&G.realm&&RULES.DEF_CAP?Math.min(RULES.DEF_CAP,d):d}}
+/* ===== v189 BIG MOMENTS AND THE ARMY OF THE FROZEN (owner 13 Nov 2026, after "fun is the goal": "when you get a kill with the Ember Court a ghost appears over
+   the dead body, fading, then a soul is added to the counter; big moments Wildfire, Archdemon. Frost: give the Queen the ability to merge ice statues with
+   other units or with another statue: it's the army that gains strength from the frost; maybe special forms for the units infused with ice"; "Build").
+   MERGE THE FROZEN (RULES.FROST_MERGE; the Ice Queen's third ability, data ab3, kept like an inherited ability with its own rest in u.cdx): free, rests 2;
+   pick one of her Ice Statues within 4, then a unit next to it. Statue + statue = one Ice Golem (HP and max HP added, ATK = the higher + 1, u.golem = how
+   many statues inside, still a statue for Command the Frozen and the Queen's aura). Statue + Frost unit = the unit is infused for good (u.iced = how many):
+   + the statue's HP to max and current HP, +1 ATK, and its hits leave 1 more frost mark (once). Tracked as fx 'Merge the Frozen' (uses, heal = HP passed on). */
+RULES.FROST_MERGE=1;
+{const m0=makeUnit;makeUnit=function(p,d){const u=m0(p,d);if(d&&d.ab3&&RULES.FROST_MERGE&&ABIL[d.ab3]){u.inh=(u.inh||[]).concat([d.ab3]);u.cdx=Object.assign({},u.cdx||{});u.cdx[d.ab3]=0}return u}}
+const isStatueOf=(s,u)=>!!s&&s.trait==='icestatue'&&s.owner===u.owner&&alive(s)&&s.kind!=='wall';
+function mergePartners(u,s){if(!isStatueOf(s,u))return [];return G.units.filter(v=>v!==s&&v.owner===u.owner&&v.kind!=='wall'&&alive(v)&&!v.egg&&!(v.summon&&v.trait!=='icestatue')&&distUU(v,s)===1)}
+function mergeStatues(u){return G.units.filter(s=>isStatueOf(s,u)&&distUU(u,s)<=(ABIL.frostmerge.range||4)&&mergePartners(u,s).length)}
+function frostMerge(u,s,dest){if(!s||!dest)return false;const t=unitAt(dest.q,dest.r);if(!t||!mergePartners(u,s).includes(t))return false;const gain=Math.max(1,Math.round(s.hp));
+  if(t.trait==='icestatue'){const n=(t.golem||1)+(s.golem||1);t.maxhp+=s.maxhp;t.hp+=s.hp;t.atk=Math.max(t.atk,s.atk)+1;t.golem=n;if(t.name!=='Ice Golem')t.name='Ice Golem'}
+  else{t.maxhp+=gain;t.hp+=gain;t.atk+=1;t.iced=(t.iced||0)+1}
+  const i=G.units.indexOf(s);if(i>=0)G.units.splice(i,1);
+  if(!SIM){const st=tStat(s);if(st){st.died=G.round;st.diedBy='merged'}fx(t,t.trait==='icestatue'?`Ice Golem x${t.golem}`:'infused with ice','#bfefff');vfx({k:'merge',from:[s.q,s.r],at:[t.q,t.r],col:'#bfefff',golem:t.trait==='icestatue'?t.golem:0});
+    addLog(u.owner,t.trait==='icestatue'?`The Ice Queen merges two statues: an Ice Golem of ${t.golem} rises (${Math.round(t.hp)} HP, ${t.atk} ATK).`:`The Ice Queen pours a statue into the ${t.name}: infused with ice, +${gain} HP and +1 ATK${t.iced===1?', and its hits leave 1 more frost mark':''}.`);
+    if(trk()){const e=tFx('ice','Ice Queen','Merge the Frozen');if(e){e.uses++;e.heal=(e.heal||0)+gain}}}
+  return true}
+NEW_TWO.add('frostmerge');NEW_BOT.add('frostmerge');
+{const f0=newUse;newUse=function(u,k,A,tgt,q,r,dest){if(A.special==='frostmerge'){frostMerge(u,tgt||unitAt(q,r),dest);return}return f0(u,k,A,tgt,q,r,dest)}}
+{const f0=newCan;newCan=function(u,k){if(ABIL[k]&&ABIL[k].special==='frostmerge')return RULES.FROST_MERGE&&!!G.realm&&mergeStatues(u).length>0;return f0(u,k)}}
+{const f0=newAimOk;newAimOk=function(u,A,v){if(A.special==='frostmerge')return isStatueOf(v,u)&&mergePartners(u,v).length>0;return f0(u,A,v)}}
+{const f0=newTwoDest;newTwoDest=function(u,k,t){if(ABIL[k].special==='frostmerge')return mergePartners(u,t).map(v=>[v.q,v.r]);return f0(u,k,t)}}
+{const f0=newBotTwo;newBotTwo=function(u,k,ctx){if(ABIL[k].special==='frostmerge'){const out=[];for(const s of mergeStatues(u))for(const v of mergePartners(u,s))out.push([s.q,s.r,v.q,v.r]);return out}return f0(u,k,ctx)}}
+/* bots: pour a statue into a wounded or fighting unit, or make a Golem near the enemy; keep a lone statue that is already striking */
+{const f0=newHeur;newHeur=function(u,k,q,r,ctx,dest){const A=ABIL[k];if(A.special!=='frostmerge')return f0(u,k,q,r,ctx,dest);const s=unitAt(q,r),t=dest?unitAt(dest.q,dest.r):null;if(!s||!t)return 0;
+  const near=(x,d)=>ctx.foes.filter(f=>f.owner>=0&&!inert(f)&&distUU(f,x)<=d).length;
+  if(t.trait==='icestatue')return 1.5+Math.min(3,near(t,3))*1.1;
+  const heal=Math.min(s.hp,Math.max(0,t.maxhp-t.hp));return 1.5+heal*0.5+(t.leader?2:0)+(t.at!=='none'&&near(t,4)?1.5:0)+(t.iced?0:1)}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v188 2026-11-13";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v189 2026-11-13";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -7353,6 +7395,7 @@ function tokenPath(fac,x,y,r){
     default:ctx.arc(x,y,r,0,7);
   }
 }
+if(LOOK['Ice Statue']&&!LOOK['Ice Golem'])LOOK['Ice Golem']=LOOK['Ice Statue'];/* v189: merged statues */
 
 /* Hexmarch real 3D (v35, owner 1 Oct 2026: "do the full visual update"). A WebGL scene (three.js r128, loaded from a CDN) is drawn UNDER the
    tabletop canvas with exactly the same camera as view3d.js proj(): an orthographic, rotated and tilted view, built as a hand-made projection
@@ -7937,8 +7980,8 @@ function glFrame(){
 // place (and if needed build) one unit's miniature; returns the world height of its head top
 function glUnit(u,pts,x,z,now,spent){
   const fac=u.owner>=0&&G.players[u.owner]?G.players[u.owner].fac:(u.monster||u.beast)?'monster':'warband';
-  const k=u.id+'|'+u.name+'|'+fac+'|'+(u.suitHp>0?u.suitItem:'')+(u.shadow?'|shadow':'');let fig=GL.figs.get(k);
-  if(!fig){fig=buildFigure(u,fac);if(u.shadow){fig.userData.shadow=1;glShadowTint(fig)}fig.userData.k=k;fig.userData.ph=(u.id*1.7)%6.28;GL.figs.set(k,fig);GL.scene.add(fig);glNoCull(fig)}
+  const k=u.id+'|'+u.name+'|'+fac+'|'+(u.suitHp>0?u.suitItem:'')+(u.shadow?'|shadow':'')+(u.iced?'|ice':'');let fig=GL.figs.get(k);
+  if(!fig){fig=buildFigure(u,fac);if(u.shadow){fig.userData.shadow=1;glShadowTint(fig)}if(u.iced)glIceTint(fig);/* v189 */fig.userData.k=k;fig.userData.ph=(u.id*1.7)%6.28;GL.figs.set(k,fig);GL.scene.add(fig);glNoCull(fig)}
   GL.seen.add(k);const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
   fig.position.set(x,0,z);
   if(fig.userData.giant&&pts.length===2){// the hex axis gives the stance; the giant turns its chest toward the viewer
@@ -8012,6 +8055,9 @@ function glPreview(holder,d,fac,big){const R=pvGL();if(!R||!holder)return false;
   glPreviewFrame(true);return true}
 function glPreviewFrame(still){if(!PV3.R||!PV3.fig)return;const t=(performance.now()-PV3.t0)/1000;
   PV3.turn.rotation.y=still?0.35:0.35+t*0.45;glAnimFig(PV3.fig,t);PV3.R.render(PV3.scene,PV3.cam)}
+/* v189: a unit infused with ice turns pale and frosty (its own colours kept underneath); the Ice Golem is the Ice Statue, bigger */
+function glIceTint(fig){const ice=new THREE.Color('#cfefff');fig.traverse(o=>{if(!o.isMesh||!o.material||o.userData.base)return;const mats=Array.isArray(o.material)?o.material:[o.material];const out=mats.map(mt=>{const m=mt.clone();if(m.color)m.color.lerp(ice,0.5);if(m.emissive){m.emissive.set('#3aa6e0');m.emissiveIntensity=0.35}m.needsUpdate=true;return m});o.material=Array.isArray(o.material)?out:out[0]})}
+if(MODELS['Ice Statue']&&!MODELS['Ice Golem'])MODELS['Ice Golem']=Object.assign({},MODELS['Ice Statue'],{h:(MODELS['Ice Statue'].h||2.4)*1.4});
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
@@ -8394,7 +8440,38 @@ function drawVFX(now){if(typeof glFxTick==='function'){try{glFxTick(now);glAmbie
         if(ev.name){ctx.font=`800 ${Math.max(13,Math.min(SW()/26,24))}px Oxanium, sans-serif`;const s2=`${ev.name}${ev.pts?' +'+ev.pts+' points':''} +${RULES.BEAST_CHARGE} charge`;ctx.strokeText(s2,SX(),SY(0.4)+Math.max(26,Math.min(SW()/12,54))-t*20);ctx.fillStyle='#ffffff';ctx.fillText(s2,SX(),SY(0.4)+Math.max(26,Math.min(SW()/12,54))-t*20)}
         ctx.restore();break}
       case 'buff':{dur=600;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.5);sparks(x,y,8,U*0.6,ev.col||'#9ff0c0',t,1);break}
-      case 'soul':{// v89: a soul rises from the dead unit toward the pit, with the Ember Court's count in big letters
+      case 'soul':{// v189 (owner: "a ghost appears over the dead body, fading, and then a soul is added to the counter"): the ghost rises, then flies into the
+        // soul counter above the board (or into the Archdemon, once it walks), and only then the counter ticks
+        dur=1700;const t=el/dur;if(ev.pid!=null&&!a.held){a.held=1;SOUL_SHOW[ev.pid]={n:Math.max(0,(ev.n||0)-(ev.ns||1)),until:a.t0+dur+60};try{if(typeof renderScoreStrip==='function')renderScoreStrip()}catch(e){}}
+        const [bx,by]=vPos(ev.at[0],ev.at[1],0.5);let tx=bx,ty=by-U*3;
+        if(ev.to){[tx,ty]=vPos(ev.to[0],ev.to[1],1.1)}else{const pe=document.querySelector('#engRow [data-pid="'+ev.pid+'"]');if(pe&&typeof cvRect==='function'){const pr=pe.getBoundingClientRect(),cr=cvRect();tx=pr.left+pr.width/2-cr.left;ty=pr.top+pr.height/2-cr.top}}
+        let gx,gy,gs,ga;if(t<0.45){const k=t/0.45;gx=bx+Math.sin(el/140)*U*0.08;gy=by-k*U*1.3;gs=U*(0.35+0.25*k);ga=Math.min(1,k*3)*0.9}
+        else{const k=(t-0.45)/0.55,e=k*k*(3-2*k);const sx=bx,sy=by-U*1.3;gx=sx+(tx-sx)*e+Math.sin(k*Math.PI)*U*0.8;gy=sy+(ty-sy)*e-Math.sin(k*Math.PI)*U*1.2;gs=U*0.6*(1-0.75*k);ga=0.9-0.4*k;
+          sparks(gx,gy,6,U*0.35,'#ff8a3d',Math.min(1,k),el/90)}
+        soulGhost(gx,gy,gs,ga,el);
+        if(t<0.5){const txt=ev.need?`${Math.min(ev.n,ev.need)} of ${ev.need} souls`:(ev.to?'feeds the Archdemon':`soul ${ev.n}`);ctx.save();ctx.globalAlpha=Math.max(0,1-t*2);ctx.font=`800 ${Math.max(13,U*0.55)}px sans-serif`;ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#0b0e14';ctx.strokeText(txt,bx,by+U*0.55);ctx.fillStyle='#ff9a5a';ctx.fillText(txt,bx,by+U*0.55);ctx.restore()}
+        if(el>=dur-30&&!a.landed){a.landed=1;soulLand(ev.pid)}break}
+      case 'wildwave':{// v189 big moment: every burning hex erupts in a wave that runs out from the caster, then the fire spreads
+        const from=ev.from||[0,0],cells=(ev.cells||[]).map(k=>k.split(',').map(Number)),spread=(ev.spread||[]).map(k=>k.split(',').map(Number));
+        let far=0;for(const [q,r] of cells)far=Math.max(far,hd(q,r,from[0],from[1]));const step=Math.min(55,1100/Math.max(1,far));dur=far*step+1500;
+        if(el<30)shakeUntil=now+700;
+        if(el<700){ctx.save();ctx.globalAlpha=0.22*(1-el/700);ctx.fillStyle='#ff3a10';ctx.fillRect(SX(0),SY(0),SW(),SH());ctx.restore()}
+        for(const [q,r] of cells){const lt=(el-hd(q,r,from[0],from[1])*step)/650;if(lt<0||lt>1)continue;hexFlash(q,r,lt<0.25?'#ffd36b':'#ff5a1a',(1-lt)*0.85);
+          if(lt<0.6){const [x,y]=vPos(q,r,0.2+lt*1.6);ctx.save();ctx.globalAlpha=(1-lt/0.6)*0.9;ctx.fillStyle='#ffb347';ctx.beginPath();ctx.ellipse(x,y,U*0.16,U*0.32*(1-lt),0,0,7);ctx.fill();ctx.restore()}}
+        const st2=far*step+400;if(el>st2){const lt=(el-st2)/900;if(lt<1)for(const [q,r] of spread)hexFlash(q,r,'#ff7a2a',0.5*(1-lt))}
+        break}
+      case 'frostcmd':{// v189 big moment: a cold line runs from the witch to every statue, and each statue bursts in a ring of ice
+        dur=1400;const t=el/dur;const [qx,qy]=vPos(ev.from[0],ev.from[1],0.8);if(el<30)shakeUntil=now+350;
+        for(const s of ev.at||[]){const [x,y]=vPos(s[0],s[1],0.5);ctx.save();if(t<0.35){ctx.globalAlpha=0.8*(1-t/0.35);ctx.strokeStyle='#dff6ff';ctx.lineWidth=Math.max(2,U*0.08);ctx.beginPath();ctx.moveTo(qx,qy);ctx.lineTo(qx+(x-qx)*Math.min(1,t/0.2),qy+(y-qy)*Math.min(1,t/0.2));ctx.stroke()}
+          const k=Math.max(0,(t-0.2)/0.8);if(k>0){ctx.globalAlpha=Math.max(0,1-k);ctx.strokeStyle='#bfefff';ctx.lineWidth=Math.max(2,U*0.12);ctx.beginPath();ctx.ellipse(x,y+U*0.2,U*(0.4+k*1.6),U*(0.22+k*0.9),0,0,7);ctx.stroke();
+            ctx.fillStyle='#eaffff';for(let i=0;i<6;i++){const an=i/6*Math.PI*2;const rr=U*(0.3+k*1.2);ctx.beginPath();ctx.moveTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr*0.55);ctx.lineTo(x+Math.cos(an+0.12)*rr*0.7,y+Math.sin(an+0.12)*rr*0.4-U*0.35*(1-k));ctx.lineTo(x+Math.cos(an-0.12)*rr*0.7,y+Math.sin(an-0.12)*rr*0.4);ctx.fill()}}ctx.restore()}
+        break}
+      case 'merge':{// v189: the statue flows into its partner as a stream of ice, then the partner flares (bigger for a Golem)
+        dur=1100;const t=el/dur;const [fx0,fy0]=vPos(ev.from[0],ev.from[1],0.6),[x,y]=vPos(ev.at[0],ev.at[1],0.6);ctx.save();
+        if(t<0.6){const k=t/0.6;ctx.fillStyle='#dff6ff';for(let i=0;i<10;i++){const p=Math.max(0,Math.min(1,k*1.4-i*0.04));ctx.globalAlpha=0.85*(1-p*0.4);ctx.beginPath();ctx.arc(fx0+(x-fx0)*p+Math.sin(i*1.7+el/90)*U*0.12,fy0+(y-fy0)*p-Math.sin(p*Math.PI)*U*0.6,Math.max(1.5,U*0.09),0,7);ctx.fill()}}
+        else{const k=(t-0.6)/0.4;const big=ev.golem?1.6:1;ctx.globalAlpha=Math.max(0,1-k);ctx.strokeStyle='#bfefff';ctx.lineWidth=Math.max(2,U*0.14);ctx.beginPath();ctx.ellipse(x,y,U*(0.5+k*1.4)*big,U*(0.3+k*0.8)*big,0,0,7);ctx.stroke();sparks(x,y-U*0.4,10,U*big,'#eaffff',k,3)}
+        ctx.restore();break}
+      case 'soulOld':{// v89: a soul rises from the dead unit toward the pit, with the Ember Court's count in big letters
         dur=1500;const t=el/dur;const [x,y]=vPos(ev.at[0],ev.at[1],0.4+t*2.2);sparks(x,y,10,U*0.7,'#ff6a3d',Math.min(1,t*1.4),3);
         ctx.save();ctx.globalAlpha=Math.max(0,1-Math.max(0,t-0.55)/0.45);ctx.beginPath();ctx.arc(x,y,U*0.22*(1-t*0.5),0,Math.PI*2);ctx.fillStyle='#ffb347';ctx.fill();
         const txt=`${Math.min(ev.n,ev.need||ev.n)}/${ev.need||'?'} souls`;ctx.font=`900 ${Math.max(15,U*0.8)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.lineWidth=5;ctx.strokeStyle='#0b0e14';ctx.strokeText(txt,x,y-U*0.3);ctx.fillStyle=ev.n>=(ev.need||1e9)?'#ffd766':'#ff6a3d';ctx.fillText(txt,x,y-U*0.3);ctx.restore();break}
@@ -8449,8 +8526,21 @@ function drawStatusBadges(c,u,x,y,w,h){const L=statusBadges(u);if(!L.length)retu
     badgeIcon(c,k,px-pw*0.2,py,r*0.62,fg);
     c.fillStyle=fg;c.font=`900 ${r*(lab?1.0:1.2)}px Oxanium, sans-serif`;c.fillText(lab||String(Math.ceil(n)),px+pw*(lab?0.4:0.24),py+0.5)});
   c.restore()}
+/* v189 helpers: the soul ghost, the soul counter that waits for it, the icy look of units infused with ice and of Ice Golems */
+const SOUL_SHOW={};
+function soulShown(p){const h=SOUL_SHOW[p.id];if(h&&performance.now()<h.until)return Math.min(p.souls||0,h.n);if(h)delete SOUL_SHOW[p.id];return p.souls||0}
+function soulLand(pid){if(pid==null)return;delete SOUL_SHOW[pid];try{if(typeof renderScoreStrip==='function')renderScoreStrip()}catch(e){}const pe=document.querySelector('#engRow [data-pid="'+pid+'"]');if(pe){pe.classList.remove('bump');void pe.offsetWidth;pe.classList.add('bump')}if(typeof playSound==='function')playSound('cast')}
+function soulGhost(x,y,s,a,el){if(a<=0||s<=0)return;ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,a));ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(x,y-s*0.35,s*0.1,x,y,s*1.4);g.addColorStop(0,'rgba(255,236,210,0.95)');g.addColorStop(0.45,'rgba(255,120,60,0.55)');g.addColorStop(1,'rgba(255,60,20,0)');ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(x,y-s*0.45,s*0.45,Math.PI,0);const w=el/120;ctx.lineTo(x+s*0.45,y+s*0.35);
+  for(let i=3;i>=0;i--){const tx=x-s*0.45+i*s*0.3;ctx.quadraticCurveTo(tx+s*0.15,y+s*(0.75+0.15*Math.sin(w+i)),tx,y+s*0.35)}ctx.closePath();ctx.fill();
+  ctx.globalCompositeOperation='source-over';ctx.fillStyle='rgba(40,8,0,0.85)';ctx.beginPath();ctx.ellipse(x-s*0.16,y-s*0.5,s*0.08,s*0.12,0,0,7);ctx.ellipse(x+s*0.16,y-s*0.5,s*0.08,s*0.12,0,0,7);ctx.fill();ctx.restore()}
+function iceAura(c,u,x,y,w,h,now){const t=(typeof stillMotion==='function'&&stillMotion())?0:now/1000;const m=Math.min(w,h);c.save();
+  c.globalAlpha=0.55+0.15*Math.sin(t*2+u.id);c.strokeStyle='#bfefff';c.lineWidth=Math.max(1.5,m*0.08);c.shadowColor='#8fdcff';c.shadowBlur=8;c.beginPath();c.ellipse(x,y+h*0.62,w*0.7,h*0.2,0,0,7);c.stroke();
+  c.fillStyle='#e6fbff';const n=u.golem?5:3;for(let i=0;i<n;i++){const an=-Math.PI/2+(i-(n-1)/2)*0.5,rx=x+Math.cos(an)*w*0.55,ry=y-h*0.55+Math.sin(an)*h*0.25;c.beginPath();c.moveTo(rx,ry-m*0.32);c.lineTo(rx+m*0.09,ry);c.lineTo(rx-m*0.09,ry);c.fill()}
+  c.restore()}
 function drawStatusFX(c,u,x,y,w,h,now){
-  if(!u||!u.st||u.kind==='wall')return;const f=statusFlags(u);
+  if(!u||!u.st||u.kind==='wall')return;const f=statusFlags(u);if(u.iced||u.golem)iceAura(c,u,x,y,w,h,now);/* v189 */
   if(u.shadow){const k=0.6+0.4*Math.sin(now/300);c.save();c.globalAlpha=0.35+0.2*k;c.shadowColor='#6a2bb0';c.shadowBlur=12;c.strokeStyle='#6a2bb0';c.lineWidth=3;c.beginPath();c.ellipse(x,y+h*0.1,w*0.62,h*0.42,0,0,Math.PI*2);c.stroke();c.globalAlpha=0.18+0.1*k;c.fillStyle='#3a0f66';c.fill();c.restore()}/* v132 Shadow Priest: a dark violet halo */
   // v45: Frostbite marks are shown as a counter pill (statusBadges) instead of snowflake glyphs over the head
   if(!(f.frozen||f.stun||f.chill||f.curse||f.seared||f.sunder||f.hex||f.glow||f.shield))return;
@@ -9182,7 +9272,7 @@ function homeText(F){return ((G&&G.realm)||(!G&&cfg.map==='realm'))&&F.homeRealm
 const PASSIVE_SHORT={/* v170: one short paragraph per army, kept in step with FAC.passive (the full text folds open under it) */
   warband:'Shields in front soak 1 from every hit on whoever stands behind them; spears strike over the wall and pierce. Comrades who touch hit harder and strike together. Two Warlord brothers each give one free order a turn (Hold, Strike or Advance) to the block they stand in, and Move as One marches the whole army into formation. Veterans grow with every kill, without limit.',
   fire:'Every Ember death and every kill is a soul. At 10 souls the Archdemon rises and grows with every victim it wounds; every soul after that gives it 3 more HP and sets 3 hexes of the Realm on fire for good. Dying demons burst in flame, and burning ground feeds Wildfire.',
-  ice:'Every Frost hit leaves a frost mark; 3 marks freeze an enemy, and a frozen enemy takes +3 from every Frost hit. Enemies that die frozen rise as Ice Statues, the Ice Queen’s army, with no limit; if she dies they shatter. Frost units walk on water and freeze it.',
+  ice:'Every Frost hit leaves a frost mark; 3 marks freeze an enemy, and a frozen enemy takes +3 from every Frost hit. Enemies that die frozen rise as Ice Statues, the Ice Queen’s army, with no limit; she can merge them into Ice Golems or pour them into her units, who are infused with ice; if she dies the statues shatter. Frost units walk on water and freeze it.',
   arcane:'The Walking Sanctuary, a shrine on legs, carries holy ground with it: your units on it heal, enemies burn. Healing beyond full HP burns the nearest enemy, and healing gathers Faith that raises the fallen. A priest whose light kills turns to shadow, and its spell becomes a dark mirror.',
   giants:'Five two-hex giants that walk 4 and follow the roads (too big for the 1-hex side passages). Their great blows rest long and change the land: craters, boulders that block the way, split rock and furrows of stone. Stone is their road: a giant that starts on it walks 1 further, hits for 1 more and heals 1 a turn. The Mountain King calls his kin to his side. A fallen giant leaves stones that heal its kin, make them stronger and pass on its ability.',
   ooze:'The Ooze Mother arrives alone and spawns droplets every other turn, paying 2 HP each time. Droplets merge into bigger blobs (up to 3 parts) and keep growing on their own kills. Every kill heals the Mother.',
@@ -9514,7 +9604,7 @@ function showPause(){
 }
 function botLoop(tok){
   if(!G||G.over||tok!==G.tok||screen!=='game')return;
-  if(G.paused||(window.FALL_HOLD&&Date.now()<window.FALL_HOLD)){setTimeout(()=>botLoop(tok),500);return}/* v116: nobody moves while the opening scene plays */
+  if(G.paused||(window.FALL_HOLD&&Date.now()<window.FALL_HOLD)||(window.MOMENT_HOLD&&Date.now()<window.MOMENT_HOLD)){setTimeout(()=>botLoop(tok),window.MOMENT_HOLD&&Date.now()<window.MOMENT_HOLD?250:500);return}/* v189: a big moment holds the bots for a beat *//* v116: nobody moves while the opening scene plays */
   if(G.phase==='deploy'){botDeploy();return}
   if(G.tutorial){endTurn();return}// the tutorial's enemy never acts
   if(!botStep()){endTurn();return}
@@ -9695,7 +9785,9 @@ function annFeedPlace(el){const bb=$('#boardbox');const r=bb&&bb.getBoundingClie
   else{el.style.right='';el.style.left=(Math.max(0,r.left)+8)+'px';el.style.top='';el.style.bottom=Math.max(8,vh-bottom)+'px';el.style.width='';el.style.maxWidth=Math.max(160,Math.min(r.width,vw)-60)+'px'}}
 function annFeedTick(){const el=$('#annFeed');if(!el||(el.hidden&&!ANN.feed.length))return;annFeedRender()}
 setInterval(annFeedTick,1000);
+const isMoment=e=>!!(e&&(e.moment||e.k==='demon'||e.k==='ult'||e.k==='lord'));/* v189 big moments */
 function annQueue(e){
+  if(G&&isMoment(e)){window.MOMENT_HOLD=Math.max(window.MOMENT_HOLD||0,Date.now()+1800);if(e.at&&e.k!=='demon'&&e.k!=='lord'&&typeof camPanTo==='function')setTimeout(()=>{try{camPanTo([e.at],false)}catch(x){}},120)}
   if(G&&e&&e.at&&(e.k==='demon'||e.k==='lord')&&typeof camPanTo==='function')setTimeout(()=>{try{camPanTo([e.at],false)}catch(x){}},150);// v100 (owner): the camera flies to where the giant rises, on every device
   if(!ANN.on||!G)return;
   annFeedAdd(e);
@@ -9712,10 +9804,10 @@ function annNext(){
   let x=null;try{x=annText(e)}catch(err){x=null}
   if(!x){ANN.cur=null;annNext();return}
   el.innerHTML=`<div class="ann-t">${x.t}</div>${x.s?`<div class="ann-s">${x.s}</div>`:''}`;
-  el.style.setProperty('--annc',x.col||'#e8b84e');el.dataset.k=e.k;annPlace(el);
+  el.style.setProperty('--annc',x.col||'#e8b84e');el.dataset.k=e.k;el.classList.toggle('moment',isMoment(e));annPlace(el);
   el.hidden=false;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
-  if(typeof playSound==='function')playSound('ann');
-  ANN.t=setTimeout(()=>{el.classList.remove('show');ANN.t=setTimeout(()=>{el.hidden=true;ANN.cur=null;annNext()},300)},3000)}
+  if(typeof playSound==='function')playSound(isMoment(e)?'ult':'ann');
+  ANN.t=setTimeout(()=>{el.classList.remove('show');ANN.t=setTimeout(()=>{el.hidden=true;ANN.cur=null;annNext()},300)},isMoment(e)?3800:3000)}
 function annClear(){ANN.q.length=0;clearTimeout(ANN.t);ANN.cur=null;const el=$('#annBanner');if(el){el.hidden=true;el.classList.remove('show')}ANN.feed.length=0;annFeedRender()}
 function annSet(on){ANN.on=on;try{localStorage.setItem('hexmarch.ann',on?'on':'off')}catch(e){}if(!on)annClear();syncAnnBtn()}
 function syncAnnBtn(){const b=$('#annBtn');if(b){b.textContent=ANN.on?'Announcements on':'Announcements off';b.setAttribute('aria-pressed',ANN.on?'true':'false')}}
@@ -9863,6 +9955,8 @@ function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);
 function unitStatuses(u){if(!u||!u.st||(u.kind==='wall'&&!wildsCreature(u)))return [];const s=u.st,o=[];const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
   if(s.frozen>0){if(s.stun)add('stun','💫','Stunned',s.frozen,'#e8b84e',0,'loses its next turn: no move, attack, ability or strike-back');else add('frozen','🧊','Frozen',s.frozen,'#bfefff',0,'loses its next turn and stays frozen until the end of the freezer’s next turn; any Frost Hold hit on it deals double (Shatter)')}
   if(RULES.SHELL&&typeof hasShell==='function'&&hasShell(u)){if(s.shell>0)add('shell','⛉','Shell',null,'#cfd3dc',1,'the first enemy hit it takes deals 0 (a Frost hit still chills and marks it); it closes again at the start of its turn');else add('shellx','⛉','Shell cracked','until its turn','#8a8f99',0,'it closes again at the start of its next turn')}/* v183 */
+  if(u.iced)add('iced','❄','Infused with ice',u.iced>1?u.iced:null,'#bfefff',1,`the Ice Queen poured ${u.iced>1?u.iced+' statues':'a statue'} into it: more HP, +${u.iced} ATK, and its hits leave 1 more frost mark`);/* v189 */
+  if(u.golem)add('golem','🧊','Ice Golem',u.golem,'#bfefff',1,`${u.golem} Ice Statues merged into one: their HP together, and it hits harder; still a statue for Command the Frozen`);
   if(u.relq)add('relic','✚','Carries the relic',null,'#ffe9a8',1,u.shadow?'the ground around it is profaned: enemies on it take 2 and cannot be healed; it cannot attack':'the ground around it is holy: your units heal 2, enemies burn 2, heals land 1 stronger; it cannot attack');/* v163 */
   {const sh=typeof shapeStatus==='function'?shapeStatus(u):null;if(sh)add('shape',sh.kind==='lava'?'🌋':sh.kind==='mud'?'🟤':sh.kind==='rain'?'🌧':sh.kind==='steam'?'🌫':sh.kind==='dust'?'🌪':sh.kind==='wildfire'?'🔥':'💨',sh.text.split(':')[0],null,'#8dff9a',sh.kind==='rain',sh.text)}
   if(typeof onStone==='function'&&onStone(u))add('sons','⛰','On stone',null,'#d9a45b',1,'Sons of the Earth: on broken ground it walks 1 further, hits for 1 more and heals 1 at the start of your turn');
@@ -10173,7 +10267,7 @@ function renderUnitCardInner(u){const el=$('#unitCard');
   {const rl=relicOf(u);if(rl)tags.unshift(`<span class="tag" style="background:${hexA(RELICS[rl.kind].col,.25)};color:${RELICS[rl.kind].col}">◆ ${RELICS[rl.kind].name}: ${RELICS[rl.kind].text} (−1 move)</span>`)}
   if(u.leader&&talentInfo(p))tags.unshift(`<span class="tag" style="background:#3a2f12;color:#ffd766">♚ Talent · ${talentInfo(p).name}: ${talentInfo(p).text}</span>`);
   for(const tr of [u.trait2,u.trait])if(tr&&TRAITS[tr])tags.unshift(`<span class="tag trait">✦ ${TRAITS[tr].name}: ${TRAITS[tr].text}</span>`);// v77: a unit may carry two traits
-  if(u.inh&&u.inh.length)tags.unshift(`<span class="tag good">Old Ones’ legacy: ${u.inh.map(k=>ABIL[k]?ABIL[k].name:k).join(', ')} inherited from fallen kin</span>`);// v79
+  if(u.inh&&u.inh.length&&G.players[u.owner]&&G.players[u.owner].fac==='giants')tags.unshift(`<span class="tag good">Old Ones’ legacy: ${u.inh.map(k=>ABIL[k]?ABIL[k].name:k).join(', ')} inherited from fallen kin</span>`);// v79
   if(u.statue)tags.push(`<span class="tag" style="color:#cfd3dc">Stone Sleep: ${u.stone||0} of ${statueNeed(u)} AP of spells poured in. Every spell a friendly mage casts within 2 hexes adds its AP cost; at ${statueNeed(u)} the Gargoyle rises here with ${Math.floor((u.hatch?u.hatch.maxhp:16)/2)} HP. Smash the statue and it is gone for good (no Ultimate charge for it).</span>`);
   else if(u.summon&&u.ttl>=999)tags.push(`<span class="tag">${u.trait==='icestatue'?'Ice Statue: an enemy that died frozen, now fighting for you until it is destroyed or the Ice Queen dies':'Summoned: stays until it is destroyed'}</span>`);/* v178: no more 'falls apart in 99999 turns' */
   else if(u.summon)tags.push(`<span class="tag">Built: falls apart in ${u.ttl} turn${u.ttl>1?'s':''}${u.machine?' · never moves · fires on its own for free at the start of the gnome turn'+(u.at==='none'?'':' · its free shot deals 1 damage; a commanded attack costs 2 AP')+' · no charge or star for killing it':''}</span>`);
@@ -10280,6 +10374,7 @@ function showOver(){
   $('#toSetup').onclick=()=>{o.hidden=true;if(netOnline()&&netIsHost())netNewSetup();else showScreen('setup')};
   if(netOnline()&&!netIsHost())$('#toSetup').hidden=true;
   $('#look').onclick=()=>{o.hidden=true};
+  funAsk(o);
 }
 function closeModal(){$('#overlay').hidden=true;if(G&&G.over&&screen==='game')showOver();else if(G&&G.paused&&screen==='game')showPause()}
 /* v46 How to play, rewritten (owner 3 Oct 2026): the Crown Wilds first, short and in the order a game goes. The older full text (every edge case and
@@ -11300,6 +11395,20 @@ function start(data){
 }
 try{window.claude?.hot?.snapshot?.(()=>netOnline()?{cfg}:({G,cfg,screen}))}catch(e){}
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+/* v189 THE THREE QUESTIONS (owner 13 Nov 2026, "fun is the goal"): at the end of a game played by people on this device, three short questions: the best moment,
+   the most boring stretch, the most frustrating thing. The answers are kept in the match record (match.fun) and saved again into the match folder, so they
+   arrive with the recording. */
+function funAsk(o){try{if(!G||!G.players.some(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me)))return;const m=typeof HIST!=='undefined'&&HIST.match;if(!m)return;const f=m.fun||{};const box=document.createElement('div');box.className='funbox';
+  box.innerHTML=`<div class="label">Three quick questions for the game\u2019s maker</div>
+    <label for="funBest">The best moment</label><input id="funBest" type="text" maxlength="300" placeholder="What made you shout?" value="${(f.best||'').replace(/"/g,'&quot;')}">
+    <label for="funBore">The most boring stretch</label><input id="funBore" type="text" maxlength="300" placeholder="When were you just waiting?" value="${(f.boring||'').replace(/"/g,'&quot;')}">
+    <label for="funBad">The most frustrating thing</label><input id="funBad" type="text" maxlength="300" placeholder="What felt unfair or confusing?" value="${(f.frustrating||'').replace(/"/g,'&quot;')}">
+    <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="funSave">Save my answers</button></div><p class="hint" id="funMsg" role="status"></p>`;
+  const mod=o.querySelector('.modal');if(!mod)return;mod.appendChild(box);
+  box.querySelector('#funSave').onclick=()=>{const a={best:box.querySelector('#funBest').value.trim(),boring:box.querySelector('#funBore').value.trim(),frustrating:box.querySelector('#funBad').value.trim(),at:Date.now()};
+    if(typeof funSave==='function')funSave(a);box.querySelector('#funMsg').textContent=a.best||a.boring||a.frustrating?'Saved with this match. Thank you!':'Nothing written yet.'}}catch(e){}}
+/* v189: the soul counter shows the soul only when its ghost arrives; each counter carries its player so the ghost knows where to fly */
+{const e0=enginePill;enginePill=function(p){const q=p&&p.fac==='fire'&&typeof soulShown==='function'?Object.assign({},p,{souls:soulShown(p)}):p;const h=e0(q);return h?h.replace('<span class="sc eng','<span data-pid="'+p.id+'" class="sc eng'):h}}
 
 /* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"; rebuilt on the Realm in v170). "Play the tutorial" on the home page starts a short guided game:
    the Iron Warband (the introductory army) on the Realm, the other armies passing their turns. A coach box at the top explains one thing at a time and
@@ -11474,6 +11583,8 @@ async function hfWrite(m,ask){const h=await hfLoad();if(!h)return false;try{let 
   el.prepend(d);d.querySelector('[data-hf]').onclick=async()=>{if(await hfPick())histList(el)}}}
 // a finished game goes to the folder by itself, once its final photo is in
 {const ht0=histTick;histTick=function(){ht0();try{const m=HIST.match;if(HFOLD.ok&&m&&m.result&&!m.folderSaved&&!HIST.fsBusy&&(m.photos||{}).final){HIST.fsBusy=true;hfWrite(m,false).then(ok=>{HIST.fsBusy=false;if(ok){m.folderSaved=1;histSave();toast(`Match saved in “${HFOLD.name}”.`,2600)}else m.folderSaved=-1})}}catch(e){}}}
+/* v189: the answers to the three end-of-game questions go into the match record and the match folder */
+function funSave(a){try{const m=HIST.match;if(!m)return;m.fun=a;histSave();if(typeof HFOLD!=='undefined'&&HFOLD.ok&&typeof hfWrite==='function'){m.folderSaved=0;hfWrite(m,false).then(ok=>{if(ok){m.folderSaved=1;histSave()}})}}catch(e){}}
 
 /* v101 MOTION SHOWCASE (owner 19 Oct 2026): open the game with #motion at the end of the address (for example http://localhost:8765/plain.html#motion)
    and a scripted scene plays the motion pass on the modelled armies, on a loop: walking, lunges, hits, a death, and the five signature abilities
@@ -11763,6 +11874,7 @@ function synPickShow(pid,tries,force){const p=G&&G.players[pid];if(!p||!isHumanT
   o.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{o.hidden=true;const id=+b.dataset.pick;if(id!==p.contract.id&&synPickContract(pid,id)){refresh();if(typeof netPush==='function')netPush();toast(`New contract: the ${byId(id).name}.`,2200)}})}
 // How to play: the rules the three new armies add to the Realm
 function armyRulesRealm(){return `<h3>Army rules</h3><ul>
+  ${RULES.FROST_MERGE?`<li><b>Merge the Frozen</b> (Frost Hold, the Ice Queen; free, rests 2). Pick one of her Ice Statues within 4 hexes, then a unit next to it. Another statue: the two become one <b>Ice Golem</b>, their HP together and 1 harder hit; a Golem can take in more statues. A Frost Hold unit: the statue melts into it and the unit is <b>infused with ice</b> for good: it gains the statue’s HP and +1 ATK, and the first infusion makes its hits leave 1 more frost mark. Infused units and Golems look frozen over.</li>`:''}
   ${RULES.SYN2?synRulesLi():`<li><b>Contracts</b> (Chrono Syndicate). When the Syndicate has no contract, the enemy unit or camp monster with the lowest HP within 8 hexes of its crew is marked (🎯 on the board) for 5 of its turns. Any crew member that kills it collects a bounty for the whole crew, for the rest of the game: 1st +1 max HP, 2nd +1 ATK, 3rd +1 move, 4th every rest 1 shorter, 5th +2 max HP, 6th +1 ability damage, 7th +1 ATK, 8th rests 1 shorter, 9th +1 move and +2 max HP, 10th +1 ATK and +1 ability damage, then a heal of 1 per bounty. Every Syndicate unit teleports when it moves (Phase Walk).</li>`}
   <li><b>Stasis Field</b> (Field Engineer): the device lands now and goes off at the start of the Syndicate's next turn: every enemy still on its 7 hexes loses its next turn. <b>Holograms</b> (Holo-Tech) have 1 HP and hit for 1; they cannot take the Throne or carry anything, and killing one gives nothing.</li>
   <li><b>Portals</b> (Riftwalkers). A unit that walks onto a portal end may come out of the other end; anyone may use any portal. A Riftwalker that comes out of a portal may move again, once per turn. An enemy standing next to a portal end shuts that door. Gatekeeper gates last 3 rounds, a Lifegate 2 (allies passing heal 4, enemies take 2), a Rift Lancer's own pair until its next turn. A Banisher's basic attack kicks the enemy 3 hexes; a kick that crosses a portal end sends it through.</li>
