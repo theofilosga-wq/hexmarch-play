@@ -5585,11 +5585,18 @@ function throwSetups(team){
     if(best)s+=best*((t.leader?(G.mode==='regicide'?60:40):0)+worth(t)*0.35)}
   return s}
 function cloneU(u){const c=Object.assign({},u);c.st=Object.assign({},u.st);if(u.cdx)c.cdx=Object.assign({},u.cdx);if(u.st&&u.st.curses)c.st.curses=Object.assign({},u.st.curses);delete c.anim;return c}
+const SIM_OBJS=new Set(['embers','elHex','scoredAt','outpostAt','gems','levers','flagEver','apParts','heartCount','circlesOwn']);
 function simScore(team,fn){
-  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields,cpot:G.cpot,shapes:G.shapes,feat:G.feat,holds:G.holds,crownDark:G.crownDark,kingDied:G.kingDied};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
+  const save={units:G.units,voids:G.voids,traps:G.traps,sinks:G.sinks,paint:G.paint,terr:G.terr,claim:G.claim,players:G.players,eggs:G.eggs,relics:G.relics,wells:G.wells,nid:G.nid,holder:G.holder,contested:G.contested,ap:G.ap,score:G.score,over:G.over,amode:G.amode,aim:G.aim,shrineOff:G.shrineOff,flagOwner:G.flagOwner,spring:G.spring,beast:G.beast,portals:G.portals,fields:G.fields,cpot:G.cpot,shapes:G.shapes,feat:G.feat,holds:G.holds,crownDark:G.crownDark,kingDied:G.kingDied,heartCount:G.heartCount,fireOn:G.fireOn};const bq=BEAST_Q,barq=BAR_Q;BEAST_Q=[];BAR_Q=[];
   G.units=G.units.map(cloneU);G.eggs=(G.eggs||[]).slice();G.relics=(G.relics||[]).map(x=>Object.assign({},x));G.wells=(G.wells||[]).map(w=>Object.assign({},w));G.voids=Object.assign({},G.voids);G.traps=Object.assign({},G.traps||{});G.sinks=Object.assign({},G.sinks||{});G.paint=Object.assign({},G.paint);G.terr=Object.assign({},G.terr);G.claim=Object.assign({},G.claim||{});G.players=G.players.map(p=>Object.assign({},p));G.score=Object.assign({},G.score);G.shrineOff=Object.assign({},G.shrineOff||{});G.flagOwner=Object.assign({},G.flagOwner||{});G.spring=G.spring?Object.assign({},G.spring):null;G.beast=G.beast?Object.assign({},G.beast,{dmgT:Object.assign({},G.beast.dmgT||{})}):null;G.cpot=G.cpot?Object.assign({},G.cpot):G.cpot;G.shapes=Object.assign({},G.shapes||{});G.feat=Object.assign({},G.feat||{});/* v168 */if(G.holds)G.holds=G.holds.map(h=>Object.assign({},h));/* v171 */
-  SIM=true;let v;
-  try{fn();v=evaluate(team)}finally{SIM=false;Object.assign(G,save);BEAST_Q=bq;BAR_Q=barq}
+  /* v186: everything else on the game state is kept too, so nothing a lookahead imagines can stay in the real game (the planner's leak test found a Beast kill moving
+     the belly stone into the crown and a kill clearing a pending Archdemon rise): every plain value, every list (copied with its items) and the small mutable
+     records; keys a lookahead adds are removed */
+  const keys0=new Set(Object.keys(G)),prim={},arrs={},objs={};for(const k of keys0){if(k in save)continue;const x=G[k];if(x===null||typeof x!=='object')prim[k]=x;
+    else if(Array.isArray(x)){if(k==='log'||k==='fxLog'||k==='annLog')continue;arrs[k]=x;G[k]=x.map(y=>y&&typeof y==='object'&&!Array.isArray(y)?Object.assign({},y):y)}
+    else if(SIM_OBJS.has(k)){objs[k]=x;G[k]=Object.assign({},x)}}
+  const sim0=SIM;SIM=true;let v;/* v186: a lookahead inside a lookahead (the planner) gives back the outer one's SIM */
+  try{fn();v=evaluate(team)}finally{SIM=sim0;for(const k of Object.keys(G))if(!keys0.has(k))delete G[k];Object.assign(G,save,prim,arrs,objs);BEAST_Q=bq;BAR_Q=barq}
   return v;
 }
 // Riftwalker setup value (v21 bots): an enemy left on a hex beside the edge, a void or a Void Trap, with a ready Repulsor that can reach it this turn
@@ -5877,7 +5884,7 @@ if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&
   const nearest=x=>{let b=99;for(const f of foes)b=Math.min(b,distUU(x,f));return b};
   const d0=nearest(u),d1=nearest(v);
   let s=-1.2;
-  if((!u.acted||u.freeAtk>0)&&u.at!=='none'&&G.ap>=(u.freeMove>0?0:1)+atkCost(u)){const tNow=countTargets(u,m)+campTargets(u,m),tNew=countTargets(v,m)+campTargets(v,m);if(tNew>0&&tNow===0){s+=6+Math.min(tNew,3);
+  if((!u.acted||u.freeAtk>0)&&u.at!=='none'&&G.ap>=(u.freeMove>0?0:1)+atkCost(u)){const tNow=countTargets(u,m)+campTargets(u,m),tNew=countTargets(v,m)+campTargets(v,m);if(tNew>0&&tNow===0&&!ctx.plan){s+=6+Math.min(tNew,3);/* v186: the planner scores the strike itself, so no bonus for a target appearing */
       if(G.realm&&hasTrait(u,'tempo')){const pot=comboPotential(u,v);const kill=foes.some(f=>!inert(f)&&distUU(v,f)<=1&&f.hp<=pot);if(!kill)s-=5.5;else s+=3}}}// v75c: the blade commits only to a combo that can kill
   if(u.freeMove>0)s+=1.2;// a Rewind move costs no AP
   // v28 Hourglass: a Second Hand whose strikes are spent walks back to safety (Rewind or its own move): out of reach, next to friends, out of sight after a kill.
@@ -5963,7 +5970,7 @@ if(RULES.HEAVY){const m=byId(o.pilot);const busy=m&&ctx.foes.some(f=>f.owner>=0&
     const fc=ctx._foc=ctx._foc||{};if(!(u.id in fc))fc[u.id]=u.book.some(x=>ABIL[x].dmg&&canAbil(u,x)&&aimCells(u,x).some(([a,b])=>{const o=m.get(key(a,b));return o&&o.kind!=='wall'&&tm(o.owner)!==tm(u.owner)}));if(fc[u.id])s-=1.5}
   if(u.ability==='guard'){const ms=x=>G.units.filter(w=>w!==u&&w.owner===u.owner&&w.book&&distUU(w,x)===1).length;s+=(Math.min(2,ms(v))-Math.min(2,ms(u)))*1.2}  // Repulsor: step behind an enemy that one Repel would throw off the board or into a void.
   if(u.ability==='repel'&&u.cd<=0&&!u.acted&&G.ap>=1+abilCost(u,'repel')){const thr=x=>{let b=0;for(const f of foes)if(distUU(x,f)===1&&pushLethal(f,dirTo(x.q,x.r,f.q,f.r),ABIL.repel.push))b=Math.max(b,10+worth(f)*0.3+(f.leader?15:0));return b};s+=thr(v)-thr(u)}
-  if(G.realm&&!u.summon&&u.owner>=0&&G.players[u.owner])s+=realmCohesion(u,v,ctx)+realmPlan(u,v,ctx);
+  if(G.realm&&!u.summon&&u.owner>=0&&G.players[u.owner])s+=realmCohesion(u,v,ctx)+realmPlan(u,v,ctx)+realmCover(u,v,ctx);
   return s+RNG()*0.6;
 }
 /* v105 BOT LAB (owner 20 Oct 2026: bots must play the armies' strategies on the Realm). Staying together: a unit values friends within 2 hexes,
@@ -5981,6 +5988,15 @@ function realmCohesion(u,v,ctx){const fac=G.players[u.owner].fac,CW=COHESION[fac
     if(u.leader)s+=(Math.min(2,adj(v,u))-Math.min(2,adj(u,u)))*4.5;
     else if(L){const n=adj(L,u);if(n<2){const was=distUU(u,L)===1,now=distUU(v,L)===1;if(now&&!was)s+=4;if(was&&!now)s-=4}else if(n===2&&distUU(u,L)===1&&distUU(v,L)!==1)s-=4}}
   return s}
+/* v186b COVER THE LEADER (RULES.BOT_COVER; the owner's habit: in his games a Leader stood with no ally beside him at 10-40% of round starts, the bots' at
+   55-70%, the Warband's 11% thanks to its own rule above): for every other army but the Giants, while an enemy can reach the Leader, the Leader wants one or two
+   allies at his shoulder (REALM.cover.ldr a neighbour) and an ally steps beside a Leader who has fewer than two (REALM.cover.pal). Summons do not count. */
+function realmCover(u,v,ctx){if(!RULES.BOT_COVER)return 0;const fac=G.players[u.owner].fac;if(fac==='giants'||fac==='warband')return 0;const W=REALM.cover;
+  const pals=G.units.filter(w=>w.id!==u.id&&w.kind!=='wall'&&w.owner===u.owner&&!inert(w)&&!w.summon);
+  const thr=x=>ctx.foes.some(f=>f.owner>=0&&!inert(f)&&distUU(x,f)<=effMov(f)+effRng(f)+1);
+  if(u.leader){if(!thr(u)&&!thr(v))return 0;const n=x=>Math.min(2,pals.filter(w=>distUU(w,x)===1).length);return (n(v)-n(u))*W.ldr}
+  const L=pals.find(w=>w.leader);if(!L||!thr(L))return 0;if(pals.filter(w=>w!==L&&distUU(w,L)===1).length>=2)return 0;
+  const was=distUU(u,L)===1,now=distUU(v,L)===1;return now&&!was?W.pal:was&&!now?-W.pal:0}
 /* v105 army plans on the Realm. Frost: the melee units close in on frozen and chilled enemies (+2 per hit on the frozen, Shatter doubles);
    Priests: a healer with its heal ready stays within reach of the most wounded ally. */
 const HEAL_REACH={mend:3,bless:3,layhands:1,surgery:1,tend:1};
@@ -6483,7 +6499,95 @@ function realmHpOf(fac,d){const v=REALM_HP[fac+':'+d.name];return v!=null?v:Math
 REALM.burnDmg=2;REALM.wildErupt=4;REALM.shatterPlus=3;REALM.requiemPer=1;REALM.overflowK=2;REALM.holyTick=2;RULES.FROST_MARKS_REALM=3;
 var REALM_ROT0=1;/* the first rot's tick (was 0.5) */var REALM_EL_NEED=[2,3,4,5];/* the element bars on the Realm (were 3, 4, 5, 6) */
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v185 2026-11-13";
+/* ===== v186 THE TURN PLANNER (owner 13 Nov 2026: "make it", after the exam on his turns showed the bots attack less, spread their hits, cast
+   abilities instead of attacking and score fewer points than he does). The old bot took one action at a time: every single attack, ability or step
+   scored on its own, the best one done, repeat. The planner looks at the whole turn first: it tries SEQUENCES of the army's actions (an attack, an
+   ability, or a step followed by an attack or an ability) and plays them out with the game's own rules, so a set-up is worth what the pay-off
+   after it gains (a strike that softens an enemy so the next one kills it, an order before the block attacks, a freeze before the shatter).
+   Beam search: at each depth the best few sequences are kept (REALM.plan by bot level: B sequences kept, W tried from each, D actions deep, N
+   candidates rescored in every new position, K landing hexes tried for each unit). Every action is scored exactly as the old bot scored it (the
+   board value after it, or the hand-written rule of the ability; a step by moveEval), so the planner can only find more value, never a different
+   taste. The plan is played one action at a time (each one shown on screen); when an action no longer fits (a target gone) the turn is planned again.
+   After the plan the old step-by-step bot finishes the turn (walking, calls, the Ultimate). Realm only; Easy bots keep the old way. RULES.BOT_PLAN 0
+   switches it off. Steps inside the lookahead move the unit without side effects (no trail, pickups or brace); the real step uses doMove. ===== */
+RULES.BOT_PLAN=1;RULES.BOT_COVER=1;REALM.cover={ldr:3,pal:3};/* v186b: cover the Leader (realmCover) */
+REALM.plan={hard:{B:3,W:3,D:8,N:12,K:3},normal:{B:2,W:2,D:6,N:8,K:2}};
+var PLAN={key:null,items:[],i:0,sub:0,re:0,ms:0,n:0};
+function botCtx(team){const foes=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==team);const m=occ();
+  const pushers=foes.some(f=>facOf(f).slam||(f.ability&&(ABIL[f.ability].push||ABIL[f.ability].pull||ABIL[f.ability].special==='swap')));
+  return {base:evaluate(team),foes,m,pushers,fireIn:G.players.some(p=>p.alive&&p.fac==='fire'&&p.team!==team),coldIn:G.players.some(p=>p.alive&&p.fac==='ice'&&p.team!==team),team,
+    eLeaders:foes.filter(f=>f.leader),braces:foes.filter(f=>hasTrait(f,'brace')&&!f.moved&&!f.st.frozen),plan:true}}
+const planFree=u=>!!u&&u.kind!=='wall'&&!inert(u)&&!(u.st&&u.st.frozen)&&(!u.acted||u.freeAtk>0);
+const planMoves=u=>!!u&&(!u.moved||u.freeMove>0);
+function planStep(u,mv){u.q=mv.q;u.r=mv.r;if(mv.dir!=null)u.dir=mv.dir;if(u.freeMove>0)u.freeMove--;else u.moved=true}
+// the act part of an item, in the current position (returns false when it no longer fits)
+function planAct(u,a){if(!u||!a||!planFree(u))return false;
+  if(a.k==='atk'){const t=byId(a.t);if(!t||!alive(t)||!attackTargets(u).includes(t))return false;attack(u,t);return true}
+  if(!canAbil(u,a.key))return false;useAbility(u,a.key,a.q,a.r,a.d||undefined);return true}
+// score of an act from where the unit stands now (ctx describes this position); the old bot's own rule for each kind
+function planActScore(u,a,ctx){const A=a.k==='atk'?null:ABIL[a.key];const uid=u.id;
+  if(!A){const t=byId(a.t);if(!t)return -99;return simScore(ctx.team,()=>attack(byId(uid),byId(a.t)))-ctx.base}
+  const tax=u.book&&A.spell&&u.book.some(x=>ABIL[x].cost>A.cost)?1.0:0;
+  return (A.bot?heuristic(u,a.key,a.q,a.r,ctx,a.d||undefined):simScore(ctx.team,()=>useAbility(byId(uid),a.key,a.q,a.r,a.d||undefined))-ctx.base)-tax}
+// every act of a unit from where it stands: each attack target, each aim of each ability
+function planActs(u,ctx){const out=[];let ts=[];try{ts=attackTargets(u)}catch(e){}for(const t of ts)out.push({k:'atk',t:t.id});
+  for(const k of abilsOf(u)){if(!canAbil(u,k))continue;let aims=[];try{aims=botAims(u,k,ctx)}catch(e){}for(const a of aims)out.push({k:'ab',key:k,q:a[0],r:a[1],d:a.length>2?{q:a[2],r:a[3]}:null})}
+  return out}
+// best act after a step to mv: the step is played (without side effects) inside the lookahead, the acts scored from the new hex
+function planBestAfter(u,mv,team){const uid=u.id;let best=null;
+  simScore(team,()=>{const v=byId(uid);planStep(v,mv);const ctx=botCtx(team);for(const a of planActs(v,ctx)){const s=planActScore(v,a,ctx);if(!best||s>best.s)best={s,a}}});return best}
+// the hexes worth stepping to before acting: those from which the unit can strike something, best by the old step rule (no "a target appears" bonus)
+function planHexes(u,ctx,K){if(!planMoves(u)||!planFree(u))return [];const out=[];let os;try{os=moveOpts(u)}catch(e){return []}
+  const offAb=abilsOf(u).some(k=>canAbil(u,k)&&ABIL[k].hits!=='ally'&&ABIL[k].hits!=='none');
+  for(const o of os.values()){if(o.board!=null||o.pilot!=null||o.merge!=null)continue;const v=Object.assign({},u,{q:o.q,r:o.r,dir:o.dir,moved:true});
+    if(!ctx.foes.some(f=>distUU(v,f)<=Math.max(effRng(u),3)+1))continue;if(countTargets(v,ctx.m)+campTargets(v,ctx.m)===0&&!offAb)continue;
+    out.push({o,me:moveEval(u,o,ctx)})}
+  return out.sort((a,b)=>b.me-a.me).slice(0,K)}
+// a scored item: {u, mv?, me (step value), a (act), s}
+function planScore(it,ctx){const u=byId(it.u);if(!u||!planFree(u))return null;
+  if(!it.mv){const s=planActScore(u,it.a,ctx);return Object.assign({},it,{s})}
+  if(!planMoves(u))return null;let os;try{os=moveOpts(u)}catch(e){return null}const o=[...os.values()].find(x=>x.q===it.mv.q&&x.r===it.mv.r&&x.board==null&&x.pilot==null&&x.merge==null);if(!o)return null;
+  const me=moveEval(u,o,ctx),b=planBestAfter(u,{q:o.q,r:o.r,dir:o.dir},ctx.team);if(!b)return null;
+  // the step's own value is counted as the old bot counts a step; the act after it as the board gain from the new hex
+  return Object.assign({},it,{mv:{q:o.q,r:o.r,dir:o.dir},me,a:b.a,s:me+b.s})}
+function planGen(pid,ctx,K){const out=[];for(const u of G.units){if(u.owner!==pid||!planFree(u))continue;
+  for(const a of planActs(u,ctx))out.push({u:u.id,a});for(const h of planHexes(u,ctx,K))out.push({u:u.id,mv:{q:h.o.q,r:h.o.r,dir:h.o.dir}})}return out}
+const planKey=it=>it.u+(it.mv?'@'+it.mv.q+','+it.mv.r:'')+':'+(it.a?(it.a.k==='atk'?'t'+it.a.t:it.a.key+(it.a.q!=null?it.a.q+','+it.a.r:'')):'');
+// inside the lookahead: play an item without side effects for the step
+function planApply(it){const u=byId(it.u);if(!u)return false;if(it.mv)planStep(u,it.mv);return planAct(u,it.a)}
+function planTurn(pid,P){const team=tm(pid),t0=Date.now();const ctx0=botCtx(team);
+  const sc=(list,ctx)=>list.map(it=>planScore(it,ctx)).filter(it=>it&&it.s>0.3).sort((a,b)=>b.s-a.s);
+  const root=sc(planGen(pid,ctx0,P.K),ctx0).slice(0,P.N*2);if(!root.length){PLAN.ms+=Date.now()-t0;PLAN.n++;return []}
+  let beam=[{items:[],val:0,cands:root}],best=null;
+  for(let d=0;d<P.D;d++){const kids=[];
+    for(const nd of beam)for(const c of nd.cands.slice(0,P.W)){const items=nd.items.concat([c]);let cands=[];
+      simScore(team,()=>{for(const it of items)if(!planApply(it))return;const ctx=botCtx(team);
+        const used=new Set(items.map(x=>x.u)),hit=new Set();for(const x of items)if(x.a&&x.a.t!=null)hit.add(x.a.t);
+        // the parent's best candidates and every candidate on an enemy this sequence already hit are scored again in the new position
+        const pool=nd.cands.filter(x=>x!==c&&!used.has(x.u));const keep=pool.slice(0,P.N).concat(pool.slice(P.N).filter(x=>x.a&&x.a.t!=null&&hit.has(x.a.t)));
+        // a unit of the sequence that may act again (Momentum, a second strike) offers its acts from where it stands
+        for(const id of used){const u=byId(id);if(planFree(u))for(const a of planActs(u,ctx))keep.push({u:id,a})}
+        cands=sc(keep.map(x=>x.mv?{u:x.u,mv:x.mv}:{u:x.u,a:x.a}),ctx)});
+      kids.push({items,val:nd.val+c.s,cands})}
+    if(!kids.length)break;kids.sort((a,b)=>b.val-a.val);
+    beam=[];const seen=new Set();for(const k of kids){const sig=k.items.map(planKey).sort().join('|');if(seen.has(sig))continue;seen.add(sig);beam.push(k);if(beam.length>=P.B)break}
+    if(!best||beam[0].val>best.val)best=beam[0];if(!beam.some(n=>n.cands.length))break}
+  PLAN.ms+=Date.now()-t0;PLAN.n++;
+  return best?best.items:[]}
+{const step0=botStep;botStep=function(){
+  if(!G||G.over||SIM||!G.realm||!RULES.BOT_PLAN)return step0();const pid=G.cur,p=G.players[pid];const lvl=p.botLevel||G.botLevel||'hard';const P=REALM.plan[lvl];if(!P)return step0();
+  const key=G.tok+':'+G.round+':'+pid;if(PLAN.key!==key){PLAN.key=key;PLAN.re=0;PLAN.items=planTurn(pid,P);PLAN.i=0;PLAN.sub=0}
+  while(PLAN.i<PLAN.items.length){const it=PLAN.items[PLAN.i];const u=byId(it.u);
+    // the step first (when the item has one), then the act; each is one call, so the screen shows both
+    if(it.mv&&PLAN.sub===0){let o=null;try{if(u&&planMoves(u)&&planFree(u))o=[...moveOpts(u).values()].find(x=>x.q===it.mv.q&&x.r===it.mv.r&&x.board==null&&x.pilot==null&&x.merge==null)}catch(e){}
+      if(!o){PLAN.items=PLAN.re++<3?planTurn(pid,P):[];PLAN.i=0;PLAN.sub=0;continue}doMove(u,o);PLAN.sub=1;return true}
+    PLAN.sub=0;PLAN.i++;
+    if(planAct(u,it.a))return true;
+    // the act no longer fits (the target fell to an earlier blow, a rest began): plan the rest of the turn again
+    PLAN.items=PLAN.re++<3?planTurn(pid,P):[];PLAN.i=0}
+  return step0()}}
+
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v186 2026-11-13";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
