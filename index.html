@@ -6817,7 +6817,7 @@ function wallFalls(t){if(SIM||!t||!t.cityWall)return;const k=key(t.q,t.r);delete
 {const k0=kill;kill=function(t,...a){const r=k0.call(this,t,...a);try{if(t&&t.cityWall&&!G.units.includes(t))wallFalls(t)}catch(e){}return r}}
 {const f0=realmGoalText;realmGoalText=function(m){if(m&&m.cityWall){const city=m.cityWall==='city';return {todo:`break this ${city?'stretch of the city wall':'ruined wall'} (${Math.ceil(m.hp)} of ${m.maxhp} HP, no DEF). It never strikes back, and area attacks that cover it wear it down too.`,get:city?'the hex opens for good: a new way into the city for everyone. The Rift Beast\u2019s tentacles can sweep through the new gap too.':'the hex opens for good: a new path for everyone.'}}return f0(m)}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v211 2026-11-14";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v213 2026-11-14";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -8280,7 +8280,7 @@ function landCol(x,z,y,ny,c){LCOL.f=0;const d=Math.hypot(x,z)/S3,n=landF(x*0.22,
   const live=Math.min(1,Math.max(0,(d+n*4-14)/5)),dead=Math.min(1,Math.max(0,(8.5-d+n*2.5)/3.5));
   c.setRGB(0.21+0.07*n2+0.03*n3,0.36+0.11*n+0.04*n3,0.13+0.04*n2);c.lerp(LCOL.a.setRGB(0.13,0.29,0.17),Math.max(0,0.55-n)*0.9);if(inb&&featAt(q,r)==='hill')c.lerp(LCOL.a.setRGB(0.42,0.48,0.20),0.4);c.lerp(LCOL.a.setRGB(0.50,0.49,0.24),Math.min(1,Math.max(0,(n2-0.56)*5))*0.45);
   if(inb&&featAt(q,r)==='forest')c.lerp(LCOL.a.setRGB(0.16,0.26,0.12),0.55);
-  if(!inb){const fo=landF(x*0.12+11,z*0.12+4);if(fo>0.5)c.lerp(LCOL.a.setRGB(0.15,0.25,0.12),Math.min(1,(fo-0.5)*8)*0.6);else if(ny>0.985&&landN(x*0.28+3,z*0.28+8)>0.68){c.lerp(LCOL.a.setRGB(0.76,0.63,0.28),0.75);LCOL.f=1}}
+  if(!inb){const fo=landF(x*0.12+11,z*0.12+4);if(fo>0.5)c.lerp(LCOL.a.setRGB(0.15,0.25,0.12),Math.min(1,(fo-0.5)*8)*0.6);c.lerp(LCOL.a.setRGB(0.13,0.24,0.11),0.45)}
   const dust=LCOL.a.setRGB(0.50+0.07*n2,0.43+0.05*n,0.31+0.04*n3);c.lerp(dust,1-live);
   const ash=LCOL.b.setRGB(0.15+0.04*n2,0.13+0.03*n,0.17+0.07*n);c.lerp(ash,dead);
   if(live>0.55&&y>-0.05&&y<0.25){const wx=x+(landN(x*0.9+3,z*0.9)-0.5)*1.3,wz=z+(landN(x*0.9,z*0.9+7)-0.5)*1.3,r2=Math.round(wz/1.5),q2=Math.round(wx/S3-wz/1.5/2);if(inR(q2,r2)&&landField(q2,r2)){c.lerp(LCOL.a.setRGB(0.74+0.05*n3,0.61+0.04*n3,0.27),0.8);LCOL.f=1}}
@@ -8289,14 +8289,15 @@ function landCol(x,z,y,ny,c){LCOL.f=0;const d=Math.hypot(x,z)/S3,n=landF(x*0.22,
   if(y<-0.13)c.lerp(LCOL.a.setRGB(0.07,0.16,0.22),Math.min(1,(-0.13-y)*7));if(Math.abs(y-LAND.water)<0.035)c.lerp(LCOL.a.setRGB(0.86,0.92,0.9),0.5*(1-dead));/* foam at the shore */
   if(inb&&y>-0.08&&G.wallLook&&G.wallLook[q+','+r]==='bridge')c.lerp(LCOL.a.setRGB(0.50+0.07*n3,0.46+0.06*n3,0.40),0.85);/* v210: a stone causeway */
   const steep=Math.min(1,Math.max(0,(0.93-ny)*5)),high=Math.min(1,Math.max(0,(y-0.45)*2.2));const rk=Math.max(steep,high*(1-0.75*live));
-  if(rk>0){const st=0.5+0.5*Math.sin(y*9+n2*6),g=0.27+0.16*n2+0.13*st-0.10*dead+0.10*high+0.08*(n3-0.5),wm=n*(1-dead);c.lerp(LCOL.b.setRGB(g*(1+0.16*wm),g*(1+0.02*wm),g*(1-0.14*wm)+0.03*dead),rk)}}
+  if(rk>0){const st=0.5+0.5*Math.sin(y*9+n2*6),g=0.27+0.16*n2+0.13*st-0.10*dead+0.10*high+0.08*(n3-0.5),wm=n*(1-dead);c.lerp(LCOL.b.setRGB(g*(1+0.16*wm),g*(1+0.02*wm),g*(1-0.14*wm)+0.03*dead),rk)}
+  landColExtra(x,z,y,ny,c)}
 const LCOL={a:null,b:null};
 function landBuild(){LANDF.clear();landRoads();if(GL.land){GL.scene.remove(GL.land);GL.land.traverse(o=>{if(o.geometry)o.geometry.dispose()});GL.land=null}LANDH.clear();LANDC.clear();
   if(GL.tileSets)for(const s of Object.values(GL.tileSets))s.visible=!landOn();if(!landOn())return;const T=THREE;LCOL.a=new T.Color();LCOL.b=new T.Color();
-  const HW=G.rect?G.rect.hw+1.2:(G.Rv||G.R)*S3,HH=G.rect?G.rect.hh+1.2:(G.Rv||G.R)*1.5,st=LAND.step,M=innerWidth>=1000?24:12,nx=Math.ceil(2*(HW+M)/st),nz=Math.ceil(2*(HH+M)/st),OUT=new Float32Array((nx+1)*(nz+1));
-  LANDB={HW:HW,HH:HH,M:M};const geo=new T.PlaneGeometry(2*(HW+M),2*(HH+M),nx,nz);geo.rotateX(-Math.PI/2);const P=geo.attributes.position;
+  const HW=G.rect?G.rect.hw+1.2:(G.Rv||G.R)*S3,HH=G.rect?G.rect.hh+1.2:(G.Rv||G.R)*1.5,st=LAND.step,M=innerWidth>=1000?26:16,nx=Math.ceil(2*(HW+M)/st),nz=Math.ceil(2*(HH+M)/st),OUT=new Float32Array((nx+1)*(nz+1));
+  LANDB={HW:HW,HH:HH,M:M};landSites();const geo=new T.PlaneGeometry(2*(HW+M),2*(HH+M),nx,nz);geo.rotateX(-Math.PI/2);const P=geo.attributes.position;
   for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i);OUT[i]=landBE(x,z);P.setY(i,landBY(x,z))}geo.computeVertexNormals();/* v208: beyond the board the land rolls on as hills and fades into the dark */
-  const N=geo.attributes.normal,C=new Float32Array(P.count*3),FL=new Float32Array(P.count),c=new T.Color();for(let i=0;i<P.count;i++){landCol(P.getX(i),P.getZ(i),P.getY(i),N.getY(i),c);FL[i]=LCOL.f;if(OUT[i]>0)c.lerp(LCOL.b.setRGB(0.03,0.04,0.06),Math.min(1,Math.max(0,(OUT[i]-(M-8))/6.5)));C[i*3]=c.r;C[i*3+1]=c.g;C[i*3+2]=c.b}
+  const N=geo.attributes.normal,C=new Float32Array(P.count*3),FL=new Float32Array(P.count),c=new T.Color();for(let i=0;i<P.count;i++){landCol(P.getX(i),P.getZ(i),P.getY(i),N.getY(i),c);FL[i]=LCOL.f;if(OUT[i]>0)c.lerp(LCOL.b.setRGB(0.03,0.04,0.06),Math.min(1,Math.max(0,(OUT[i]-(M-7))/5.5)));C[i*3]=c.r;C[i*3+1]=c.g;C[i*3+2]=c.b}
   geo.setAttribute('color',new T.BufferAttribute(C,3));geo.setAttribute('fld',new T.BufferAttribute(FL,1));const grp=new T.Group();
   const lm=new T.MeshStandardMaterial({vertexColors:true,roughness:0.95,metalness:0,flatShading:true});landWindow(lm);const m=new T.Mesh(geo,lm);m.receiveShadow=true;m.castShadow=innerWidth>=1000;grp.add(m);
   /* a skirt of dark earth under the land, and the faint hex lines on the ground you can stand on */
@@ -8304,9 +8305,9 @@ function landBuild(){LANDF.clear();landRoads();if(GL.land){GL.scene.remove(GL.la
   const pts=[];for(const [q,r] of ringCells()){if(G.voids[key(q,r)]||!passable(q,r))continue;const [x,z]=world(q,r);for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30),b=Math.PI/180*(60*i+30);const x1=x+0.97*Math.cos(a),z1=z+0.97*Math.sin(a),x2=x+0.97*Math.cos(b),z2=z+0.97*Math.sin(b);pts.push(x1,landY(x1,z1)+0.035,z1,x2,landY(x2,z2)+0.035,z2)}}
   const lg=new T.BufferGeometry();lg.setAttribute('position',new T.Float32BufferAttribute(pts,3));grp.add(new T.LineSegments(lg,new T.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:0.11,depthWrite:false})));
   /* v198: one sheet of water under the whole land: it shows wherever the ground dips below it (river beds, lakes, shallow fords) */
-  const wm=new T.Mesh(new T.PlaneGeometry(2*HW+6,2*HH+6),landWaterMat());wm.rotation.x=-Math.PI/2;wm.position.y=LAND.water;grp.add(wm);
+  const wm=new T.Mesh(new T.PlaneGeometry(2*HW+1,2*HH+1),landWaterMat());wm.rotation.x=-Math.PI/2;wm.position.y=LAND.water;grp.add(wm);
   if(LANDM.stone&&G.sites&&G.sites.length){/* v203: the five stones of the crown, one jewel model in five colours */const GEM=['#ff4a5a','#4a86ff','#35dc82','#ffc640','#b46bff'];if(!LANDM.stone.gem){const gm=LANDM.stone.mat.clone();gm.emissiveIntensity=0.12;gm.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>','#if defined( USE_COLOR )\n{float mx=max(diffuseColor.r,max(diffuseColor.g,diffuseColor.b));float mn=min(diffuseColor.r,min(diffuseColor.g,diffuseColor.b));float sat=(mx-mn)/max(mx,0.001);float k=smoothstep(0.32,0.12,sat)*smoothstep(0.3,0.55,mx);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vColor.rgb*1.25,k);}\n#endif')};gm.customProgramCacheKey=()=>'gemtint';LANDM.stone=Object.assign({},LANDM.stone,{mat:gm,gem:1})}const sm=landInst(LANDM.stone,G.sites.map(s=>{const [x,z]=world(s.q,s.r);return [x,landY(x,z),z,s.id*1.3,1.9]}),1);if(sm){const c=new T.Color(),w=new T.Color('#ffffff');G.sites.forEach((s,i)=>sm.setColorAt(i,c.set(GEM[s.id%GEM.length]).lerp(w,0.25)));if(sm.instanceColor)sm.instanceColor.needsUpdate=true;sm.castShadow=false;grp.add(sm)}}
-  landRocks(grp);landEdge(grp);
+  landRocks(grp);landEdge(grp);landFalls(grp);landPortals(grp);
   GL.land=grp;GL.scene.add(grp);glNoCull(grp);landPaint()}
 /* v198: painted ground (fire, frost, holy, bog, stone...) drawn on the land as coloured hexes lying on the ground */
 function landPaint(){if(GL.landPaint){GL.scene.remove(GL.landPaint);GL.landPaint.geometry.dispose();GL.landPaint=null}if(!landOn()||!GL.land||!G.paint)return;const T=THREE;const ks=Object.keys(G.paint);if(!ks.length)return;
@@ -8370,13 +8371,13 @@ function landLoot(){const on=landOn()&&LANDM.totem;const list=on?(G.loot||[]).fi
    a dotted rim), so a unit behind a ridge is seen. The test is done per pixel in the land's shader: a pixel of land is cut when it lies on the line of
    sight of a unit (LAND_WIN.L = the direction toward the camera) within LAND_WIN.r of it. */
 const LAND_WIN={r:1.15,max:40,u:null};
-function landWindow(mat){const U={uWN:{value:0},uWL:{value:new THREE.Vector3(0,1,0)},uWR:{value:LAND_WIN.r},uDet:{value:landDetail()},uWP:{value:Array.from({length:LAND_WIN.max},()=>new THREE.Vector3())}};LAND_WIN.u=U;
+function landWindow(mat){const U={uWN:{value:0},uWL:{value:new THREE.Vector3(0,1,0)},uWR:{value:LAND_WIN.r},uDet:{value:landDetail()},uB:{value:new THREE.Vector2(1e6,1e6)},uWP:{value:Array.from({length:LAND_WIN.max},()=>new THREE.Vector3())}};LAND_WIN.u=U;
   mat.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;attribute float fld;varying float vFld;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWP=position;vFld=fld;');
-    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;varying float vFld;uniform sampler2D uDet;uniform int uWN;uniform vec3 uWL;uniform float uWR;uniform vec3 uWP['+LAND_WIN.max+'];')
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;varying float vFld;uniform sampler2D uDet;uniform vec2 uB;uniform int uWN;uniform vec3 uWL;uniform float uWR;uniform vec3 uWP['+LAND_WIN.max+'];')
       .replace('#include <color_fragment>','#include <color_fragment>\n{float d1=texture2D(uDet,vWP.xz*0.14).r,d2=texture2D(uDet,vWP.zx*0.043+0.37).g,d3=texture2D(uDet,vWP.xz*0.47+0.11).b;float dl=d1*0.5+d2*0.3+d3*0.2;diffuseColor.rgb*=0.5+0.9*dl;diffuseColor.rgb+=vec3(0.035,0.03,0.0)*(d3-0.5);if(vFld>0.02){float rw=sin((vWP.x*0.8+vWP.z*0.6)*8.0);diffuseColor.rgb*=1.0+0.16*rw*vFld;}}')
-      .replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nfor(int i=0;i<'+LAND_WIN.max+';i++){if(i>=uWN)break;vec3 w=vWP-uWP[i];float s=dot(w,uWL);if(s<0.3)continue;float pd=length(w-s*uWL);if(pd<uWR*0.72)discard;if(pd<uWR&&mod(floor(gl_FragCoord.x)+floor(gl_FragCoord.y),2.0)<1.0)discard;}')};
-  mat.customProgramCacheKey=()=>'landwin3'}
+      .replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif((abs(vWP.x)>uB.x||abs(vWP.z)>uB.y)&&vWP.y>0.3){vec3 qq=vWP-uWL*(vWP.y/max(uWL.y,0.05));if(abs(qq.x)<uB.x-0.4&&abs(qq.z)<uB.y-0.4)discard;}\nfor(int i=0;i<'+LAND_WIN.max+';i++){if(i>=uWN)break;vec3 w=vWP-uWP[i];float s=dot(w,uWL);if(s<0.3)continue;float pd=length(w-s*uWL);if(pd<uWR*0.72)discard;if(pd<uWR&&mod(floor(gl_FragCoord.x)+floor(gl_FragCoord.y),2.0)<1.0)discard;}')};
+  mat.customProgramCacheKey=()=>'landwin4'}
 function landWindowTick(){const U=LAND_WIN.u;if(!U||!G||!G.units)return;const t=CAM.tilt,sa=Math.sin(CAM.az),ca=Math.cos(CAM.az);U.uWL.value.set(Math.sin(t)*sa,Math.cos(t),Math.sin(t)*ca).normalize();let n=0;
   for(const u of G.units){if(n>=LAND_WIN.max)break;if(u.kind==='wall'&&!u.monster)continue;if(u.cityWall)continue;for(const [q,r] of cells(u)){if(n>=LAND_WIN.max)break;const [x,z]=world(q,r);U.uWP.value[n++].set(x,landY0(x,z)+0.9,z)}}
   U.uWN.value=n}
@@ -8384,14 +8385,22 @@ function landWindowTick(){const U=LAND_WIN.u;if(!U||!G||!G.units)return;const t=
    board's edge as hills with woods, wheat fields, farmhouses and windmills, and only far away fades into the dark. Nothing out there can be walked on. */
 var LANDB=null;
 function landBE(x,z){const B=LANDB;if(!B)return 0;const cx=Math.max(-B.HW,Math.min(B.HW,x)),cz=Math.max(-B.HH,Math.min(B.HH,z));return Math.hypot(x-cx,z-cz)}
+function landPass(x,z){const B=LANDB;let m=0;if(!B||!B.bases)return 0;for(const b of B.bases){const rx=x-b.cx,rz=z-b.cz,t=rx*b.dx+rz*b.dz;if(t<-2)continue;const pd=Math.abs(rx*b.dz-rz*b.dx);let k=Math.min(1,Math.max(0,(4.6-pd)/2.2));k=k*k*(3-2*k);if(k>m)m=k}return m}
+/* v213 THE CANYON (owner: "the outer world seems way too peaceful; jungle, or hills and mountains that make a natural fortress: the city stood powerful
+   in the middle of this canyon; each base is established on one road that led away from the city and was used for trade"): past the board's edge the
+   ground climbs into a ring of high mountains; one pass per base lets its old trade road out; the rivers come down the wall as waterfalls. */
 function landBY(x,z){const B=LANDB;if(!B)return landY(x,z);const cx=Math.max(-B.HW,Math.min(B.HW,x)),cz=Math.max(-B.HH,Math.min(B.HH,z)),e=Math.hypot(x-cx,z-cz);if(e<=0)return landY(x,z);
-  const f=1-Math.min(1,e/3.5),h=landF(x*0.16+40,z*0.16);return landY(cx,cz)*f*f+Math.min(1,e/4)*(0.1+h*h*(1.6+3.6*Math.min(1,e/18)))}
+  const f=1-Math.min(1,e/3.5),h=landF(x*0.16+40,z*0.16),pk=landPass(x,z);let v=landY(cx,cz)*f*f+Math.min(1,e/4)*(0.1+h*h*1.2*(1-pk));
+  const wl=Math.min(1,Math.max(0,(e-1.4)/5.5)),ws=wl*wl*(3-2*wl),rg=1-Math.abs(2*landF(x*0.13+5,z*0.13+2)-1);v+=ws*B.M*0.2*(0.55+0.9*rg)*(0.8+0.4*landF(x*0.5+3,z*0.5))*(1-pk);
+  for(const R of B.riv||[]){if(x*R.sx<B.HW)continue;const ex=x*R.sx-B.HW,D=B.M*0.45,Rm=B.M*0.3,foot=D-Rm*0.8,zz=z-R.z0,Hm=B.M*0.3;
+    const dm=Math.hypot(ex-D,zz);if(dm<Rm*1.3){const t=1-dm/(Rm*1.3);v+=Hm*Math.pow(t,1.45)*(0.75+0.5*landF(x*0.3+9,z*0.3))}
+    if(ex<foot+1.2){const wob=Math.sin(ex*0.5)*1.2*Math.min(1,ex/3)*Math.min(1,Math.max(0,(foot-ex)/3)),w=ex>foot-2.2?2.3:1.25;let k=Math.max(0,1-Math.abs(zz-wob)/w);k=k*k*(3-2*k);v=v*(1-k)-0.34*k}
+    else if(ex<D&&Math.abs(zz)<1){const k=1-Math.abs(zz);v-=0.6*k*k}}
+  return v}
 function landBeyond(L){landCityRuins(L);if(L.fence)L.fence.length=0;const B=LANDB;if(!B||!landOn())return;const W=B.HW+B.M-2,H=B.HH+B.M-2;
-  for(let x=-W;x<W;x+=1.25)for(let z=-H;z<H;z+=1.25){const jx=landN(x*7.3+1,z*5.1),jz=landN(x*3.7+5,z*9.2+2),tx=x+jx*1.1,tz=z+jz*1.1,e=landBE(tx,tz);if(e<1.2||e>B.M-6)continue;
-    const fo=landF(tx*0.12+11,tz*0.12+4),pr=landN(tx*11.1,tz*13.7);if(!(fo>0.5?pr<0.85:pr<0.05))continue;const gy=landBY(tx,tz),tall=1.1+pr*0.9;
-    L.trunk.push([tx,gy+tall*0.22,tz,0,1,tall,0,0,1,9999,9999]);if(jx>0.45)L.pine.push([tx,gy+tall*0.62,tz,pr*6,1.1,tall,0,0,1,9999,9999]);else L.crown.push([tx,gy+tall*0.62,tz,pr*6,1+jz*0.3,0,0,0,0,9999,9999])}
-  for(let x=-W;x<W;x+=6.5)for(let z=-H;z<H;z+=6.5){const hx=x+landN(x*1.3+2,z*2.1)*4,hz=z+landN(x*2.7,z*1.9+6)*4,e=landBE(hx,hz);if(e<2.5||e>B.M-8)continue;if(landF(hx*0.12+11,hz*0.12+4)>0.47)continue;
-    const pr=landN(hx*5.3,hz*4.1),gy=landBY(hx,hz),rot=pr*6.28;if(pr<0.6){if(LANDM.farm)(L.mfarm=L.mfarm||[]).push([hx,gy,hz,rot,1.05])}else if(pr>0.86&&LANDM.mill)(L.mmill=L.mmill||[]).push([hx,gy-0.1,hz,rot,1.7])}}
+  for(let x=-W;x<W;x+=1.0)for(let z=-H;z<H;z+=1.0){const jx=landN(x*7.3+1,z*5.1),jz=landN(x*3.7+5,z*9.2+2),tx=x+jx*0.95,tz=z+jz*0.95,e=landBE(tx,tz);if(e<1.0||e>B.M-6)continue;
+    const pr=landN(tx*11.1,tz*13.7),gy=landBY(tx,tz);if(gy<0.04||landPass(tx,tz)>0.25)continue;if(gy<1.7?pr>0.86:(gy>3.6||pr>0.14))continue;const tall=1.2+pr*1.3;
+    L.trunk.push([tx,gy+tall*0.22,tz,0,1,tall,0,0,1,9999,9999]);if(jx>0.62)L.pine.push([tx,gy+tall*0.62,tz,pr*6,1.15,tall,0,0,1,9999,9999]);else{L.crown.push([tx,gy+tall*0.62,tz,pr*6,1.15+jz*0.45,0,0,0,0,9999,9999]);if(jz>0.5)L.crown2.push([tx+0.2,gy+tall*0.85,tz-0.12,pr*4,0.8,0,0,0,0,9999,9999])}}}
 /* v209 (owner: "we need to improve the texture of the ground"): a detail texture over the land's colours, drawn once on a canvas and repeated:
    red = tufts and blades, green = broad soft patches, blue = fine grain; the shader mixes the three at three sizes so no repeat shows. */
 function landDetail(){const N=512,mk=()=>{const cv=document.createElement("canvas");cv.width=cv.height=N;const g=cv.getContext("2d");g.fillStyle="rgb(128,128,128)";g.fillRect(0,0,N,N);return [cv,g]};let sd=7;const rnd=()=>{sd=(sd*16807)%2147483647;return sd/2147483647};
@@ -8420,6 +8429,38 @@ function landWaterMat(){const m=new THREE.MeshStandardMaterial({color:'#3690c0',
 /* v211: every tree its own green; a few autumn trees; scorched brown near the city */
 function landTint(m,list){if(!m||!landOn())return m;const c=new THREE.Color();list.forEach((t,i)=>{const h=landN(t[0]*3.7,t[2]*5.3),h2=landN(t[0]*9.1+4,t[2]*2.3),d=Math.hypot(t[0],t[2])/S3;let r=0.78+h*0.5,g=0.8+h2*0.4,b=0.65+h*0.6;
     if(h2>0.94){r=1.9;g=1.2;b=0.45}else if(h2<0.05){r=1.55;g=1.4;b=0.55}if(d<12){const k=Math.min(1,(12-d)/4);r=r*(1-k)+1.1*k;g=g*(1-k)+0.6*k;b=b*(1-k)+0.5*k}m.setColorAt(i,c.setRGB(r,g,b))});if(m.instanceColor)m.instanceColor.needsUpdate=true;return m}
+/* v212 (owner: "the lakes should end in rivers that come down from a very high mountain or a waterfall" and "the base is very representative of the
+   team: a lot of colour and effects; it is how the army came into this realm and how its supplies come in: something like a portal plus a fortress").
+   landSites finds where water touches the board's left and right edges (B.riv) and puts a portal site behind each Keep, outside the board (B.bases). */
+function landSites(){const B=LANDB;B.riv=[];B.bases=[];const acc={};for(const [q,r] of ringCells()){if(!(featAt(q,r)==='river'||(!featAt(q,r)&&isRoad(q,r))))continue;const [x,z]=world(q,r);if(Math.abs(x)<G.rect.hw-1.6)continue;const sx=x<0?-1:1;(acc[sx]=acc[sx]||[]).push(z)}
+  for(const sx of [-1,1])if(acc[sx])B.riv.push({sx:sx,z0:acc[sx].reduce((a,b)=>a+b,0)/acc[sx].length});
+  for(const p of G.players||[]){if(!p.camp)continue;const [x,z]=world(p.camp[0],p.camp[1]),l=Math.hypot(x,z)||1,dx=x/l,dz=z/l;let t=0;while(t<40&&landBE(x+dx*t,z+dz*t)<8.5)t+=0.5;B.bases.push({x:x+dx*t,z:z+dz*t,cx:x,cz:z,dx:dx,dz:dz,fac:p.fac,col:(FAC[p.fac]&&FAC[p.fac].color)||'#ffffff'})}}
+function landNearBase(x,z,d){const B=LANDB;if(!B||!B.bases)return false;for(const b of B.bases)if(Math.hypot(x-b.x,z-b.z)<d)return true;return false}
+function landColExtra(x,z,y,ny,c){const B=LANDB;if(!B)return;if(y>7.2)c.lerp(LCOL.a.setRGB(0.93,0.95,0.98),Math.min(1,(y-7.2)*0.8)*Math.min(1,ny*1.3));
+  for(const b of B.bases||[]){const rx=x-b.cx,rz=z-b.cz,rt=rx*b.dx+rz*b.dz,rp=Math.abs(rx*b.dz-rz*b.dx);if(rt>0.5&&rp<1.5&&y>-0.05&&y<0.6)c.lerp(LCOL.a.setRGB(0.50,0.42,0.31),Math.min(1,(1.5-rp)/0.6)*0.85);/* the trade road */const bd=Math.hypot(x-b.x,z-b.z);if(bd<5.5&&y>-0.05&&y<0.5){const n3=landN(x*3.1,z*3.1);c.lerp(LCOL.a.setRGB(0.37+0.06*n3,0.35+0.06*n3,0.34+0.05*n3),Math.min(1,(5.5-bd)/2)*0.85);if(bd<3.5)c.lerp(LCOL.a.set(b.col),(3.5-bd)/3.5*0.4)}}}
+function landFalls(grp){const B=LANDB,T=THREE;if(!B||!B.riv)return;for(const R of B.riv){const D=B.M*0.45,Rm=B.M*0.3,foot=D-Rm*0.8,pos=[],idx=[];let n=0;{const wl=foot+2.4,wp=new T.Mesh(new T.PlaneGeometry(wl,7),landWaterMat());wp.rotation.x=-Math.PI/2;wp.position.set(R.sx*(B.HW+wl/2),LAND.water,R.z0);grp.add(wp)}/* the river's water outside the board */
+    for(let ex=D-Rm*0.1;ex>=foot+0.5;ex-=0.3){const x=R.sx*(B.HW+ex),y=landBY(x,R.z0)+0.12,w=0.34+0.1*Math.sin(ex*3);pos.push(x,y,R.z0-w,x,y,R.z0+w);if(n){const i=n*2;idx.push(i-2,i-1,i,i-1,i+1,i)}n++}
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setIndex(idx);grp.add(new T.Mesh(g,new T.MeshBasicMaterial({color:'#e6f7ff',transparent:true,opacity:0.9,side:T.DoubleSide})));
+    const fx=R.sx*(B.HW+foot+0.2),fm=new T.Mesh(new T.CircleGeometry(1.5,20),new T.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:0.55,depthWrite:false}));fm.rotation.x=-Math.PI/2;fm.position.set(fx,LAND.water+0.03,R.z0);grp.add(fm)}}
+function landPortals(grp){const B=LANDB,T=THREE;GL.portals=[];if(!B||!B.bases)return;const STONE={fire:'#2b1a18',ice:'#b9def0',warband:'#5d5a57',arcane:'#efe7d2',giants:'#6d685c',curse:'#3d4a3a',chrono:'#3a3350',rift:'#2c4a4a',mage:'#4a5a3a',ooze:'#3a3560'},sh=innerWidth>=1000;
+  for(const b of B.bases){const g=new T.Group(),sc=b.fac==='giants'?0.8:0.66;g.position.set(b.x,landBY(b.x,b.z),b.z);g.rotation.y=Math.atan2(-b.dx,-b.dz);g.scale.setScalar(sc);
+    const st=gMat(STONE[b.fac]||'#55525c',{roughness:0.95}),ac=gMat(b.col,{roughness:0.6}),put=(o,x,y,z)=>{o.position.set(x,y,z);o.castShadow=sh;o.receiveShadow=true;g.add(o);return o},box=(w,h,d,x,y,z,m)=>put(new T.Mesh(new T.BoxGeometry(w,h,d),m||st),x,y,z);
+    for(const s of [-1,1]){box(1.0,5.2,1.1,s*2.3,2.6,0);box(1.35,0.5,1.45,s*2.3,0.25,0);box(1.25,0.4,1.3,s*2.3,5.3,0);box(0.08,1.9,0.75,s*2.3,3.3,0.62,ac);
+      box(0.7,2.0,6.0,s*4.2,1.0,3.2);for(let i=0;i<4;i++)box(0.74,0.36,0.7,s*4.2,2.17,0.9+i*1.5);
+      put(new T.Mesh(new T.CylinderGeometry(0.85,1.0,3.6,8),st),s*4.2,1.8,6.6);put(new T.Mesh(new T.ConeGeometry(1.15,1.5,8),ac),s*4.2,4.35,6.6);box(0.06,1.3,0.6,s*4.2+s*0.9,2.4,6.6,ac)}
+    box(6.2,0.9,1.2,0,5.95,0);box(2.4,0.7,1.3,0,6.75,0);box(0.9,0.9,0.5,0,6.0,0.55,ac);box(5.8,0.25,2.6,0,0.12,0.7);
+    const gm=(op,col)=>new T.MeshBasicMaterial({color:col||b.col,transparent:true,opacity:op,side:T.DoubleSide,depthWrite:false,blending:T.AdditiveBlending});
+    const hold=new T.Group();hold.position.set(0,2.8,0);hold.scale.set(1,1.38,1);g.add(hold);const disc=new T.Mesh(new T.CircleGeometry(1.8,28),new T.MeshBasicMaterial({color:new T.Color(b.col).multiplyScalar(0.8),transparent:true,opacity:0.92,side:T.DoubleSide}));hold.add(disc);
+    const core=new T.Mesh(new T.CircleGeometry(1.0,24),gm(0.2,'#ffffff'));core.position.z=0.02;hold.add(core);const rings=[];
+    for(let i=0;i<3;i++){const r=new T.Mesh(new T.RingGeometry(0.45+i*0.45,0.6+i*0.45,24,1,0,4.2),gm(0.4,'#ffffff'));r.position.z=0.04+i*0.01;hold.add(r);rings.push(r)}
+    const motes=[];for(let i=0;i<10;i++){const m=new T.Mesh(gGeo('lmote',()=>new T.SphereGeometry(0.09,6,5)),gm(0.9));g.add(m);motes.push(m)}
+    const gl=new T.Mesh(new T.CircleGeometry(3.4,24),gm(0.1));gl.rotation.x=-Math.PI/2;gl.position.set(0,0.07,2.4);g.add(gl);
+    if(sh){const pl=new T.PointLight(b.col,1.0,11,1.5);pl.position.set(0,2.8,1.6);g.add(pl)}
+    grp.add(g);GL.portals.push({rings:rings,motes:motes,core:core})}}
+function landPortalTick(){if(LAND_WIN.u&&LANDB)LAND_WIN.u.uB.value.set(LANDB.HW,LANDB.HH);const P=GL.portals;if(!P||!P.length||!landOn())return;const t=performance.now()/1000;
+  for(const p of P){p.rings.forEach((r,i)=>{r.rotation.z=t*(0.9+i*0.5)*(i%2?-1:1)});p.core.material.opacity=0.16+0.08*Math.sin(t*2.2);p.motes.forEach((m,i)=>{const a=t*0.8+i*0.63,rr=1.2+0.9*Math.sin(t*0.5+i);m.position.set(Math.cos(a)*rr,2.8+Math.sin(a*1.3+i)*1.9,0.4+0.5*Math.sin(a*0.7+i))})}
+  if(((GL.tick|0)&1)===0)GL.dirty=true}
+{const f0=landWindowTick;landWindowTick=function(){f0();landPortalTick()}}
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
