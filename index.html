@@ -7701,7 +7701,7 @@ function glBuildStatics(){
     if(isCentreWall(q,r)&&!isHeart(q,r)&&!f)L.cwall.push([x,0,z,0,1,1])
     // v80 the Realm's city: houses inside the Heart until the Beast falls, then rubble
     if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast||(typeof fallPre==='function'&&fallPre())){/* v121: the houses stand during the city moment before the Fall */if(!cityUp()&&h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
-  if(glWorldOn())glWorldGrow(L,WLK);if(landOn())landStatics(L,WLK);/* v195 look test: the map at the units' scale */
+  if(glWorldOn())glWorldGrow(L,WLK);if(landOn()){landStatics(L,WLK);landWoods(L)}/* v195 look test: the map at the units' scale */
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
   if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5)*(glWorldOn()?WORLD.forest:1);const o=new T.Object3D();
     /* v142: the forests go in CHUNKS of about 6 x 6 scene units, each its own InstancedMesh with a bounding sphere, so three skips the chunks outside the camera when the board is zoomed in (one mesh for ~100 forests drew 2 million triangles every frame). glNoCull must not touch them: see below */
@@ -7728,7 +7728,7 @@ function glBuildStatics(){
   if(L.shallow.length){const w=glInst(L.shallow,gGeo('shallow',()=>new T.CylinderGeometry(0.99,0.99,0.04,6)),new T.MeshStandardMaterial({color:'#8fd0ee',transparent:true,opacity:0.7,roughness:0.2,metalness:0.1}),false);add(w);GL.water.push(w)}/* v159 */
   add(glInst(L.deck2,gGeo('bdeck',()=>new T.BoxGeometry(2.0,0.08,0.9)),gMat('#8a6a42')));add(glInst(L.rail,gGeo('brail',()=>new T.BoxGeometry(2.0,0.06,0.06)),gMat('#5a3f26')));add(glInst(L.bpost,gGeo('bpost',()=>new T.CylinderGeometry(0.05,0.06,0.5,5)),gMat('#5a3f26')));
   if(L.water.length){const w=glInst(L.water,gGeo('water',()=>new T.CylinderGeometry(0.99,0.99,0.06,6)),new T.MeshStandardMaterial({color:'#4c9ad6',transparent:true,opacity:0.82,roughness:0.15,metalness:0.2}),false);add(w);GL.water.push(w)}
-  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));if(L.flung)add(glInst(L.flung,gGeo('flung',()=>new T.BoxGeometry(0.9,0.6,0.5)),gMat('#d9d2c2',{roughness:0.9})));/* v197 */
+  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));if(L.log)add(glInst(L.log,gGeo('log',()=>{const g=new T.CylinderGeometry(0.07,0.09,1,6);g.rotateZ(Math.PI/2);return g}),gMat('#5a4630')));if(L.fence)add(glInst(L.fence,gGeo('fence',()=>new T.BoxGeometry(0.95,0.13,0.05)),gMat('#8a7a5c')));/* v199 */if(L.flung)add(glInst(L.flung,gGeo('flung',()=>new T.BoxGeometry(0.9,0.6,0.5)),gMat('#d9d2c2',{roughness:0.9})));/* v197 */
   add(glInst(L.house,gGeo('house',()=>{const g=new T.BoxGeometry(0.82,0.62,0.7);g.translate(0,0.31,0);return g}),gMat('#b8a98c')));add(glInst(L.roofc,gGeo('roofc',()=>{const g=new T.ConeGeometry(0.66,0.5,4);g.translate(0,0.87,0);return g}),gMat('#7a3f36')));// v80 the city
   add(glInst(L.post,gGeo('tpost',()=>new T.CylinderGeometry(0.08,0.1,2.2,6)),gMat('#6b4a2e')));
   add(glInst(L.deck,gGeo('tdeck',()=>new T.BoxGeometry(1.2,0.14,1.2)),gMat('#a8875a')));
@@ -8276,11 +8276,12 @@ function landCol(x,z,y,ny,c){const d=Math.hypot(x,z)/S3,n=0.5+0.5*Math.sin(x*1.7
   const live=Math.min(1,Math.max(0,(d+n*3-13)/5)),dead=Math.min(1,Math.max(0,(8.5-d+n*2)/3.5));
   c.setRGB(0.36+0.1*n2,0.52+0.12*n,0.25+0.05*n2);const dust=LCOL.a.setRGB(0.47+0.07*n2,0.42+0.05*n,0.33+0.04*n2);c.lerp(dust,1-live);
   const ash=LCOL.b.setRGB(0.15+0.04*n2,0.13+0.03*n,0.17+0.07*n);c.lerp(ash,dead);
+  if(live>0.55&&y>-0.05&&y<0.25){const rf=z/1.5,q=Math.round(x/S3-rf/2),r=Math.round(rf);if(landField(q,r))c.lerp(LCOL.a.setRGB(0.80-0.07*((q+r)&1),0.67-0.05*((q+r)&1),0.30),0.8)}
   if(y<-0.12)c.lerp(LCOL.a.setRGB(0.3,0.33,0.3),Math.min(1,(-0.12-y)*5));
   const steep=Math.min(1,Math.max(0,(0.93-ny)*5)),high=Math.min(1,Math.max(0,(y-0.45)*2.2));const rk=Math.max(steep,high*(1-0.75*live));
   if(rk>0){const g=0.42+0.12*n2-0.16*dead;c.lerp(LCOL.b.setRGB(g,g*0.98,g*0.95+0.03*dead),rk)}}
 const LCOL={a:null,b:null};
-function landBuild(){if(GL.land){GL.scene.remove(GL.land);GL.land.traverse(o=>{if(o.geometry)o.geometry.dispose()});GL.land=null}LANDH.clear();LANDC.clear();
+function landBuild(){LANDF.clear();if(GL.land){GL.scene.remove(GL.land);GL.land.traverse(o=>{if(o.geometry)o.geometry.dispose()});GL.land=null}LANDH.clear();LANDC.clear();
   if(GL.tileSets)for(const s of Object.values(GL.tileSets))s.visible=!landOn();if(!landOn())return;const T=THREE;LCOL.a=new T.Color();LCOL.b=new T.Color();
   const HW=G.rect?G.rect.hw+1.2:(G.Rv||G.R)*S3,HH=G.rect?G.rect.hh+1.2:(G.Rv||G.R)*1.5,st=LAND.step,nx=Math.ceil(2*HW/st),nz=Math.ceil(2*HH/st);
   const geo=new T.PlaneGeometry(2*HW,2*HH,nx,nz);geo.rotateX(-Math.PI/2);const P=geo.attributes.position;
@@ -8293,7 +8294,7 @@ function landBuild(){if(GL.land){GL.scene.remove(GL.land);GL.land.traverse(o=>{i
   const pts=[];for(const [q,r] of ringCells()){if(G.voids[key(q,r)]||!passable(q,r))continue;const [x,z]=world(q,r);for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30),b=Math.PI/180*(60*i+30);const x1=x+0.97*Math.cos(a),z1=z+0.97*Math.sin(a),x2=x+0.97*Math.cos(b),z2=z+0.97*Math.sin(b);pts.push(x1,landY(x1,z1)+0.035,z1,x2,landY(x2,z2)+0.035,z2)}}
   const lg=new T.BufferGeometry();lg.setAttribute('position',new T.Float32BufferAttribute(pts,3));grp.add(new T.LineSegments(lg,new T.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:0.11,depthWrite:false})));
   /* v198: one sheet of water under the whole land: it shows wherever the ground dips below it (river beds, lakes, shallow fords) */
-  const wm=new T.Mesh(new T.PlaneGeometry(2*HW,2*HH),new T.MeshStandardMaterial({color:'#3f8fc9',transparent:true,opacity:0.8,roughness:0.12,metalness:0.25}));wm.rotation.x=-Math.PI/2;wm.position.y=LAND.water;grp.add(wm);
+  const wm=new T.Mesh(new T.PlaneGeometry(2*HW-0.5,2*HH-0.5),new T.MeshStandardMaterial({color:'#3f8fc9',transparent:true,opacity:0.8,roughness:0.12,metalness:0.25}));wm.rotation.x=-Math.PI/2;wm.position.y=LAND.water;grp.add(wm);
   GL.land=grp;GL.scene.add(grp);glNoCull(grp);landPaint()}
 /* v198: painted ground (fire, frost, holy, bog, stone...) drawn on the land as coloured hexes lying on the ground */
 function landPaint(){if(GL.landPaint){GL.scene.remove(GL.landPaint);GL.landPaint.geometry.dispose();GL.landPaint=null}if(!landOn()||!GL.land||!G.paint)return;const T=THREE;const ks=Object.keys(G.paint);if(!ks.length)return;
@@ -8301,6 +8302,26 @@ function landPaint(){if(GL.landPaint){GL.scene.remove(GL.landPaint);GL.landPaint
   ks.forEach((k,i)=>{const [q,r]=k.split(',').map(Number);const [x,z]=world(q,r);const pt=G.paint[k];o.position.set(x,landY(x,z)+0.05,z);o.updateMatrix();m.setMatrixAt(i,o.matrix);let col='#ffffff';try{col=pt.col||(typeof GROUND_PAINT!=='undefined'&&GROUND_PAINT[pt.fac])||(FAC[pt.fac]&&FAC[pt.fac].color)||'#ffffff'}catch(e){}m.setColorAt(i,c.set(col))});
   m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;m.frustumCulled=false;GL.landPaint=m;GL.scene.add(m);GL.dirty=true}
 function landSet(on){try{localStorage.setItem('hexmarch.land',on?'1':'0')}catch(e){}GL.sig='';GL.dirty=true}
+/* v199 THE LAND, STEP 2: woodland instead of forest tiles (dense inside, thin at the edges, trees thrown down by the blast in the scarred land, burnt
+   stumps near the city), more trees on the ridges of the living land, and the kingdom's farmland (wheat fields with fences, a farmhouse at a field corner). */
+const LANDF=new Map();
+function landField(q,r){const k=q+','+r;let v=LANDF.get(k);if(v!==undefined)return v;v=false;
+  if(inR(q,r)&&!featAt(q,r)&&!isRoad(q,r)&&hd(q,r,0,0)>=15&&hexRand(Math.floor(q/2),Math.floor(r/2),80)<0.3&&!(G.players||[]).some(p=>p.camp&&hd(q,r,p.camp[0],p.camp[1])<=4)&&!(G.rooms||[]).some(R=>R.c&&hd(q,r,R.c[0],R.c[1])<=1))v=true;
+  LANDF.set(k,v);return v}
+function landWoods(L){const fm=L.fmodel.slice();L.fmodel.length=0;L.log=[];L.fence=[];
+  const tree=(tx,tz,q,r,tall,i)=>{const gy=landY(tx,tz);L.trunk.push([tx,gy+tall*0.22,tz,0,1,tall,0,0,1,q,r]);if((i+q)%3)L.pine.push([tx,gy+tall*0.62,tz,hexRand(q,r,60+i)*3,1.05,tall,0,0,1,q,r]);else{L.crown.push([tx,gy+tall*0.62,tz,i*1.3,1+hexRand(q,r,i+2)*0.3,0,0,0,0,q,r]);L.crown2.push([tx+0.16,gy+tall*0.8,tz-0.1,i*0.7,0.7,0,0,0,0,q,r])}};
+  for(const t of fm){const q=t[5],r=t[6],x=t[0],z=t[2],d=hd(q,r,0,0);let nb=0;for(const [a,b] of DIRS)if(featAt(q+a,r+b)==='forest')nb++;
+    const n=nb>=4?7:nb>=2?5:3,out=Math.atan2(z,x);
+    for(let i=0;i<n;i++){const a=i*2.4+hexRand(q,r,i)*1.5,rad=0.2+hexRand(q,r,i+10)*0.85,tx=x+Math.cos(a)*rad,tz=z+Math.sin(a)*rad,tall=1.15+hexRand(q,r,i+20)*0.85;
+      const fell=d<=13?hexRand(q,r,i+30)<(d<=8?0.75:0.4):false;
+      if(fell){/* thrown down by the blast, pointing away from the city */L.log.push([tx,landY(tx,tz)+0.09,tz,-out+(hexRand(q,r,i+40)-0.5)*0.5,0.7+tall*0.5]);if(d>8)L.trunk.push([tx,landY(tx,tz)+0.08,tz,0,1,0.4,0,0,1,q,r])}
+      else if(d<=8)L.trunk.push([tx,landY(tx,tz)+tall*0.22,tz,0,0.8,tall*0.8,0,0,1,q,r]);/* a burnt bare trunk */
+      else tree(tx,tz,q,r,tall,i)}}
+  for(const [q,r] of ringCells()){const [x,z]=world(q,r);const d=hd(q,r,0,0),k=key(q,r);
+    if(featAt(q,r)==='rock'&&!(G.wallLook&&G.wallLook[k])&&d>13)for(let i=0;i<3;i++){const tx=x+(hexRand(q,r,90+i)-0.5)*1.3,tz=z+(hexRand(q,r,95+i)-0.5)*1.3;if(landY(tx,tz)>0.7)tree(tx,tz,q,r,1.0+hexRand(q,r,99+i)*0.7,i+1)}
+    if(landField(q,r)){for(let i=0;i<6;i++){const a=Math.PI/180*60*i,nq=q+DIRS[i%6][0],nr=r+DIRS[i%6][1];const mx=x+Math.cos(a)*0.84,mz=z+Math.sin(a)*0.84;const rf=mz*2/1.5-r,qq=0;
+        /* a fence only on the field's outer edges */const ox=x+Math.cos(a)*1.732,oz=z+Math.sin(a)*1.732;const orr=Math.round(oz/1.5),oq=Math.round(ox/S3-orr/2);if(landField(oq,orr))continue;if(hexRand(q,r,110+i)<0.35)continue;L.fence.push([mx,landY(mx,mz)+0.16,mz,-a+Math.PI/2,1])}
+      if(hexRand(q,r,120)<0.14){const a=Math.PI/180*(60*Math.floor(hexRand(q,r,121)*6)-30),hx=x+Math.cos(a)*0.97,hz=z+Math.sin(a)*0.97,gy=landY(hx,hz),rot=hexRand(q,r,122)*6.28;L.house.push([hx,gy,hz,rot,0.5]);L.roofc.push([hx,gy,hz,rot,0.5])}}}}
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
