@@ -7701,7 +7701,7 @@ function glBuildStatics(){
     if(isCentreWall(q,r)&&!isHeart(q,r)&&!f)L.cwall.push([x,0,z,0,1,1])
     // v80 the Realm's city: houses inside the Heart until the Beast falls, then rubble
     if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast||(typeof fallPre==='function'&&fallPre())){/* v121: the houses stand during the city moment before the Fall */if(!cityUp()&&h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
-  if(glWorldOn())glWorldGrow(L,WLK);if(landOn()){landStatics(L,WLK);landWoods(L)}/* v195 look test: the map at the units' scale */
+  if(glWorldOn())glWorldGrow(L,WLK);if(landOn()){landStatics(L,WLK);landWoods(L);landModels(L,WLK)}/* v195 look test: the map at the units' scale */
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
   if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5)*(glWorldOn()?WORLD.forest:1);const o=new T.Object3D();
     /* v142: the forests go in CHUNKS of about 6 x 6 scene units, each its own InstancedMesh with a bounding sphere, so three skips the chunks outside the camera when the board is zoomed in (one mesh for ~100 forests drew 2 million triangles every frame). glNoCull must not touch them: see below */
@@ -7728,7 +7728,7 @@ function glBuildStatics(){
   if(L.shallow.length){const w=glInst(L.shallow,gGeo('shallow',()=>new T.CylinderGeometry(0.99,0.99,0.04,6)),new T.MeshStandardMaterial({color:'#8fd0ee',transparent:true,opacity:0.7,roughness:0.2,metalness:0.1}),false);add(w);GL.water.push(w)}/* v159 */
   add(glInst(L.deck2,gGeo('bdeck',()=>new T.BoxGeometry(2.0,0.08,0.9)),gMat('#8a6a42')));add(glInst(L.rail,gGeo('brail',()=>new T.BoxGeometry(2.0,0.06,0.06)),gMat('#5a3f26')));add(glInst(L.bpost,gGeo('bpost',()=>new T.CylinderGeometry(0.05,0.06,0.5,5)),gMat('#5a3f26')));
   if(L.water.length){const w=glInst(L.water,gGeo('water',()=>new T.CylinderGeometry(0.99,0.99,0.06,6)),new T.MeshStandardMaterial({color:'#4c9ad6',transparent:true,opacity:0.82,roughness:0.15,metalness:0.2}),false);add(w);GL.water.push(w)}
-  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));if(L.cave){add(glInst(L.cave,gGeo('cave',()=>new T.SphereGeometry(0.95,10,8)),new T.MeshBasicMaterial({color:'#06050a'}),false));add(glInst(L.arch,gGeo('arch',()=>new T.TorusGeometry(1.0,0.2,6,10,Math.PI)),gMat('#57534e',{roughness:1})))}if(L.log)add(glInst(L.log,gGeo('log',()=>{const g=new T.CylinderGeometry(0.07,0.09,1,6);g.rotateZ(Math.PI/2);return g}),gMat('#5a4630')));if(L.fence)add(glInst(L.fence,gGeo('fence',()=>new T.BoxGeometry(0.95,0.13,0.05)),gMat('#8a7a5c')));/* v199 */if(L.flung)add(glInst(L.flung,gGeo('flung',()=>new T.BoxGeometry(0.9,0.6,0.5)),gMat('#d9d2c2',{roughness:0.9})));/* v197 */
+  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));if(L.mblock)add(landInst(LANDM.block,L.mblock,1));if(L.mruin)add(landInst(LANDM.ruin,L.mruin,1));if(L.cave){add(glInst(L.cave,gGeo('cave',()=>new T.SphereGeometry(0.95,10,8)),new T.MeshBasicMaterial({color:'#06050a'}),false));add(glInst(L.arch,gGeo('arch',()=>new T.TorusGeometry(1.0,0.2,6,10,Math.PI)),gMat('#57534e',{roughness:1})))}if(L.log)add(glInst(L.log,gGeo('log',()=>{const g=new T.CylinderGeometry(0.07,0.09,1,6);g.rotateZ(Math.PI/2);return g}),gMat('#5a4630')));if(L.fence)add(glInst(L.fence,gGeo('fence',()=>new T.BoxGeometry(0.95,0.13,0.05)),gMat('#8a7a5c')));/* v199 */if(L.flung)add(glInst(L.flung,gGeo('flung',()=>new T.BoxGeometry(0.9,0.6,0.5)),gMat('#d9d2c2',{roughness:0.9})));/* v197 */
   add(glInst(L.house,gGeo('house',()=>{const g=new T.BoxGeometry(0.82,0.62,0.7);g.translate(0,0.31,0);return g}),gMat('#b8a98c')));add(glInst(L.roofc,gGeo('roofc',()=>{const g=new T.ConeGeometry(0.66,0.5,4);g.translate(0,0.87,0);return g}),gMat('#7a3f36')));// v80 the city
   add(glInst(L.post,gGeo('tpost',()=>new T.CylinderGeometry(0.08,0.1,2.2,6)),gMat('#6b4a2e')));
   add(glInst(L.deck,gGeo('tdeck',()=>new T.BoxGeometry(1.2,0.14,1.2)),gMat('#a8875a')));
@@ -8147,7 +8147,7 @@ function glNoCull(o){o.traverse(x=>{if(!(x.userData&&x.userData.forest))x.frustu
 function glFrame(){
   if(!glInit())return false;GL.tick++;
   if(GL.game!==G){GL.game=G;GL.sig='';GL.terrSig='';for(const f of GL.figs.values()){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose())}GL.figs.clear()}
-  glForestLoad();if(G.realm){glCityWallLoad();glCityLoad()}
+  glForestLoad();if(G.realm){glCityWallLoad();glCityLoad();if(landOn())landModelsLoad()}
   if(GL.tick%15===1||!GL.sig){const s=glStaticSig();if(s!==GL.sig){GL.sig=s;LANDC.clear();glBuildTiles();landBuild();glBuildStatics();glPlinth();glProps();glSunFit();GL.terrSig='';glNoCull(GL.scene)}
     const t=glTerrSig();if(t!==GL.terrSig){GL.terrSig=t;glPaintTiles();landPaint();glBuildTerrDeco();glNoCull(GL.terrDeco);if(typeof glAmbientBuild==='function')glAmbientBuild()}}
   if(GL.throne)GL.throne.visible=!unitAt(0,0);
@@ -8339,6 +8339,15 @@ function landCaves(L){L.cave=[];L.arch=[];for(const R of (G.rooms||[]).filter(x=
     for(let i=0;i<12;i++){const a=i*Math.PI/6,x=cx+Math.cos(a)*3.0,z=cz+Math.sin(a)*3.0,h=landY(x,z)+landY(cx+Math.cos(a)*3.8,cz+Math.sin(a)*3.8)*0.5;if(h>bh){bh=h;best=a}}
     if(best===null)continue;let rad=1.2;for(;rad<3.4;rad+=0.15)if(landY(cx+Math.cos(best)*rad,cz+Math.sin(best)*rad)>0.45)break;const x=cx+Math.cos(best)*(rad+0.25),z=cz+Math.sin(best)*(rad+0.25);
     L.cave.push([x,0.15,z,0,1,1.05,0,0,1]);L.arch.push([x-Math.cos(best)*0.3,0.1,z-Math.sin(best)*0.3,-best+Math.PI/2,1.05])}}
+/* v201: the owner's Tripo pieces on the land: the flung wall block (models/map_wall-block.glb) and the ruined building (models/map_ruin.glb, on every
+   ruined-wall hex), drawn as instanced copies. Add a piece: a file in LAND_FILES, a list in landModels, an add() line in glBuildStatics. */
+const LAND_FILES={block:'models/map_wall-block.glb',ruin:'models/map_ruin.glb'},LANDM={};
+function landModelsLoad(){for(const k in LAND_FILES){if(LANDM[k]!==undefined)continue;LANDM[k]=false;glModel(LAND_FILES[k]).then(src=>{let mesh=null;src.traverse(m=>{if(m.isMesh&&!mesh)mesh=m});if(!mesh)return;src.updateMatrixWorld(true);const geo=mesh.geometry.clone();geo.applyMatrix4(mesh.matrixWorld);geo.computeBoundingBox();const b=geo.boundingBox;const mat=mesh.material.clone();if(mat.map&&mat.emissive){mat.emissive.set('#ffffff');mat.emissiveMap=mat.map;mat.emissiveIntensity=0.38}/* lifts the marble toward the white of the concept art */LANDM[k]={geo,mat,w:Math.max(b.max.x-b.min.x,b.max.z-b.min.z)||1,y0:b.min.y,cx:(b.max.x+b.min.x)/2,cz:(b.max.z+b.min.z)/2};GL.sig='';GL.dirty=true}).catch(()=>{})}}
+function landInst(M,list,k){if(!M||!list.length)return null;const m=new THREE.InstancedMesh(M.geo,M.mat,list.length);const o=new THREE.Object3D();
+  list.forEach((t,i)=>{const sc=t[4]/M.w,c=Math.cos(t[3]),s=Math.sin(t[3]);o.position.set(t[0]-(M.cx*c+M.cz*s)*sc,t[1]-M.y0*sc-0.06*t[4],t[2]-(-M.cx*s+M.cz*c)*sc);o.rotation.set(0,t[3],0);o.scale.setScalar(sc);o.updateMatrix();m.setMatrixAt(i,o.matrix)});
+  m.instanceMatrix.needsUpdate=true;m.castShadow=innerWidth>=1000;m.receiveShadow=true;return m}
+function landModels(L,WLK){if(LANDM.block&&L.flung){L.mblock=L.flung.map(t=>[t[0],t[1]-0.05,t[2],t[3],0.9+t[4]*0.9]);L.flung=null}
+  if(LANDM.ruin&&WLK.ruinwall){L.mruin=WLK.ruinwall.map((t,i)=>[t[0],t[1],t[2],Math.round(t[3]/1.047)*1.047,1.85]);delete WLK.ruinwall}}
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
