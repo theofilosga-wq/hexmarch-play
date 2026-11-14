@@ -8147,7 +8147,7 @@ function glNoCull(o){o.traverse(x=>{if(!(x.userData&&x.userData.forest))x.frustu
 function glFrame(){
   if(!glInit())return false;GL.tick++;
   if(GL.game!==G){GL.game=G;GL.sig='';GL.terrSig='';for(const f of GL.figs.values()){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose())}GL.figs.clear()}
-  glForestLoad();if(G.realm){glCityWallLoad();glCityLoad();if(landOn())landModelsLoad();if(GL.tick%10===0)landLoot()}
+  glForestLoad();if(G.realm){glCityWallLoad();glCityLoad();if(landOn()){landModelsLoad();landWindowTick()}if(GL.tick%10===0)landLoot()}
   if(GL.tick%15===1||!GL.sig){const s=glStaticSig();if(s!==GL.sig){GL.sig=s;LANDC.clear();glBuildTiles();landBuild();glBuildStatics();glPlinth();glProps();glSunFit();GL.terrSig='';glNoCull(GL.scene)}
     const t=glTerrSig();if(t!==GL.terrSig){GL.terrSig=t;glPaintTiles();landPaint();glBuildTerrDeco();glNoCull(GL.terrDeco);if(typeof glAmbientBuild==='function')glAmbientBuild()}}
   if(GL.throne)GL.throne.visible=!unitAt(0,0);
@@ -8289,7 +8289,7 @@ function landBuild(){LANDF.clear();landRoads();if(GL.land){GL.scene.remove(GL.la
   for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i);P.setY(i,landY(x,z))}geo.computeVertexNormals();
   const N=geo.attributes.normal,C=new Float32Array(P.count*3),c=new T.Color();for(let i=0;i<P.count;i++){landCol(P.getX(i),P.getZ(i),P.getY(i),N.getY(i),c);C[i*3]=c.r;C[i*3+1]=c.g;C[i*3+2]=c.b}
   geo.setAttribute('color',new T.BufferAttribute(C,3));const grp=new T.Group();
-  const m=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,roughness:0.95,metalness:0,flatShading:true}));m.receiveShadow=true;m.castShadow=innerWidth>=1000;grp.add(m);
+  const lm=new T.MeshStandardMaterial({vertexColors:true,roughness:0.95,metalness:0,flatShading:true});landWindow(lm);const m=new T.Mesh(geo,lm);m.receiveShadow=true;m.castShadow=innerWidth>=1000;grp.add(m);
   /* a skirt of dark earth under the land, and the faint hex lines on the ground you can stand on */
   const base=new T.Mesh(new T.BoxGeometry(2*HW,1.2,2*HH),gMat('#1c1a1f',{roughness:1}));base.position.y=-1.0;grp.add(base);
   const pts=[];for(const [q,r] of ringCells()){if(G.voids[key(q,r)]||!passable(q,r))continue;const [x,z]=world(q,r);for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30),b=Math.PI/180*(60*i+30);const x1=x+0.97*Math.cos(a),z1=z+0.97*Math.sin(a),x2=x+0.97*Math.cos(b),z2=z+0.97*Math.sin(b);pts.push(x1,landY(x1,z1)+0.035,z1,x2,landY(x2,z2)+0.035,z2)}}
@@ -8356,6 +8356,19 @@ function landModels(L,WLK){if(LANDM.block&&L.flung){L.mblock=L.flung.map(t=>[t[0
 /* v202: the Rift Totems as models on the land (they vanish when taken) */
 function landLoot(){const on=landOn()&&LANDM.totem;const list=on?(G.loot||[]).filter(x=>x.kind==='totem'&&x.carrier==null):[];const sig=list.map(x=>x.id).join(',')+'|'+(on?1:0);if(sig===GL.lootSig)return;GL.lootSig=sig;
   if(GL.landLoot){GL.scene.remove(GL.landLoot);GL.landLoot=null}if(!list.length)return;const m=landInst(LANDM.totem,list.map(x=>{const [wx,wz]=world(x.q,x.r);return [wx,landY(wx,wz),wz,0,0.95]}),1);if(m){m.frustumCulled=false;GL.landLoot=m;GL.scene.add(m);GL.dirty=true}}
+/* v205: a window in the rock. Where the land stands between the camera and a unit, the land is cut away in a round window (solid hole in the middle,
+   a dotted rim), so a unit behind a ridge is seen. The test is done per pixel in the land's shader: a pixel of land is cut when it lies on the line of
+   sight of a unit (LAND_WIN.L = the direction toward the camera) within LAND_WIN.r of it. */
+const LAND_WIN={r:1.15,max:40,u:null};
+function landWindow(mat){const U={uWN:{value:0},uWL:{value:new THREE.Vector3(0,1,0)},uWR:{value:LAND_WIN.r},uWP:{value:Array.from({length:LAND_WIN.max},()=>new THREE.Vector3())}};LAND_WIN.u=U;
+  mat.onBeforeCompile=sh=>{Object.assign(sh.uniforms,U);
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWP=position;');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vWP;uniform int uWN;uniform vec3 uWL;uniform float uWR;uniform vec3 uWP['+LAND_WIN.max+'];')
+      .replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nfor(int i=0;i<'+LAND_WIN.max+';i++){if(i>=uWN)break;vec3 w=vWP-uWP[i];float s=dot(w,uWL);if(s<0.3)continue;float pd=length(w-s*uWL);if(pd<uWR*0.72)discard;if(pd<uWR&&mod(floor(gl_FragCoord.x)+floor(gl_FragCoord.y),2.0)<1.0)discard;}')};
+  mat.customProgramCacheKey=()=>'landwin'}
+function landWindowTick(){const U=LAND_WIN.u;if(!U||!G||!G.units)return;const t=CAM.tilt,sa=Math.sin(CAM.az),ca=Math.cos(CAM.az);U.uWL.value.set(Math.sin(t)*sa,Math.cos(t),Math.sin(t)*ca).normalize();let n=0;
+  for(const u of G.units){if(n>=LAND_WIN.max)break;if(u.kind==='wall'&&!u.monster)continue;if(u.cityWall)continue;for(const [q,r] of cells(u)){if(n>=LAND_WIN.max)break;const [x,z]=world(q,r);U.uWP.value[n++].set(x,landY0(x,z)+0.9,z)}}
+  U.uWN.value=n}
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
