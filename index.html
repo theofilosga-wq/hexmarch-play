@@ -7102,10 +7102,11 @@ function axisDist(d,mx,my){if(!d.ax){const [a,b,c2,d2]=d.rect;return Math.hypot(
 function hexAt3D(mx,my){
   {let best=null,bd=1e9;for(const d of drawnUnits){const [a,b,c2,d2]=d.rect;if(mx>=a&&mx<=c2&&my>=b&&my<=d2&&alive(d.u)){const k=axisDist(d,mx,my);if(k<bd){bd=k;best=d}}}
     if(best){if(typeof uxPreferGround==='function'){const sv=drawnUnits;drawnUnits=[];let g=null;try{g=hexAt3D(mx,my)}finally{drawnUnits=sv}if(uxPreferGround(g,best.u))return g}return best.cell}}/* v103: in a crowd the ground wins when it is a move or aim spot */
-  const xr=(mx-CAM.cx)/CAM.S,zr=(my-CAM.cy)/(CAM.S*Math.cos(CAM.tilt));const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
+  let q=0,r=0,hh=0;const LN=typeof landOn==='function'&&landOn();/* v197: on raised ground the tap is traced back to the hex at its height */
+  for(let it=0;it<(LN?3:1);it++){const xr=(mx-CAM.cx)/CAM.S,zr=(my-CAM.cy+hh*CAM.S*Math.sin(CAM.tilt))/(CAM.S*Math.cos(CAM.tilt));const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
   const x=xr*c+zr*s,z=-xr*s+zr*c;
-  const rf=z/1.5,qf=x/S3-rf/2,sf=-qf-rf;let q=Math.round(qf),r=Math.round(rf),s2=Math.round(sf);
-  const dq=Math.abs(q-qf),dr=Math.abs(r-rf),ds=Math.abs(s2-sf);if(dq>dr&&dq>ds)q=-r-s2;else if(dr>ds)r=-q-s2;
+  const rf=z/1.5,qf=x/S3-rf/2,sf=-qf-rf;q=Math.round(qf);r=Math.round(rf);let s2=Math.round(sf);
+  const dq=Math.abs(q-qf),dr=Math.abs(r-rf),ds=Math.abs(s2-sf);if(dq>dr&&dq>ds)q=-r-s2;else if(dr>ds)r=-q-s2;if(LN)hh=landH(q,r)}
   return inR(q,r)?[q,r]:null;
 }
 
@@ -7700,7 +7701,7 @@ function glBuildStatics(){
     if(isCentreWall(q,r)&&!isHeart(q,r)&&!f)L.cwall.push([x,0,z,0,1,1])
     // v80 the Realm's city: houses inside the Heart until the Beast falls, then rubble
     if(G.realm&&isHeart(q,r)&&!(q===0&&r===0)){if(!G.throneBeast||(typeof fallPre==='function'&&fallPre())){/* v121: the houses stand during the city moment before the Fall */if(!cityUp()&&h(21)<0.8){L.house.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45]);L.roofc.push([x+(h(22)-0.5)*0.3,0,z+(h(23)-0.5)*0.3,h(24)*6.28,0.75+h(25)*0.45])}}else{for(let i=0;i<3;i++)L.rubble.push([x+(h(26+i)-0.5)*1.1,0.08,z+(h(29+i)-0.5)*1.1,h(32+i)*3,0.6+h(35+i)*0.7])}}}
-  if(glWorldOn())glWorldGrow(L,WLK);/* v195 look test: the map at the units' scale */
+  if(glWorldOn())glWorldGrow(L,WLK);if(landOn())landStatics(L,WLK);/* v195 look test: the map at the units' scale */
   const add=m=>{if(m)grp.add(m)};GL.trees=[];const tree=(m,list)=>{if(m){GL.trees.push({m,list});m.userData.tree=1}return m};GL.treeSig='';
   if(FOREST_GEO&&L.fmodel.length){const bb=FOREST_GEO.bb;const w=Math.max(bb.cx*2+0.01,0.94);const sc=1.7/Math.max(w,0.5)*(glWorldOn()?WORLD.forest:1);const o=new T.Object3D();
     /* v142: the forests go in CHUNKS of about 6 x 6 scene units, each its own InstancedMesh with a bounding sphere, so three skips the chunks outside the camera when the board is zoomed in (one mesh for ~100 forests drew 2 million triangles every frame). glNoCull must not touch them: see below */
@@ -7727,7 +7728,7 @@ function glBuildStatics(){
   if(L.shallow.length){const w=glInst(L.shallow,gGeo('shallow',()=>new T.CylinderGeometry(0.99,0.99,0.04,6)),new T.MeshStandardMaterial({color:'#8fd0ee',transparent:true,opacity:0.7,roughness:0.2,metalness:0.1}),false);add(w);GL.water.push(w)}/* v159 */
   add(glInst(L.deck2,gGeo('bdeck',()=>new T.BoxGeometry(2.0,0.08,0.9)),gMat('#8a6a42')));add(glInst(L.rail,gGeo('brail',()=>new T.BoxGeometry(2.0,0.06,0.06)),gMat('#5a3f26')));add(glInst(L.bpost,gGeo('bpost',()=>new T.CylinderGeometry(0.05,0.06,0.5,5)),gMat('#5a3f26')));
   if(L.water.length){const w=glInst(L.water,gGeo('water',()=>new T.CylinderGeometry(0.99,0.99,0.06,6)),new T.MeshStandardMaterial({color:'#4c9ad6',transparent:true,opacity:0.82,roughness:0.15,metalness:0.2}),false);add(w);GL.water.push(w)}
-  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));
+  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));if(L.flung)add(glInst(L.flung,gGeo('flung',()=>new T.BoxGeometry(0.9,0.6,0.5)),gMat('#d9d2c2',{roughness:0.9})));/* v197 */
   add(glInst(L.house,gGeo('house',()=>{const g=new T.BoxGeometry(0.82,0.62,0.7);g.translate(0,0.31,0);return g}),gMat('#b8a98c')));add(glInst(L.roofc,gGeo('roofc',()=>{const g=new T.ConeGeometry(0.66,0.5,4);g.translate(0,0.87,0);return g}),gMat('#7a3f36')));// v80 the city
   add(glInst(L.post,gGeo('tpost',()=>new T.CylinderGeometry(0.08,0.1,2.2,6)),gMat('#6b4a2e')));
   add(glInst(L.deck,gGeo('tdeck',()=>new T.BoxGeometry(1.2,0.14,1.2)),gMat('#a8875a')));
@@ -8147,7 +8148,7 @@ function glFrame(){
   if(!glInit())return false;GL.tick++;
   if(GL.game!==G){GL.game=G;GL.sig='';GL.terrSig='';for(const f of GL.figs.values()){GL.scene.remove(f);(f.userData.own||[]).forEach(x=>x.dispose())}GL.figs.clear()}
   glForestLoad();if(G.realm){glCityWallLoad();glCityLoad()}
-  if(GL.tick%15===1||!GL.sig){const s=glStaticSig();if(s!==GL.sig){GL.sig=s;glBuildTiles();glBuildStatics();glPlinth();glProps();glSunFit();GL.terrSig='';glNoCull(GL.scene)}
+  if(GL.tick%15===1||!GL.sig){const s=glStaticSig();if(s!==GL.sig){GL.sig=s;LANDC.clear();glBuildTiles();landBuild();glBuildStatics();glPlinth();glProps();glSunFit();GL.terrSig='';glNoCull(GL.scene)}
     const t=glTerrSig();if(t!==GL.terrSig){GL.terrSig=t;glPaintTiles();glBuildTerrDeco();glNoCull(GL.terrDeco);if(typeof glAmbientBuild==='function')glAmbientBuild()}}
   if(GL.throne)GL.throne.visible=!unitAt(0,0);
   if(GL.tick%6===0)glTrees();
@@ -8158,7 +8159,7 @@ function glUnit(u,pts,x,z,now,spent){
   const k=u.id+'|'+u.name+'|'+fac+'|'+(u.suitHp>0?u.suitItem:'')+(u.shadow?'|shadow':'')+(u.iced?'|ice':'');let fig=GL.figs.get(k);
   if(!fig){fig=buildFigure(u,fac);if(u.shadow){fig.userData.shadow=1;glShadowTint(fig)}if(u.iced)glIceTint(fig);/* v189 */fig.userData.k=k;fig.userData.ph=(u.id*1.7)%6.28;GL.figs.set(k,fig);GL.scene.add(fig);glNoCull(fig)}
   GL.seen.add(k);const c=Math.cos(CAM.az),s=Math.sin(CAM.az);
-  fig.position.set(x,0,z);
+  fig.position.set(x,landY0(x,z),z);
   if(fig.userData.giant&&pts.length===2){// the hex axis gives the stance; the giant turns its chest toward the viewer
     const dx=pts[1][0]-pts[0][0],dz=pts[1][1]-pts[0][1];let a=Math.atan2(-dz,dx);if(Math.sin(a)*s+Math.cos(a)*c<0)a+=Math.PI;fig.rotation.y=a}
   else{// face the viewer, turned a little toward the centre of the board
@@ -8185,7 +8186,7 @@ function glMotion(u,fig,ud,now,t,x,z){let y=0,face=null,lean=0,off=[0,0];fig.rot
   const H=typeof MOTION!=='undefined'&&MOTION.hit.get(u.id);if(H){const k=(now-H.t0)/320;if(k>=1){MOTION.hit.delete(u.id);for(const m of glMats(ud,fig)){m.emissive.setRGB(0,0,0);m.emissiveIntensity=0}}else if(k>=0){const [fx,fz]=world(H.from[0],H.from[1]);const dx=x-fx,dz=z-fz,d=Math.hypot(dx,dz)||1;const a=0.16*Math.sin(Math.PI*k);off=[off[0]+dx/d*a,off[1]+dz/d*a];lean-=0.12*Math.sin(Math.PI*k);const f=Math.max(0,1-k);for(const m of glMats(ud,fig)){m.emissive.setRGB(0.9*f,0.12*f,0.08*f);m.emissiveIntensity=1}}}
   const C=typeof MOTION!=='undefined'&&MOTION.cast.get(u.id);if(C){const k=(now-C.t0)/600;if(k>=1)MOTION.cast.delete(u.id);else if(k>=0)y+=0.22*Math.sin(Math.PI*k)}
   if(u.mt==='fly'&&!mv)y+=0.18+0.08*Math.sin(t*2.1);
-  fig.position.set(x+off[0],y,z+off[1]);if(face!==null)fig.rotation.y=face;
+  fig.position.set(x+off[0],y+landY0(x,z),z+off[1]);if(face!==null)fig.rotation.y=face;
   const br=1+0.014*Math.sin(t*1.7);fig.scale.set(1,br,1);fig.rotation.x=lean;fig.rotation.z=u.size===2?0.025*Math.sin(t*0.8):0;
   return y}
 // after the units: drop the miniatures of units that are gone, then draw
@@ -8245,6 +8246,53 @@ function glWorldGrow(L,WLK){const k=WORLD,up=(t,f,w)=>{t[1]*=f;t[5]=(t[5]||t[4]|
   for(const t of L.wall)t[5]=(t[5]||1)*k.wall;for(const t of L.merlon)t[1]*=k.wall;
   for(const t of L.hill)t[5]=(t[5]||1)*k.hill;
   for(const t of (WLK.ruinwall||[]))t[5]=(t[4]||1)*k.ruin}
+/* v197 LANDSCAPE PROTOTYPE (owner 14 Nov 2026: "mountains, forests and so on are just placeholders; design it like one environment"; the kingdom's story:
+   a flourishing land, the king's greed, the Beast falls, the wall is flung outward, dust and rubble; the city on a rock like the Acropolis).
+   One continuous ground replaces the hex tiles and the cone mountains: blocked hexes are ridges and cliffs, rivers run in a bed, the city stands on a
+   rock with rubble ramps at the breaches, and the ground turns from green to dust to ash toward the city. Rules untouched: which hexes block is the same.
+   Hidden switch for the prototype: localStorage hexmarch.land = '1' (no menu entry). Units, overlays and taps follow the ground through landY / proj. */
+const LAND={rock:1.25,rockVar:0.55,thicket:0.3,river:-0.32,city:2.3,ramp:1.15,step:0.36,k:1.62},LANDC=new Map(),LANDH=new Map();
+function landOn(){try{return !!(G&&G.realm)&&localStorage.getItem('hexmarch.land')==='1'}catch(e){return false}}
+function landH(q,r){const k=q+','+r;let h=LANDH.get(k);if(h!==undefined)return h;h=0;
+  if(!inR(q,r))h=null;else{const d=hd(q,r,0,0),f=featAt(q,r),lk=G.wallLook&&G.wallLook[k];
+    if(d<=G.heartR)h=LAND.city;else if(d===G.heartR+1)h=(f==='rock'||centreWalled())?LAND.city:LAND.ramp;
+    else if(f==='rock')h=lk==='ruinwall'?0:lk==='thicket'?LAND.thicket:LAND.rock+hexRand(q,r,1)*LAND.rockVar;
+    else if(f==='river')h=LAND.river;else if(G.realm&&!f&&isRoad(q,r))h=-0.1}
+  LANDH.set(k,h);return h}
+function landY(x,z){const ck=Math.round(x*6)+','+Math.round(z*6);let y=LANDC.get(ck);if(y!==undefined)return y;
+  const rf=z/1.5,qf=x/S3-rf/2;const q0=Math.round(qf),r0=Math.round(rf);let sw=0,sh=0;
+  for(let dq=-2;dq<=2;dq++)for(let dr=-2;dr<=2;dr++){const q=q0+dq,r=r0+dr;const h=landH(q,r);if(h===null)continue;const hx=S3*(q+r/2),hz=1.5*r;const d=Math.hypot(x-hx,z-hz)/LAND.k;if(d>=1)continue;const w=(1-d*d)*(1-d*d);sw+=w;sh+=w*h}
+  y=sw?sh/sw:0;if(y>0.5)y+=(Math.sin(x*2.3+z*1.1)*Math.cos(z*2.7-x*0.6))*0.14*Math.min(1,y);LANDC.set(ck,y);return y}
+function landY0(x,z){return landOn()?landY(x,z):0}
+{const p0=proj;proj=function(x,z,y){return p0(x,z,(y||0)+landY0(x,z))}}
+function landStatics(L,WLK){L.peak.length=0;L.snow.length=0;L.peak2.length=0;const flat=new Set(['water','shallow','fmodel']);
+  for(const n in L){if(flat.has(n))continue;for(const t of L[n])t[1]+=landY(t[0],t[2])}
+  for(const n in WLK)for(const t of WLK[n])t[1]+=landY(t[0],t[2]);
+  /* pines on the ridges of the living land, bare rock near the city; white blocks of the city wall flung over the scarred land */
+  for(const [q,r] of ringCells()){const k=key(q,r),f=featAt(q,r),d=hd(q,r,0,0);const [x,z]=world(q,r);
+    if(f==='rock'&&!(G.wallLook&&G.wallLook[k])&&d>G.heartR+1&&d>11)for(let i=0;i<2;i++){if(hexRand(q,r,20+i)>0.75)continue;const tx=x+(hexRand(q,r,30+i)-0.5)*1.1,tz=z+(hexRand(q,r,40+i)-0.5)*1.1,tall=1.1+hexRand(q,r,50+i)*0.7,gy=landY(tx,tz);L.trunk.push([tx,gy+tall*0.22,tz,0,1,tall,0,0,1,q,r]);L.pine.push([tx,gy+tall*0.62,tz,hexRand(q,r,60+i)*3,1.1,tall,0,0,1,q,r])}
+    if(!f&&d>G.heartR+2&&d<=14&&hexRand(q,r,70)<0.13&&!isRoad(q,r)){const bx=x+(hexRand(q,r,71)-0.5)*0.9,bz=z+(hexRand(q,r,72)-0.5)*0.9,sc=0.5+hexRand(q,r,73)*0.6;(L.flung=L.flung||[]).push([bx,landY(bx,bz)+0.05,bz,hexRand(q,r,74)*6.28,sc,sc,0.5+hexRand(q,r,75)*0.5,0.3,sc])}}}
+function landCol(x,z,y,ny,c){const d=Math.hypot(x,z)/S3,n=0.5+0.5*Math.sin(x*1.7+z*0.9)*Math.cos(z*1.3-x*0.4),n2=0.5+0.5*Math.sin(x*5.1-z*3.7);
+  const live=Math.min(1,Math.max(0,(d+n*3-13)/5)),dead=Math.min(1,Math.max(0,(8.5-d+n*2)/3.5));
+  c.setRGB(0.36+0.1*n2,0.52+0.12*n,0.25+0.05*n2);const dust=LCOL.a.setRGB(0.47+0.07*n2,0.42+0.05*n,0.33+0.04*n2);c.lerp(dust,1-live);
+  const ash=LCOL.b.setRGB(0.15+0.04*n2,0.13+0.03*n,0.17+0.07*n);c.lerp(ash,dead);
+  if(y<-0.12)c.lerp(LCOL.a.setRGB(0.3,0.33,0.3),Math.min(1,(-0.12-y)*5));
+  const steep=Math.min(1,Math.max(0,(0.93-ny)*5)),high=Math.min(1,Math.max(0,(y-0.45)*2.2));const rk=Math.max(steep,high*(1-0.75*live));
+  if(rk>0){const g=0.42+0.12*n2-0.16*dead;c.lerp(LCOL.b.setRGB(g,g*0.98,g*0.95+0.03*dead),rk)}}
+const LCOL={a:null,b:null};
+function landBuild(){if(GL.land){GL.scene.remove(GL.land);GL.land.traverse(o=>{if(o.geometry)o.geometry.dispose()});GL.land=null}LANDH.clear();LANDC.clear();
+  if(GL.tileSets)for(const s of Object.values(GL.tileSets))s.visible=!landOn();if(!landOn())return;const T=THREE;LCOL.a=new T.Color();LCOL.b=new T.Color();
+  const HW=G.rect?G.rect.hw+1.2:(G.Rv||G.R)*S3,HH=G.rect?G.rect.hh+1.2:(G.Rv||G.R)*1.5,st=LAND.step,nx=Math.ceil(2*HW/st),nz=Math.ceil(2*HH/st);
+  const geo=new T.PlaneGeometry(2*HW,2*HH,nx,nz);geo.rotateX(-Math.PI/2);const P=geo.attributes.position;
+  for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i);P.setY(i,landY(x,z))}geo.computeVertexNormals();
+  const N=geo.attributes.normal,C=new Float32Array(P.count*3),c=new T.Color();for(let i=0;i<P.count;i++){landCol(P.getX(i),P.getZ(i),P.getY(i),N.getY(i),c);C[i*3]=c.r;C[i*3+1]=c.g;C[i*3+2]=c.b}
+  geo.setAttribute('color',new T.BufferAttribute(C,3));const grp=new T.Group();
+  const m=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,roughness:0.95,metalness:0,flatShading:true}));m.receiveShadow=true;m.castShadow=innerWidth>=1000;grp.add(m);
+  /* a skirt of dark earth under the land, and the faint hex lines on the ground you can stand on */
+  const base=new T.Mesh(new T.BoxGeometry(2*HW,1.2,2*HH),gMat('#1c1a1f',{roughness:1}));base.position.y=-1.0;grp.add(base);
+  const pts=[];for(const [q,r] of ringCells()){if(G.voids[key(q,r)]||!passable(q,r))continue;const [x,z]=world(q,r);for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30),b=Math.PI/180*(60*i+30);const x1=x+0.97*Math.cos(a),z1=z+0.97*Math.sin(a),x2=x+0.97*Math.cos(b),z2=z+0.97*Math.sin(b);pts.push(x1,landY(x1,z1)+0.035,z1,x2,landY(x2,z2)+0.035,z2)}}
+  const lg=new T.BufferGeometry();lg.setAttribute('position',new T.Float32BufferAttribute(pts,3));grp.add(new T.LineSegments(lg,new T.LineBasicMaterial({color:'#ffffff',transparent:true,opacity:0.11,depthWrite:false})));
+  GL.land=grp;GL.scene.add(grp);glNoCull(grp)}
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
