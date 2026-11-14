@@ -6919,7 +6919,7 @@ function draw3D(now){
     const ftt=featAt(q,r);
     if(ftt==='rock'&&!GLON){polyPath(top);ctx.fillStyle='#2a2d33';ctx.fill()}
     if(ftt==='river'&&!GLON){polyPath(top);ctx.fillStyle='#2468a3';ctx.fill();const [a,b]=proj(x,z,0.01);ctx.strokeStyle='rgba(200,235,255,.45)';ctx.lineWidth=Math.max(1,CAM.S*0.06);ctx.beginPath();ctx.moveTo(a-CAM.S*0.45,b);ctx.quadraticCurveTo(a-CAM.S*0.15,b-CAM.S*0.12,a+CAM.S*0.1,b);ctx.quadraticCurveTo(a+CAM.S*0.3,b+CAM.S*0.12,a+CAM.S*0.45,b);ctx.stroke()}
-    if(G.map){if(isRoad(q,r)&&!ftt){polyPath(top);ctx.fillStyle=G.realm?(G.wallLook&&G.wallLook[k]==='bridge'?'rgba(138,106,66,.85)':'rgba(118,188,230,.7)'):'rgba(216,192,138,.36)';ctx.fill()}/* v159: fords and bridges */const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){if(!GLON){polyPath(top);ctx.fillStyle='rgba(24,22,40,.82)';ctx.fill()}if(Rm.c[0]===q&&Rm.c[1]===r){const [a,b]=proj(x,z,0.02);ctx.fillStyle='#b9b3d6';ctx.font=`700 ${Math.max(10,CAM.S*1.1)}px Georgia,serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',a,b)}}}
+    if(G.map){if(isRoad(q,r)&&!ftt&&!(typeof landOn==='function'&&landOn())){polyPath(top);ctx.fillStyle=G.realm?(G.wallLook&&G.wallLook[k]==='bridge'?'rgba(138,106,66,.85)':'rgba(118,188,230,.7)'):'rgba(216,192,138,.36)';ctx.fill()}/* v159: fords and bridges */const Rm=roomAt(q,r);if(Rm&&!Rm.seen&&Rm.cells.includes(k)){if(!GLON){polyPath(top);ctx.fillStyle='rgba(24,22,40,.82)';ctx.fill()}if(Rm.c[0]===q&&Rm.c[1]===r){const [a,b]=proj(x,z,0.02);ctx.fillStyle='#b9b3d6';ctx.font=`700 ${Math.max(10,CAM.S*1.1)}px Georgia,serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',a,b)}}}
     if(!GLON&&(ftt==='rubble'||ftt==='tower'||ftt==='lever'||ftt==='runestone'||ftt==='forge')){const [a,b]=proj(x,z,0);drawFeature2D(ftt,a,b,CAM.S*0.85,q,r)}
     if(ftt==='hill'&&!GLON){ctx.save();ctx.strokeStyle='rgba(230,215,170,.85)';ctx.lineWidth=Math.max(1.2,CAM.S*0.06);for(const k2 of [0.62,0.36]){polyPath(hexTop(x,z,k2,0.02));ctx.stroke()}ctx.restore()}
     if(ftt==='shrine'&&!GLON){const [a,b]=proj(x,z,0);ctx.save();ctx.fillStyle=shrineBack(q,r)?'rgba(90,100,95,.3)':'rgba(159,240,192,.35)';ctx.beginPath();ctx.ellipse(a,b,CAM.S*0.6,CAM.S*0.6*Math.cos(CAM.tilt),0,0,7);ctx.fill();ctx.restore()}
@@ -7728,7 +7728,7 @@ function glBuildStatics(){
   if(L.shallow.length){const w=glInst(L.shallow,gGeo('shallow',()=>new T.CylinderGeometry(0.99,0.99,0.04,6)),new T.MeshStandardMaterial({color:'#8fd0ee',transparent:true,opacity:0.7,roughness:0.2,metalness:0.1}),false);add(w);GL.water.push(w)}/* v159 */
   add(glInst(L.deck2,gGeo('bdeck',()=>new T.BoxGeometry(2.0,0.08,0.9)),gMat('#8a6a42')));add(glInst(L.rail,gGeo('brail',()=>new T.BoxGeometry(2.0,0.06,0.06)),gMat('#5a3f26')));add(glInst(L.bpost,gGeo('bpost',()=>new T.CylinderGeometry(0.05,0.06,0.5,5)),gMat('#5a3f26')));
   if(L.water.length){const w=glInst(L.water,gGeo('water',()=>new T.CylinderGeometry(0.99,0.99,0.06,6)),new T.MeshStandardMaterial({color:'#4c9ad6',transparent:true,opacity:0.82,roughness:0.15,metalness:0.2}),false);add(w);GL.water.push(w)}
-  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));if(L.log)add(glInst(L.log,gGeo('log',()=>{const g=new T.CylinderGeometry(0.07,0.09,1,6);g.rotateZ(Math.PI/2);return g}),gMat('#5a4630')));if(L.fence)add(glInst(L.fence,gGeo('fence',()=>new T.BoxGeometry(0.95,0.13,0.05)),gMat('#8a7a5c')));/* v199 */if(L.flung)add(glInst(L.flung,gGeo('flung',()=>new T.BoxGeometry(0.9,0.6,0.5)),gMat('#d9d2c2',{roughness:0.9})));/* v197 */
+  add(glInst(L.rubble,gGeo('rubble',()=>new T.DodecahedronGeometry(0.2,0)),gMat('#7c776d')));if(L.cave){add(glInst(L.cave,gGeo('cave',()=>new T.SphereGeometry(0.95,10,8)),new T.MeshBasicMaterial({color:'#06050a'}),false));add(glInst(L.arch,gGeo('arch',()=>new T.TorusGeometry(1.0,0.2,6,10,Math.PI)),gMat('#57534e',{roughness:1})))}if(L.log)add(glInst(L.log,gGeo('log',()=>{const g=new T.CylinderGeometry(0.07,0.09,1,6);g.rotateZ(Math.PI/2);return g}),gMat('#5a4630')));if(L.fence)add(glInst(L.fence,gGeo('fence',()=>new T.BoxGeometry(0.95,0.13,0.05)),gMat('#8a7a5c')));/* v199 */if(L.flung)add(glInst(L.flung,gGeo('flung',()=>new T.BoxGeometry(0.9,0.6,0.5)),gMat('#d9d2c2',{roughness:0.9})));/* v197 */
   add(glInst(L.house,gGeo('house',()=>{const g=new T.BoxGeometry(0.82,0.62,0.7);g.translate(0,0.31,0);return g}),gMat('#b8a98c')));add(glInst(L.roofc,gGeo('roofc',()=>{const g=new T.ConeGeometry(0.66,0.5,4);g.translate(0,0.87,0);return g}),gMat('#7a3f36')));// v80 the city
   add(glInst(L.post,gGeo('tpost',()=>new T.CylinderGeometry(0.08,0.1,2.2,6)),gMat('#6b4a2e')));
   add(glInst(L.deck,gGeo('tdeck',()=>new T.BoxGeometry(1.2,0.14,1.2)),gMat('#a8875a')));
@@ -7776,7 +7776,7 @@ function glBuildStatics(){
 function glForestOcc(){const FMs=GL.forestMeshes;if(!FMs||!FMs.length)return;const occ=new Set();for(const fm of FMs)for(const t of fm.userData.forest.list){const k=t[5]+','+t[6];if(unitAt(t[5],t[6]))occ.add(k)}const sig=[...occ].sort().join(';');if(sig===GL.forestSig)return;GL.forestSig=sig;
   const o=new THREE.Object3D();for(const fm of FMs){const {sc,y0,list,PH,proxy}=fm.userData.forest;list.forEach((t,i)=>{const k=occ.has(t[5]+','+t[6])?0.45:1;o.position.set(t[0],0.02-y0*sc*k,t[2]);o.rotation.set(0,t[3],0);o.scale.setScalar(sc*k);o.updateMatrix();fm.setMatrixAt(i,o.matrix);
     if(proxy){o.position.set(t[0],0.02+PH*k/2,t[2]);o.rotation.set(0,0,0);o.scale.setScalar(k);o.updateMatrix();proxy.setMatrixAt(i,o.matrix)}});fm.instanceMatrix.needsUpdate=true;if(proxy)proxy.instanceMatrix.needsUpdate=true}GL.dirty=true}
-function glTrees(){glForestOcc();if(!GL.trees||!GL.trees.length)return;let sig='';const occ=new Set();for(const t of GL.trees[0].list){const k=t[9]+','+t[10];if(!occ.has(k)&&unitAt(t[9],t[10]))occ.add(k)}sig=[...occ].sort().join(';');
+function glTrees(){glForestOcc();if(!GL.trees||!GL.trees.length)return;let sig='';const occ=new Set();for(const t of GL.trees[0].list){const k=t[9]+','+t[10];if(!occ.has(k)&&unitAt(t[9],t[10]))occ.add(k)}if(landOn()){/* v200: the trees between a unit and the camera step aside too */const c=Math.cos(CAM.az),s=Math.sin(CAM.az);for(const u of G.units){if(u.kind==='wall'&&!u.monster)continue;const [ux,uz]=world(u.q,u.r),z0=ux*s+uz*c;for(const [a,b] of DIRS){const [nx,nz]=world(u.q+a,u.r+b);if(nx*s+nz*c>z0+0.6)occ.add((u.q+a)+','+(u.r+b))}}}sig=[...occ].sort().join(';');
   if(sig===GL.treeSig)return;GL.treeSig=sig;const o=new THREE.Object3D();
   for(const {m,list} of GL.trees){list.forEach((t,i)=>{let x=t[0],y=t[1],z=t[2],k=1;if(occ.has(t[9]+','+t[10])){const [cx,cz]=world(t[9],t[10]);x=cx+(x-cx)*1.95;z=cz+(z-cz)*1.95;k=0.45;y*=k}
     o.position.set(x,y,z);o.rotation.set(t[6]||0,t[3]||0,t[7]||0);o.scale.set((t[4]||1)*k,(t[5]||t[4]||1)*k,(t[8]||t[4]||1)*k);o.updateMatrix();m.setMatrixAt(i,o.matrix)});m.instanceMatrix.needsUpdate=true}}
@@ -8257,15 +8257,15 @@ function landH(q,r){const k=q+','+r;let h=LANDH.get(k);if(h!==undefined)return h
   if(!inR(q,r))h=null;else{const d=hd(q,r,0,0),f=featAt(q,r),lk=G.wallLook&&G.wallLook[k];
     if(d<=G.heartR)h=LAND.city;else if(d===G.heartR+1)h=(f==='rock'||centreWalled())?LAND.city:LAND.ramp;
     else if(f==='rock')h=lk==='ruinwall'?0:lk==='thicket'?LAND.thicket:LAND.rock+hexRand(q,r,1)*LAND.rockVar;
-    else if(f==='river')h=LAND.river;else if(G.realm&&!f&&isRoad(q,r))h=(G.wallLook&&G.wallLook[k]==='bridge')?0.03:-0.2}
+    else if(f==='river')h=LAND.river;else if(G.realm&&!f&&isRoad(q,r))h=(G.wallLook&&G.wallLook[k]==='bridge')?LAND.river:-0.2}
   LANDH.set(k,h);return h}
 function landY(x,z){const ck=Math.round(x*6)+','+Math.round(z*6);let y=LANDC.get(ck);if(y!==undefined)return y;
   const rf=z/1.5,qf=x/S3-rf/2;const q0=Math.round(qf),r0=Math.round(rf);let sw=0,sh=0;
   for(let dq=-2;dq<=2;dq++)for(let dr=-2;dr<=2;dr++){const q=q0+dq,r=r0+dr;const h=landH(q,r);if(h===null)continue;const hx=S3*(q+r/2),hz=1.5*r;const d=Math.hypot(x-hx,z-hz)/LAND.k;if(d>=1)continue;const w=(1-d*d)*(1-d*d);sw+=w;sh+=w*h}
   y=sw?sh/sw:0;if(y>0.5)y+=(Math.sin(x*2.3+z*1.1)*Math.cos(z*2.7-x*0.6))*0.14*Math.min(1,y);LANDC.set(ck,y);return y}
-function landY0(x,z){return landOn()?landY(x,z):0}
+function landY0(x,z){if(!landOn())return 0;const rf=z/1.5,q=Math.round(x/S3-rf/2),r=Math.round(rf);if(G.wallLook&&G.wallLook[q+','+r]==='bridge'&&isRoad(q,r))return 0.2;/* on the deck */return landY(x,z)}
 {const p0=proj;proj=function(x,z,y){return p0(x,z,(y||0)+landY0(x,z))}}
-function landStatics(L,WLK){L.peak.length=0;L.snow.length=0;L.peak2.length=0;L.water.length=0;L.shallow.length=0;const flat=new Set(['water','shallow','fmodel']);
+function landStatics(L,WLK){L.peak.length=0;L.snow.length=0;L.peak2.length=0;L.water.length=0;L.shallow.length=0;const flat=new Set(['water','shallow','fmodel','deck2','rail','bpost']);for(const n of ['deck2','rail','bpost'])for(const t of L[n])t[1]+=0.12;
   for(const n in L){if(flat.has(n))continue;for(const t of L[n])t[1]+=landY(t[0],t[2])}
   for(const n in WLK)for(const t of WLK[n])t[1]+=landY(t[0],t[2]);
   /* pines on the ridges of the living land, bare rock near the city; white blocks of the city wall flung over the scarred land */
@@ -8277,11 +8277,12 @@ function landCol(x,z,y,ny,c){const d=Math.hypot(x,z)/S3,n=0.5+0.5*Math.sin(x*1.7
   c.setRGB(0.36+0.1*n2,0.52+0.12*n,0.25+0.05*n2);const dust=LCOL.a.setRGB(0.47+0.07*n2,0.42+0.05*n,0.33+0.04*n2);c.lerp(dust,1-live);
   const ash=LCOL.b.setRGB(0.15+0.04*n2,0.13+0.03*n,0.17+0.07*n);c.lerp(ash,dead);
   if(live>0.55&&y>-0.05&&y<0.25){const rf=z/1.5,q=Math.round(x/S3-rf/2),r=Math.round(rf);if(landField(q,r))c.lerp(LCOL.a.setRGB(0.80-0.07*((q+r)&1),0.67-0.05*((q+r)&1),0.30),0.8)}
+  if(y>-0.1&&y<0.5){const rd=landRoadD(x,z);if(rd<0.62){const w=Math.min(1,(0.62-rd)/0.3)*0.85;c.lerp(LCOL.a.setRGB(0.56-0.2*dead+0.04*n2,0.46-0.18*dead,0.33-0.1*dead),w)}}
   if(y<-0.12)c.lerp(LCOL.a.setRGB(0.3,0.33,0.3),Math.min(1,(-0.12-y)*5));
   const steep=Math.min(1,Math.max(0,(0.93-ny)*5)),high=Math.min(1,Math.max(0,(y-0.45)*2.2));const rk=Math.max(steep,high*(1-0.75*live));
   if(rk>0){const g=0.42+0.12*n2-0.16*dead;c.lerp(LCOL.b.setRGB(g,g*0.98,g*0.95+0.03*dead),rk)}}
 const LCOL={a:null,b:null};
-function landBuild(){LANDF.clear();if(GL.land){GL.scene.remove(GL.land);GL.land.traverse(o=>{if(o.geometry)o.geometry.dispose()});GL.land=null}LANDH.clear();LANDC.clear();
+function landBuild(){LANDF.clear();landRoads();if(GL.land){GL.scene.remove(GL.land);GL.land.traverse(o=>{if(o.geometry)o.geometry.dispose()});GL.land=null}LANDH.clear();LANDC.clear();
   if(GL.tileSets)for(const s of Object.values(GL.tileSets))s.visible=!landOn();if(!landOn())return;const T=THREE;LCOL.a=new T.Color();LCOL.b=new T.Color();
   const HW=G.rect?G.rect.hw+1.2:(G.Rv||G.R)*S3,HH=G.rect?G.rect.hh+1.2:(G.Rv||G.R)*1.5,st=LAND.step,nx=Math.ceil(2*HW/st),nz=Math.ceil(2*HH/st);
   const geo=new T.PlaneGeometry(2*HW,2*HH,nx,nz);geo.rotateX(-Math.PI/2);const P=geo.attributes.position;
@@ -8308,7 +8309,7 @@ const LANDF=new Map();
 function landField(q,r){const k=q+','+r;let v=LANDF.get(k);if(v!==undefined)return v;v=false;
   if(inR(q,r)&&!featAt(q,r)&&!isRoad(q,r)&&hd(q,r,0,0)>=15&&hexRand(Math.floor(q/2),Math.floor(r/2),80)<0.3&&!(G.players||[]).some(p=>p.camp&&hd(q,r,p.camp[0],p.camp[1])<=4)&&!(G.rooms||[]).some(R=>R.c&&hd(q,r,R.c[0],R.c[1])<=1))v=true;
   LANDF.set(k,v);return v}
-function landWoods(L){const fm=L.fmodel.slice();L.fmodel.length=0;L.log=[];L.fence=[];
+function landWoods(L){landCaves(L);const fm=L.fmodel.slice();L.fmodel.length=0;L.log=[];L.fence=[];
   const tree=(tx,tz,q,r,tall,i)=>{const gy=landY(tx,tz);L.trunk.push([tx,gy+tall*0.22,tz,0,1,tall,0,0,1,q,r]);if((i+q)%3)L.pine.push([tx,gy+tall*0.62,tz,hexRand(q,r,60+i)*3,1.05,tall,0,0,1,q,r]);else{L.crown.push([tx,gy+tall*0.62,tz,i*1.3,1+hexRand(q,r,i+2)*0.3,0,0,0,0,q,r]);L.crown2.push([tx+0.16,gy+tall*0.8,tz-0.1,i*0.7,0.7,0,0,0,0,q,r])}};
   for(const t of fm){const q=t[5],r=t[6],x=t[0],z=t[2],d=hd(q,r,0,0);let nb=0;for(const [a,b] of DIRS)if(featAt(q+a,r+b)==='forest')nb++;
     const n=nb>=4?7:nb>=2?5:3,out=Math.atan2(z,x);
@@ -8322,6 +8323,22 @@ function landWoods(L){const fm=L.fmodel.slice();L.fmodel.length=0;L.log=[];L.fen
     if(landField(q,r)){for(let i=0;i<6;i++){const a=Math.PI/180*60*i,nq=q+DIRS[i%6][0],nr=r+DIRS[i%6][1];const mx=x+Math.cos(a)*0.84,mz=z+Math.sin(a)*0.84;const rf=mz*2/1.5-r,qq=0;
         /* a fence only on the field's outer edges */const ox=x+Math.cos(a)*1.732,oz=z+Math.sin(a)*1.732;const orr=Math.round(oz/1.5),oq=Math.round(ox/S3-orr/2);if(landField(oq,orr))continue;if(hexRand(q,r,110+i)<0.35)continue;L.fence.push([mx,landY(mx,mz)+0.16,mz,-a+Math.PI/2,1])}
       if(hexRand(q,r,120)<0.14){const a=Math.PI/180*(60*Math.floor(hexRand(q,r,121)*6)-30),hx=x+Math.cos(a)*0.97,hz=z+Math.sin(a)*0.97,gy=landY(hx,hz),rot=hexRand(q,r,122)*6.28;L.house.push([hx,gy,hz,rot,0.5]);L.roofc.push([hx,gy,hz,rot,0.5])}}}}
+/* v200 THE LAND, STEP 3: dirt roads worn from every base to its camps, to the nearest Crown Stones and up to its breach; a cave mouth in the rock beside
+   each Drake lair; bridges with water under the deck. */
+let LANDSEG=[];
+function landRoads(){LANDSEG=[];if(!landOn()||!G.players)return;const walk=(q,r)=>inR(q,r)&&(passable(q,r)||(G.sites||[]).some(s=>s.q===q&&s.r===r));
+  const path=(from,to)=>{const prev=new Map([[key(from[0],from[1]),null]]);let fr=[from];while(fr.length){const nx=[];for(const [q,r] of fr){if(q===to[0]&&r===to[1]){let k=key(q,r),pts=[];while(k){pts.push(k.split(',').map(Number));k=prev.get(k)}for(let i=1;i<pts.length;i++){const [x1,z1]=world(pts[i-1][0],pts[i-1][1]),[x2,z2]=world(pts[i][0],pts[i][1]);LANDSEG.push([x1,z1,x2,z2])}return}
+      for(const [a,b] of DIRS){const k=key(q+a,r+b);if(prev.has(k)||!walk(q+a,r+b))continue;prev.set(k,key(q,r));nx.push([q+a,r+b])}}fr=nx}};
+  for(const p of G.players){if(!p.camp)continue;const st=nearFree(p.camp[0],p.camp[1],new Map(),3)||p.camp;const goals=[];
+    const br=(G.breaches||[]).find(b=>b.pid===p.id);if(br)goals.push(br.c);
+    for(const R of (G.rooms||[]).filter(R=>R.type==='t1'&&hd(R.c[0],R.c[1],p.camp[0],p.camp[1])<=9)){const c=DIRS.map(([a,b])=>[R.c[0]+a,R.c[1]+b]).find(([q,r])=>walk(q,r));if(c)goals.push(c)}
+    for(const s of (G.sites||[]).slice().sort((x,y)=>hd(x.q,x.r,p.camp[0],p.camp[1])-hd(y.q,y.r,p.camp[0],p.camp[1])).slice(0,2))goals.push([s.q,s.r]);
+    for(const g of goals)try{path(st,g)}catch(e){}}}
+function landRoadD(x,z){let best=9;for(const s of LANDSEG){if(Math.abs(x-s[0])>2.6||Math.abs(z-s[1])>2.6)continue;const dx=s[2]-s[0],dz=s[3]-s[1],t=Math.max(0,Math.min(1,((x-s[0])*dx+(z-s[1])*dz)/(dx*dx+dz*dz)));const d=Math.hypot(x-s[0]-t*dx,z-s[1]-t*dz);if(d<best)best=d}return best+0.12*Math.sin(x*3.1+z*2.3)}
+function landCaves(L){L.cave=[];L.arch=[];for(const R of (G.rooms||[]).filter(x=>x.type==='t3')){const [cx,cz]=world(R.c[0],R.c[1]);let best=null,bh=0.6;
+    for(let i=0;i<12;i++){const a=i*Math.PI/6,x=cx+Math.cos(a)*3.0,z=cz+Math.sin(a)*3.0,h=landY(x,z)+landY(cx+Math.cos(a)*3.8,cz+Math.sin(a)*3.8)*0.5;if(h>bh){bh=h;best=a}}
+    if(best===null)continue;let rad=1.2;for(;rad<3.4;rad+=0.15)if(landY(cx+Math.cos(best)*rad,cz+Math.sin(best)*rad)>0.45)break;const x=cx+Math.cos(best)*(rad+0.25),z=cz+Math.sin(best)*(rad+0.25);
+    L.cave.push([x,0.15,z,0,1,1.05,0,0,1]);L.arch.push([x-Math.cos(best)*0.3,0.1,z-Math.sin(best)*0.3,-best+Math.PI/2,1.05])}}
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
