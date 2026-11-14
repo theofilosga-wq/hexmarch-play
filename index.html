@@ -6817,7 +6817,7 @@ function wallFalls(t){if(SIM||!t||!t.cityWall)return;const k=key(t.q,t.r);delete
 {const k0=kill;kill=function(t,...a){const r=k0.call(this,t,...a);try{if(t&&t.cityWall&&!G.units.includes(t))wallFalls(t)}catch(e){}return r}}
 {const f0=realmGoalText;realmGoalText=function(m){if(m&&m.cityWall){const city=m.cityWall==='city';return {todo:`break this ${city?'stretch of the city wall':'ruined wall'} (${Math.ceil(m.hp)} of ${m.maxhp} HP, no DEF). It never strikes back, and area attacks that cover it wear it down too.`,get:city?'the hex opens for good: a new way into the city for everyone. The Rift Beast\u2019s tentacles can sweep through the new gap too.':'the hex opens for good: a new path for everyone.'}}return f0(m)}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v215 2026-11-14";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v216 2026-11-14";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -8633,6 +8633,22 @@ FXK.wildwave=(ev,t0)=>{const o=ev.from||[0,0],[ox,oz]=fxW(o[0],o[1]);const cells
 {const f0=glFx;glFx=function(ev,t0){try{if(GLFX.on&&typeof glActive==='function'&&glActive()&&GL.scene){const h=ev.k==='ab'?FXA[ev.ab]:FXK[ev.k];if(h&&(ev.k!=='ab'||ev.from)){if(ev.k==='ab'&&!ev.to)ev.to=ev.from;fxPool();const d=h(ev,t0);if(d){fxHold(d);try{if(typeof camPanTo==='function'&&!(ev.cam))camPanTo([ev.to||ev.from],false)}catch(x){}return}}}}catch(x){}return f0(ev,t0)}}
 {const f0=glFxTick;glFxTick=function(now){f0(now);if(!GLFX.live.length&&GLFX.dark)fxDarkSet(0)}}
 
+/* v216 THE HIT LANDS WITH THE EFFECT (owner: "timing first"). The engine resolves an ability at once; with a staged effect the HP drop and the deaths
+   used to show at the cast, seconds before the fire arrived. FXI[key] = the moment of impact of each staged effect (ms). Until then the board shows
+   the units as they were: useAbility is wrapped to remember every unit's HP before the cast; while an entry is pending, the draw calls see the old HP
+   and still see the units that died (they are put back into G.units only for the length of the draw). The effects that follow the cast in the same
+   frame (hit numbers, death dust, the soul ghost) are delayed by the same time (fxDelay, called from vfx.js). The game's state is never changed. */
+const FXI={kindle:1080,breath:900,drakeball:1380,spin:400,sacrifice:900,howl:600,possession:1470,devour:1570};let FXPEND=[],FXGD=0;
+function fxStagedOn(k){try{return !SIM&&GLFX.on&&typeof glActive==='function'&&glActive()&&!!FXA[k]&&!!FXI[k]}catch(e){return false}}
+function fxDelay(ev,now){try{if(!GLFX.on||typeof glActive!=='function'||!glActive())return 0;if(ev.k==='ab'){GLFX.batch=(FXA[ev.ab]&&FXI[ev.ab])?{f:now,d:FXI[ev.ab]}:null;return 0}const b=GLFX.batch;if(b&&b.f===now)return b.d}catch(e){}return 0}
+function fxGhostsIn(){if(FXGD++)return;if(!FXPEND.length||!G||!G.units)return;const now=Date.now();FXPEND=FXPEND.filter(p=>p.until>now&&p.tok===G.tok);for(const p of FXPEND){p.h0=p.u.hp;p.u.hp=p.hp;if(p.gone&&G.units.indexOf(p.u)<0){G.units.push(p.u);p.put=1}}}
+function fxGhostsOut(){if(--FXGD)return;for(const p of FXPEND){if(p.h0!==undefined){p.u.hp=p.h0;p.h0=undefined}if(p.put){const i=G.units.indexOf(p.u);if(i>=0)G.units.splice(i,1);p.put=0}}}
+function fxInit(){GLFX.init=1;try{
+  if(typeof useAbility==='function'){const f0=useAbility;useAbility=function(u,k){if(!fxStagedOn(k))return f0.apply(this,arguments);const pre=G.units.map(v=>[v,v.hp]);const r=f0.apply(this,arguments);
+      try{const until=Date.now()+FXI[k]+120;for(const [v,hp] of pre){const gone=G.units.indexOf(v)<0;if(gone||v.hp<hp)FXPEND.push({u:v,hp:hp,gone:gone,until:until,tok:G.tok})}}catch(e){}return r}}
+  for(const nm of ['draw','draw3D']){const f0=window[nm]||(nm==='draw'?(typeof draw==='function'?draw:null):(typeof draw3D==='function'?draw3D:null));if(!f0)continue;const w=function(){fxGhostsIn();try{return f0.apply(this,arguments)}finally{fxGhostsOut()}};if(nm==='draw')draw=w;else draw3D=w}}catch(e){}}
+{const f0=glFxTick;glFxTick=function(now){if(!GLFX.init)fxInit();return f0(now)}}
+
 /* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
 const FALL_WAIT=5000;const fallPre=()=>!!(window.FALL_LAND&&Date.now()<window.FALL_LAND);
 /* Hexmarch visual effects. The engine records events in G.fxLog; this plays any it hasn't shown yet,
@@ -8712,7 +8728,7 @@ function pumpVFX(now){
   // Announcements (v24): each new one goes to the banner queue (ui.js annQueue), on this device and on every other device in an online game
   if(G.annLog)for(const e of G.annLog)if(e.id>annSeen){annSeen=e.id;if(typeof annQueue==='function')annQueue(e)}
   if(!G.fxLog)return;
-  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;ANIMS.push({ev,t0:now+(ev.k==='thefall'?FALL_WAIT:0)});if(typeof glFx==='function')glFx(ev,now+(ev.k==='thefall'?FALL_WAIT:0));/* v141: the 3D counterpart */motionCue(ev,now+(window.ACAM_LAG||0));/* v117: figure motions run on the real clock, effects on the action camera's clock */
+  for(const ev of G.fxLog)if(ev.id>fxSeen){fxSeen=ev.id;const dl=(ev.k==='thefall'?FALL_WAIT:0)+(typeof fxDelay==='function'?fxDelay(ev,now):0);/* v216: what follows a staged ability (hits, deaths, souls) waits for its impact */ANIMS.push({ev,t0:now+dl});if(typeof glFx==='function')glFx(ev,now+dl);/* v141: the 3D counterpart */motionCue(ev,now+(window.ACAM_LAG||0));/* v117: figure motions run on the real clock, effects on the action camera's clock */
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
     if(ev.k==='thefall'&&typeof fitBoard==='function'){window.FALL_HOLD=Date.now()+FALL_WAIT+4400;window.FALL_LAND=Date.now()+FALL_WAIT+4200*0.38;{const rd=()=>{try{if(typeof GL!=='undefined'&&GL)GL.sig='';if(typeof refresh==='function')refresh()}catch(x){}};setTimeout(rd,30);setTimeout(rd,FALL_WAIT+4200*0.38+40)}try{if(typeof glModel==='function'&&typeof MODELS!=='undefined'&&MODELS['Rift Beast']){const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?f():f).catch(()=>{})}}catch(x){}try{fitBoard()}catch(x){}setTimeout(()=>{try{fitBoard()}catch(x){}},150);setTimeout(()=>{try{if(G&&typeof frameArmy==='function'){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human')||{}).id;if(me!=null)frameArmy(me)}}catch(x){}},FALL_WAIT+4500)}// v100: the whole board for the Fall, then back to your army
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
@@ -8750,7 +8766,7 @@ function drawVFX(now){if(typeof glFxTick==='function'){try{glFxTick(now);glAmbie
   pumpVFX(now);
   const U=vUnit();
   for(let i=ANIMS.length-1;i>=0;i--){
-    const a=ANIMS[i],ev=a.ev,el=now-a.t0;
+    const a=ANIMS[i],ev=a.ev,el=now-a.t0;if(el<0&&ev.k!=="thefall")continue;/* v216: a delayed effect is not drawn before its moment */
     const col=ev.col||'#ffffff',fl=FLAVOR[ev.fac]||'#ffffff';
     let dur=500;
     switch(ev.k){
