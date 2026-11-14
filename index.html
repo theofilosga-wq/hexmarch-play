@@ -8253,7 +8253,7 @@ function glWorldGrow(L,WLK){const k=WORLD,up=(t,f,w)=>{t[1]*=f;t[5]=(t[5]||t[4]|
    rock with rubble ramps at the breaches, and the ground turns from green to dust to ash toward the city. Rules untouched: which hexes block is the same.
    Hidden switch for the prototype: localStorage hexmarch.land = '1' (no menu entry). Units, overlays and taps follow the ground through landY / proj. */
 const LAND={water:-0.13,rock:1.25,rockVar:0.55,thicket:0.3,river:-0.32,city:2.3,ramp:1.15,step:0.36,k:1.62},LANDC=new Map(),LANDH=new Map();
-function landOn(){try{return !!(G&&G.realm)&&localStorage.getItem('hexmarch.land')==='1'}catch(e){return false}}
+function landOn(){if(!(G&&G.realm))return false;try{return localStorage.getItem('hexmarch.land2')!=='0'}catch(e){return true}}/* v207 (owner could not find the switch): the new land is ON by default; the button beside Flat map turns it off */
 function landH(q,r){const k=q+','+r;let h=LANDH.get(k);if(h!==undefined)return h;h=0;
   if(!inR(q,r))h=null;else{const d=hd(q,r,0,0),f=featAt(q,r),lk=G.wallLook&&G.wallLook[k];
     if(d<=G.heartR)h=LAND.city;else if(d===G.heartR+1)h=(f==='rock'||centreWalled())?LAND.city:LAND.ramp;
@@ -8304,7 +8304,7 @@ function landPaint(){if(GL.landPaint){GL.scene.remove(GL.landPaint);GL.landPaint
   const geo=gGeo('lpaint',()=>new T.CylinderGeometry(0.93,0.93,0.03,6));const m=new T.InstancedMesh(geo,new T.MeshBasicMaterial({transparent:true,opacity:0.5,depthWrite:false}),ks.length);const o=new T.Object3D(),c=new T.Color();
   ks.forEach((k,i)=>{const [q,r]=k.split(',').map(Number);const [x,z]=world(q,r);const pt=G.paint[k];o.position.set(x,landY(x,z)+0.05,z);o.updateMatrix();m.setMatrixAt(i,o.matrix);let col='#ffffff';try{col=pt.col||(typeof GROUND_PAINT!=='undefined'&&GROUND_PAINT[pt.fac])||(FAC[pt.fac]&&FAC[pt.fac].color)||'#ffffff'}catch(e){}m.setColorAt(i,c.set(col))});
   m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;m.frustumCulled=false;GL.landPaint=m;GL.scene.add(m);GL.dirty=true}
-function landSet(on){try{localStorage.setItem('hexmarch.land',on?'1':'0')}catch(e){}GL.sig='';GL.dirty=true}
+function landSet(on){try{localStorage.setItem('hexmarch.land2',on?'1':'0')}catch(e){}GL.sig='';GL.dirty=true}
 /* v199 THE LAND, STEP 2: woodland instead of forest tiles (dense inside, thin at the edges, trees thrown down by the blast in the scarred land, burnt
    stumps near the city), more trees on the ridges of the living land, and the kingdom's farmland (wheat fields with fences, a farmhouse at a field corner). */
 const LANDF=new Map();
