@@ -668,6 +668,7 @@ body:not(.home) #histTopBtn{display:none}/* v170b: match history lives on the ho
           <button class="btn sm" id="pauseBtn" title="Pause the game">⏸ Pause</button>
           <button class="btn sm" id="infoBtn" title="Game info">Info</button>
           <button class="btn sm" id="viewBtn">Flat map</button>
+          <button class="btn sm" id="landBtn" hidden>🏞 New land</button>
           <button class="btn sm" id="rotL" aria-label="Rotate board left">⟲</button>
           <button class="btn sm" id="rotR" aria-label="Rotate board right">⟳</button>
           <button class="btn sm" id="zoomOut" aria-label="Zoom out">−</button>
@@ -11754,6 +11755,10 @@ function sitesDraw(now){if(!G||!G.realm||!G.sites||G.phase)return;const U=(typeo
 /* v194: the HP bar of a damaged breakable wall (city wall, ruined wall) */
 function wallPill(c,u,x,y,S){const w=Math.max(16,S*1.1),h=Math.max(3,S*0.13),pct=Math.max(0,u.hp/u.maxhp);c.save();c.fillStyle='rgba(11,14,20,.85)';c.fillRect(x-w/2-1,y-1,w+2,h+2);c.fillStyle=pct>0.5?'#c9b38c':pct>0.25?'#e8b84e':'#ff6161';c.fillRect(x-w/2,y,w*pct,h);
   if(S>=10){c.font=`800 ${Math.max(9,S*0.36)}px Oxanium,sans-serif`;c.textAlign='center';c.lineWidth=3;c.strokeStyle='#0b0e14';const t=`${Math.ceil(u.hp)}`;c.strokeText(t,x,y-S*0.12);c.fillStyle='#f5ead2';c.fillText(t,x,y-S*0.12)}c.restore()}
+/* v206: the land prototype's switch sits beside the view button (the menu exists only in phone play mode and full screen) */
+function landBtnSync(){const b=document.querySelector('#landBtn');if(!b||typeof landOn!=='function')return;const show=!!(G&&G.realm&&!G.phase)&&VIEW==='3d';if(b.hidden!==!show)b.hidden=!show;const t=landOn()?'🏞 New land: on':'🏞 New land: off';if(b.textContent!==t)b.textContent=t;
+  if(!b.onclick)b.onclick=()=>{landSet(!landOn());toast(landOn()?'New land on: the prototype landscape (same rules)':'New land off: the usual board');landBtnSync()}}
+{const r0=refresh;refresh=function(){const r=r0.apply(this,arguments);try{landBtnSync()}catch(e){}return r}}
 
 /* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"; rebuilt on the Realm in v170). "Play the tutorial" on the home page starts a short guided game:
    the Iron Warband (the introductory army) on the Realm, the other armies passing their turns. A coach box at the top explains one thing at a time and
