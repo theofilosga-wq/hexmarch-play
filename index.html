@@ -1062,9 +1062,9 @@ const ABIL={
   butchery:{name:'Butchery',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:3,special:'butchery',
     desc:'The dark mirror of Field Surgery: strike an adjacent enemy for 3 minus DEF, then the most wounded other enemy next to the Hospitaller takes 3 minus DEF.'},
   sanctuary:{name:'Sanctuary',cost:2,cd:5,aim:'self',shape:'aura',size:40,hits:'ally',heal:3,overheal:2,/* v184 bigger signature */cdCut:2,bot:'sanctuary',// v62 (owner): the whole army, anywhere; every unit healed comes back faster// overheal = the most points one heal may turn into damage
-    desc:'Every unit of your army, wherever it stands, heals 3, and every unit that was healed has its ability rests cut by 2 turns (ready sooner). Overflowing light: for each unit already at full HP, 4 damage (ignoring DEF) hits the enemy nearest to it, within 3.'},
+    desc:'Every unit of your army within 3 hexes of the High Priest heals 3, and every unit that was healed has its ability rests cut by 2 turns (ready sooner). Overflowing light: for each unit already at full HP, 4 damage (ignoring DEF) hits the enemy nearest to it, within 3.'},
   mend:{name:'Mend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',heal:4,overheal:4,/* v184 bigger signature */cleanse:1,bot:'mend',
-    desc:'Heal one ally within 3 (or the Cleric itself) by 4; every point beyond full HP burns the enemy nearest to that ally (within 3) for 2, ignoring DEF. Then remove one debuff from it (frozen or stunned first, then a curse, Seared, Hex, Sunder, delay, chill).'},
+    desc:'Heal one ally within 3 of this Cleric or of its Twin (or the Cleric itself) by 4; every point beyond full HP burns the enemy nearest to that ally (within 3) for 2, ignoring DEF. Then remove one debuff from it (frozen or stunned first, then a curse, Seared, Hex, Sunder, delay, chill).'},
   layhands:{name:'Lay on Hands',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:1,shape:'single',heal:4,overheal:4,bot:'mend',
     desc:'Heal an adjacent ally 4. Healing beyond full HP burns the nearest enemy within 3.'},
   tend:{name:'Tend',cost:1,cd:2,aim:'unit',hits:'ally',los:'lob',range:2,shape:'single',heal:3,overheal:3,special:'tend',bot:'mend',
@@ -1386,9 +1386,9 @@ const FAC={
     units:[
       {name:'High Priest',icon:'crown',leader:1,hp:14,atk:4,/* v182 (the yardstick): +1 ATK; every shot loses 1 on the Realm, and the cost sheet had priced it as neutral at 2 hexes */def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'sanctuary'},
       {name:'Walking Sanctuary',icon:'sun',size:2,hp:18,atk:0,def:1,shell:1,/* v183 (owner 12 Nov 2026: 'a one-hit shield instead of high DEF'): DEF 2 to 1 and a Shell */mov:3,mt:'walk',at:'none',rng:0,trait:'reliquary'},/* v163b (owner: 'the bearer should be tankier and in my head it was a 2 hex unit, a walking sanctuary, like the ones in Elden Ring'): a shrine on legs, two hexes, 27 HP and 2 DEF on the Realm, never attacks */
-      {name:'Cleric',icon:'hand',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'mend'},
+      {name:'Cleric',icon:'hand',n:2,hp:8,atk:2,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'mend',trait:'twin'/* v228: the Twins */},
       {name:'Templar',icon:'shield',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'smite',trait:'templar'},/* v163: a fighter only inside the light */
-      {name:'Seraph',icon:'wing',hp:10,atk:2,/* v183: ATK 2 (was 1): with one floor a 1-ATK blow up close deals 1 to DEF 1, not 2 */def:0,mov:2,mt:'walk',at:'melee',rng:1,ab:'layhands'},/* v136 (owner): 1 ATK, it heals by touch, it does not fight (in his game two Seraphs dealt 58 of the army's 97 plain-attack damage) */// v76 (owner): no shields in this army, only heals: the Seraph heals by touch
+      {name:'Seraph',icon:'wing',hp:10,atk:2,/* v183: ATK 2 (was 1): with one floor a 1-ATK blow up close deals 1 to DEF 1, not 2 */def:0,mov:3,mt:'fly',at:'melee',rng:1,ab:'prayer'/* v228 (owner: build all): the Seraph flies and prays; Lay on Hands is on no unit */},/* v136 (owner): 1 ATK, it heals by touch, it does not fight (in his game two Seraphs dealt 58 of the army's 97 plain-attack damage) */// v76 (owner): no shields in this army, only heals: the Seraph heals by touch
       {name:'Druid',icon:'staff',hp:8,atk:1,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'grove'},
       {name:'Lightwarden',icon:'sun',hp:6,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:2,ab:'bless'},
       {name:'Hospitaller',icon:'hammer',hp:10,atk:3,def:1,mov:3,mt:'walk',at:'melee',rng:1,ab:'surgery'}]},// v76 (owner): the fighter who heals and strikes
@@ -4027,7 +4027,7 @@ function useAbility(u,k,q,r,dest){
     case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
       for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
-    case 'hailstorm':/* v227 */case 'brand':case 'blackpyre':/* v225 */case 'wintergrasp':/* v226 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
+    case 'prayer':case 'darkprayer':/* v228 */case 'hailstorm':/* v227 */case 'brand':case 'blackpyre':/* v225 */case 'wintergrasp':/* v226 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
@@ -6956,6 +6956,7 @@ NEW_BOT.add('wintergrasp');
    - ICE LANCE pierces: the enemy right behind the target takes the lance too, 2 weaker.
    - COMMAND THE FROZEN has a price: every statue that strikes cracks (loses 2 HP, never below 1); a statue at 1 HP is too cracked to be commanded.
    - RANDOM ROLLS for Frost: Ice Lance and Shatter Strike deal 1 less, the listed damage or 1 more (the page only), and the Hailstorm rolls when it lands. */
+const ROLL_FAC={ice:1,arcane:1};/* v228: armies whose `roll:1` abilities roll in the page (the Ember Court rolls through its own block) */
 RULES.FROST2=1;REALM.frost2={crack:2,hail:4,hailTtl:3,pierce:-2};
 ABIL.hailstorm={name:'Hailstorm',cost:2,cd:3,aim:'hex',range:4,shape:'blast',size:1,hits:'foe',special:'hailstorm',bot:'hailstorm',roll:1,
   desc:'Mark a 7-hex patch within 4 hexes. At the start of the Herald’s next turn the hail comes down there: 4 damage to every enemy still standing in it, each is chilled and takes a frost mark, and the ground turns blue for 3 turns. Nothing falls if the Herald is dead, frozen or stunned by then.'};
@@ -6979,7 +6980,7 @@ NEW_BOT.add('hailstorm');
 {const f0=newHeur;newHeur=function(u,k,q,r,ctx,dest){const A=ABIL[k];
   if(A&&A.bot==='hailstorm'){let s=0;for(const [a,b] of stormCells({q:q,r:r})){const v=unitAt(a,b);if(!v||v.kind==='wall'||v.owner<0||tm(v.owner)===tm(u.owner)||inert(v))continue;s+=(v.st.frozen>0||effMov(v)===0)?4.2:1.5}return s>=2.8?s:0}
   return f0.apply(this,arguments)}}
-{const f0=useAbility;useAbility=function(u,k,q,r,dest){const A=ABIL[k];if(!A||!frost2On()||!u||u.owner<0||!G.players[u.owner]||G.players[u.owner].fac!=='ice')return f0.apply(this,arguments);
+{const f0=useAbility;useAbility=function(u,k,q,r,dest){const A=ABIL[k];if(!A||!frost2On()||!u||u.owner<0||!G.players[u.owner]||!ROLL_FAC[G.players[u.owner].fac])return f0.apply(this,arguments);
   const acted0=u.acted,sv=[G.rollNow,G.rollU],lance=k==='icelance',tgt=lance?unitAt(q,r):null,behind=(lance&&tgt)?unitBehind(nearCell(u,tgt),tgt,1):null,ss=k==='command'?commandStatues(u).slice():null;
   const roll=(RULES.ROLL&&!SIM&&A.roll&&A.special!=='hailstorm')?Math.floor(RNG()*3)-1:0;G.rollNow=roll;G.rollU=u.id;let res;
   try{res=f0.apply(this,arguments);const cast=u.acted&&!acted0;
@@ -6989,9 +6990,72 @@ NEW_BOT.add('hailstorm');
   finally{G.rollNow=sv[0];G.rollU=sv[1]}
   return res}}
 {const f0=hitDmg;hitDmg=function(u,t,A){let r=f0(u,t,A);if(r>0&&G.rollNow&&A&&A.roll&&u&&G.rollU===u.id)r=Math.max(1,r+G.rollNow);return r}}
-{const f0=duoLabel;duoLabel=function(u,t,A){let l=f0(u,t,A);try{if(frost2On()&&RULES.ROLL&&A&&A.roll&&u&&u.owner>=0&&G.players[u.owner].fac==='ice'&&t&&t.owner!==u.owner)l=l?{t:l.t+' · ±1',c:l.c}:{t:'±1',c:'#bfefff'}}catch(e){}return l}}
+{const f0=duoLabel;duoLabel=function(u,t,A){let l=f0(u,t,A);try{if(frost2On()&&RULES.ROLL&&A&&A.roll&&u&&u.owner>=0&&ROLL_FAC[G.players[u.owner].fac]&&t&&t.owner!==u.owner)l=l?{t:l.t+' · ±1',c:l.c}:{t:'±1',c:'#bfefff'}}catch(e){}return l}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v227 2026-11-15";
+/* v228 THE CIRCLE OF PRIESTS' DEPTH PASS (owner, 16 Nov 2026: "the priest team is a good opportunity to add a pair of units that act one through the
+   other"; then "go on, build all").
+   - THE TWINS: the two Clerics are a bonded pair (trait `twin`).
+     * Each casts through the other: Mend (and its shadow twin) reaches allies within range of EITHER Cleric.
+     * Stand still to heal: a Cleric that has moved cannot Mend this turn, and cannot move after Mending. One walks, the other heals through it.
+     * The overflow comes out of the OTHER twin: the burn hits the enemy nearest to the sibling, so where the far twin stands decides who burns.
+     * The thread: when the Twins stand in a straight line within 4 hexes, the hexes between them are light: at the start of your turn allies on
+       it heal 1 and enemies on it burn for 1. With both Twins in shadow it drains: enemies lose 1 and each Twin heals 1.
+     * The price: when one Twin dies the other breaks: it turns to shadow and stays there (until Faith brings its sibling back).
+   - THE SERAPH flies and prays: ANSWERED PRAYER marks a blast of 7 within 3; at the start of its next turn allies there heal 3 and enemies there burn for 2 ignoring DEF. Its shadow twin DARK LITANY lands as 4 damage on every enemy there and heals the Seraph 1
+     per enemy struck. Nothing lands if the Seraph is dead, frozen or stunned.
+   - SANCTUARY is a ring of 3 round the High Priest instead of the whole army: standing near the Leader matters.
+   - RANDOM ROLLS: Smite, Reap, Field Surgery and Butchery. */
+RULES.TWINS=1;REALM.twins={reach:4,heal:1,burn:1};REALM.prayer={heal:3,burn:2,dark:4,ttl:1};
+ABIL.sanctuary.size=3;
+for(const k of ['smite','reap','surgery','butchery'])if(ABIL[k])ABIL[k].roll=1;
+ABIL.prayer={name:'Answered Prayer',cost:2,cd:4,aim:'hex',range:3,shape:'blast',size:1,hits:'none',special:'prayer',bot:'prayer',
+  desc:'Mark a 7-hex patch within 3 hexes. At the start of the Seraph’s next turn the light comes down there: every ally in it heals 3 and every enemy in it burns for 2, ignoring DEF. Nothing comes if the Seraph is dead, frozen or stunned by then.'};
+ABIL.darkprayer={name:'Dark Litany',cost:2,cd:4,aim:'hex',range:3,shape:'blast',size:1,hits:'none',special:'darkprayer',bot:'prayer',roll:0,
+  desc:'Shadow: mark a 7-hex patch within 3 hexes. At the start of the Seraph’s next turn the dark comes down there: 4 damage to every enemy in it, and the Seraph heals 1 for each enemy struck. Nothing comes if the Seraph is dead, frozen or stunned by then.'};
+SHADOW.prayer='darkprayer';LIGHT_OF.darkprayer='prayer';
+function twinsOn(){return !!(G&&G.realm&&RULES.TWINS)}
+function twinOf(u){if(!u||u.kind==='wall'||!twinsOn()||!hasTrait(u,'twin'))return null;return G.units.find(v=>v!==u&&v.owner===u.owner&&v.kind!=='wall'&&!v.summon&&hasTrait(v,'twin')&&alive(v))||null}
+function threadCells(a,b){if(!a||!b||hd(a.q,a.r,b.q,b.r)>REALM.twins.reach||hd(a.q,a.r,b.q,b.r)<2)return [];const L=lineVec([a.q,a.r],b);if(!L||!DIRS.some(d=>d[0]===L.v[0]&&d[1]===L.v[1]))return [];const o=[];let q=a.q+L.v[0],r=a.r+L.v[1];while(!(q===b.q&&r===b.r)&&o.length<8){o.push([q,r]);q+=L.v[0];r+=L.v[1]}return o}
+function twinPairs(pid){const seen=new Set(),o=[];for(const u of G.units){if(u.owner!==pid||seen.has(u.id))continue;const t=twinOf(u);if(t){seen.add(u.id);seen.add(t.id);o.push([u,t])}}return o}
+function twinTurn(){const pid=G.cur;for(const u of G.units)if(u.owner===pid&&u.broken&&twinOf(u)){u.broken=0;if(!SIM)fx(u,'the bond is whole again','#ffe9a8')}
+  for(const [a,b] of twinPairs(pid)){if(!!a.shadow!==!!b.shadow)continue;const cs=threadCells(a,b);if(!cs.length)continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=a;CUR_TAG='Abil';CUR_NAME='The Twins’ thread';
+    try{let drained=0;for(const [q,r] of cs){const v=unitAt(q,r);if(!v||!alive(v))continue;const foe=v.kind!=='wall'?tm(v.owner)!==tm(a.owner)&&!v.statue&&!v.egg:!!(v.beast||(v.monster&&v.monster!=='crate'&&v.monster!=='keep'));
+        if(foe){hurt(v,REALM.twins.burn,a.shadow?'#7a2be2':'#ffe9a8');drained++}else if(!a.shadow&&v.kind!=='wall'&&tm(v.owner)===tm(a.owner))healUnit(v,REALM.twins.heal,'#ffe9a8','The Twins’ thread',a.id)}
+      if(a.shadow&&drained)for(const w of [a,b])if(alive(w))healUnit(w,1,'#7a2be2','The Twins’ thread',a.id)}
+    finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}}}
+function prayerCells(st){return ringCells().filter(([a,b])=>hd(a,b,st.q,st.r)<=1)}
+function prayerLand(st){const u=byId(st.by);if(!u||!alive(u)||u.kind==='wall')return;if(u.st&&u.st.frozen>0){if(!SIM)fx(u,'the prayer goes unanswered','#9aa3b5');return}
+  const P=REALM.prayer,dark=st.dark,A=dark?ABIL.darkprayer:ABIL.prayer,area=prayerCells(st),o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;
+  try{let struck=0;for(const [q,r] of area){const v=unitAt(q,r);if(!v||!alive(v)||v._pr===G.tok)continue;v._pr=G.tok;const foe=v.kind!=='wall'?tm(v.owner)!==tm(u.owner)&&!v.statue&&!v.egg:!!(v.beast||(v.monster&&v.monster!=='crate'&&v.monster!=='keep'));
+      if(foe){if(dark){hurt(v,Math.max(1,P.dark-effDef(v)),'#7a2be2');struck++}else hurt(v,P.burn,'#ffe9a8')}
+      else if(!dark&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)){healUnit(v,P.heal+holyPlus(u,v),'#ffe9a8',A.name,u.id)/* no overflow: the prayer already burns the enemies under it */}}
+    for(const [q,r] of area){const v=unitAt(q,r);if(v)delete v._pr}
+    if(dark&&struck&&alive(u))healUnit(u,struck,'#7a2be2',A.name,u.id)}
+  finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}
+  if(!SIM){vfx({k:'ab',ab:dark?'darkfall':'prayerfall',shape:'blast',from:[u.q,u.r],to:[st.q,st.r],cells:area,col:dark?'#7a2be2':'#ffe9a8',fac:'arcane',cam:1});addLog(u.owner,dark?'The Dark Litany comes down.':'The prayer is answered.')}}
+function prayerTurn(){if(!G.prayers||!G.prayers.length)return;const pid=G.cur,mine=G.prayers.filter(x=>x.owner===pid);if(!mine.length)return;G.prayers=G.prayers.filter(x=>x.owner!==pid);for(const st of mine)prayerLand(st)}
+{const f0=beginTurn;beginTurn=function(){const r=f0.apply(this,arguments);try{if(twinsOn()&&!G.phase&&!G.over){prayerTurn();twinTurn()}}catch(e){}return r}}
+{const f0=newUse;newUse=function(u,k,A,tgt,q,r,dest){
+  if(A.special==='prayer'||A.special==='darkprayer'){const dark=A.special==='darkprayer'?1:0;G.prayers=(G.prayers||[]).filter(x=>x.by!==u.id).concat([{by:u.id,owner:u.owner,q:q,r:r,dark:dark}]);
+    if(!SIM){fx(u,dark?'a dark litany':'a prayer rises',dark?'#7a2be2':'#ffe9a8');vfx({k:'ab',ab:dark?'darkprayer':'prayer',shape:'blast',from:[u.q,u.r],to:[q,r],cells:prayerCells({q:q,r:r}),col:dark?'#7a2be2':'#ffe9a8',fac:'arcane'});if(trk()){const e=tFx('arcane',u.name,A.name);if(e)e.uses++}}return}
+  return f0.apply(this,arguments)}}
+NEW_BOT.add('prayer');
+{const f0=newHeur;newHeur=function(u,k,q,r,ctx,dest){const A=ABIL[k];
+  if(A&&A.bot==='prayer'){const dark=A.special==='darkprayer';let s=0;for(const [a,b] of prayerCells({q:q,r:r})){const v=unitAt(a,b);if(!v||v.kind==='wall'||v.owner<0||inert(v))continue;if(tm(v.owner)===tm(u.owner)){if(!dark)s+=v.hp<v.maxhp?Math.min(3,v.maxhp-v.hp)*0.8:0.9}else s+=dark?1.6:1.0}return s>=2.6?s:0}
+  return f0.apply(this,arguments)}}
+{const f0=aimCells;aimCells=function(u,k){const base=f0.apply(this,arguments);try{const A=ABIL[k],t=twinOf(u);if(!t||!A||A.aim!=='unit'||!(A.range>1))return base;
+    const a=[u.q,u.r],b=[t.q,t.r];let other=[];u.q=b[0];u.r=b[1];t.q=a[0];t.r=a[1];try{other=f0.apply(this,arguments)}finally{u.q=a[0];u.r=a[1];t.q=b[0];t.r=b[1]}
+    const seen=new Set(base.map(c=>key(c[0],c[1]))),out=base.slice();for(const c of other){let x=c;if(c[0]===a[0]&&c[1]===a[1])x=[b[0],b[1]];else if(c[0]===b[0]&&c[1]===b[1])x=[a[0],a[1]];const kk=key(x[0],x[1]);if(!seen.has(kk)){seen.add(kk);out.push(x)}}return out}catch(e){return base}}}
+{const f0=canAbil;canAbil=function(u,k){if(twinsOn()&&u&&hasTrait(u,'twin')&&u.moved&&ABIL[k]&&ABIL[k].aim==='unit')return false;return f0.apply(this,arguments)}}
+{const f0=useAbility;useAbility=function(u,k,q,r,dest){const tw=twinsOn()&&u&&u.kind!=='wall'&&hasTrait(u,'twin'),acted0=u&&u.acted;const res=f0.apply(this,arguments);if(tw&&u.acted&&!acted0&&alive(u))u.moved=true;return res}}
+{const f0=overheal;overheal=function(src,t,excess,name){let via=null;try{if(src&&src.kind!=='wall'&&hasTrait(src,'twin'))via=twinOf(src)}catch(e){}return f0.call(this,src,via||t,excess,name)}}
+{const f0=shadowTurn;shadowTurn=function(u,on,why){if(u&&u.broken&&!on&&twinsOn())return;return f0.apply(this,arguments)}}
+{const f0=kill;kill=function(t){let sib=null;try{if(t&&t.kind!=='wall'&&t.owner>=0&&hasTrait(t,'twin'))sib=twinOf(t)}catch(e){}const r=f0.apply(this,arguments);
+  try{if(sib&&alive(sib)&&!alive(t)){sib.broken=1;if(!SIM)fx(sib,'the bond breaks','#7a2be2');const o=[CUR_SRC,CUR_TAG,CUR_NAME];try{f0b(sib)}finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}}}catch(e){}return r}}
+function f0b(sib){const b=sib.broken;sib.broken=0;try{shadowTurn(sib,true,'grief')}finally{sib.broken=b||1}}
+{const f0=duoLabel;duoLabel=function(u,t,A){let l=f0(u,t,A);return l}}
+
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v228 2026-11-15";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -9104,6 +9168,8 @@ FXA.blackpyre=(ev,t0)=>FXA.howl(ev,t0);FXA.pyreburst=(ev,t0)=>FXA.sacrifice(ev,t
 FXA.wintergrasp=(ev,t0)=>FXA.deepwinter(ev,t0);
 /* v227: the Hailstorm is marked with the Deep Winter look and comes down with the Blizzard's */
 FXA.hailstorm=(ev,t0)=>FXA.icewall?FXA.icewall(ev,t0):0;FXA.hailfall=(ev,t0)=>FXA.deepwinter(ev,t0);
+/* v228: the Seraph's prayer borrows the Grove's light when cast and Sanctuary's when it lands; the Dark Litany the shadow looks */
+FXA.prayer=(ev,t0)=>FXA.grove?FXA.grove(ev,t0):0;FXA.prayerfall=(ev,t0)=>FXA.sanctuary?FXA.sanctuary(ev,t0):0;FXA.darkprayer=(ev,t0)=>FXA.blight?FXA.blight(ev,t0):0;FXA.darkfall=(ev,t0)=>FXA.anathema?FXA.anathema(ev,t0):0;
 
 /* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
 let FALL_WAIT=5000;/* v223: the prologue lengthens it (introPlan) */const fallPre=()=>!!(window.FALL_LAND&&Date.now()<window.FALL_LAND);
@@ -12413,6 +12479,15 @@ function stormDraw(now){if(!G||!G.realm||!G.storms||!G.storms.length||G.phase)re
   for(const st of G.storms)for(const [a,b] of stormCells(st)){if(VIEW==='3d')polyPath(hexTop(...world(a,b),0.9,0.03));else hexPath(...px(a,b),SZ*0.9);ctx.fillStyle=hexA('#9fd8ff',0.14*pulse+0.06);ctx.fill();ctx.lineWidth=2;ctx.setLineDash([3,6]);ctx.strokeStyle=hexA('#dff4ff',0.5+0.4*pulse);ctx.stroke();ctx.setLineDash([])}
   ctx.restore()}
 {const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{stormDraw(now)}catch(e){}}}
+/* v228: the Twins' thread and the Seraph's prayer drawn on the board; their status chips */
+{const f0=unitStatuses;unitStatuses=function(u){const o=f0.apply(this,arguments);try{if(u&&o&&o.push&&typeof twinOf==='function'&&u.kind!=='wall'&&hasTrait(u,'twin')){const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
+  if(u.broken)add('broken','💔','Bond broken',null,'#7a2be2',0,'its Twin has fallen: it is in shadow and stays there until Faith brings the sibling back');
+  else if(twinOf(u))add('twin','🔗','Twin',null,'#ffe9a8',1,'casts through its sibling; a Twin that has moved cannot Mend; the overflow burns the enemy nearest the other Twin; in a straight line within 4 hexes the thread between them heals allies 1 and burns enemies 1 each turn')}}catch(e){}return o}}
+function threadDraw(now){if(!G||!G.realm||!G.units||G.phase||typeof twinPairs!=='function')return;ctx.save();const pulse=0.6+0.3*Math.sin((now||Date.now())/340);
+  for(const p of G.players)for(const [a,b] of twinPairs(p.id)){if(!!a.shadow!==!!b.shadow)continue;const col=a.shadow?'#a24aff':'#ffe9a8';for(const [q,r] of threadCells(a,b)){if(VIEW==='3d')polyPath(hexTop(...world(q,r),0.7,0.03));else hexPath(...px(q,r),SZ*0.7);ctx.fillStyle=hexA(col,0.2*pulse+0.08);ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=hexA(col,0.55+0.35*pulse);ctx.stroke()}}
+  for(const st of (G.prayers||[]))for(const [q,r] of prayerCells(st)){const col=st.dark?'#a24aff':'#ffd76a';if(VIEW==='3d')polyPath(hexTop(...world(q,r),0.9,0.03));else hexPath(...px(q,r),SZ*0.9);ctx.fillStyle=hexA(col,0.12*pulse+0.05);ctx.fill();ctx.lineWidth=2;ctx.setLineDash([3,6]);ctx.strokeStyle=hexA(col,0.5+0.4*pulse);ctx.stroke();ctx.setLineDash([])}
+  ctx.restore()}
+{const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{threadDraw(now)}catch(e){}}}
 
 /* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"; rebuilt on the Realm in v170). "Play the tutorial" on the home page starts a short guided game:
    the Iron Warband (the introductory army) on the Realm, the other armies passing their turns. A coach box at the top explains one thing at a time and
