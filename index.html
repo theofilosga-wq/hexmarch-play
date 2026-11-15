@@ -1348,7 +1348,8 @@ const FAC={
       // v64 (owner 6 Oct 2026): the Frostlings leave; a splitting Frost Colossus and a third Hailcaller take their places
       {name:'Rime Mammoth',icon:'crystal',size:2,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'stampede'},/* v164 (owner: the marking passive was boring): Stampede replaces it */// v75 (brief): the front line; 1 frost mark on every enemy it walks past or stands beside at its turn start
       {name:'Frost Warden',icon:'crystal',n:2,hp:11,atk:2,def:1,shell:1,/* v183 (owner 12 Nov 2026: 'a one-hit shield instead of high DEF'): DEF 2 to 1 and a Shell */mov:2,mt:'walk',at:'melee',rng:1,ab:'wintergrasp'/* v226 (owner): Winter's Grasp replaces Ice Wall: it makes the walls itself */},/* v164 (owner: 'I like frost wall as an ability to play the board and protect your queen') */
-      {name:'Hailcaller',icon:'hail',n:3,hp:10,atk:5,/* v182 (the yardstick): +1 ATK; every shot loses 1 on the Realm, and the cost sheet had priced it as neutral at 2 hexes */def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'icelance'},/* v145 (the rulers): the Frost damage dealer hits 4 from 2 hexes (was 2 ATK lobbed from 2-3: 1 damage a shot); Ice Lance rests 3 */
+      {name:'Hailcaller',icon:'hail',n:2,/* v227: the third became the Storm Herald */hp:10,atk:5,/* v182 (the yardstick): +1 ATK; every shot loses 1 on the Realm, and the cost sheet had priced it as neutral at 2 hexes */def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'icelance'},/* v145 (the rulers): the Frost damage dealer hits 4 from 2 hexes (was 2 ATK lobbed from 2-3: 1 damage a shot); Ice Lance rests 3 */
+      {name:'Storm Herald',icon:'hail',hp:10,atk:4,def:0,mov:2,mt:'walk',at:'bolt',rng:2,ab:'hailstorm'},/* v227 (owner: fewer copies of one unit, a delayed strike): calls a hailstorm that lands a turn later */
       {name:'Glacier Knight',icon:'shield',n:2,hp:12,atk:3,def:1,mov:3,mt:'line',at:'melee',rng:1,ab:'shatterstrike',trait:'deepcold'}]},
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
     theme:'Five old ones of the mountain: each a force alone, terrible together. Their great blows rest long, and the land remembers where they fought: craters, boulders, split rock and furrows of stone that only giants walk easily.',
@@ -2953,7 +2954,7 @@ function callDest(k,g){if(!g||g.st&&g.st.frozen>0)return null;let best=null,bd=d
 /* v178: whom a statue strikes: enemies beside it, camp monsters and the Beast; never its own side's Keep or the Old God serving its King */
 const statueFoes=s=>G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(s.owner)&&!v.statue&&!v.egg:(v.beast||v.monster)&&v.monster!=='cracked'&&v.monster!=='crate'&&isFoe(s,v))&&distUU(s,v)===1);
 /* v178: the statues Command the Frozen would call, and how many blows each enemy would take (the aim preview and its damage tags) */
-const commandStatues=u=>G.units.filter(v=>v.owner===u.owner&&v.trait==='icestatue'&&alive(v)&&distUU(u,v)<=REALM.commandR);
+const commandStatues=u=>G.units.filter(v=>v.owner===u.owner&&v.trait==='icestatue'&&alive(v)&&distUU(u,v)<=REALM.commandR&&!(RULES.FROST2&&G.realm&&v.hp<=1/* v227: too cracked to strike again */));
 function commandPlan(u){const m=new Map();for(const s of commandStatues(u))for(const v of statueFoes(s))m.set(v,(m.get(v)||0)+1);return m}
 function statueBurst(s){let n=0;const vs=statueFoes(s);
   if(!SIM)vfx({k:'ab',ab:'blizzardburst',shape:'blast',from:[s.q,s.r],to:[s.q,s.r],cells:DIRS.map(([a,b])=>[s.q+a,s.r+b]),col:'#5cc8ff'});
@@ -4026,7 +4027,7 @@ function useAbility(u,k,q,r,dest){
     case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
       for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
-    case 'brand':case 'blackpyre':/* v225 */case 'wintergrasp':/* v226 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
+    case 'hailstorm':/* v227 */case 'brand':case 'blackpyre':/* v225 */case 'wintergrasp':/* v226 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
@@ -6504,7 +6505,7 @@ function shellUp(p){if(!G.realm||!RULES.SHELL)return;for(const u of G.units)if(u
    (summons, old rosters) still use REALM.hpBy / REALM.hpMul. */
 const REALM_HP={
   /* Ember Court */ "fire:Pit Lord":24,"fire:Imp":10,"fire:Hellhound":20,"fire:Ash Demon":14,"fire:Dread Fiend":26,"fire:Possessor":15,"fire:Soul Devourer":17,"fire:Brimstone Demon":12,
-  /* Frost Hold */ "ice:Ice Queen":23,"ice:Rime Mammoth":24,"ice:Frost Warden":23,"ice:Hailcaller":15,"ice:Glacier Knight":18,
+  /* Frost Hold */ "ice:Ice Queen":23,"ice:Rime Mammoth":24,"ice:Frost Warden":23,"ice:Hailcaller":15,"ice:Storm Herald":15,"ice:Glacier Knight":18,
   /* Stone Giants */ "giants:Mountain King":47/* v183 (owner: buff the giants, 68 on the honest sheet): +HP */,"giants:Boulder Hurler":18,"giants:Rampart":57/* v183 (owner: buff the giants, 68 on the honest sheet): +HP */,"giants:Cliff Breaker":33/* v183 (owner: buff the giants, 68 on the honest sheet): +HP */,"giants:Titan":35/* v183 (owner: buff the giants, 68 on the honest sheet): +HP */,
   /* Gnome Tinkers */ "gnomes:Inventor":20,"gnomes:Bulwark":15,"gnomes:Gunner":12,"gnomes:Grenadier":12,"gnomes:Brawler":15,"gnomes:Aviator":11,"gnomes:Sparker":12,"gnomes:Sapper":12,"gnomes:Mechanic":12,
   /* Circle of Priests */ "arcane:High Priest":21,"arcane:Walking Sanctuary":40/* v183: 27 to 30, back inside law 1 with DEF 1 and a Shell */,"arcane:Cleric":12,"arcane:Templar":15,"arcane:Seraph":15,"arcane:Druid":12,"arcane:Lightwarden":9,"arcane:Hospitaller":15,
@@ -6947,7 +6948,50 @@ NEW_BOT.add('wintergrasp');
   try{if(br!=null&&from&&o&&!o.tele&&o.portal==null&&alive(u)&&(u.q!==from[0]||u.r!==from[1])){for(const [a,b] of hexLine(from,[u.q,u.r])){if(a===u.q&&b===u.r)continue;if(cells(u).some(([x,y])=>x===a&&y===b))continue;if(!solid(a,b)||isHeart(a,b))continue;const pt=G.paint[key(a,b)];if(pt&&pt.fac==='fire'&&pt.ttl>REALM.ember2.trailTtl)continue;G.paint[key(a,b)]={fac:'fire',ttl:REALM.ember2.trailTtl,owner:br}}}}catch(e){}
   return r}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v226 2026-11-15";
+/* v227 THE FROST HOLD'S DEPTH PASS (owner, 16 Nov 2026: "let's work on applying these ideas": three identical Hailcallers, nothing has a price,
+   no delayed strike, plain shapes, no random rolls).
+   - STORM HERALD (one; the third Hailcaller's place and body until it has its own figure): HAILSTORM, a marked blast of 7 within 4 that lands at
+     the start of the Herald's next turn: damage, the Frost chill and mark, and the ground turns blue (which sets up Winter's Grasp). It does not
+     land if the Herald is dead, frozen or stunned; enemies can walk out.
+   - ICE LANCE pierces: the enemy right behind the target takes the lance too, 2 weaker.
+   - COMMAND THE FROZEN has a price: every statue that strikes cracks (loses 2 HP, never below 1); a statue at 1 HP is too cracked to be commanded.
+   - RANDOM ROLLS for Frost: Ice Lance and Shatter Strike deal 1 less, the listed damage or 1 more (the page only), and the Hailstorm rolls when it lands. */
+RULES.FROST2=1;REALM.frost2={crack:2,hail:4,hailTtl:3,pierce:-2};
+ABIL.hailstorm={name:'Hailstorm',cost:2,cd:3,aim:'hex',range:4,shape:'blast',size:1,hits:'foe',special:'hailstorm',bot:'hailstorm',roll:1,
+  desc:'Mark a 7-hex patch within 4 hexes. At the start of the Herald’s next turn the hail comes down there: 4 damage to every enemy still standing in it, each is chilled and takes a frost mark, and the ground turns blue for 3 turns. Nothing falls if the Herald is dead, frozen or stunned by then.'};
+ABIL.icelance.roll=1;ABIL.shatterstrike.roll=1;
+try{ABIL.icelance.desc+=' The lance pierces: the enemy right behind the target takes it too, 2 weaker.';ABIL.command.desc+=' Every statue that strikes cracks: it loses 2 HP (never below 1), and a statue at 1 HP can no longer be commanded.'}catch(e){}
+function frost2On(){return !!(G&&G.realm&&RULES.FROST2)}
+function stormCells(st){return ringCells().filter(([a,b])=>hd(a,b,st.q,st.r)<=1)}
+function stormLand(st){const u=byId(st.by);if(!u||!alive(u)||u.kind==='wall')return;if(u.st&&u.st.frozen>0){if(!SIM)fx(u,'the storm breaks up','#9aa3b5');return}
+  const E=REALM.frost2,A=ABIL.hailstorm,area=stormCells(st),o=[CUR_SRC,CUR_TAG,CUR_NAME];const roll=(RULES.ROLL&&!SIM)?Math.floor(RNG()*3)-1:0;CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;
+  try{for(const t of areaUnits(u,Object.assign({},A,{dmg:E.hail}),area)){if(!alive(t))continue;hurt(t,Math.max(1,E.hail+roll-effDef(t)),'#bfefff');if(alive(t)&&t.kind!=='wall'){chillT(t,2);frostMark(u,t,1)}}
+    for(const [a,b] of area)if(solid(a,b)&&!isHeart(a,b)){const pt=G.paint[key(a,b)];if(!(pt&&pt.fac==='ice'&&pt.ttl>E.hailTtl))G.paint[key(a,b)]={fac:'ice',ttl:E.hailTtl,owner:u.owner}}}
+  finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}
+  if(!SIM){vfx({k:'ab',ab:'hailfall',shape:'blast',from:[u.q,u.r],to:[st.q,st.r],cells:area,col:'#bfefff',fac:'ice',cam:1});addLog(u.owner,'The Hailstorm comes down'+(roll?(roll>0?' (rolls high: 1 more damage)':' (rolls low: 1 less damage)'):'')+'.')}}
+function stormTurn(){if(!G.storms||!G.storms.length)return;const pid=G.cur,mine=G.storms.filter(x=>x.owner===pid);if(!mine.length)return;G.storms=G.storms.filter(x=>x.owner!==pid);for(const st of mine)stormLand(st)}
+{const f0=beginTurn;beginTurn=function(){const r=f0.apply(this,arguments);try{if(frost2On()&&!G.phase&&!G.over)stormTurn()}catch(e){}return r}}
+{const f0=newUse;newUse=function(u,k,A,tgt,q,r,dest){
+  if(A.special==='hailstorm'){G.storms=(G.storms||[]).filter(x=>x.by!==u.id).concat([{by:u.id,owner:u.owner,q:q,r:r}]);
+    if(!SIM){fx(u,'the sky darkens','#bfefff');vfx({k:'ab',ab:'hailstorm',shape:'blast',from:[u.q,u.r],to:[q,r],cells:stormCells({q:q,r:r}),col:'#bfefff',fac:'ice'});if(trk()){const e=tFx('ice',u.name,A.name);if(e)e.uses++}}return}
+  return f0.apply(this,arguments)}}
+NEW_BOT.add('hailstorm');
+{const f0=newHeur;newHeur=function(u,k,q,r,ctx,dest){const A=ABIL[k];
+  if(A&&A.bot==='hailstorm'){let s=0;for(const [a,b] of stormCells({q:q,r:r})){const v=unitAt(a,b);if(!v||v.kind==='wall'||v.owner<0||tm(v.owner)===tm(u.owner)||inert(v))continue;s+=(v.st.frozen>0||effMov(v)===0)?4.2:1.5}return s>=2.8?s:0}
+  return f0.apply(this,arguments)}}
+{const f0=useAbility;useAbility=function(u,k,q,r,dest){const A=ABIL[k];if(!A||!frost2On()||!u||u.owner<0||!G.players[u.owner]||G.players[u.owner].fac!=='ice')return f0.apply(this,arguments);
+  const acted0=u.acted,sv=[G.rollNow,G.rollU],lance=k==='icelance',tgt=lance?unitAt(q,r):null,behind=(lance&&tgt)?unitBehind(nearCell(u,tgt),tgt,1):null,ss=k==='command'?commandStatues(u).slice():null;
+  const roll=(RULES.ROLL&&!SIM&&A.roll&&A.special!=='hailstorm')?Math.floor(RNG()*3)-1:0;G.rollNow=roll;G.rollU=u.id;let res;
+  try{res=f0.apply(this,arguments);const cast=u.acted&&!acted0;
+    if(cast&&behind&&alive(behind)&&alive(u)&&(behind.kind!=='wall'||wildsCreature(behind))&&tm(behind.owner)!==tm(u.owner)&&behind!==tgt){const o=CUR_NAME;CUR_NAME=A.name+': pierce';try{applyHit(u,behind,Object.assign({},A,{dmg:Math.max(1,A.dmg+REALM.frost2.pierce),chainFreeze:0}))}finally{CUR_NAME=o}}
+    if(cast&&ss)for(const st of ss)if(alive(st)&&st.hp>1){st.hp=Math.max(1,st.hp-REALM.frost2.crack);if(!SIM)fx(st,'cracks','#bfefff')}
+    if(cast&&!SIM&&RULES.ROLL&&A.roll&&A.special!=='hailstorm'){G.rolled=(G.rolled||0)+1;if(roll){if(alive(u))fx(u,roll>0?'rolls high +1':'rolls low -1',roll>0?'#ffd76a':'#9aa3b5');addLog(u.owner,`${A.name} ${roll>0?'rolls high: 1 more damage':'rolls low: 1 less damage'}.`)}}}
+  finally{G.rollNow=sv[0];G.rollU=sv[1]}
+  return res}}
+{const f0=hitDmg;hitDmg=function(u,t,A){let r=f0(u,t,A);if(r>0&&G.rollNow&&A&&A.roll&&u&&G.rollU===u.id)r=Math.max(1,r+G.rollNow);return r}}
+{const f0=duoLabel;duoLabel=function(u,t,A){let l=f0(u,t,A);try{if(frost2On()&&RULES.ROLL&&A&&A.roll&&u&&u.owner>=0&&G.players[u.owner].fac==='ice'&&t&&t.owner!==u.owner)l=l?{t:l.t+' · ±1',c:l.c}:{t:'±1',c:'#bfefff'}}catch(e){}return l}}
+
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v227 2026-11-15";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -7698,6 +7742,7 @@ function tokenPath(fac,x,y,r){
   }
 }
 if(LOOK['Ice Statue']&&!LOOK['Ice Golem'])LOOK['Ice Golem']=LOOK['Ice Statue'];/* v189: merged statues */
+/* v227 */try{if(LOOK['Hailcaller'])LOOK['Storm Herald']=LOOK['Hailcaller']}catch(e){}
 
 /* Hexmarch real 3D (v35, owner 1 Oct 2026: "do the full visual update"). A WebGL scene (three.js r128, loaded from a CDN) is drawn UNDER the
    tabletop canvas with exactly the same camera as view3d.js proj(): an orthographic, rotated and tilted view, built as a hand-made projection
@@ -8607,6 +8652,8 @@ function glShadowSig(){let a=0;try{for(const f of GL.figs.values()){const p=f.po
 {const f0=glRender;glRender=function(){try{const R=GL.R;if(R&&R.shadowMap&&R.shadowMap.enabled){if(R.shadowMap.autoUpdate){R.shadowMap.autoUpdate=false;R.shadowMap.needsUpdate=true}GL.shN=(GL.shN||0)+1;const sg=glShadowSig(),busy=(typeof fallPre==='function'&&fallPre())||(typeof window!=='undefined'&&window.QUAKE);
       if(sg!==GL.shSig||busy||GL.shN%30===0){GL.shSig=sg;R.shadowMap.needsUpdate=true}}}catch(e){}return f0()}}
 function landPre(){try{return typeof fallPre==='function'&&fallPre()}catch(e){return false}}
+/* v227: the Storm Herald wears the Hailcaller's body until it has its own figure */
+try{if(MODELS['Hailcaller'])MODELS['Storm Herald']=MODELS['Hailcaller']}catch(e){}
 
 /* v141 GLFX: 3D special effects (owner 23 Oct 2026: "move on with abilities and effects"). Every effect event the engine writes to G.fxLog
    (bolt, lob, slash, chain, ab with a shape and cells, buff, death, ult, crack, fall, dust) gets a counterpart in the WebGL scene, drawn with
@@ -9055,6 +9102,8 @@ Object.assign(FXI,{flare:150,flamelash:450,e_flamelash:450,stonegrip:450,e_stone
 FXA.blackpyre=(ev,t0)=>FXA.howl(ev,t0);FXA.pyreburst=(ev,t0)=>FXA.sacrifice(ev,t0);
 /* v226: Winter's Grasp wears the Deep Winter look */
 FXA.wintergrasp=(ev,t0)=>FXA.deepwinter(ev,t0);
+/* v227: the Hailstorm is marked with the Deep Winter look and comes down with the Blizzard's */
+FXA.hailstorm=(ev,t0)=>FXA.icewall?FXA.icewall(ev,t0):0;FXA.hailfall=(ev,t0)=>FXA.deepwinter(ev,t0);
 
 /* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
 let FALL_WAIT=5000;/* v223: the prologue lengthens it (introPlan) */const fallPre=()=>!!(window.FALL_LAND&&Date.now()<window.FALL_LAND);
@@ -12358,6 +12407,12 @@ function pyreDraw(now){if(!G||!G.realm||!G.units||G.phase)return;const fs=G.unit
   for(const f of fs)for(const [a,b] of pyreCells(f)){const near=distUC(f,a,b)<=1;if(VIEW==='3d')polyPath(hexTop(...world(a,b),0.9,0.03));else hexPath(...px(a,b),SZ*0.9);ctx.fillStyle=hexA(near?'#ff3a2a':'#a24aff',0.16*pulse+0.06);ctx.fill();ctx.lineWidth=2;ctx.setLineDash([6,5]);ctx.strokeStyle=hexA(near?'#ff6a4a':'#c58cff',0.5+0.4*pulse);ctx.stroke();ctx.setLineDash([])}
   ctx.restore()}
 {const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{pyreDraw(now)}catch(e){}}}
+/* v227: the Storm Herald's line, and the Hailstorm's marked area drawn on the board until it lands */
+try{UNIT_LINES['Storm Herald']='Calls the hail: marks a patch of ground, and a turn later the storm comes down on whoever is still standing there.'}catch(e){}
+function stormDraw(now){if(!G||!G.realm||!G.storms||!G.storms.length||G.phase)return;ctx.save();const pulse=0.55+0.35*Math.sin((now||Date.now())/300);
+  for(const st of G.storms)for(const [a,b] of stormCells(st)){if(VIEW==='3d')polyPath(hexTop(...world(a,b),0.9,0.03));else hexPath(...px(a,b),SZ*0.9);ctx.fillStyle=hexA('#9fd8ff',0.14*pulse+0.06);ctx.fill();ctx.lineWidth=2;ctx.setLineDash([3,6]);ctx.strokeStyle=hexA('#dff4ff',0.5+0.4*pulse);ctx.stroke();ctx.setLineDash([])}
+  ctx.restore()}
+{const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{stormDraw(now)}catch(e){}}}
 
 /* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"; rebuilt on the Realm in v170). "Play the tutorial" on the home page starts a short guided game:
    the Iron Warband (the introductory army) on the Realm, the other armies passing their turns. A coach box at the top explains one thing at a time and
