@@ -7055,7 +7055,53 @@ NEW_BOT.add('prayer');
 function f0b(sib){const b=sib.broken;sib.broken=0;try{shadowTurn(sib,true,'grief')}finally{sib.broken=b||1}}
 {const f0=duoLabel;duoLabel=function(u,t,A){let l=f0(u,t,A);return l}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v228 2026-11-15";
+/* v229 THE STONE GIANTS' DEPTH PASS (owner, 16 Nov 2026: "giants are the team for delayed strikes and AoE strikes").
+   - DELAYED STRIKES: Mountain's Fall and Boulder are wound up. The cast marks the ground (drawn for everyone) and the giant cannot move while it
+     holds the blow; at the start of its next turn the blow lands as it always did, 2 harder for the wait. A frozen, stunned or dead giant drops
+     it. Mountain's Fall also fails if the landing ground is no longer free: standing on it is a way to stop the leap.
+   - RECOVERY: after Crush, Smash or Bulwark Charge the giant walks 2 hexes less on its next turn.
+   - STONE FIRST: an enemy that already stood on the giants' stone ground when a giant's ability hits it takes 2 more.
+   - SMASH is a wide cone 2 deep (8 hexes), 1 harder on the hexes right next to the Cliff Breaker.
+   - WIDE ROLLS (the page only): Boulder, Smash, Crush, Mountain's Fall and Bulwark Charge deal from 2 less to 2 more. */
+RULES.GIANTS2=1;RULES.GIANT_DELAY=1;REALM.giants2={landPlus:2,recover:2,stone:2,smashNear:1,roll:2};
+const GIANT_DELAYED={mountainfall:1,boulder:1},GIANT_RECOVER={crush:1,smash:1,bulwark:1};
+ABIL.smash.wide=1;ABIL.smash.size=2;
+for(const k of ['boulder','smash','crush','mountainfall','bulwark'])if(ABIL[k])ABIL[k].roll=1;
+try{ABIL.mountainfall.desc+=' WOUND UP: the cast only marks the landing ground and the King cannot move while he gathers himself; at the start of his next turn he leaps and lands 2 harder. Frozen, stunned or dead he does not leap, and neither if the landing ground is no longer free.';
+  ABIL.boulder.desc+=' WOUND UP: the cast marks where the boulder will fall and the Hurler cannot move while it holds it; at the start of its next turn the boulder lands 2 harder. Frozen, stunned or dead it drops it.';
+  ABIL.smash.desc+=' The sweep is a wide cone 2 hexes deep, 1 harder right next to the giant. Recovery: the giant walks 2 less on its next turn.';
+  ABIL.crush.desc+=' Recovery: the giant walks 2 less on its next turn.';ABIL.bulwark.desc+=' Recovery: the giant walks 2 less on its next turn.'}catch(e){}
+function giants2On(){return !!(G&&G.realm&&RULES.GIANTS2)}
+function giantU(u){return !!(u&&u.kind!=='wall'&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='giants')}
+function stoneHex(q,r,set){if(set)return set.has(key(q,r));const pt=G.paint[key(q,r)];return !!(pt&&pt.fac==='giants'&&pt.kind==='stone')}
+function fallCells(f){const u=byId(f.by);if(f.k==='boulder')return ringCells().filter(([a,b])=>hd(a,b,f.q,f.r)<=1);return ringCells().filter(([a,b])=>hd(a,b,f.q,f.r)<=2)}
+function fallLand(f){const u=byId(f.by);if(!u||!alive(u)||u.kind==='wall')return;if(u.st)u.st.windup=0;if(u.st&&u.st.frozen>0){if(!SIM)fx(u,'the blow is lost','#9aa3b5');return}
+  const sv={acted:u.acted,moved:u.moved,cd:cdOf(u,f.k),ap:G.ap,amode:G.amode,aim:G.aim,land:G.landing};G.landing=u.id;
+  try{useAbility(u,f.k,f.q,f.r)}finally{G.landing=sv.land;u.acted=sv.acted;u.moved=sv.moved;setCd(u,f.k,sv.cd);G.ap=sv.ap;G.amode=sv.amode;G.aim=sv.aim}}
+function fallTurn(){const pid=G.cur;for(const u of G.units)if(u.owner===pid&&u.st&&u.st.recover>0)u.st.recover--;if(!G.falls||!G.falls.length)return;const mine=G.falls.filter(x=>x.owner===pid);if(!mine.length)return;G.falls=G.falls.filter(x=>x.owner!==pid);for(const f of mine)fallLand(f)}
+{const f0=beginTurn;beginTurn=function(){const r=f0.apply(this,arguments);try{if(giants2On()&&!G.phase&&!G.over)fallTurn()}catch(e){}return r}}
+{const f0=effMov;effMov=function(u){if(u&&u.st&&giants2On()){if(u.st.windup)return 0;if(u.st.recover===1)return Math.max(0,f0.apply(this,arguments)-REALM.giants2.recover)}return f0.apply(this,arguments)}}
+{const f0=useAbility;useAbility=function(u,k,q,r,dest){const A=ABIL[k];if(!A||!giants2On()||!giantU(u))return f0.apply(this,arguments);
+  if(GIANT_DELAYED[k]&&RULES.GIANT_DELAY&&G.landing!==u.id){/* the cast: mark the ground, hold the blow */
+    u.acted=true;u.fought=true;u.moved=true;setCd(u,k,Math.max(1,A.cd+1));G.amode=null;G.aim=null;u.st.windup=1;G.falls=(G.falls||[]).filter(x=>x.by!==u.id).concat([{by:u.id,owner:u.owner,k:k,q:q,r:r}]);
+    if(!SIM){fx(u,k==='boulder'?'lifts a boulder':'gathers himself','#d9a45b');vfx({k:'ab',ab:'windup',shape:'blast',from:[u.q,u.r],to:[q,r],cells:fallCells({by:u.id,k:k,q:q,r:r}),col:'#d9a45b',fac:'giants'});addLog(u.owner,`${u.name}: ${A.name} is wound up and lands at the start of its next turn.`);if(trk()){const e=tFx('giants',u.name,A.name+': wound up');if(e)e.uses++}}
+    return}
+  const sv=[G.rollNow,G.rollU,G.preStone,G.gCast],acted0=u.acted;G.preStone=new Set();for(const kk in (G.paint||{})){const pt=G.paint[kk];if(pt&&pt.fac==='giants'&&pt.kind==='stone')G.preStone.add(kk)}
+  const W=REALM.giants2.roll,roll=(RULES.ROLL&&!SIM&&A.roll)?(Math.floor(RNG()*(2*W+1))-W):0;G.rollNow=roll;G.rollU=u.id;G.gCast=k;let res;
+  try{res=f0.apply(this,arguments)}finally{G.rollNow=sv[0];G.rollU=sv[1];G.preStone=sv[2];G.gCast=sv[3]}
+  const cast=(u.acted&&!acted0)||G.landing===u.id;
+  if(cast&&GIANT_RECOVER[k]&&alive(u))u.st.recover=2;
+  if(cast&&!SIM&&RULES.ROLL&&A.roll){G.rolled=(G.rolled||0)+1;if(roll){if(alive(u))fx(u,roll>0?'rolls high +'+roll:'rolls low '+roll,roll>0?'#ffd76a':'#9aa3b5');addLog(u.owner,`${A.name} ${roll>0?'rolls high: '+roll+' more damage':'rolls low: '+(-roll)+' less damage'}.`)}}
+  return res}}
+function giantPlus(u,t,A){const parts=[];let n=0;if(!giants2On()||!giantU(u)||!A||!t)return {n:0,parts:parts};const E=REALM.giants2;
+  if(t.kind!=='wall'&&tm(t.owner)!==tm(u.owner)&&cells(t).some(([a,b])=>stoneHex(a,b,G.preStone))){n+=E.stone;parts.push('ON STONE +'+E.stone)}
+  if(G.landing===u.id){n+=E.landPlus;parts.push('WOUND UP +'+E.landPlus)}
+  if(A.name===ABIL.smash.name&&distUU(u,t)<=1){n+=E.smashNear;parts.push('POINT BLANK +'+E.smashNear)}
+  return {n:n,parts:parts}}
+{const f0=hitDmg;hitDmg=function(u,t,A){let r=f0(u,t,A);if(r<=0||!A||!(A.dmg||A.splash||A.useAtk)||!giants2On()||!giantU(u))return r;return Math.max(1,r+giantPlus(u,t,A).n)}}
+{const f0=duoLabel;duoLabel=function(u,t,A){let l=f0(u,t,A);try{if(A&&giants2On()&&giantU(u)&&t&&t.owner!==u.owner){const parts=giantPlus(u,t,A).parts.slice();if(GIANT_DELAYED[Object.keys(ABIL).find(k=>ABIL[k]===A)||'']&&RULES.GIANT_DELAY&&G.landing!==u.id)parts.push('LANDS NEXT TURN +'+REALM.giants2.landPlus);if(RULES.ROLL&&A.roll)parts.push('±'+REALM.giants2.roll);if(parts.length){const tx=parts.join(' · ');l=l?{t:l.t+' · '+tx,c:l.c}:{t:tx,c:'#d9a45b'}}}}catch(e){}return l}}
+
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v229 2026-11-15";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -12488,6 +12534,14 @@ function threadDraw(now){if(!G||!G.realm||!G.units||G.phase||typeof twinPairs!==
   for(const st of (G.prayers||[]))for(const [q,r] of prayerCells(st)){const col=st.dark?'#a24aff':'#ffd76a';if(VIEW==='3d')polyPath(hexTop(...world(q,r),0.9,0.03));else hexPath(...px(q,r),SZ*0.9);ctx.fillStyle=hexA(col,0.12*pulse+0.05);ctx.fill();ctx.lineWidth=2;ctx.setLineDash([3,6]);ctx.strokeStyle=hexA(col,0.5+0.4*pulse);ctx.stroke();ctx.setLineDash([])}
   ctx.restore()}
 {const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{threadDraw(now)}catch(e){}}}
+/* v229: the giants' wound-up blows drawn on the board until they land; their status chips */
+{const f0=unitStatuses;unitStatuses=function(u){const o=f0.apply(this,arguments);try{const s=u&&u.st;if(s&&o&&o.push){const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
+  if(s.windup)add('windup','⏳','Wound up',null,'#d9a45b',1,'holds a blow that lands at the start of its next turn on the marked ground; it cannot move until then; freeze, stun or kill it and the blow is lost');
+  if(s.recover===1)add('recover','🪨','Recovering',null,'#8a8f99',0,'it swung a heavy blow last turn: it walks 2 hexes less this turn');else if(s.recover===2)add('recover','🪨','Will recover',null,'#8a8f99',0,'it swung a heavy blow: it walks 2 hexes less on its next turn')}}catch(e){}return o}}
+function fallDraw(now){if(!G||!G.realm||!G.falls||!G.falls.length||G.phase)return;ctx.save();const pulse=0.55+0.35*Math.sin((now||Date.now())/280);
+  for(const f of G.falls)for(const [a,b] of fallCells(f)){const mid=a===f.q&&b===f.r;if(VIEW==='3d')polyPath(hexTop(...world(a,b),0.9,0.03));else hexPath(...px(a,b),SZ*0.9);ctx.fillStyle=hexA(mid?'#ff9a3a':'#d9a45b',(mid?0.3:0.15)*pulse+0.06);ctx.fill();ctx.lineWidth=mid?3:2;ctx.setLineDash([7,5]);ctx.strokeStyle=hexA('#ffcf8a',0.5+0.4*pulse);ctx.stroke();ctx.setLineDash([])}
+  ctx.restore()}
+{const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{fallDraw(now)}catch(e){}}}
 
 /* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"; rebuilt on the Realm in v170). "Play the tutorial" on the home page starts a short guided game:
    the Iron Warband (the introductory army) on the Realm, the other armies passing their turns. A coach box at the top explains one thing at a time and
