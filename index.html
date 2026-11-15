@@ -1056,7 +1056,7 @@ const ABIL={
   draintouch:{name:'Drain Touch',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:4,special:'drain',
     desc:'The dark mirror of Lay on Hands: an adjacent enemy takes 4 minus DEF and the Seraph heals as much as it dealt.'},
   blight:{name:'Blight',cost:2,cd:3,aim:'hex',range:2,shape:'blast',size:1,hits:'none',special:'blight',bot:'blight',
-    desc:'The dark mirror of Grove: a hex within 2 and its 6 neighbours become blighted ground for 3 turns (never on the gold ground around the Throne): at the start of your turn every enemy standing on it takes 2 damage ignoring DEF and cannot be healed during its next turn (Decay).'},
+    desc:'The dark mirror of Grove: a hex within 2 and its 6 neighbours become blighted ground for 3 turns (on the ground around the Throne only once the Rift Beast is dead): at the start of your turn every enemy standing on it takes 2 damage ignoring DEF and cannot be healed during its next turn (Decay).'},
   dusk:{name:'Dusk',cost:2,cd:3,aim:'unit',hits:'foe',los:'lob',range:3,shape:'single',special:'dusk',bot:'dusk',
     desc:'The dark mirror of Bless: an enemy within 3 is shrouded for 3 turns: 1 less ATK, and it takes 1 damage ignoring DEF at the start of each of your next 3 turns.'},
   butchery:{name:'Butchery',cost:1,cd:2,aim:'unit',hits:'foe',range:1,shape:'single',dmg:3,special:'butchery',
@@ -1074,7 +1074,7 @@ const ABIL={
   aegis:{name:'Aegis',aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',shield:3,bot:'shield',
     desc:'A shield of 3 on an ally within 3 (or the Seraph Warden itself): it soaks the next 3 damage that unit would take.'},
   grove:{name:'Grove',cost:2,cd:3,aim:'hex',range:2,shape:'blast',size:1,hits:'none',special:'grove',bot:'grove',
-    desc:'A hex within 2 and its 6 neighbours become holy ground for 3 turns (never on the gold ground around the Throne): at the start of its owner\u2019s turn every ally standing on it heals 2 and every enemy standing on it takes 2 damage (ignoring DEF).'},
+    desc:'A hex within 2 and its 6 neighbours become holy ground for 3 turns (on the ground around the Throne only once the Rift Beast is dead): at the start of its owner\u2019s turn every ally standing on it heals 2 and every enemy standing on it takes 2 damage (ignoring DEF).'},
   // v27 Bless (Lightwarden): st.bless = heals left (3), +1 ATK while it lasts; st.blessNew skips the first end-of-turn count when cast on the owner's own turn.
   bless:{name:'Bless',cost:2,cd:3,aim:'unit',hits:'ally',los:'lob',range:3,shape:'single',special:'bless',bot:'bless',
     desc:'Bless an ally within 3 (or the Lightwarden itself) for 3 turns: it gets +1 ATK, and heals 1 at the start of each of your next 3 turns. A buff, not a debuff: Mend never lifts it. Casting it again on the same unit starts the 3 turns over.'},
@@ -1858,6 +1858,8 @@ function runCollapse(){
 }
 const heartR=()=>G.heartR||1;
 const isHeart=(q,r)=>hd(q,r,0,0)<=heartR();
+function heartFree(){return !!(G&&G.realm&&G.round>1&&!(G.units||[]).some(u=>u.beast&&u.hp>0))}/* v237 (owner): ground effects work in the Heart once the Rift Beast is dead */
+function noPaint(q,r){return isHeart(q,r)&&!heartFree()}
 // No man's land: a grey ring around the Heart where no army's colour is painted.
 const isNoMans=(q,r)=>hd(q,r,0,0)<=heartR()+2;
 // The Throne: the single centre hex. Its buff belongs to whichever unit stands on it, held or contested.
@@ -2242,7 +2244,7 @@ function machineShrug(t){if(!t.machine)return false;if(!SIM&&trk()){const e=tFx(
    Frost: chilling or freezing an enemy leaves blue ground under it for 2 turns (blue ground chills enemies that start a turn there).
    Covenant: the Bog Ring's Mire curse leaves pale ground for 3 turns (an enemy on pale ground takes 1 more from each curse tick).
    Riftwalkers: Rift Mark paints any hex teal for 3 turns (pushes and pulls by Riftwalkers move an enemy on teal 1 hex further). */
-function paintUnder(t,fac,ttl,owner,label){if(!RULES.GROUND2||!t||t.kind==='wall')return;let n=0;for(const [q,r] of cells(t)){const k=key(q,r);if(!solid(q,r)||isHeart(q,r))continue;const p=G.paint[k];if(p&&p.kind==='grove')continue;if(terrAt(q,r)===fac&&!(p&&p.fac===fac))continue;G.paint[k]={fac,ttl,owner};n++}
+function paintUnder(t,fac,ttl,owner,label){if(!RULES.GROUND2||!t||t.kind==='wall')return;let n=0;for(const [q,r] of cells(t)){const k=key(q,r);if(!solid(q,r)||noPaint(q,r))continue;const p=G.paint[k];if(p&&p.kind==='grove')continue;if(terrAt(q,r)===fac&&!(p&&p.fac===fac))continue;G.paint[k]={fac,ttl,owner};n++}
   if(n&&label&&!SIM&&trk()){const e=tFx(fac,'',label);if(e)e.uses+=n}}
 /* v164: the water under a Frost unit and next to it freezes for REALM.ice.ttl of its owner's turns (it never melts under a unit) */
 function frostWater(u){if(!G||!G.realm||!u||u.kind==='wall'||u.owner<0||!G.players[u.owner]||G.players[u.owner].fac!=='ice'||!alive(u))return 0;let n=0;const seen=new Set();for(const [a,b] of cells(u))for(const [q,r] of [[a,b],...DIRS.map(([dq,dr])=>[a+dq,b+dr])]){const k=key(q,r);if(seen.has(k)||!solid(q,r)||featAt(q,r)!=='river')continue;seen.add(k);const was=G.paint[k]&&G.paint[k].icew;G.paint[k]={fac:'ice',ttl:REALM.ice.ttl,owner:u.owner,icew:1};if(!was)n++}
@@ -2595,7 +2597,7 @@ function tbRecord(p){if(!RULES.TURNBACK||!G.units.some(v=>v.owner===p.id&&v.kind
   for(const v of G.units){if(v.kind==='wall'||v.egg||v.statue)continue;v.tb=v.tb||{};const o=v.tb[p.id];v.tb[p.id]={prev:o?o.cur:null,cur:tbSnap(v)}}}
 const tbState=(u,v)=>v&&v.tb&&v.tb[u.owner]&&v.tb[u.owner].prev||null;
 function hellAura(p){if(!RULES.ARCHDEMON)return;const ds=G.units.filter(d=>d.kind!=='wall'&&hasTrait(d,'hellaura')&&alive(d));if(!ds.length)return;
-  for(const d of ds){if(d.owner===p.id){for(const [a,b] of cells(d))if(!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:3,owner:d.owner};continue}
+  for(const d of ds){if(d.owner===p.id){for(const [a,b] of cells(d))if(!noPaint(a,b))G.paint[key(a,b)]={fac:'fire',ttl:3,owner:d.owner};continue}
     if(tm(d.owner)===p.team)continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=d;CUR_TAG='Dot';CUR_NAME='Burning Aura';
     for(const v of G.units.slice())if(v.owner===p.id&&v.kind!=='wall'&&!v.statue&&alive(v)&&distUU(v,d)===1)hurt(v,1,'#ff4a3d',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
 function beginTurn(){
@@ -2667,7 +2669,7 @@ function beginTurn(){
       if(g&&tm(g.owner)===tm(u.owner)){if(healUnit(u,G.realm?REALM.holyTick:1,'#9ff0c0','Grove',g.by))vfx({k:'buff',at:[u.q,u.r],col:'#8f5cff'})}
       else if(g&&!u.statue&&!u.egg){const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=byId(g.by);CUR_TAG='Dot';CUR_NAME='Holy ground (burn)';if(!SIM)vfx({k:'buff',at:[u.q,u.r],col:'#ffe9a8'});hurt(u,G.realm?REALM.holyTick:1,'#ffe9a8',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o;if(!alive(u))continue}}
     // Bless (Lightwarden, v27): heals 1 at the start of each of the owner's turns while it lasts (Seared blocks it like any heal).
-    if(u.st.bless>0&&healUnit(u,1,'#ffe9a8','Bless',u.st.blessBy))vfx({k:'buff',at:[u.q,u.r],col:'#ffd766'});
+    if(u.st.bless>0){const full=u.hp>=u.maxhp,blk=u.st.seared>0;if(healUnit(u,1,'#ffe9a8','Bless',u.st.blessBy))vfx({k:'buff',at:[u.q,u.r],col:'#ffd766'});else if(full&&!blk&&G.realm){const lw=byId(u.st.blessBy);overheal(lw&&alive(lw)?lw:u,u,1,'Bless')}/* v237: a blessing on a unit at full HP overflows like every other heal */}
     if(u.size===2&&talent(p,'oldmountain')&&u.rested&&u.hp<u.maxhp)healUnit(u,3,'#5fd68e','Old Mountain (talent)');u.rested=0;
 
     if(G.units.some(v=>v.kind!=='wall'&&tm(v.owner)!==p.team&&utal(v,'grip')&&distUU(u,v)===1))chillT(u,2,{fac:'ice',name:'Winter’s Grip (talent)'});
@@ -2890,7 +2892,7 @@ function kill(t){
   // v37 Hellspawn (Ember Court passive, owner 2 Oct 2026): a dying Ember Court unit bursts: 2 damage ignoring DEF to every adjacent enemy, and its hex burns red for 2 turns.
   if(G.players[t.owner]&&G.players[t.owner].fac==='fire'&&!t.summon&&!t.egg&&!(t.sacrificed&&!(G.realm&&REALM.sacStack))){const ring=cells(t);if(!SIM)vfx({k:'ab',ab:'kindle',shape:'nova',from:[t.q,t.r],to:[t.q,t.r],cells:DIRS.map(([a,b])=>[t.q+a,t.r+b]),col:'#ff5a1a',cam:1});
     const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Hellspawn (death burst)';let hit=0;for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner)){hurt(v,(t.name==='Imp'&&G.realm?REALM.impBurst:REALM.burst)+(talent(G.players[t.owner],'hellfire')?1:0),'#ff5a1a');hit++}/* v187: a killed Imp is a bomb */
-    for(const [a,b] of ring)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:t.owner};
+    for(const [a,b] of ring)if(solid(a,b)&&!noPaint(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:t.owner};
     if(trk()&&!SIM){const e=tFx('fire',t.name,'Hellspawn (death burst)');if(e)e.uses++}if(!SIM&&hit)addLog(t.owner,`The ${t.name} bursts in hellfire as it dies.`);CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
   // v37 Last of the Old Ones (Stone Giants passive): when a giant falls, every surviving giant of its army heals 3 and gains +1 ATK for the rest of the game (u.oldAtk).
   if(RULES.OLD_ONES&&G.players[t.owner]&&G.players[t.owner].fac==='giants'&&!t.summon){let n=0;for(const v of G.units)if(v.owner===t.owner&&v.kind!=='wall'&&v.size===2&&alive(v)){v.oldAtk=(v.oldAtk||0)+1;healUnit(v,3,'#ffb347','Last of the Old Ones');fx(v,'+1 ATK','#ffb347');n++}
@@ -2898,7 +2900,7 @@ function kill(t){
   // Living Fuse (Cinder): 1 damage ignoring DEF to adjacent enemies, and the hex plus its 6 neighbours burn red for 2 turns.
   if(hasTrait(t,'fuse')){const ring=[[t.q,t.r],...DIRS.map(([a,b])=>[t.q+a,t.r+b])];vfx({k:'ab',ab:'kindle',shape:'blast',from:[t.q,t.r],to:[t.q,t.r],cells:ring,col:facOf(t).color});
     const src=CUR_SRC,st=CUR_TAG,sn=CUR_NAME;CUR_SRC=t;CUR_TAG='Other';CUR_NAME='Living Fuse';for(const v of near)if(tm(v.owner)!==tm(t.owner))hurt(v,1,'#ff9a3d');
-    for(const [a,b] of ring)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:G.players[t.owner].fac,ttl:2,owner:t.owner};
+    for(const [a,b] of ring)if(solid(a,b)&&!noPaint(a,b))G.paint[key(a,b)]={fac:G.players[t.owner].fac,ttl:2,owner:t.owner};
     if(trk()&&!SIM){const e=tFx(G.players[t.owner].fac,t.name,'Living Fuse');if(e)e.uses++}CUR_SRC=src;CUR_TAG=st;CUR_NAME=sn}
   if(utal(t,'chorus'))for(const v of near)if(alive(v)&&tm(v.owner)!==tm(t.owner))applyCurse(t,v,'agony');
   if(hasTrait(t,'martyr'))for(const v of near)if(alive(v)&&tm(v.owner)===tm(t.owner))healUnit(v,3,'#5fd68e','Martyr (trait)');
@@ -3083,8 +3085,9 @@ function hurt(t,n,col,tick){
 // Also feeds Fervour (Zealot: u.fv = healing received this turn) and the priests' plan check (healing per damage taken).
 /* v49 Overflowing light (owner 4 Oct 2026: "if the target is healed beyond full HP the excess is converted into damage and hits the closest
    enemy"). src = the healer, t = the healed ally, excess = heal points that did not fit. The nearest enemy within 3 of t takes them, ignoring DEF. */
+function lightFoeM(a,v){return !!(v&&(v.beast||(v.monster&&v.monster!=='crate'&&v.monster!=='chest'&&v.monster!=='cracked'&&!v.cityWall))&&isFoe(a,v))}/* v237: never a city wall, a cracked wall, a chest, your own Keep or your own Old God */
 function overheal(src,t,excess,name){if(!RULES.OVERHEAL||!(excess>0)||!alive(t))return 0;
-  const es=G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(t.owner)&&!v.statue&&!v.egg:(v.beast||(v.monster&&v.monster!=='crate')))&&distUU(v,t)<=3)
+  const es=G.units.filter(v=>alive(v)&&(v.kind!=='wall'?tm(v.owner)!==tm(t.owner)&&!v.statue&&!v.egg:lightFoeM(t,v))&&distUU(v,t)<=3)
     .sort((a,b)=>distUU(a,t)-distUU(b,t)||a.hp-b.hp||a.id-b.id);if(!es.length)return 0;const e=es[0];
   const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=src||t;CUR_TAG='Abil';CUR_NAME=(name||'Healing')+': overflowing light';
   if(!SIM){vfx({k:'bolt',from:[t.q,t.r],to:[e.q,e.r],col:'#ffe9a8'});addLog(t.owner,`Overflowing light: ${excess*(G.realm?REALM.overflowK:1)} burns the ${e.name}.`)}
@@ -3097,7 +3100,7 @@ function healUnit(t,n,col,name,by){
   if(RULES.ROT_CURSES&&t.st&&hasCurse(t,'silence')){if(!SIM)fx(t,'decay: no healing','#c8e83a');return 0}// v62 Decay
   const h=Math.min(n,t.maxhp-t.hp);if(h<=0)return 0;
   // Seared (Ember Court): no healing of any kind until the end of the unit's next turn; the heal it missed is credited to the fire unit that seared it.
-  if(t.st&&t.st.seared>0){if(!SIM){fx(t,'seared','#ff9a3d');tFxBy(t.st.searBy,'fire','Seared (heals blocked)','blocked',h)}return 0}
+  if(t.st&&t.st.seared>0){if(!SIM){fx(t,'seared: no healing','#ff9a3d');if(name&&G.players[t.owner])addLog(t.owner,`The ${t.name} is seared: ${name} heals nothing on it this turn.`);tFxBy(t.st.searBy,'fire','Seared (heals blocked)','blocked',h)}return 0}
   t.hp=r2(t.hp+h);t.fv=(t.fv||0)+h;
   if(G.realm&&G.players[t.owner]&&G.players[t.owner].fac==='arcane'&&FAITH_HEALS.has(name)){const hs=by!=null&&by>=0?byId(by):CUR_SRC;if(hs&&hs.kind!=='wall'&&G.players[hs.owner]&&G.players[hs.owner].fac==='arcane')faithGain(G.players[t.owner],h)}// v75 Faith: healing by a priest that lands
   if(SIM)return h;
@@ -3186,7 +3189,7 @@ function doMove(u,o){
   {const was=cells(u);u.q=o.q;u.r=o.r;u.dir=o.dir;frostWater(u);/* v164 */shapeLand(u);/* v168 */if(hasTrait(u,'mammoth')&&!o.tele)mammothMarks(u,was);if(hasTrait(u,'trail')&&!o.tele)hellTrail(u,was[0],[o.q,o.r]);if(o.tele)gateStep(u,o)}if(o.portal!=null)newDoMove(u,o);if(o.gate)G.gateUsed=true;G.amode=null;G.aim=null;braceCheck(u);afterAction();
 }
 /* v86 HELLFIRE TRAIL (owner 18 Oct 2026): the Pit Lord sets every hex of its path alight for 1 turn (red ground, ttl 1: it burns through the other sides' turns and dies at the start of the Pit Lord's next turn). The path is the straight hex line from where it stood to where it stops. */
-function hellTrail(u,from,to){let n=0;for(const [q,r] of hexLine(from,to)){if(!solid(q,r)||isHeart(q,r))continue;const k=key(q,r),p=G.paint[k];if(p&&p.fac==='fire'&&p.ttl>1)continue;G.paint[k]={fac:'fire',ttl:1,owner:u.owner};n++}
+function hellTrail(u,from,to){let n=0;for(const [q,r] of hexLine(from,to)){if(!solid(q,r)||noPaint(q,r))continue;const k=key(q,r),p=G.paint[k];if(p&&p.fac==='fire'&&p.ttl>1)continue;G.paint[k]={fac:'fire',ttl:1,owner:u.owner};n++}
   if(n&&!SIM){fx(u,'hellfire trail','#ff6a3d');if(trk()){const e=tFx('fire',u.name,'Hellfire Trail (hexes lit)');if(e)e.uses+=n}}}
 // Brace (Spearman): an enemy that ends a move on a hex in front of an un-moved Spearman runs onto the spear: 2 damage minus DEF.
 function braceCheck(u){
@@ -3463,7 +3466,7 @@ function attack(u,t){
   for(const v of extra)hurt(v,u.aoe==='arc'?Math.max(1,afterDef(effAtk(u),effDef(v))):splashDmg(u,dmg),F.color);
   CUR_NAME='Basic attack';
   if(alive(t)&&t.kind!=='wall'&&F.onHit==='rot')applyCurse(u,t,'rot');
-  if(utal(u,'scorch')&&t.kind!=='wall'&&solid(t.q,t.r)&&!isHeart(t.q,t.r))G.paint[key(t.q,t.r)]={fac:'fire',ttl:1,owner:u.owner};
+  if(utal(u,'scorch')&&t.kind!=='wall'&&solid(t.q,t.r)&&!noPaint(t.q,t.r))G.paint[key(t.q,t.r)]={fac:'fire',ttl:1,owner:u.owner};
   // Bloodlust talent (Warband): Momentum, once per turn a killing blow lets the unit act again.
   if(utal(u,'bloodlust')&&!alive(t)&&t.kind!=='wall'&&!u.mom){u.acted=false;u.mom=true;addLog(u.owner,`Momentum: ${u.name} can act again.`)}
   if(adj&&alive(t)&&alive(u)){
@@ -3703,16 +3706,16 @@ const relicFree=p=>!!p&&!p.relicLost&&!(G.units||[]).some(v=>v.owner===p.id&&v.r
 const onSanct=u=>!!u&&u.kind!=='wall'&&u.owner>=0&&cells(u).some(([q,r])=>{const pt=G.paint[key(q,r)];return !!(pt&&(pt.kind==='grove'||pt.kind==='blight')&&tm(pt.owner)===tm(u.owner))});
 const holyPlus=(u,t)=>G.realm&&isPriest(u)&&!u.shadow&&t&&t.kind!=='wall'&&tm(t.owner)===tm(u.owner)&&cells(t).some(([q,r])=>{const pt=G.paint[key(q,r)];return !!(pt&&pt.kind==='grove'&&tm(pt.owner)===tm(u.owner))})?REALM.holyHeal:0;
 function sanctAll(){if(!G||!G.realm||!G.paint)return;for(const k of Object.keys(G.paint))if(G.paint[k].sanct!=null)delete G.paint[k];
-  for(const u of G.units){if(!u.relq||u.kind==='wall'||!alive(u))continue;const fac=G.players[u.owner].fac;const hs=new Map();for(const [a,b] of cells(u)){hs.set(key(a,b),[a,b]);for(const [dq,dr] of DIRS)hs.set(key(a+dq,b+dr),[a+dq,b+dr])}/* v163b: a two-hex Sanctuary lights its two hexes and the eight around them */for(const [q,r] of hs.values()){if(!solid(q,r)||isHeart(q,r)||featAt(q,r)==='rock'||featAt(q,r)==='river'||featAt(q,r)==='fountain')continue;G.paint[key(q,r)]={fac,ttl:99999,owner:u.owner,kind:u.shadow?'blight':'grove',by:u.id,sanct:u.id,perm:1}}}}
+  for(const u of G.units){if(!u.relq||u.kind==='wall'||!alive(u))continue;const fac=G.players[u.owner].fac;const hs=new Map();for(const [a,b] of cells(u)){hs.set(key(a,b),[a,b]);for(const [dq,dr] of DIRS)hs.set(key(a+dq,b+dr),[a+dq,b+dr])}/* v163b: a two-hex Sanctuary lights its two hexes and the eight around them */for(const [q,r] of hs.values()){if(!solid(q,r)||noPaint(q,r)||featAt(q,r)==='rock'||featAt(q,r)==='river'||featAt(q,r)==='fountain')continue;G.paint[key(q,r)]={fac,ttl:99999,owner:u.owner,kind:u.shadow?'blight':'grove',by:u.id,sanct:u.id,perm:1}}}}
 function relicDrop(t){if(SIM||!t.relq)return;t.relq=0;const p=G.players[t.owner];const c=passable(t.q,t.r)?[t.q,t.r]:nearFree(t.q,t.r,occ(),2);if(!c){p.relicLost=1;return}G.loot=G.loot||[];G.loot.push({id:G.nid++,kind:'reliquary',owner:t.owner,q:c[0],r:c[1],carrier:null});
   addLog(t.owner,`The ${t.name} falls and the relic lies on the ground. One of your units that steps on it carries it on; an enemy that steps on it smashes it.`);announce({k:'note',col:FAC[p.fac].color,t:'The relic has fallen',s:`A unit of the ${FAC[p.fac].name} that steps on it carries it on. An enemy that steps on it smashes it for good.`});vfx({k:'buff',at:c,col:'#ffe9a8',cam:1})}
 const isPriest=u=>!!(u&&u.kind!=='wall'&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='arcane'&&!u.summon);
 {const a0=abilsOf0;abilsOf0=function(u){const o=a0(u);return u&&u.shadow?o.map(k=>SHADOW[k]||k):o}}
 {const c0=cdOf;cdOf=function(u,k){return c0(u,LIGHT_OF[k]||k)}}
 {const s0=setCd;setCd=function(u,k,n){return s0(u,LIGHT_OF[k]||k,n)}}
-function shadowTurn(u,on,why){if(!u||!!u.shadow===!!on)return;u.shadow=on?1:0;if(u.relq)sanctAll();/* v163: the relic turns with its carrier */if(SIM)return;fx(u,on?'turns to shadow':'the light returns',on?'#6a2bb0':'#ffe9a8');addLog(u.owner,on?`${u.name}'s light killed: it turns to a Shadow ${u.name}.`:`The Shadow ${u.name} has killed: the light returns to it.`);vfx({k:'buff',at:[u.q,u.r],col:on?'#6a2bb0':'#ffe9a8',cam:1});nTrk('arcane',u.name,on?'Turned to shadow':'Returned to light',e=>e.uses++)}
+function shadowTurn(u,on,why){if(!u||!!u.shadow===!!on)return;u.shadow=on?1:0;if(u.relq)sanctAll();/* v163: the relic turns with its carrier */if(SIM)return;fx(u,on?'turns to shadow':'the light returns',on?'#6a2bb0':'#ffe9a8');addLog(u.owner,on?(typeof GRIEF!=='undefined'&&GRIEF?`The ${u.name}'s Twin has fallen: it turns to a Shadow ${u.name} and stays so until its Twin returns.`:`${u.name}'s light killed: it turns to a Shadow ${u.name}.`):`The Shadow ${u.name} has killed: the light returns to it.`);vfx({k:'buff',at:[u.q,u.r],col:on?'#6a2bb0':'#ffe9a8',cam:1});nTrk('arcane',u.name,on?'Turned to shadow':'Returned to light',e=>e.uses++)}
 function shadowKill(t){const s=CUR_SRC;if(!isPriest(s)||!alive(s)||t===s)return;if(t.kind!=='wall'&&tm(t.owner)===tm(s.owner))return;
-  if(!s.shadow){if(/overflowing light|Holy ground|Radiance/.test(CUR_NAME||''))shadowTurn(s,true)}else shadowTurn(s,false)}
+  if(!s.shadow){if(/overflowing light|Holy ground|Radiance|Answered Prayer|Twins/.test(CUR_NAME||'')||(CUR_NAME==='Smite'&&onSanct(s)))shadowTurn(s,true)}else shadowTurn(s,false)}
 function shadowOver(t,over){const s=CUR_SRC;if(!(over>0)||!isPriest(s)||!s.shadow||t.kind!=='wall'&&tm(t.owner)===tm(s.owner))return;const al=G.units.filter(v=>v!==t&&alive(v)&&v.kind!=='wall'&&tm(v.owner)===tm(s.owner)&&v.hp<v.maxhp&&distUU(v,t)<=3).sort((a,b)=>distUU(a,t)-distUU(b,t)||a.hp-b.hp)[0];if(!al)return;
   if(healUnit(al,over,'#b06bff','Overflowing dark',s.id)&&!SIM)vfx({k:'bolt',from:[t.q,t.r],to:[al.q,al.r],col:'#b06bff'})}
 function blightTick(p){for(const u of G.units.slice()){if(!alive(u)||u.kind==='wall'||tm(u.owner)===p.team||u.statue||u.egg)continue;const b=cells(u).map(([q,r])=>{const pt=G.paint[key(q,r)];return pt&&pt.kind==='blight'&&pt.owner===p.id?pt:null}).find(Boolean);if(!b)continue;
@@ -3847,7 +3850,7 @@ function useAbility(u,k,q,r,dest){
       tSup('moved',n);addLog(u.owner,`The phalanx marches: ${n} unit${n===1?'':'s'} step forward.`);break}
     case 'wall':G.units.push({id:G.nid++,kind:'wall',wall:A.wall,owner:-1,creator:u.owner,by:u.id,abil:A.name,q,r,dir:0,size:1,hp:A.hp,maxhp:A.hp,def:0,ttl:3,st:{},name:A.wall==='ice'?'Ice wall':A.wall==='light'?'Wall of Light':'Stone wall'});break;
     // Grove: holy ground (paint kind 'grove') on the hex and its neighbours, never the Heart; 3 turns, 5 with Sacred Ground. Credited to this Druid when it heals (healUnit by).
-    case 'grove':{const area=shapeCells(u,k,q,r).filter(([a,b])=>solid(a,b)&&!isHeart(a,b)&&featAt(a,b)!=='rock');const ttl=utal(u,'sacredground')?5:3;
+    case 'grove':{const area=shapeCells(u,k,q,r).filter(([a,b])=>solid(a,b)&&!noPaint(a,b)&&featAt(a,b)!=='rock');const ttl=utal(u,'sacredground')?5:3;
       for(const [a,b] of area)G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl,owner:u.owner,kind:'grove',by:u.id};
       vfx({k:'ab',ab:k,shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:F.color,heal:true});addLog(u.owner,`Holy ground spreads over ${area.length} hexes.`);break}
     // Void Trap: a temporary void for 3 of the caster's turns.
@@ -3981,7 +3984,7 @@ function useAbility(u,k,q,r,dest){
       if(!SIM){tStat(b);addLog(u.owner,`A Behemoth rises from the scrap! Gnomes on foot step into it to crew it.`);fx(b,'BEHEMOTH','#ff6ec7');vfx({k:'buff',at:[q,r],col:F.color,cam:1});announce({k:'note',col:FAC.gnomes.color,t:'The Gnomes build a Behemoth',s:'It fires with 1 gnome inside and moves with 3.'});if(trk()){const e=tFx('gnomes','','Behemoths built');if(e)e.uses++}}break}
     case 'disembark':{if(!u.crew||!u.crew.length||unitAt(q,r)||!passable(q,r))break;const c=u.crew[u.crew.length-1];u.crew=u.crew.slice(0,-1);c.q=q;c.r=r;c.moved=true;c.acted=false;G.units.push(c);if(!SIM){addLog(u.owner,`The ${c.name} climbs out of the Behemoth.`);fx(c,'out','#ff6ec7')}break}
     case 'sacrifice':{u.sacrificed=1;const vs=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&distUU(v,u)===1);for(const v of vs)if(alive(v))hurt(v,A.dmg,'#ff5a1a');
-      for(const [a,b] of [[u.q,u.r],...DIRS.map(([x,y])=>[u.q+x,u.r+y])])if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:3,owner:u.owner};/* v187: the blast sets the ground alight */if(!SIM)vfx({k:'death',at:[u.q,u.r],icon:u.icon,col:'#ff5a1a'});addLog(u.owner,`The Imp detonates!`);{const o=CUR_SRC;CUR_SRC=u;hurt(u,u.hp+50,'#ff5a1a',true);CUR_SRC=o}break}
+      for(const [a,b] of [[u.q,u.r],...DIRS.map(([x,y])=>[u.q+x,u.r+y])])if(solid(a,b)&&!noPaint(a,b))G.paint[key(a,b)]={fac:'fire',ttl:3,owner:u.owner};/* v187: the blast sets the ground alight */if(!SIM)vfx({k:'death',at:[u.q,u.r],icon:u.icon,col:'#ff5a1a'});addLog(u.owner,`The Imp detonates!`);{const o=CUR_SRC;CUR_SRC=u;hurt(u,u.hp+50,'#ff5a1a',true);CUR_SRC=o}break}
     case 'devour':if(tgt&&tgt.kind!=='wall'&&!tgt.leader&&tgt.size!==2&&tgt.hp<=devourCap(tgt)){if(!SIM)vfx({k:'death',at:[tgt.q,tgt.r],icon:'skull',col:'#ff4a3d'});hurt(tgt,tgt.hp+50,'#ff4a3d',true)}break;
     case 'crush':{if(!tgt)break;applyHit(u,tgt,A);if(alive(tgt)&&tgt.kind!=='wall'&&freezeT(tgt,true)&&!SIM){fx(tgt,'buried','#d9a45b');addLog(u.owner,`The ${tgt.name} is buried by the blow: it loses its next turn.`)}break}/* v179 */
     case 'boulder':{const area=shapeCells(u,k,q,r);if(!SIM)vfx({k:'ab',ab:'boulder',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:F.color,cam:1});/* v179: the boulder stays */
@@ -4007,7 +4010,7 @@ function useAbility(u,k,q,r,dest){
       if(!SIM)vfx({k:'ab',ab:'spin',shape:'cone',from:c0,to:[u.q,u.r],cells:claw,col:F.color});{const s=tStat(u);if(s)s.hexes+=steps}
       const vs=[];for(const [a,b] of claw){const v=m.get(key(a,b));if(v&&v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&!vs.includes(v))vs.push(v)}
       for(const v of vs)applyHit(u,v,A);
-      for(const [a,b] of [[u.q,u.r],...claw])if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:u.owner};
+      for(const [a,b] of [[u.q,u.r],...claw])if(solid(a,b)&&!noPaint(a,b))G.paint[key(a,b)]={fac:'fire',ttl:2,owner:u.owner};
       addLog(u.owner,`Fire Frenzy: the Hellhound charges ${steps} and rakes ${vs.length} enem${vs.length===1?'y':'ies'}.`);break}// v77 (owner): charge up to 3, claw the 3 hexes in front for 4
     case 'forward':{const d=aimDir(u,q,r);if(d<0)break;const blk=blockOf(u);const m=occ();const [dq,dr]=DIRS[d];const mv=new Set();let n=0,hits=0,changed=true;
       while(changed){changed=false;for(const v of blk){if(mv.has(v))continue;const a=v.q+dq,b=v.r+dr;if(!passable(a,b)||isTrap(a,b)||holeAt(a,b)||(G.realm&&a===0&&b===0))continue;const o=m.get(key(a,b));if(o&&o!==v)continue;m.delete(key(v.q,v.r));setAnim(v);v.q=a;v.r=b;v.dir=d;m.set(key(a,b),v);mv.add(v);changed=true;n++;{const s=tStat(v);if(s)s.hexes+=1}}}
@@ -4018,7 +4021,7 @@ function useAbility(u,k,q,r,dest){
     case 'shwither':if(tgt&&tgt.kind!=='wall')applyHit(u,tgt,A);break;
     case 'drain':if(tgt&&tgt.kind!=='wall'){const h0=tgt.hp;applyHit(u,tgt,A);const got=Math.max(0,h0-Math.max(0,tgt.hp));if(got>0)healUnit(u,got,'#b06bff','Drain Touch',u.id)}break;
     case 'butchery':{if(tgt&&tgt.kind!=='wall')applyHit(u,tgt,A);const nx=G.units.filter(v=>v!==tgt&&v.kind!=='wall'&&!v.statue&&!v.egg&&alive(v)&&tm(v.owner)!==tm(u.owner)&&distUU(u,v)===1).sort((a,b)=>(a.hp/a.maxhp)-(b.hp/b.maxhp)||a.id-b.id)[0];if(nx)applyHit(u,nx,Object.assign({},A,{special:null}));break}
-    case 'blight':{const area=shapeCells(u,k,q,r).filter(([a,b])=>solid(a,b)&&!isHeart(a,b)&&featAt(a,b)!=='rock');for(const [a,b] of area)G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:3,owner:u.owner,kind:'blight',by:u.id};
+    case 'blight':{const area=shapeCells(u,k,q,r).filter(([a,b])=>solid(a,b)&&!noPaint(a,b)&&featAt(a,b)!=='rock');for(const [a,b] of area)G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:3,owner:u.owner,kind:'blight',by:u.id};
       vfx({k:'ab',ab:'grove',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:'#6a2bb0'});addLog(u.owner,`Blight spreads over ${area.length} hexes.`);break}
     case 'dusk':if(tgt&&tgt.kind!=='wall'){tgt.st.dusk=3;tgt.st.duskBy=u.owner;tgt.st.duskSrc=u.id;fx(tgt,'dusk','#6a2bb0');vfx({k:'buff',at:[tgt.q,tgt.r],col:'#6a2bb0'})}break;
     case 'surgery':{if(tgt&&tgt.kind!=='wall'&&tm(tgt.owner)!==tm(u.owner))applyHit(u,tgt,Object.assign({},A,{heal:0,overheal:0}));
@@ -4042,7 +4045,7 @@ function useAbility(u,k,q,r,dest){
       if(A.pull){const live=ts.filter(alive).sort((a,b)=>distUU(u,a)-distUU(u,b));for(const t of live)pullUnit(t,u,A.pull);
         if(A.extra){const more=G.units.filter(v=>v.kind!=='wall'&&tm(v.owner)!==tm(u.owner)&&!live.includes(v)&&distUU(u,v)<=A.range&&distUU(u,v)>1).sort((a,b)=>distUU(u,a)-distUU(u,b)).slice(0,A.extra);for(const v of more)if(alive(v))pullUnit(v,u,1)}}
       if(A.pushOut){const live=ts.filter(alive).sort((a,b)=>hd(b.q,b.r,q,r)-hd(a.q,a.r,q,r));for(const t of live){if(!alive(t)||(t.q===q&&t.r===r))continue;pushUnit(t,dirTo(q,r,t.q,t.r),A.pushOut,u)}}// v67 Grenade Volley
-      if(A.paint){const cs=A.paint==='center'?[[q,r]]:A.paint==='head'?[[u.q,u.r],...DIRS.map(([a,b])=>[u.q+a,u.r+b])]:area;for(const [a,b] of cs)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:A.paintTtl||3,owner:u.owner,kindle:k==='kindle'?1:0}}
+      if(A.paint){const cs=A.paint==='center'?[[q,r]]:A.paint==='head'?[[u.q,u.r],...DIRS.map(([a,b])=>[u.q+a,u.r+b])]:area;for(const [a,b] of cs)if(solid(a,b)&&!noPaint(a,b))G.paint[key(a,b)]={fac:G.players[u.owner].fac,ttl:A.paintTtl||3,owner:u.owner,kindle:k==='kindle'?1:0}}
       if(A.selfHeal&&alive(u))healUnit(u,A.selfHeal,'#5fd68e');
       if(k==='mend'&&utal(u,'martyrdom')&&alive(u)&&tgt!==u){const o=CUR_NAME;CUR_NAME='Martyrdom (talent)';healUnit(u,2,'#d7c9ff');CUR_NAME=o}
     }
@@ -4103,7 +4106,7 @@ function ultEffect(p){
   switch(p.fac){
     case 'fire':{const burning=Object.keys(G.paint).filter(k=>G.paint[k].fac==='fire');const m=occ();let hit=0;
       for(const k of burning){const v=m.get(k);if(v&&v.kind!=='wall'&&alive(v)&&tm(v.owner)!==p.team&&!v.statue&&!v.egg){hurt(v,(REALM.wildErupt||3)+wildSouls(p),F.color);hit++}/* v184b: 4 (owner: buff Wildfire a bit) */}
-      const spread=new Set();for(const k of burning){const [q,r]=k.split(',').map(Number);for(const [a,b] of DIRS){const kk=key(q+a,r+b);if(solid(q+a,r+b)&&!isHeart(q+a,r+b)&&!G.paint[kk])spread.add(kk)}}
+      const spread=new Set();for(const k of burning){const [q,r]=k.split(',').map(Number);for(const [a,b] of DIRS){const kk=key(q+a,r+b);if(solid(q+a,r+b)&&!noPaint(q+a,r+b)&&!G.paint[kk])spread.add(kk)}}
       for(const kk of spread)G.paint[kk]={fac:'fire',ttl:2,owner:p.id};
       if(!SIM){vfx({k:'wildwave',from:src?[src.q,src.r]:[0,0],cells:burning.slice(0,500),spread:[...spread].slice(0,500),col:'#ff6a1a',cam:1})}/* v189: the big moment */if(!SIM&&trk()){const e=tFx('fire','','Wildfire: ground set ablaze (hexes)');if(e)e.uses+=spread.size}addLog(p.id,`Wildfire: ${burning.length} burning hex${burning.length===1?'':'es'} erupt (${hit} hit) and the fire spreads to ${spread.size} more.`);break}// v77 (owner): the fire you made erupts and spreads; nothing burns, nothing happens
     case 'ice':{const ice=mine();for(const v of foes()){hurt(v,1,F.color);if(!alive(v))continue;chillT(v,2);if(ice.some(i=>distUU(i,v)<=1))freezeT(v,false)}break}/* v161 (owner: a little strong): only enemies NEXT TO a Frost unit freeze (was within 2) */
@@ -4122,7 +4125,7 @@ function ultEffect(p){
     // Hallowed Dawn (v27, replaces Exodus): every priest heals 2 and gets +1 ATK for this turn and the next (st.blessU, counted down in endTurn);
     // every enemy unit heals 1 (tracked on the same Ultimate row as "Hallowed Dawn: enemies healed" through the caster's id).
     case 'arcane':{// v49 Radiance: every unit heals 3; what does not fit burns the nearest enemy within 3
-      for(const v of mine()){if(v.egg||v.statue||!alive(v))continue;const room=Math.max(0,v.maxhp-v.hp),blocked=v.st&&v.st.seared>0;healUnit(v,3,'#ffe9a8','Radiance',src?src.id:null);if(!SIM)vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'});if(!blocked)overheal(src||v,v,3-room,'Radiance')}break}
+      for(const v of mine()){if(v.egg||v.statue||!alive(v))continue;const room=Math.max(0,v.maxhp-v.hp),blocked=v.st&&v.st.seared>0;healUnit(v,3,'#ffe9a8','Radiance',src?src.id:null);if(!SIM)vfx({k:'buff',at:[v.q,v.r],col:'#ffd766'});if(!blocked)overheal(isPriest(v)?v:(src||v),v,3-room,'Radiance')/* v237: each unit's own light overflows, so any priest can turn to shadow by it */}break}
     case 'warband':{if(RULES.HORN_ORDERS){/* v165c (owner: 'their ult does nothing'; 'the phalanx is the set-up and the orders are the pay-off'): the horn gives all three orders to the whole army for one round, on top of a brother's own order; no free strikes any more */let n=0,k=0;for(const v of mine()){if(!alive(v)||v.statue||v.egg)continue;v.st.hornA=1;v.st.hornH=1;fx(v,'horn!','#e8b84e');n++;
       if(RULES.HORN_CHARGE&&v.acted&&v.at!=='none'&&v.kind!=='wall'){v.freeAtk=(v.freeAtk||0)+1;v.st.hornStrike=1;k++}}
     if(!SIM)addLog(p.id,RULES.HORN_CHARGE?`Warhorn! Charge: ${k} unit${k===1?' that has':'s that have'} already struck attack${k===1?'s':''} once more, and Hold, Strike and Advance reach the whole army (${n} units).`:`Warhorn! Hold, Strike and Advance reach the whole army: ${n} unit${n===1?'':'s'}.`);
@@ -6311,7 +6314,7 @@ function oozeBurst(u){if(!isOoze(u))return;const n=u.parts;const p=G.players[u.o
   for(let i=0;i<k;i++){const b=SLIME?slimeDrop(p,spots[i][0],spots[i][1],1):makeUnit(p,FAC.ooze.units[0]);if(!SLIME){b.q=spots[i][0];b.r=spots[i][1];G.units.push(b)}oozeSet(b,1,hpEach);b.moved=true;b.acted=true;if(!SIM)tStat(b);
     for(const f of G.units)if(alive(f)&&f.kind!=='wall'&&f.owner>=0&&tm(f.owner)!==tm(u.owner)&&distUC(f,b.q,b.r)===1){hurt(f,2,FAC.ooze.color);hitT.add(f.id)}}
   if(!SIM){addLog(u.owner,`The Giga Ooze bursts into ${k} droplets.`);nTrk('ooze','','Burst',e=>e.uses++)}oozeHeart(p)}
-function oozeFlood(u){for(const [q,r] of allCells())if(hd(q,r,u.q,u.r)<=2&&solid(q,r)&&!isHeart(q,r))G.paint[key(q,r)]={fac:'ooze',ttl:3,owner:u.owner};if(!SIM){addLog(u.owner,'The Flood: the ground turns to ooze.');nTrk('ooze',u.name,'The Flood',e=>e.uses++)}}
+function oozeFlood(u){for(const [q,r] of allCells())if(hd(q,r,u.q,u.r)<=2&&solid(q,r)&&!noPaint(q,r))G.paint[key(q,r)]={fac:'ooze',ttl:3,owner:u.owner};if(!SIM){addLog(u.owner,'The Flood: the ground turns to ooze.');nTrk('ooze',u.name,'The Flood',e=>e.uses++)}}
 function oozeTurn(p){
   // ooze ground: enemies that start their turn on it are slowed and take 2; the Ooze's own blobs heal 2
   for(const u of G.units.slice()){if(u.owner!==p.id||u.kind==='wall'||!alive(u))continue;const on=cells(u).some(([q,r])=>{const g=G.paint[key(q,r)];return g&&g.fac==='ooze'});if(!on)continue;const g=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.fac==='ooze');
@@ -6893,7 +6896,7 @@ function ember2On(){return !!(G&&G.realm&&RULES.EMBER2)}
 function pyreCells(u){return ringCells().filter(([a,b])=>{const d=distUC(u,a,b);return d>=1&&d<=2})}
 function pyreBurst(u){const E=REALM.ember2,A=ABIL.blackpyre,area=pyreCells(u),o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;
   try{for(const t of areaUnits(u,Object.assign({},A,{hits:'foe',dmg:E.pyreNear,shape:'aura'}),area)){if(!alive(t))continue;const near=distUU(u,t)<=1;hurt(t,Math.max(1,(near?E.pyreNear:E.pyreFar)-effDef(t)),'#a24aff')}
-    for(const [a,b] of area)if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'fire',ttl:E.pyreTtl,owner:u.owner}}
+    for(const [a,b] of area)if(solid(a,b)&&!noPaint(a,b))G.paint[key(a,b)]={fac:'fire',ttl:E.pyreTtl,owner:u.owner}}
   finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}
   if(alive(u))u.st.pyreRoot=1;
   if(!SIM){vfx({k:'ab',ab:'pyreburst',shape:'aura',from:[u.q,u.r],to:[u.q,u.r],cells:area,col:'#a24aff',fac:'fire',cam:1});addLog(u.owner,'The Black Pyre erupts around the Dread Fiend.')}}
@@ -6936,7 +6939,7 @@ function graspBlue(a,b){const pt=G.paint[key(a,b)];return !!(pt&&pt.fac==='ice')
     for(const [a,b] of area){const v=unitAt(a,b),foe=v&&(v.kind!=='wall'||wildsCreature(v))&&tm(v.owner)!==tm(u.owner);
       if(blue.has(key(a,b))){if(foe){if(freezeT(v,false))froze++}
         else if(!v&&passable(a,b)&&!isTrap(a,b)&&!(G.realm&&a===0&&b===0)){G.units.push({id:G.nid++,kind:'wall',wall:'ice',owner:-1,creator:u.owner,by:u.id,abil:A.name,q:a,r:b,dir:0,size:1,hp:REALM.iceWall.hp,maxhp:REALM.iceWall.hp,def:0,ttl:REALM.iceWall.ttl,st:{},name:'Ice wall'});walls++}}
-      else{if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'ice',ttl:REALM.grasp.ttl,owner:u.owner};if(foe&&v.kind!=='wall')chillT(v,REALM.grasp.chill)}}
+      else{if(solid(a,b)&&!noPaint(a,b))G.paint[key(a,b)]={fac:'ice',ttl:REALM.grasp.ttl,owner:u.owner};if(foe&&v.kind!=='wall')chillT(v,REALM.grasp.chill)}}
     if(!SIM){vfx({k:'ab',ab:'wintergrasp',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:'#bfefff',fac:'ice',cam:1});if(trk()){const e=tFx('ice',u.name,A.name);if(e){e.uses++;e.stasisTurns=(e.stasisTurns||0)+froze;e.walls=(e.walls||0)+walls}}}
     return}
   return f0.apply(this,arguments)}}
@@ -6945,7 +6948,7 @@ NEW_BOT.add('wintergrasp');
   if(A&&A.bot==='wintergrasp'){let s=0;for(const [a,b] of shapeCells(u,k,q,r)){const v=unitAt(a,b);if(!v||v.kind==='wall'||v.owner<0||tm(v.owner)===tm(u.owner)||inert(v))continue;if(graspBlue(a,b))s+=(v.st.frozen>0||v.st.fimm>0)?0:4.5+(v.leader?2:0);else s+=v.st.chill>0?0.6:1.4}return s>=2.6?s:0}
   return f0.apply(this,arguments)}}
 {const f0=doMove;doMove=function(u,o){const from=u?[u.q,u.r]:null,br=u&&u.st&&u.st.brand>0&&ember2On()&&u.kind!=='wall'?u.st.brandBy:null;const r=f0.apply(this,arguments);
-  try{if(br!=null&&from&&o&&!o.tele&&o.portal==null&&alive(u)&&(u.q!==from[0]||u.r!==from[1])){for(const [a,b] of hexLine(from,[u.q,u.r])){if(a===u.q&&b===u.r)continue;if(cells(u).some(([x,y])=>x===a&&y===b))continue;if(!solid(a,b)||isHeart(a,b))continue;const pt=G.paint[key(a,b)];if(pt&&pt.fac==='fire'&&pt.ttl>REALM.ember2.trailTtl)continue;G.paint[key(a,b)]={fac:'fire',ttl:REALM.ember2.trailTtl,owner:br}}}}catch(e){}
+  try{if(br!=null&&from&&o&&!o.tele&&o.portal==null&&alive(u)&&(u.q!==from[0]||u.r!==from[1])){for(const [a,b] of hexLine(from,[u.q,u.r])){if(a===u.q&&b===u.r)continue;if(cells(u).some(([x,y])=>x===a&&y===b))continue;if(!solid(a,b)||noPaint(a,b))continue;const pt=G.paint[key(a,b)];if(pt&&pt.fac==='fire'&&pt.ttl>REALM.ember2.trailTtl)continue;G.paint[key(a,b)]={fac:'fire',ttl:REALM.ember2.trailTtl,owner:br}}}}catch(e){}
   return r}}
 
 /* v227 THE FROST HOLD'S DEPTH PASS (owner, 16 Nov 2026: "let's work on applying these ideas": three identical Hailcallers, nothing has a price,
@@ -6967,7 +6970,7 @@ function stormCells(st){return ringCells().filter(([a,b])=>hd(a,b,st.q,st.r)<=1)
 function stormLand(st){const u=byId(st.by);if(!u||!alive(u)||u.kind==='wall')return;if(u.st&&u.st.frozen>0){if(!SIM)fx(u,'the storm breaks up','#9aa3b5');return}
   const E=REALM.frost2,A=ABIL.hailstorm,area=stormCells(st),o=[CUR_SRC,CUR_TAG,CUR_NAME];const roll=(RULES.ROLL&&!SIM)?Math.floor(RNG()*3)-1:0;CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;
   try{for(const t of areaUnits(u,Object.assign({},A,{dmg:E.hail}),area)){if(!alive(t))continue;hurt(t,Math.max(1,E.hail+roll-effDef(t)),'#bfefff');if(alive(t)&&t.kind!=='wall'){chillT(t,2);frostMark(u,t,1)}}
-    for(const [a,b] of area)if(solid(a,b)&&!isHeart(a,b)){const pt=G.paint[key(a,b)];if(!(pt&&pt.fac==='ice'&&pt.ttl>E.hailTtl))G.paint[key(a,b)]={fac:'ice',ttl:E.hailTtl,owner:u.owner}}}
+    for(const [a,b] of area)if(solid(a,b)&&!noPaint(a,b)){const pt=G.paint[key(a,b)];if(!(pt&&pt.fac==='ice'&&pt.ttl>E.hailTtl))G.paint[key(a,b)]={fac:'ice',ttl:E.hailTtl,owner:u.owner}}}
   finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}
   if(!SIM){vfx({k:'ab',ab:'hailfall',shape:'blast',from:[u.q,u.r],to:[st.q,st.r],cells:area,col:'#bfefff',fac:'ice',cam:1});addLog(u.owner,'The Hailstorm comes down'+(roll?(roll>0?' (rolls high: 1 more damage)':' (rolls low: 1 less damage)'):'')+'.')}}
 function stormTurn(){if(!G.storms||!G.storms.length)return;const pid=G.cur,mine=G.storms.filter(x=>x.owner===pid);if(!mine.length)return;G.storms=G.storms.filter(x=>x.owner!==pid);for(const st of mine)stormLand(st)}
@@ -7019,14 +7022,14 @@ function threadCells(a,b){if(!a||!b||hd(a.q,a.r,b.q,b.r)>REALM.twins.reach||hd(a
 function twinPairs(pid){const seen=new Set(),o=[];for(const u of G.units){if(u.owner!==pid||seen.has(u.id))continue;const t=twinOf(u);if(t){seen.add(u.id);seen.add(t.id);o.push([u,t])}}return o}
 function twinTurn(){const pid=G.cur;for(const u of G.units)if(u.owner===pid&&u.broken&&twinOf(u)){u.broken=0;if(!SIM)fx(u,'the bond is whole again','#ffe9a8')}
   for(const [a,b] of twinPairs(pid)){if(!!a.shadow!==!!b.shadow)continue;const cs=threadCells(a,b);if(!cs.length)continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=a;CUR_TAG='Abil';CUR_NAME='The Twins’ thread';
-    try{let drained=0;for(const [q,r] of cs){const v=unitAt(q,r);if(!v||!alive(v))continue;const foe=v.kind!=='wall'?tm(v.owner)!==tm(a.owner)&&!v.statue&&!v.egg:!!(v.beast||(v.monster&&v.monster!=='crate'&&v.monster!=='keep'));
+    try{let drained=0;for(const [q,r] of cs){const v=unitAt(q,r);if(!v||!alive(v))continue;const foe=v.kind!=='wall'?tm(v.owner)!==tm(a.owner)&&!v.statue&&!v.egg:(lightFoeM(a,v)&&v.monster!=='keep');
         if(foe){hurt(v,REALM.twins.burn,a.shadow?'#7a2be2':'#ffe9a8');drained++}else if(!a.shadow&&v.kind!=='wall'&&tm(v.owner)===tm(a.owner))healUnit(v,REALM.twins.heal,'#ffe9a8','The Twins’ thread',a.id)}
       if(a.shadow&&drained)for(const w of [a,b])if(alive(w))healUnit(w,1,'#7a2be2','The Twins’ thread',a.id)}
     finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}}}
 function prayerCells(st){return ringCells().filter(([a,b])=>hd(a,b,st.q,st.r)<=1)}
 function prayerLand(st){const u=byId(st.by);if(!u||!alive(u)||u.kind==='wall')return;if(u.st&&u.st.frozen>0){if(!SIM)fx(u,'the prayer goes unanswered','#9aa3b5');return}
   const P=REALM.prayer,dark=st.dark,A=dark?ABIL.darkprayer:ABIL.prayer,area=prayerCells(st),o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=u;CUR_TAG='Abil';CUR_NAME=A.name;
-  try{let struck=0;for(const [q,r] of area){const v=unitAt(q,r);if(!v||!alive(v)||v._pr===G.tok)continue;v._pr=G.tok;const foe=v.kind!=='wall'?tm(v.owner)!==tm(u.owner)&&!v.statue&&!v.egg:!!(v.beast||(v.monster&&v.monster!=='crate'&&v.monster!=='keep'));
+  try{let struck=0;for(const [q,r] of area){const v=unitAt(q,r);if(!v||!alive(v)||v._pr===G.tok)continue;v._pr=G.tok;const foe=v.kind!=='wall'?tm(v.owner)!==tm(u.owner)&&!v.statue&&!v.egg:(lightFoeM(u,v)&&v.monster!=='keep');
       if(foe){if(dark){hurt(v,Math.max(1,P.dark-effDef(v)),'#7a2be2');struck++}else hurt(v,P.burn,'#ffe9a8')}
       else if(!dark&&v.kind!=='wall'&&tm(v.owner)===tm(u.owner)){healUnit(v,P.heal+holyPlus(u,v),'#ffe9a8',A.name,u.id)/* no overflow: the prayer already burns the enemies under it */}}
     for(const [q,r] of area){const v=unitAt(q,r);if(v)delete v._pr}
@@ -7037,7 +7040,7 @@ function prayerTurn(){if(!G.prayers||!G.prayers.length)return;const pid=G.cur,mi
 {const f0=beginTurn;beginTurn=function(){const r=f0.apply(this,arguments);try{if(twinsOn()&&!G.phase&&!G.over){prayerTurn();twinTurn()}}catch(e){}return r}}
 {const f0=newUse;newUse=function(u,k,A,tgt,q,r,dest){
   if(A.special==='prayer'||A.special==='darkprayer'){const dark=A.special==='darkprayer'?1:0;G.prayers=(G.prayers||[]).filter(x=>x.by!==u.id).concat([{by:u.id,owner:u.owner,q:q,r:r,dark:dark}]);
-    if(!SIM){fx(u,dark?'a dark litany':'a prayer rises',dark?'#7a2be2':'#ffe9a8');vfx({k:'ab',ab:dark?'darkprayer':'prayer',shape:'blast',from:[u.q,u.r],to:[q,r],cells:prayerCells({q:q,r:r}),col:dark?'#7a2be2':'#ffe9a8',fac:'arcane'});if(trk()){const e=tFx('arcane',u.name,A.name);if(e)e.uses++}}return}
+    if(!SIM){fx(u,dark?'a dark litany':'a prayer rises',dark?'#7a2be2':'#ffe9a8');vfx({k:'ab',ab:dark?'darkprayer':'prayer',shape:'blast',from:[u.q,u.r],to:[q,r],cells:prayerCells({q:q,r:r}),col:dark?'#7a2be2':'#ffe9a8',fac:'arcane'})}return}
   return f0.apply(this,arguments)}}
 NEW_BOT.add('prayer');
 {const f0=newHeur;newHeur=function(u,k,q,r,ctx,dest){const A=ABIL[k];
@@ -7048,11 +7051,12 @@ NEW_BOT.add('prayer');
     const seen=new Set(base.map(c=>key(c[0],c[1]))),out=base.slice();for(const c of other){let x=c;if(c[0]===a[0]&&c[1]===a[1])x=[b[0],b[1]];else if(c[0]===b[0]&&c[1]===b[1])x=[a[0],a[1]];const kk=key(x[0],x[1]);if(!seen.has(kk)){seen.add(kk);out.push(x)}}return out}catch(e){return base}}}
 {const f0=canAbil;canAbil=function(u,k){if(twinsOn()&&u&&hasTrait(u,'twin')&&u.moved&&ABIL[k]&&ABIL[k].aim==='unit')return false;return f0.apply(this,arguments)}}
 {const f0=useAbility;useAbility=function(u,k,q,r,dest){const tw=twinsOn()&&u&&u.kind!=='wall'&&hasTrait(u,'twin'),acted0=u&&u.acted;const res=f0.apply(this,arguments);if(tw&&u.acted&&!acted0&&alive(u))u.moved=true;return res}}
-{const f0=overheal;overheal=function(src,t,excess,name){let via=null;try{if(src&&src.kind!=='wall'&&hasTrait(src,'twin'))via=twinOf(src)}catch(e){}return f0.call(this,src,via||t,excess,name)}}
+{const f0=overheal;overheal=function(src,t,excess,name){let via=null;try{if(name==='Mend'&&src&&src.kind!=='wall'&&hasTrait(src,'twin'))via=twinOf(src)}catch(e){}/* v237: only the Clerics' own Mend is measured from the sibling */return f0.call(this,src,via||t,excess,name)}}
 {const f0=shadowTurn;shadowTurn=function(u,on,why){if(u&&u.broken&&!on&&twinsOn())return;return f0.apply(this,arguments)}}
 {const f0=kill;kill=function(t){let sib=null;try{if(t&&t.kind!=='wall'&&t.owner>=0&&hasTrait(t,'twin'))sib=twinOf(t)}catch(e){}const r=f0.apply(this,arguments);
   try{if(sib&&alive(sib)&&!alive(t)){sib.broken=1;if(!SIM)fx(sib,'the bond breaks','#7a2be2');const o=[CUR_SRC,CUR_TAG,CUR_NAME];try{f0b(sib)}finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}}}catch(e){}return r}}
-function f0b(sib){const b=sib.broken;sib.broken=0;try{shadowTurn(sib,true,'grief')}finally{sib.broken=b||1}}
+function f0b(sib){const b=sib.broken;sib.broken=0;GRIEF=1;try{shadowTurn(sib,true,'grief')}finally{GRIEF=0;sib.broken=b||1}}
+var GRIEF=0;
 {const f0=duoLabel;duoLabel=function(u,t,A){let l=f0(u,t,A);return l}}
 
 /* v229 THE STONE GIANTS' DEPTH PASS (owner, 16 Nov 2026: "giants are the team for delayed strikes and AoE strikes").
@@ -7240,7 +7244,8 @@ function runOk(u){return !!(RULES.RUN&&G&&G.realm&&u&&u.kind!=='wall'&&u.owner>=
     let ext=null;RUN_U=u.id;try{ext=f0.call(this,u,ignoreState)}catch(e){}finally{RUN_U=null}
     if(ext)for(const [k,o] of ext){if(base.has(k)||o.tele||o.gate||o.portal!=null||o.merge!=null||o.pilot!=null||o.board!=null)continue;base.set(k,Object.assign({},o,{run:1}))}
     return base}}
-{const f0=doMove;doMove=function(u,o){const run=!!(o&&o.run&&u&&RULES.RUN);if(run)RUN_U=u.id;/* the walk itself may look at the unit's reach */let r;try{r=f0.apply(this,arguments)}finally{if(run)RUN_U=null}
+{const f0=doMove;doMove=function(u,o){const run=!!(o&&o.run&&u&&RULES.RUN);if(run){RUN_U=u.id;u.acted=true;u.ran=G.tok/* v237: before the move: the page redraws inside it */}let r;try{r=f0.apply(this,arguments)}finally{if(run)RUN_U=null}
+    if(run&&!SIM)try{HOOKS.changed()}catch(e){}
     if(run&&u&&alive(u)){u.acted=true;u.ran=G.tok;if(!SIM){fx(u,'runs','#cfd6e6');if(trk()){const e=tFx(G.players[u.owner].fac,u.name,'Run (extra hexes, no action)');if(e)e.uses++}}}
     return r}}
 {const f0=planStep;planStep=function(u,mv){let run=!!(mv&&mv.run);if(mv&&mv.run==null&&runOk(u)){try{const o=[...moveOpts(u).values()].find(x=>x.q===mv.q&&x.r===mv.r);run=!!(o&&o.run)}catch(e){}}
@@ -7248,7 +7253,24 @@ function runOk(u){return !!(RULES.RUN&&G&&G.realm&&u&&u.kind!=='wall'&&u.owner>=
 /* a bot runs only to get somewhere: a run step costs it the turn's action */
 {const m0=moveEval;moveEval=function(u,o,ctx){let s=m0(u,o,ctx);if(o&&o.run)s-=1.2;return s}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v236 2026-11-15";
+/* v237 (owner, 15 Nov 2026, after his Priest game on v236: "ground effect should take effect in the heart after the beast dies; some priests can't
+   go into shadow form and some overheal abilities didn't work; full of bugs, check it very carefully"). Found in his match file, turn by turn:
+   - THE RUN LEAKED: the page redrew inside the move, before the runner was marked as spent, so its attack ring and ability button stayed live
+     (he attacked or cast after a run 6 times). Marked before the move now, and the engine itself refuses a runner's attack or cast.
+   - GROVE painted 0 hexes four times and the Walking Sanctuary carried no holy ground while his army stood round the Throne: no ground was ever
+     allowed in the Heart. noPaint() lets every army's ground in once the Rift Beast is dead.
+   - OVERFLOWING LIGHT burned city walls (3 times) and his own Old God: lightFoeM().
+   - SHADOW: only Sanctuary, Mend, Field Surgery and holy ground could turn a priest; the Ultimate credited one unit. Now Radiance overflows from
+     each unit itself, Bless overflows, and a kill by the Answered Prayer, the Twins' thread or a Smite struck from holy ground also turns.
+   - Heals swallowed by Seared said nothing; the prayer was counted twice; the grieving Twin's log line named the wrong reason. */
+{const f0=attack;attack=function(u,t){if(u&&RULES.RUN&&G&&G.realm&&u.ran===G.tok&&u.acted&&!(u.freeAtk>0)&&!SIM)return;return f0.apply(this,arguments)}}
+{const f0=useAbility;useAbility=function(u,k,q,r,dest){if(u&&RULES.RUN&&G&&G.realm&&u.ran===G.tok&&u.acted&&!SIM)return;return f0.apply(this,arguments)}}
+{const f0=storyBeastDeath;storyBeastDeath=function(){const r=f0.apply(this,arguments);try{sanctAll()}catch(e){}return r}}
+try{ABIL.bless.desc+=' While the blessed unit is at full HP the healing overflows instead: 2 damage to the nearest enemy within 3.';
+  ABIL.smite.desc+=' If the blow kills while the Templar stands on holy ground, it turns to shadow.';
+  ABIL.prayer.desc+=' If the burn kills, the Seraph turns to shadow.'}catch(e){}
+
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v237 2026-11-15";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -11719,7 +11741,7 @@ function realmRules(){if(typeof STORY==='function'&&RULES.STORY2)return storyRul
   <li><b>Giants and narrow paths.</b> A giant walks 4 here and follows the roads like everyone else. No two-hex unit can pass a 1-hex side passage: those are the small units’ escape routes.</li>
   <li><b>Light and fast, heavy and slow.</b> Units with no armour move 1 more, units with 2+ DEF move 1 less. Blows struck from next to the target deal 1 more; shots from afar (and abilities from 3+ hexes) deal 1 less.</li>
   <li><b>Monsters never move.</b> At each round start a monster strikes the last unit that hit it (if it is still close); tier 2 and 3 also strike everything next to them. You can always walk away.</li>
-  <li><b>No home ground.</b> Nobody claims ground by standing on it here; only the ground abilities make counts (burning hexes, frost, bog, holy groves).</li>
+  <li><b>No home ground.</b> Nobody claims ground by standing on it here; only the ground abilities make counts (burning hexes, frost, bog, holy groves). The ground around the Throne takes none of it while the Rift Beast lives; once the Beast is dead it burns, freezes and is blessed like any other ground.</li>
   <li>Units have more HP on this board (about one and a half times).</li></ul>`}
 function rulesTop0(){
   const M=MONSTERS,row=(a,b)=>`<tr><td style="padding:4px 12px 4px 0">${a}</td><td style="padding:4px 0;text-align:right"><b>${b}</b></td></tr>`;
@@ -13017,7 +13039,7 @@ function uxDragDraw(){const d=UX.drag;if(!d||!d.on||!UX.dragTo)return;const u=by
 function uxAimTags(){const u=uxSel();if(!u||!G.amode||!hl.hitIds.size)return;const A=ABIL[G.amode];if(!A)return;const fs=Math.max(11,(VIEW==='3d'?CAM.S:SZ)*0.42);
   for(const id of hl.hitIds){const t=byId(id);if(!t||!alive(t))continue;const ally=t.owner>=0&&tm(t.owner)===tm(u.owner);const [x,y]=uxHead(t);
     if(!ally&&RULES.SHELL&&t.st&&t.st.shell>0&&(A.dmg||A.useAtk)){uxPill(x,y-fs*0.9,'SHELL · 0','#cfd3dc','#1a1206',fs);continue}/* v183 a closed Shell takes the hit whole */
-    if(ally){if(hostileAbil(A)&&t!==u)uxPill(x,y-fs*0.9,'⚠ ally','#ffb35c','#1a1206',fs);else if(A.heal&&A.overheal&&t.hp>=t.maxhp)uxPill(x,y-fs*0.9,'OVERFLOW → enemy','#ffd766','#1a1206',fs)}
+    if(ally&&A.heal&&t.st&&t.st.seared>0){uxPill(x,y-fs*0.9,'SEARED · no healing','#ff9a3d','#1a1206',fs);continue}/* v237 */if(ally){if(hostileAbil(A)&&t!==u)uxPill(x,y-fs*0.9,'⚠ ally','#ffb35c','#1a1206',fs);else if(A.heal&&A.overheal&&t.hp>=t.maxhp)uxPill(x,y-fs*0.9,'OVERFLOW → enemy','#ffd766','#1a1206',fs)}
     else if(A.special==='boulder'){/* v179: 6 on the hex, 3 beside it */const at=G.aim||G.hover;const onC=!!at&&cells(t).some(([a,b])=>a===at[0]&&b===at[1]);let dm=0;try{dm=hitDmg(u,t,onC?A:Object.assign({},A,{dmg:A.splash}))}catch(e){}if(dm>0)uxPill(x,y-fs*0.9,dm>=t.hp?`KILL (${dm})`:`−${dm}`,dm>=t.hp?'#ff6161':'#ffd766','#1a1206',fs)}
     else if(A.special==='crush'){/* v179 */let dm=0;try{dm=hitDmg(u,t,A)}catch(e){}if(dm>0)uxPill(x,y-fs*0.9,dm>=t.hp?`KILL (${dm})`:`−${dm} · BURIED`,dm>=t.hp?'#ff6161':'#d9a45b','#1a1206',fs)}
     else if(A.special==='command'){/* v178: the blows of every statue beside it */const n=commandPlan(u).get(t)||0,dm=n*Math.max(1,REALM.commandDmg-effDef(t));if(dm>0)uxPill(x,y-fs*0.9,(dm>=t.hp?`KILL (${dm})`:`−${dm}`)+(n>1?` · ${n} STATUES`:''),dm>=t.hp?'#ff6161':'#5cc8ff','#1a1206',fs)}
