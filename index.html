@@ -1347,7 +1347,7 @@ const FAC={
       {name:'Ice Queen',icon:'crown',leader:1,hp:15,atk:2,def:1,mov:2,mt:'walk',at:'bolt',rng:3,ab:'command',ab2:'deepwinter',ab3:'frostmerge'},/* v161 (owner): Command the Frozen replaces Blizzard Burst */
       // v64 (owner 6 Oct 2026): the Frostlings leave; a splitting Frost Colossus and a third Hailcaller take their places
       {name:'Rime Mammoth',icon:'crystal',size:2,hp:16,atk:3,def:1,mov:2,mt:'walk',at:'melee',rng:1,ab:'stampede'},/* v164 (owner: the marking passive was boring): Stampede replaces it */// v75 (brief): the front line; 1 frost mark on every enemy it walks past or stands beside at its turn start
-      {name:'Frost Warden',icon:'crystal',n:2,hp:11,atk:2,def:1,shell:1,/* v183 (owner 12 Nov 2026: 'a one-hit shield instead of high DEF'): DEF 2 to 1 and a Shell */mov:2,mt:'walk',at:'melee',rng:1,ab:'icewall'},/* v164 (owner: 'I like frost wall as an ability to play the board and protect your queen') */
+      {name:'Frost Warden',icon:'crystal',n:2,hp:11,atk:2,def:1,shell:1,/* v183 (owner 12 Nov 2026: 'a one-hit shield instead of high DEF'): DEF 2 to 1 and a Shell */mov:2,mt:'walk',at:'melee',rng:1,ab:'wintergrasp'/* v226 (owner): Winter's Grasp replaces Ice Wall: it makes the walls itself */},/* v164 (owner: 'I like frost wall as an ability to play the board and protect your queen') */
       {name:'Hailcaller',icon:'hail',n:3,hp:10,atk:5,/* v182 (the yardstick): +1 ATK; every shot loses 1 on the Realm, and the cost sheet had priced it as neutral at 2 hexes */def:0,mov:3,mt:'walk',at:'bolt',rng:2,ab:'icelance'},/* v145 (the rulers): the Frost damage dealer hits 4 from 2 hexes (was 2 ATK lobbed from 2-3: 1 damage a shot); Ice Lance rests 3 */
       {name:'Glacier Knight',icon:'shield',n:2,hp:12,atk:3,def:1,mov:3,mt:'line',at:'melee',rng:1,ab:'shatterstrike',trait:'deepcold'}]},
   giants:{name:'Stone Giants',color:'#d9a45b',size:2,
@@ -4026,7 +4026,7 @@ function useAbility(u,k,q,r,dest){
     case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
       for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
-    case 'brand':case 'blackpyre':/* v225 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
+    case 'brand':case 'blackpyre':/* v225 */case 'wintergrasp':/* v226 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
@@ -4101,7 +4101,7 @@ function ultEffect(p){
   if(newUlt(p)){CUR_SRC=null;CUR_TAG=null;CUR_NAME=null;return}// v111
   switch(p.fac){
     case 'fire':{const burning=Object.keys(G.paint).filter(k=>G.paint[k].fac==='fire');const m=occ();let hit=0;
-      for(const k of burning){const v=m.get(k);if(v&&v.kind!=='wall'&&alive(v)&&tm(v.owner)!==p.team&&!v.statue&&!v.egg){hurt(v,REALM.wildErupt||3,F.color);hit++}/* v184b: 4 (owner: buff Wildfire a bit) */}
+      for(const k of burning){const v=m.get(k);if(v&&v.kind!=='wall'&&alive(v)&&tm(v.owner)!==p.team&&!v.statue&&!v.egg){hurt(v,(REALM.wildErupt||3)+wildSouls(p),F.color);hit++}/* v184b: 4 (owner: buff Wildfire a bit) */}
       const spread=new Set();for(const k of burning){const [q,r]=k.split(',').map(Number);for(const [a,b] of DIRS){const kk=key(q+a,r+b);if(solid(q+a,r+b)&&!isHeart(q+a,r+b)&&!G.paint[kk])spread.add(kk)}}
       for(const kk of spread)G.paint[kk]={fac:'fire',ttl:2,owner:p.id};
       if(!SIM){vfx({k:'wildwave',from:src?[src.q,src.r]:[0,0],cells:burning.slice(0,500),spread:[...spread].slice(0,500),col:'#ff6a1a',cam:1})}/* v189: the big moment */if(!SIM&&trk()){const e=tFx('fire','','Wildfire: ground set ablaze (hexes)');if(e)e.uses+=spread.size}addLog(p.id,`Wildfire: ${burning.length} burning hex${burning.length===1?'':'es'} erupt (${hit} hit) and the fire spreads to ${spread.size} more.`);break}// v77 (owner): the fire you made erupts and spreads; nothing burns, nothing happens
@@ -6916,7 +6916,38 @@ NEW_BOT.add('brand');NEW_BOT.add('blackpyre');
     if((!A||A.useAtk)&&u.kind!=='wall'&&onHome(u))parts.push('ON FIRE +1');if(t.st&&t.st.brand>0&&t.st.brandBy===u.owner)parts.push('BRANDED: +1 SOUL');
     if(parts.length){const tx=parts.join(' · ');l=l?{t:l.t+' · '+tx,c:l.c}:{t:tx,c:'#ffb060'}}}}catch(e){}return l}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v224 2026-11-15";
+/* v226 (owner, 16 Nov 2026).
+   FROST, WINTER'S GRASP (his design: "an ability for a frost unit that is cast as an area and chills the ground, making hexes blue; already chilled
+   hexes are raised to walls; enemies caught in one are instantly frozen"). The Frost Warden carries it in place of Ice Wall (the same walls: REALM.iceWall,
+   breakable, gone after their turns). A blast of 7 within 3: a hex that is not yet blue turns blue and an enemy on it is chilled; a hex that already
+   was blue rises as an ice wall, and an enemy standing on such a hex is frozen at once (the usual immunity after a thaw holds).
+   EMBER: Wildfire erupts 1 harder for every 10 souls the Court has taken (no ceiling: the quest feeds the Ultimate); a branded enemy sets every hex
+   it walks off on fire (not the hex it stops on: the fire is the Court's weapon, not a trap for the walker). */
+REALM.grasp={ttl:3,chill:2};REALM.ember2.wildPer=10;REALM.ember2.trailTtl=2;
+function wildSouls(p){return (p&&ember2On()&&REALM.ember2.wildPer)?Math.floor((p.souls||0)/REALM.ember2.wildPer):0}
+try{ULTS.fire.text+=' It erupts 1 harder for every 10 souls the Court has taken.'}catch(e){}
+try{ABIL.brand.desc+=' A branded enemy sets every hex it walks off on fire.'}catch(e){}
+ABIL.wintergrasp={name:'Winter’s Grasp',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',special:'wintergrasp',bot:'wintergrasp',
+  desc:'Chill a 7-hex patch within 3 hexes. Ground that is not yet blue turns blue for 3 turns and an enemy on it is chilled. Ground that already was blue rises as ice walls, and an enemy standing on blue ground there is frozen at once.'};
+function graspBlue(a,b){const pt=G.paint[key(a,b)];return !!(pt&&pt.fac==='ice')}
+{const f0=newUse;newUse=function(u,k,A,tgt,q,r,dest){
+  if(A.special==='wintergrasp'){const area=shapeCells(u,k,q,r),blue=new Set(area.filter(([a,b])=>graspBlue(a,b)).map(([a,b])=>key(a,b)));let walls=0,froze=0;
+    for(const [a,b] of area){const v=unitAt(a,b),foe=v&&(v.kind!=='wall'||wildsCreature(v))&&tm(v.owner)!==tm(u.owner);
+      if(blue.has(key(a,b))){if(foe){if(freezeT(v,false))froze++}
+        else if(!v&&passable(a,b)&&!isTrap(a,b)&&!(G.realm&&a===0&&b===0)){G.units.push({id:G.nid++,kind:'wall',wall:'ice',owner:-1,creator:u.owner,by:u.id,abil:A.name,q:a,r:b,dir:0,size:1,hp:REALM.iceWall.hp,maxhp:REALM.iceWall.hp,def:0,ttl:REALM.iceWall.ttl,st:{},name:'Ice wall'});walls++}}
+      else{if(solid(a,b)&&!isHeart(a,b))G.paint[key(a,b)]={fac:'ice',ttl:REALM.grasp.ttl,owner:u.owner};if(foe&&v.kind!=='wall')chillT(v,REALM.grasp.chill)}}
+    if(!SIM){vfx({k:'ab',ab:'wintergrasp',shape:'blast',from:[u.q,u.r],to:[q,r],cells:area,col:'#bfefff',fac:'ice',cam:1});if(trk()){const e=tFx('ice',u.name,A.name);if(e){e.uses++;e.stasisTurns=(e.stasisTurns||0)+froze;e.walls=(e.walls||0)+walls}}}
+    return}
+  return f0.apply(this,arguments)}}
+NEW_BOT.add('wintergrasp');
+{const f0=newHeur;newHeur=function(u,k,q,r,ctx,dest){const A=ABIL[k];
+  if(A&&A.bot==='wintergrasp'){let s=0;for(const [a,b] of shapeCells(u,k,q,r)){const v=unitAt(a,b);if(!v||v.kind==='wall'||v.owner<0||tm(v.owner)===tm(u.owner)||inert(v))continue;if(graspBlue(a,b))s+=(v.st.frozen>0||v.st.fimm>0)?0:4.5+(v.leader?2:0);else s+=v.st.chill>0?0.6:1.4}return s>=2.6?s:0}
+  return f0.apply(this,arguments)}}
+{const f0=doMove;doMove=function(u,o){const from=u?[u.q,u.r]:null,br=u&&u.st&&u.st.brand>0&&ember2On()&&u.kind!=='wall'?u.st.brandBy:null;const r=f0.apply(this,arguments);
+  try{if(br!=null&&from&&o&&!o.tele&&o.portal==null&&alive(u)&&(u.q!==from[0]||u.r!==from[1])){for(const [a,b] of hexLine(from,[u.q,u.r])){if(a===u.q&&b===u.r)continue;if(cells(u).some(([x,y])=>x===a&&y===b))continue;if(!solid(a,b)||isHeart(a,b))continue;const pt=G.paint[key(a,b)];if(pt&&pt.fac==='fire'&&pt.ttl>REALM.ember2.trailTtl)continue;G.paint[key(a,b)]={fac:'fire',ttl:REALM.ember2.trailTtl,owner:br}}}}catch(e){}
+  return r}}
+
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v226 2026-11-15";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -9022,6 +9053,8 @@ FXU.mage=(ev,t0)=>{const P=G.players.find(p=>p.fac==='mage');if(!P)return 0;cons
 Object.assign(FXI,{flare:150,flamelash:450,e_flamelash:450,stonegrip:450,e_stonegrip:450,gust:350,e_gust:350});
 /* v225: the Black Pyre gathers the dark when cast (the old Howl's look) and erupts a turn later (the Sacrifice's blast over its 18 hexes) */
 FXA.blackpyre=(ev,t0)=>FXA.howl(ev,t0);FXA.pyreburst=(ev,t0)=>FXA.sacrifice(ev,t0);
+/* v226: Winter's Grasp wears the Deep Winter look */
+FXA.wintergrasp=(ev,t0)=>FXA.deepwinter(ev,t0);
 
 /* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
 let FALL_WAIT=5000;/* v223: the prologue lengthens it (introPlan) */const fallPre=()=>!!(window.FALL_LAND&&Date.now()<window.FALL_LAND);
