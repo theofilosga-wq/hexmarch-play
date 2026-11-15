@@ -7131,7 +7131,7 @@ function elReact(u,t,kind){const E=REALM.react,o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_
     else if(kind==='rain'){for(const v of G.units.slice())if(v.kind!=='wall'&&alive(v)&&tm(v.owner)===tm(u.owner)&&distUU(v,t)===1)healUnit(v,E.rain,REACT_COL.rain,'Reaction: Rain',u.id)}
     else if(t.kind!=='wall'&&alive(t)){if(kind==='steam')t.st.steam=2;else if(kind==='mud')t.st.mudR=2;else if(kind==='dust')t.st.dust=2}}
   finally{CUR_SRC=o[0];CUR_TAG=o[1];CUR_NAME=o[2]}
-  if(!SIM){if(alive(t))fx(t,REACT_NAME[kind].toLowerCase()+'!',REACT_COL[kind]);vfx({k:'buff',at:[t.q,t.r],col:REACT_COL[kind],cam:1});addLog(u.owner,`${REACT_NAME[kind]}: two elements meet on the ${t.name}.`);if(trk()){const e=tFx('mage',u.name,'Reaction: '+REACT_NAME[kind]);if(e)e.uses++}}}
+  if(!SIM){if(alive(t))fx(t,REACT_NAME[kind].toLowerCase()+'!',REACT_COL[kind]);vfx({k:'ab',ab:'react_'+kind,shape:'nova',from:[t.q,t.r],to:[t.q,t.r],cells:DIRS.map(d=>[t.q+d[0],t.r+d[1]]),col:REACT_COL[kind],fac:'mage',cam:1});/* v232 */addLog(u.owner,`${REACT_NAME[kind]}: two elements meet on the ${t.name}.`);if(trk()){const e=tFx('mage',u.name,'Reaction: '+REACT_NAME[kind]);if(e)e.uses++}}}
 function elMark(u,t,el){if(!reactOn()||!el||!mageU(u)||!t||!reactFoe(u,t))return;const k=reactPending(t,el);if(k){t.st.elm=null;elReact(u,t,k)}else{t.st.elm=el;t.st.elmT=G.tok}}
 {const f0=applyHit;applyHit=function(u,t,A){const r=f0.apply(this,arguments);try{if(A&&A.el&&mageU(u)&&t&&tm(t.owner)!==tm(u.owner))elMark(u,t,A.el)}catch(e){}return r}}
 {const f0=attack;attack=function(u,t){const el=mageU(u)?elOfUnit(u):null;const r=f0.apply(this,arguments);try{if(el&&t)elMark(u,t,el)}catch(e){}return r}}
@@ -7180,7 +7180,7 @@ function d3Plus(u,t,A){const parts=[];let n=0;if(!depth3On()||!u||!t)return {n:0
   try{if(A.special==='abduct'&&depth3On()&&tgt&&alive(tgt)&&facU(u,'rift')){const n=Math.min(REALM.depth3.ambush,G.units.filter(v=>v.owner===u.owner&&v.kind!=='wall'&&!v.summon&&alive(v)&&distUU(v,tgt)===1).length);
     if(n>0){const o=CUR_NAME;CUR_NAME='Abduct: ambush';try{hurt(tgt,n,'#12d69a')}finally{CUR_NAME=o}if(!SIM)fx(tgt,'ambushed +'+n,'#12d69a')}}}catch(e){}return res}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v231 2026-11-15";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v232 2026-11-15";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -9297,6 +9297,57 @@ FXA.hailstorm=(ev,t0)=>FXA.icewall?FXA.icewall(ev,t0):0;FXA.hailfall=(ev,t0)=>FX
 FXA.prayer=(ev,t0)=>FXA.grove?FXA.grove(ev,t0):0;FXA.prayerfall=(ev,t0)=>FXA.sanctuary?FXA.sanctuary(ev,t0):0;FXA.darkprayer=(ev,t0)=>FXA.blight?FXA.blight(ev,t0):0;FXA.darkfall=(ev,t0)=>FXA.anathema?FXA.anathema(ev,t0):0;
 /* v230: Undertow wears the tide's look, Channel the Spirit Walk's */
 FXA.undertow=(ev,t0)=>FXA.cleanwave?FXA.cleanwave(ev,t0):0;FXA.channel=(ev,t0)=>FXA.spiritwalk?FXA.spiritwalk(ev,t0):0;
+
+/* v232 EFFECTS FOR THE DEPTH-PASS ABILITIES (owner, 16 Nov 2026: "now build effects for the new abilities"). Built with the approved kit (fxMat
+   shapes, three beats: the tell, the hit, the mark left behind). Every wound-up blow has two effects: the cast that marks the ground and the landing.
+   These replace the borrowed looks of v225-v230. */
+const fxCellsOf=(ev,def)=>((ev.cells&&ev.cells.length)?ev.cells:def).slice(0,24);
+/* EMBER: Brand = a line of fire from the Pit Lord's hand, a closing ring that sears the mark in */
+FXA.brand=(ev,t0)=>{const a=fxP(ev.from,1.7),b=fxP(ev.to,0.2),h=fxP(ev.to,1.1),t1=t0+700;fxDark(t0,2100,0.45);fxSnd('cast');fxGlow(a[0],a[1],a[2],'#ff3a10',t0,700,0.2,1.6);fxLit(a[0],a[1],a[2],'#ff4a10',t0,700,2,8);
+  fxBeam(a,h,'#ff7a20',t0+350,380,0.09);fxMarker(b,t0+300,900,1.6,'#ff3a10');fxFlashHard(b,t1,0.9,'#ffd0a0');fxRingHard(b,t1,520,2.2,'#ff5a20');fxPillars([[b[0],b[2]]],b[0],b[2],t1,1100,0,PAL.hell,1.4);
+  fxEmbers(b[0],b[2],t1,1300,26,1.0);fxScorch(b[0],b[2],0.9,t1+40,9000);fxLit(h[0],h[1],h[2],'#ff3a10',t1,1200,3,8);return 2100};
+/* EMBER: Black Pyre. The cast gathers the dark inward; the eruption is fire inside darkness over the 18 hexes */
+FXA.blackpyre=(ev,t0)=>{const a=fxP(ev.from,1.7),g=fxP(ev.from,0.2);fxDark(t0,2700,0.8);fxSnd('cast');fxMarker(g,t0,2300,4.6,'#a24aff');for(let i=0;i<3;i++)fxRingHard(g,t0+i*420,10,0.1,'#000000');
+  fxDome(g,t0+200,2100,4.4,PAL.dread,{e0:0.62,flat:0.18,alpha:0.5});fxSmokeCol(g,t0,2500,7,0.9,['#3a1a52','#1c0a2a','#08030c']);fxGlow(a[0]-0.18,a[1],a[2],'#ff1020',t0+200,2300,0.1,0.42);fxGlow(a[0]+0.18,a[1],a[2],'#ff1020',t0+200,2300,0.1,0.42);
+  fxGlow(a[0],a[1]-0.6,a[2],'#7a20d0',t0,2500,2.6,0.4);fxLit(a[0],a[1],a[2],'#7a20d0',t0,2500,2.4,12);return 2700};
+FXA.pyreburst=(ev,t0)=>{const a=fxP(ev.from,1.2),g=fxP(ev.from,0.2),cells=fxCellsOf(ev,fxNear(ev.from,2)),t1=t0+450;fxDark(t0,4000,0.78);fxSnd('ult',400);fxGlow(a[0],a[1],a[2],'#a24aff',t0,450,2.8,0.3);
+  fxFlashHard(g,t1,3.2,'#f0d0ff');fxDome(g,t1,820,5.2,PAL.hell);fxDome(g,t1+60,1500,7.2,PAL.dread,{e0:0.5,flat:0.24,alpha:0.6});fxRingHard(g,t1,560,8.6,'#ff6a20');fxRingHard(g,t1+140,640,8.6,'#a24aff');fxShake(t1,520);
+  fxPillars(fxCellPts(cells),g[0],g[2],t1+60,2500,60,PAL.hell,2.2);fxDebris(g,t1,30);fxEmbers(a[0],a[2],t1,2400,80,5.4);fxSmokeCol(g,t1+140,3200,10,1.5,['#3a1a52','#241c1a','#0e0b0b']);fxScorch(g[0],g[2],4.6,t1+40,14000);fxLit(a[0],a[1]+1.4,a[2],'#ff5a10',t1,2800,7,20);return 4000};
+/* FROST: Winter's Grasp = frost creeping over the patch, then ice driven up out of it */
+FXA.wintergrasp=(ev,t0)=>{const a=fxP(ev.from,1.5),g=fxP(ev.to,0.2),cells=fxCellsOf(ev,fxNear(ev.to,1)),t1=t0+700;fxDark(t0,3200,0.5);fxSnd('cast');fxGlow(a[0],a[1],a[2],FROST,t0,600,0.2,1.6);fxBeam(a,[g[0],g[1]+0.3,g[2]],'#dff4ff',t0+250,450,0.08);
+  fxMarker(g,t0+200,700,2.7,FROST,false);fxFrost(cells,ev.to,t0+350,2600,70);fxFlashHard(g,t1,1.6,'#ffffff');fxDome(g,t1,900,3.4,PAL.ice,{e0:0.5,flat:0.3,alpha:0.6});fxRingHard(g,t1,560,4.6,'#dff4ff');fxShake(t1,260);
+  for(const c of cells){const x=fxP(c,0);fxSpikes2(x[0],x[2],t1+60+Math.random()*260,2200,4,1.5,'#ffffff','#9fdcff')}fxShards(g[0],g[2],t1,1300,26,2.6,1);fxSnow(g[0],g[2],t0,3200,3.2,60);fxLit(g[0],g[1]+1.2,g[2],'#9fdcff',t1,2000,4,13);return 3200};
+/* FROST: the Hailstorm. The cast darkens the sky over the marked patch; a turn later the hail comes down */
+FXA.hailstorm=(ev,t0)=>{const a=fxP(ev.from,1.6),g=fxP(ev.to,0.2);fxDark(t0,2300,0.55);fxSnd('cast');fxGlow(a[0],a[1],a[2],FROST,t0,700,0.2,1.5);fxBeam(a,[a[0],a[1]+9,a[2]],'#dff4ff',t0+150,600,0.06);
+  fxMarker(g,t0+400,1700,2.7,'#dff4ff',false);fxColumnLight(g,t0+500,1600,0.9,9,PAL.ice);fxSnow(g[0],g[2],t0+500,1800,3,40);fxLit(g[0],g[1]+3,g[2],'#9fdcff',t0+500,1600,2.4,12);return 2300};
+FXA.hailfall=(ev,t0)=>{const g=fxP(ev.to,0.2),cells=fxCellsOf(ev,fxNear(ev.to,1));fxDark(t0,3300,0.6);fxSnd('ult',300);fxSnow(g[0],g[2],t0,3200,3.4,110);let i=0;
+  for(const c of cells)for(let k=0;k<3;k++){const b=fxP(c,0.1),d=t0+250+i*45+k*380;i++;fxBall([b[0]+1.6+Math.random(),b[1]+10,b[2]-1.2+Math.random()],[b[0]+(Math.random()-0.5)*0.8,b[1],b[2]+(Math.random()-0.5)*0.8],d,330,0,0.5,'#ffffff','#9fdcff');if(k===0){fxFlashHard(b,d+330,0.6,'#ffffff');fxSpikes2(b[0],b[2],d+330,1900,3,1.0,'#ffffff','#bfe8ff')}}
+  fxRingHard(g,t0+600,640,4.8,'#dff4ff');fxShake(t0+600,420);fxShards(g[0],g[2],t0+620,1400,34,3,1);fxFrost(cells,ev.to,t0+600,2600,50);fxLit(g[0],g[1]+1.4,g[2],'#bfe8ff',t0+500,2400,5,15);return 3300};
+/* PRIESTS: the Seraph's prayer rises as a thread of light; a turn later a pillar of light answers. The Dark Litany is its shadow */
+const fxPray=(pal,dark)=>(ev,t0)=>{const a=fxP(ev.from,1.6),g=fxP(ev.to,0.2),col=pal.o[1];fxDark(t0,2200,dark?0.6:0.3);fxSnd('cast');fxGlow(a[0],a[1],a[2],col,t0,900,0.2,1.8);fxBeam(a,[a[0],a[1]+10,a[2]],pal.i[1],t0+200,900,0.07);
+  fxHalo([a[0],a[1]+0.7,a[2]],t0,1900,col,0.7);fxMarker(g,t0+500,1600,2.7,col,false);fxHalo([g[0],g[1]+2.6,g[2]],t0+600,1500,col,2.4);fxLit(g[0],g[1]+2,g[2],col,t0+500,1600,2.4,12);return 2200};
+const fxAnswer=(pal,dark)=>(ev,t0)=>{const g=fxP(ev.to,0.2),cells=fxCellsOf(ev,fxNear(ev.to,1)),col=pal.o[1],t1=t0+350;fxDark(t0,3300,dark?0.72:0.3);fxSnd('ult',300);fxColumnLight(g,t0,1500,1.0,11,pal);for(const c of cells){const x=fxP(c,0.2);fxColumnLight(x,t0+250+Math.random()*500,1100,0.28,7,pal)}fxFlashHard(g,t1,2.2,dark?'#e8d0ff':'#fffbe0');
+  fxRingHard(g,t1,620,5,col);fxHexes(cells,ev.to,t1,2300,60,col);if(dark){fxDome(g,t1,1300,4,PAL.shadow,{e0:0.5,flat:0.25,alpha:0.6});fxSmokeCol(g,t1,2700,7,1.1,['#3a1a52','#1c0a2a','#08030c'])}else{fxDome(g,t1,1100,3.6,PAL.holy,{e0:0.55,flat:0.25,alpha:0.5});fxEmbers(g[0],g[2],t1,2200,50,3,'#ffe080')}
+  fxShake(t1,dark?320:160);fxLit(g[0],g[1]+2,g[2],col,t1,2600,6,18);return 3300};
+FXA.prayer=fxPray(PAL.holy);FXA.darkprayer=fxPray(PAL.shadow,1);FXA.prayerfall=fxAnswer(PAL.holy);FXA.darkfall=fxAnswer(PAL.shadow,1);
+/* GIANTS: the wind-up. The giant gathers itself in dust and the ground it will strike is ringed */
+FXA.windup=(ev,t0)=>{const a=fxP(ev.from,0.2),top=fxP(ev.from,2.6),g=fxP(ev.to,0.2);fxDark(t0,2000,0.3);fxSnd('cast');fxSmokeCol(a,t0,1800,5,0.9,PAL.dust);fxChunks(a,t0+200,10,0.7);fxGlow(top[0],top[1],top[2],'#ffb050',t0,1800,0.3,2.2);fxShake(t0+200,180);
+  fxMarker(g,t0+300,1700,3.4,'#ffb050');fxRingHard(g,t0+300,900,3.6,'#ffcf8a');fxDecal(g[0],g[2],2.4,t0+400,6000,['#5a4a34','#3a3020','#1a1410'],0.5);fxLit(top[0],top[1],top[2],'#ffa040',t0,1800,2.6,12);return 2000};
+/* ELEMENTS: Undertow runs out and back; Channel is a thread of spirit from the Elder; the six reactions */
+FXA.undertow=(ev,t0)=>{const a=fxP(ev.from,0.2),cells=fxCellsOf(ev,[ev.to]),far=fxP(cells[cells.length-1],0.2),pts=fxCellPts(cells);fxDark(t0,2100,0.25);fxSnd('cast');fxGlow(a[0],a[1]+1.4,a[2],'#7ec8ff',t0,500,0.2,1.4);
+  fxPillars(pts,a[0],a[2],t0+200,800,110,PAL.water,1.1);fxPillars(pts,far[0],far[2],t0+850,900,110,PAL.water,1.5);fxRingHard(far,t0+800,420,2,'#a0e0ff');fxDecal((a[0]+far[0])/2,(a[2]+far[2])/2,2.2,t0+300,5000,['#3aa0e0','#1a5a9a','#0a2a4a'],0.5);fxLit(far[0],far[1]+1,far[2],'#3aa0e0',t0+300,1500,3,10);return 2100};
+FXA.channel=(ev,t0)=>{const a=fxP(ev.from,1.6),b=fxP(ev.to,1.3),g=fxP(ev.to,0.2);fxDark(t0,1800,0.3);fxSnd('cast');fxGlow(a[0],a[1],a[2],'#5aff8a',t0,700,0.2,1.7);fxBeam(a,b,'#c0ffd0',t0+250,700,0.09);fxBeam(a,b,'#5aff8a',t0+350,700,0.05);
+  fxColumnLight(g,t0+600,1100,0.8,4,PAL.spirit);fxHalo([g[0],g[1]+2.1,g[2]],t0+600,1100,'#5aff8a',0.6);fxRingHard(g,t0+650,420,1.8,'#c0ffd0');fxLit(b[0],b[1],b[2],'#5aff8a',t0+500,1200,3,9);return 1800};
+const fxReact=kind=>(ev,t0)=>{const g=fxP(ev.to,0.2),h=fxP(ev.to,1.1),ring=fxCellsOf(ev,fxRing6(ev.to));fxSnd('hit');
+  if(kind==='steam'){fxFlashHard(g,t0,1.1,'#ffffff');fxSmokeCol(g,t0,2200,8,1.0,['#ffffff','#cfe6ee','#8fa6b0']);fxDome(g,t0,900,2.4,PAL.wind,{e0:0.55,flat:0.5,alpha:0.5});fxRingHard(g,t0,420,2.6,'#ffffff')}
+  else if(kind==='wildfire'){fxFlashHard(g,t0,1.4,'#ffe0a0');fxPillars(fxCellPts(ring),g[0],g[2],t0+80,1500,40,PAL.fire,1.7);fxRingHard(g,t0,460,3.6,'#ff7a20');fxEmbers(g[0],g[2],t0,1500,44,2.6);fxLit(h[0],h[1],h[2],'#ff6a10',t0,1500,4,12)}
+  else if(kind==='mud'){fxChunks(g,t0,14,0.8,['#8a6a45','#5a4230','#3a2a1c']);fxDecal(g[0],g[2],1.5,t0,7000,['#8a6a45','#5a4230','#2a1c12'],0.4);fxDome(g,t0,800,1.8,{o:['#a08058','#6a4e34','#2a1c12']},{e0:0.5,flat:0.35,alpha:0.7});fxRingHard(g,t0,380,2,'#a08058')}
+  else if(kind==='lava'){fxFlashHard(g,t0,1.5,'#fff0c0');fxDome(g,t0,700,2.2,PAL.hell);fxPillars([[g[0],g[2]]],g[0],g[2],t0+40,1500,0,PAL.hell,2.2);fxChunks(g,t0,12,0.8,['#3a1408','#1c0a06','#ff5a10']);fxScorch(g[0],g[2],1.2,t0+40,9000);fxShake(t0,220);fxLit(h[0],h[1],h[2],'#ff4a10',t0,1500,5,12)}
+  else if(kind==='rain'){fxColumnLight(g,t0,1400,0.8,8,PAL.water);fxSnow(g[0],g[2],t0,1700,2.6,70);fxHexes(ring,ev.to,t0+150,1500,40,'#7ec8ff');fxRingHard(g,t0+150,460,3.2,'#a0e0ff');fxLit(h[0],h[1]+1,h[2],'#3aa0e0',t0,1600,3,11)}
+  else{fxSmokeCol(g,t0,2000,9,1.2,PAL.dust);fxDome(g,t0,1000,3,{o:['#e0d0b0','#a89070','#5a4a34']},{e0:0.5,flat:0.3,alpha:0.6});fxRingHard(g,t0,460,3.2,'#e0d0b0');fxChunks(g,t0,8,0.5)}
+  return 1300};
+for(const k of ['steam','wildfire','mud','lava','rain','dust'])FXA['react_'+k]=fxReact(k);
+Object.assign(FXI,{brand:700,wintergrasp:700,undertow:850});
 
 /* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
 let FALL_WAIT=5000;/* v223: the prologue lengthens it (introPlan) */const fallPre=()=>!!(window.FALL_LAND&&Date.now()<window.FALL_LAND);
