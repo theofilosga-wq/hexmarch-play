@@ -7287,7 +7287,7 @@ const ROT_OF={'Lich King':'rot','Banshee':'frailty','Plague Bearer':'agony','Bog
 const DK_NO=new Set(['order','command','frostmerge','requiem','claim','spawn','prayer','darkprayer']),DK_NOTRAIT=new Set(['twin','reliquary','icestatue','ghoul']);
 function cov2On(){return !!(G&&G.realm&&RULES.COV2)}
 function covOf(u){return !!(u&&u.kind!=='wall'&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='curse')}
-function rotOf(u){return cov2On()&&covOf(u)&&!u.dk&&ROT_OF[u.name]||'rot'}
+function rotOf(u){return cov2On()&&covOf(u)&&!u.dk&&!u.risen&&ROT_OF[u.name]||'rot'}
 function ripeBite(u,adv){if(!cov2On()||!u||!u.st)return 0;const E=REALM.cov2;return Math.min(E.ripeMax,Math.max(0,(u.st.ripe||0)+(adv||0)-E.ripeFrom))+(u.st.claim!=null?E.claimBite:0)}
 function ripeStep(u){if(!u||!u.st)return;u.st.ripe=curseCount(u)?(u.st.ripe||0)+1:0}
 function bellReach(u){return cov2On()&&utal(u,'blackbell')?2:0}
@@ -7315,18 +7315,36 @@ function dkFeed(p){const E=REALM.cov2;const ks=dkAlive(p).sort((a,b)=>b.maxhp-a.
   if(!SIM){fx(u,`fed: +${E.feedHp} HP +${E.feedAtk} ATK`,'#c8e83a');addLog(p.id,`The graves feed the Death Knight: the ${u.name} gains +${E.feedHp} max HP and +${E.feedAtk} ATK for good.`);const e=tFx('curse','','Death Knight fed');if(e)e.uses++}return u}
 /* a choice is owed (p.dkDue) whenever the grave count passes the next mark */
 function dkNeed(p){const E=REALM.cov2;return (talent(p,'opengraves')?E.early:E.need)+E.need*(p.dkPaid||0)}
-function dkCheck(p){while((p.graves||0)>=dkNeed(p)){p.dkPaid=(p.dkPaid||0)+1;p.dkDue=(p.dkDue||0)+1}}
+function dkCheck(p){if(RULES.COV_RISEN)return;/* v239: no grave counter, no feeding */while((p.graves||0)>=dkNeed(p)){p.dkPaid=(p.dkPaid||0)+1;p.dkDue=(p.dkDue||0)+1}}
 function dkOptions(p){if(!p||!(p.dkDue>0)||!covLich(p))return [];const o=[];if(dkBest(p))o.push('raise');if(dkAlive(p).length)o.push('feed');return o}
 function dkChoose(pid,what){const p=G.players[pid];const os=dkOptions(p);if(!os.includes(what))return false;const u=what==='raise'?dkRaise(p):dkFeed(p);if(!u)return false;p.dkDue--;if(!SIM)HOOKS.changed();return true}
 function dkAuto(p){let g=0;while(p.dkDue>0&&g++<6){const os=dkOptions(p);if(!os.length)break;if(os.length===1){if(!dkChoose(p.id,os[0]))break;continue}
     if(p.ctrl==='human')break;/* a real choice is the player's */const best=dkBest(p),k=dkAlive(p)[0];if(!dkChoose(p.id,best&&best.w>=worth(k)*0.7?'raise':'feed'))break}}
-function graveAdd(p,t,claimed){const E=REALM.cov2;const n=claimed?E.claimGraves:1;p.graves=(p.graves||0)+n;p.graveN=(p.graveN||0)+1;
+function graveAdd(p,t,claimed,rots){const E=REALM.cov2;const n=claimed?E.claimGraves:1;p.graves=(p.graves||0)+n;p.graveN=(p.graveN||0)+1;
   const rec={name:t.name,fac:t.dkFac||G.players[t.owner].fac,maxhp:t.maxhp,atk:t.atk,w:worth(t),claim:claimed?1:0,n:p.graveN};if(dkData(rec))p.dead=(p.dead||[]).concat([rec]);
-  if(!SIM){fx(t,n>1?'2 graves':'a grave','#c8e83a');addLog(p.id,`The ${t.name} dies of the rot: ${p.graves} grave${p.graves===1?'':'s'} for the Pale Covenant.`);const e=tFx('curse','','Graves');if(e)e.uses+=n}
+  if(!SIM){const e=tFx('curse','','Graves');if(e)e.uses++}
+  if(RULES.COV_RISEN){if(!dkData(rec)||!covLich(p))return;rec.rots=rots&&rots.length?rots.slice():['rot'];rec.at=[t.q,t.r];
+    if(claimed&&!dkAlive(p).length){p.dead=[rec];const k=dkRaise(p);p.dead=[];if(!k)risenRaise(p,rec)}else{p.dead=[];risenRaise(p,rec)}return}
   dkCheck(p);dkAuto(p)}
+/* v239 THE RISEN (owner, 16 Nov 2026: "why did we make it one big summon again like the Archdemon or the Elemental Lord and not keep it as small ghouls...
+   the team needs a front line... +6 +1 is silly"; then "better like this for the Covenant, it is nicer thematically"). Every enemy that dies of the rot
+   rises for the Covenant where it fell AS ITSELF BUT SMALL: a third of its HP, no ability, no trait; its attacks lay Rot; it rots away (loses HP at the
+   end of each Covenant turn); when it dies, the rots it died with leap to the enemies next to it. Only the unit under Death's Claim comes back whole
+   (the Death Knight), one at a time; no grave counter, no feeding. All of them crumble with the Lich King. */
+RULES.COV_RISEN=1;Object.assign(REALM.cov2,{risenHp:3,decay:2,slowDecay:1,risenSpread:1});
+function risenRaise(p,rec){const d=dkData(rec),L=covLich(p);if(!d||!L)return null;const size=d.size||FAC[rec.fac].size||1;const sp=dkSpot(size,rec.at||[L.q,L.r]);if(!sp)return null;
+  const u=makeUnit(p,d);u.size=size;u.hp=u.maxhp=Math.max(2,Math.ceil(rec.maxhp/REALM.cov2.risenHp));u.atk=Math.max(1,Math.ceil(rec.atk/2));/* half its attack: the first pace run had risen Hailcallers shooting for 5 */u.def=Math.min(u.def,1);u.leader=false;u.risen=1;u.dkFac=rec.fac;u.rots=rec.rots;u.summon=1;u.ttl=99999;u.relq=0;u.shell=0;
+  u.ability=null;u.ability2=null;u.book=null;u.trait=null;u.trait2=null;u.inh=null;u.q=sp[0];u.r=sp[1];u.dir=sp[2];u.moved=true;u.acted=true;G.units.push(u);p.risenN=(p.risenN||0)+1;
+  if(!SIM){tStat(u);const e=tFx('curse','','The Risen (raised)');if(e)e.uses++;addLog(p.id,`The ${u.name} dies of the rot and rises for the Pale Covenant: ${u.maxhp} HP, and rotting.`);fx(u,'RISEN','#c8e83a');vfx({k:'rise',at:[u.q,u.r],col:'#c8e83a'})}
+  return u}
+function risenDecay(pid){if(!cov2On()||!RULES.COV_RISEN)return;const p=G.players[pid];if(!p||p.fac!=='curse')return;const n=talent(p,'slowrot')?REALM.cov2.slowDecay:REALM.cov2.decay;
+  for(const u of G.units.slice()){if(!u.risen||u.owner!==pid||!alive(u))continue;const o=[CUR_SRC,CUR_TAG,CUR_NAME];CUR_SRC=null;CUR_TAG=null;CUR_NAME='The Risen rot away';hurt(u,n,'#9aa3b5',true);[CUR_SRC,CUR_TAG,CUR_NAME]=o}}
+function risenFalls(t){const E=REALM.cov2;const p=G.players[t.owner];if(!p)return;const src=G.units.find(u=>u.owner===p.id&&u.kind!=='wall'&&u!==t&&alive(u));if(!src)return;let n=0;
+  for(const v of G.units.slice()){if(!alive(v)||v.kind==='wall'||v.owner<0||v.statue||v.egg||tm(v.owner)===tm(p.id)||!cells(t).some(([a,b])=>distUC(v,a,b)<=E.risenSpread))continue;for(const c of (t.rots||['rot'])){if(!CURSES[c]||(v.st.curses&&v.st.curses[c]>0))continue;applyCurse(src,v,c);n++}}
+  if(n&&!SIM){addLog(p.id,`The risen ${t.name} falls apart and its rot leaps to the enemies beside it.`);const e=tFx('curse','','The Risen (rots passed on at death)');if(e)e.uses+=n}}
 {const f0=kill;kill=function(t){let pre=null;try{const cs=t&&t._reaped||(t&&t.st&&t.st.curses)||{};if(cov2On()&&t&&t.kind!=='wall'&&t.owner>=0&&t.st&&Object.keys(cs).some(c=>cs[c]>0)){const p=covKiller(t);if(p)pre={p:p,rots:Object.keys(cs).filter(c=>cs[c]>0&&CURSES[c]),by:t.st.curseBy,q:t.q,r:t.r,team:tm(t.owner),
       rot:!!t._reaped||/^Curse ticks$|Last Bell/.test(CUR_NAME||''),claim:t.st.claim!=null&&t.st.claim===p.id,own:!t.summon&&!t.statue&&!t.egg&&!t.machine}}}catch(e){pre=null}
-  const lich=cov2On()&&t&&t.kind!=='wall'&&t.leader&&covOf(t)?t.owner:null;
+  const lich=cov2On()&&t&&t.kind!=='wall'&&t.leader&&covOf(t)?t.owner:null;const ris=cov2On()&&t&&t.risen?{q:t.q,r:t.r}:null;
   const r=f0.apply(this,arguments);
   try{if(pre&&!alive(t)){const E=REALM.cov2;
       /* death spreads */
@@ -7334,15 +7352,16 @@ function graveAdd(p,t,claimed){const E=REALM.cov2;const n=claimed?E.claimGraves:
       if(src){let n=0;for(const v of G.units.slice()){if(!alive(v)||v.kind==='wall'||v.owner<0||v.statue||v.egg||tm(v.owner)===tm(pre.p.id)||hd(v.q,v.r,pre.q,pre.r)>E.spread)continue;
           for(const c of pre.rots){if(v.st.curses&&v.st.curses[c]>0)continue;applyCurse(src,v,c);n++}}
         if(n&&!SIM){addLog(pre.p.id,`Death spreads: the rots of the ${t.name} leap to the enemies around it.`);const e=tFx('curse','','Death spreads (rots passed on)');if(e)e.uses+=n}}
-      if(pre.rot&&pre.own)graveAdd(pre.p,t,pre.claim)}
-    if(lich!=null&&!alive(t)){for(const k of G.units.slice())if(k.dk&&k.owner===lich&&alive(k)){if(!SIM){fx(k,'crumbles','#9aa3b5');addLog(lich,`The Lich King is dead: the Death Knight (${k.name}) crumbles.`)}const i=G.units.indexOf(k);if(i>=0)G.units.splice(i,1)}
+      if(pre.rot&&pre.own)graveAdd(pre.p,t,pre.claim,pre.rots)}
+    if(ris&&!alive(t)){t.q=ris.q;t.r=ris.r;risenFalls(t)}
+    if(lich!=null&&!alive(t)){for(const k of G.units.slice())if((k.dk||k.risen)&&k.owner===lich&&alive(k)){if(!SIM){fx(k,'crumbles','#9aa3b5');addLog(lich,`The Lich King is dead: the ${k.dk?'Death Knight':'risen'} ${k.name} crumbles.`)}const i=G.units.indexOf(k);if(i>=0)G.units.splice(i,1)}
       for(const v of G.units)if(v.st&&v.st.claim===lich)delete v.st.claim}}catch(e){}
   return r}}
 /* Death's Claim cannot be cleansed */
 {const f0=cleanse;cleanse=function(u,t){if(cov2On()&&t&&t.st&&t.st.claim!=null){const d=debuffOf(t);if(d&&d.startsWith('curse:')){if(!SIM)fx(t,'claimed: the rot holds','#c8e83a');return null}}return f0.apply(this,arguments)}}
 /* the abilities */
 ABIL.claim={name:'Death’s Claim',cost:1,cd:3,aim:'unit',hits:'foe',los:'lob',range:5,shape:'single',special:'claim',bot:'claim',
-  desc:'Mark one enemy within 5 with a skull, for everyone to see. While it is marked its rots cannot be cleansed and bite 1 harder each turn. If it dies of the rot it counts as 2 graves, and it is the one the Lich King raises next. One mark at a time; it ends if the Lich King dies.'};
+  desc:'Mark one enemy within 5 with a skull, for everyone to see. While it is marked its rots cannot be cleansed and bite 1 harder each turn. If it dies of the rot it does not rise small like the others: it comes back whole, as your Death Knight, with its HP, its attack and its ability (one Death Knight at a time). One mark at a time; it ends if the Lich King dies.'};
 ABIL.gravehold={name:'Gravehold',cost:1,cd:3,aim:'unit',hits:'foe',range:1,shape:'single',special:'gravehold',bot:'gravehold',
   desc:'The Grave Knight seizes an adjacent enemy: neither of them can move on its next turn. A two-hex unit cannot be held.'};
 ABIL.drownbog={name:'Drowning Bog',cost:2,cd:3,aim:'hex',range:3,shape:'blast',size:1,hits:'foe',curse:'mire',special:'drownbog',bot:'drownbog',
@@ -7353,9 +7372,9 @@ ABIL.silence.name='Death Knell';ABIL.silence.desc='The bell tolls down a straigh
 TRAITS.fade={name:'Fade',text:'After a basic attack she may move again, even if she already moved.'};
 function covSetup(){const U=FAC.curse.units,by=n=>U.find(x=>x.name===n);const L=by('Lich King'),B=by('Banshee'),P=by('Plague Bearer'),H=by('Bog Hag'),K=by('Grave Knight');
   if(L)L.ab2='claim';if(B)B.trait='hitrun';if(P)P.n=1;if(H)H.ab='drownbog';if(K)K.ab='gravehold';
-  FAC.curse.passive='Mark, hold, reap. Every unit’s attack lays its own rot: Lich King and Grave Knight Rot, Banshee Frailty (weaker attacks), Plague Bearer Plague (spreads to a neighbour), Bog Hag Grave Mud (walks 1 less), Bell Wraith Decay (no healing), Grave Leech Leech (heals her). A rotting enemy takes damage at the start of each of its turns by how many different rots it carries (1, 2, 3 and so on), and the rot ripens: from its third bite on it bites 1 harder each turn, up to 3 more. The Lich King’s Requiem reaps it all at once. Death spreads: when a rotting enemy dies, its rots leap to every enemy within 2 hexes. Graves: an enemy killed by the rot itself (a bite, Requiem or The Last Bell; never by a plain attack) is a grave. At 5 graves the Lich King raises the strongest of them as a Death Knight: the same unit, with its HP, attack and ability, fighting for you. Every 5 graves after that you feed it (+6 max HP, +1 ATK) or raise another. They all crumble when the Lich King dies. The bodies are weak: an army that reaches the Lich King ends everything.';
+  FAC.curse.passive='Mark, hold, reap. Every unit’s attack lays its own rot: Lich King and Grave Knight Rot, Banshee Frailty (weaker attacks), Plague Bearer Plague (spreads to a neighbour), Bog Hag Grave Mud (walks 1 less), Bell Wraith Decay (no healing), Grave Leech Leech (heals her). A rotting enemy takes damage at the start of each of its turns by how many different rots it carries (1, 2, 3 and so on), and the rot ripens: from its third bite on it bites 1 harder each turn, up to 3 more. The Lich King’s Requiem reaps it all at once. Death spreads: when a rotting enemy dies, its rots leap to every enemy within 2 hexes. The Risen: an enemy killed by the rot itself (a bite, Requiem or The Last Bell; never by a plain attack) rises where it fell and fights for you as itself, but small: a third of its HP, half its attack and no ability. Its attacks lay Rot, it loses 2 HP at the end of each of your turns, and when it falls the rots it died with leap to the enemies next to it. Only the enemy under the Lich King’s skull (Death’s Claim) comes back whole, as your Death Knight. All the dead crumble when the Lich King dies. The living bodies are weak: an army that reaches the Lich King ends everything.';
   ULTS.curse={name:'The Last Bell',text:'Every rot on the board bites twice, now, and then each rot leaps to every enemy standing next to its victim. Nothing on a clean board; a slaughter on a marked one. Its kills are graves.'};
-  TALENTS.curse=[{k:'plaguewind',name:'Slow Death',text:'Your rots last 1 turn longer.'},{k:'blackbell',name:'Black Bell',text:'Requiem reaches 2 hexes further.'},{k:'opengraves',name:'Open Graves',text:'The first Death Knight rises at 4 graves, not 5.'}];
+  TALENTS.curse=[{k:'plaguewind',name:'Slow Death',text:'Your rots last 1 turn longer.'},{k:'blackbell',name:'Black Bell',text:'Requiem reaches 2 hexes further.'},{k:'slowrot',name:'Long Dying',text:'Your risen dead lose 1 HP a turn, not 2.'}];
   SUPPLY.curse={name:'grave dust',text:'the unit that receives it heals 3, and its next attack lays a second rot',f:(p,u)=>{healUnit(u,REALM.cov2.dustHeal,'#c8e83a','Supplies');if(u.st)u.st.dust=1;return 'it heals and its next attack lays a second rot'}}}
 covSetup();
 {const f0=newUse;newUse=function(u,k,A,tgt,q,r,dest){
@@ -7375,7 +7394,7 @@ covSetup();
     if(u&&u._reap){if(cov2On()&&alive(u))setCd(u,'requiem',Math.max(0,cdOf(u,'requiem')-u._reap));u._reap=0}}catch(e){}
   return res}}
 /* the cloud catches whoever ends a turn in it; a Grave Knight that held pays its own next turn's move */
-{const f0=endTurn;endTurn=function(){try{if(cov2On()&&!G.over&&!G.phase){const pid=G.cur;for(const u of G.units.slice()){if(u.owner!==pid||u.kind==='wall'||!alive(u))continue;
+{const f0=endTurn;endTurn=function(){try{if(cov2On()&&!G.over&&!G.phase){const pid=G.cur;risenDecay(pid);for(const u of G.units.slice()){if(u.owner!==pid||u.kind==='wall'||!alive(u))continue;
         if(u.st&&u.st.ghold===2)u.st.ghold=0;else if(u.st&&u.st.ghold===1)u.st.ghold=2;
         if(u.statue||u.egg)continue;const pt=cells(u).map(([q,r])=>G.paint[key(q,r)]).find(x=>x&&x.kind==='miasma'&&tm(x.owner)!==tm(u.owner));if(!pt||hasCurse(u,'agony'))continue;
         let src=byId(pt.by);if(!src||!alive(src)||src.owner!==pt.owner)src=G.units.find(v=>v.owner===pt.owner&&v.kind!=='wall'&&alive(v));if(src){applyCurse(src,u,'agony');if(!SIM&&trk()){const e=tFx('curse','','Miasma cloud (Plague caught)');if(e)e.uses++}}}}}catch(e){}
@@ -7401,7 +7420,7 @@ NEW_BOT.add('claim');NEW_BOT.add('gravehold');NEW_BOT.add('drownbog');
   if(A&&A.bot==='drownbog'){let s=0;for(const [a,b] of shapeCells(u,k,q,r)){const v=unitAt(a,b);if(!v||v.kind==='wall'||v.owner<0||inert(v))continue;if(tm(v.owner)===tm(u.owner))continue;s+=hasCurse(v,'mire')?2.2:1.2}return s>=2.2?s:0}
   return f0.apply(this,arguments)}}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v238 2026-11-16";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v239 2026-11-16";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -10689,7 +10708,7 @@ const PASSIVE_SHORT={/* v170: one short paragraph per army, kept in step with FA
   giants:'Five two-hex giants that walk 4 and follow the roads (too big for the 1-hex side passages). Their great blows rest long and change the land: craters, boulders that block the way, split rock and furrows of stone. Stone is their road: a giant that starts on it walks 1 further, hits for 1 more and heals 1 a turn. The Mountain King calls his kin to his side. A fallen giant leaves stones that heal its kin, make them stronger and pass on its ability.',
   ooze:'The Ooze Mother arrives alone and spawns droplets every other turn, paying 2 HP each time. Droplets merge into bigger blobs (up to 3 parts) and keep growing on their own kills. Every kill heals the Mother.',
   rift:'Portals: any unit that steps on a portal end comes out of the other, and a Riftwalker that comes out may move again. Gatekeepers open the gates, the Abductor drops enemies from the sky, the Banisher kicks them through the doors and the Rift Lancer shoots through them.',
-  curse:'Every attack lays its unit’s own rot, and rots ripen: the longer they stay, the harder they bite. Requiem reaps them all at once. A dying victim passes its rots to the enemies around it. Every enemy killed by the rot is a grave: at 5 the Lich King raises the strongest of them as a Death Knight, the enemy’s own unit fighting for you.',
+  curse:'Every attack lays its unit’s own rot, and rots ripen: the longer they stay, the harder they bite. Requiem reaps them all at once. A dying victim passes its rots to the enemies around it. An enemy killed by the rot rises for you where it fell, small and rotting, and spreads its rot again when it falls. The one enemy under the Lich King’s skull comes back whole, as your Death Knight.',
   chrono:'A crew of time thieves that teleport when they move. The weakest target nearby is always their contract: kill it and the whole crew climbs one rung of a ladder that never ends, and every bounty pays a coin to Buy Time.',
   mage:'Shamans fill four element bars and ascend into Elementals that shape the land: walls of fire, rivers, stone walls and wind lanes, which combine into mud, wildfire, rain, lava, steam and dust. When all four have ascended the Elemental Lord appears.',
 };
@@ -10711,7 +10730,7 @@ const LOSE_LINES={/* v170: how each army is beaten */
   arcane:'They stand packed around the relic: area damage loves them. Bring down the Walking Sanctuary and step on the fallen relic to smash it, and the light is gone for good. Keep them wounded, and block the healing with Decay or fire.',
   warband:'Strong only in formation: hit the block with area damage, drag one warrior out, and never feed them kills. The Blade Warlord is fragile: kill him and the block loses Strike. Kill both brothers and the Warband stops learning.',
   rift:'Thin bodies (8 to 11 HP): stand next to their portal ends to shut the doors, and catch the Gatekeepers before they open more.',
-  curse:'Fragile casters behind two Grave Knights: rush the Lich King (the Death Knights crumble with him), keep your units apart so the rot cannot leap, cleanse early, and finish your own dying unit with a clean hit so it is no grave.',
+  curse:'Fragile casters behind two Grave Knights and a line of rotting dead: rush the Lich King (all the dead crumble with him), keep your units apart so the rot cannot leap, cleanse early, kill the risen from range, and finish your own dying unit with a clean hit so it does not rise.',
   chrono:'Fragile thieves that grow with every bounty: kill the crew early, keep your weak units out of their reach, run from the stasis device, and keep them poor: every 3 coins in their purse hire a new thief at their base.',
   ooze:'Kill the Ooze Mother: she makes everything, and every kill heals her. Area damage melts the droplets before they merge.',
   mage:'Kill the shamans before they ascend, hold their shrines, stay off their shapes, and finish the Elemental Lord before its spells have grown.',
@@ -10724,7 +10743,7 @@ const WIN_LINES={/* v170: one sentence per army: how it wins */
   arcane:'Wins by outlasting: walk the sanctuary to the fight, heal through everything, burn enemies with the overflow and raise the dead.',
   warband:'Wins by standing together: the block marches and strikes as one under its two Warlords’ orders.',
   rift:'Wins by moving the board: open portals, step through and strike again, and throw enemies where you want them.',
-  curse:'Wins by slow death: mark with every attack, run or pin them while the rot ripens, reap with Requiem, and raise their best unit as your Death Knight.',
+  curse:'Wins by slow death: mark with every attack, run or pin them while the rot ripens, reap with Requiem, and let their own dead walk in front of you.',
   chrono:'Wins by hunting: pick off the weakest target again and again, climb the ladder with every bounty and spend the coins on new hires or a Stolen Hour.',
   ooze:'Wins by swarming: pour out droplets, merge them into big blobs and let the blobs grow on their kills.',
   mage:'Wins by ascending: turn the shamans into Elementals, reshape the land, and bring out the Elemental Lord.',
@@ -13449,9 +13468,9 @@ function introSkip(){if(!INTRO.on)return;const me=G&&G.players.find(p=>p.ctrl===
     window.FALL_LAND=Date.now()-1;window.QUAKE={t0:Date.now()-4000,dur:2300};window.FALL_HOLD=Date.now()+300;if(typeof GL!=='undefined'&&GL)GL.sig='';refresh();if(me)setTimeout(()=>{try{frameArmy(me.id)}catch(e){}},350)}catch(e){}}
 
 /* v238 THE PALE COVENANT on the page: the grave counter, the feed-or-raise window, the skull, the chips */
-{const f0=enginePill;enginePill=function(p){try{if(p&&p.fac==='curse'&&typeof cov2On==='function'&&cov2On()){const col=FAC.curse.color,n=p.graves||0,need=dkNeed(p),dk=dkAlive(p).length,due=p.dkDue>0&&dkOptions(p).length>1;
-      const tip=`Graves: an enemy killed by the rot itself (a bite, Requiem or The Last Bell) is a grave. At ${need} the Lich King raises the strongest of them as a Death Knight${dk?' or feeds the one he has':''}; then every ${REALM.cov2.need} graves. They crumble if the Lich King dies.`;
-      return `<span class="sc eng" data-pid="${p.id}" style="border-color:${col}" title="${tip}">☠<b>${n}</b><small>/${need} graves${dk?` · ${dk} Death Knight${dk===1?'':'s'}`:''}${due?' · <b>choose</b>':''}${covLich(p)?'':' · no Lich King'}</small></span>`}}catch(e){}
+{const f0=enginePill;enginePill=function(p){try{if(p&&p.fac==='curse'&&typeof cov2On==='function'&&cov2On()){const col=FAC.curse.color,ris=G.units.filter(u=>u.risen&&u.owner===p.id&&alive(u)).length,dk=dkAlive(p)[0],cl=G.units.find(u=>u.st&&u.st.claim===p.id&&alive(u));
+      const tip=`The Risen: an enemy killed by the rot itself (a bite, Requiem or The Last Bell) rises where it fell and fights for you, small and rotting. Only the enemy under Death’s Claim comes back whole, as your Death Knight. They all crumble if the Lich King dies.`;
+      return `<span class="sc eng" data-pid="${p.id}" style="border-color:${col}" title="${tip}">☠<b>${ris}</b><small> risen · ${p.risenN||0} raised${dk?` · Death Knight: ${dk.name}`:cl?` · skull on the ${cl.name}`:''}${covLich(p)?'':' · no Lich King'}</small></span>`}}catch(e){}
   return f0.apply(this,arguments)}}
 var DKPICK={};
 function dkPickShow(pid,tries,force){const p=G&&G.players[pid];if(!p||typeof cov2On!=='function'||!cov2On()||!isHumanTurn()||G.cur!==pid||p.fac!=='curse')return;const os=dkOptions(p);if(os.length<2)return;
@@ -13467,9 +13486,10 @@ function dkPickShow(pid,tries,force){const p=G&&G.players[pid];if(!p||typeof cov
 {const r0=refresh;refresh=function(){const r=r0.apply(this,arguments);try{if(G&&G.realm&&!G.phase&&!G.over&&isHumanTurn()){const p=G.players[G.cur];if(p&&p.fac==='curse'&&p.dkDue>0)setTimeout(()=>dkPickShow(p.id),500);
       const er=document.getElementById('engRow');if(er&&!er._dk){er._dk=1;er.addEventListener('click',()=>{try{const q=G.players[G.cur];if(q&&q.fac==='curse'&&isHumanTurn())dkPickShow(q.id,0,true)}catch(e){}})}}}catch(e){}return r}}
 {const f0=unitStatuses;unitStatuses=function(u){const o=f0.apply(this,arguments);try{const s=u&&u.st;if(s&&o&&o.push&&typeof cov2On==='function'&&cov2On()){const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});const E=REALM.cov2;
-    if(s.claim!=null)add('claim','☠','Claimed',null,'#c8e83a',0,`Death’s Claim: its rots cannot be cleansed and bite ${E.claimBite} harder; if it dies of the rot it is ${E.claimGraves} graves and the next Death Knight`);
+    if(s.claim!=null)add('claim','☠','Claimed',null,'#c8e83a',0,`Death’s Claim: its rots cannot be cleansed and bite ${E.claimBite} harder; if it dies of the rot it comes back whole as the Covenant’s Death Knight`);
     const rp=Math.min(E.ripeMax,Math.max(0,(s.ripe||0)+1-E.ripeFrom));if(rp>0&&curseCount(u)>0)add('ripe','🍂','Ripe rot','+'+rp,'#c9c22e',0,`the rot has been on it for ${s.ripe} turns: its next bite deals ${rp} more (up to +${E.ripeMax}); Requiem reaps that too`);
     if(u.dk)add('dk','⚰','Death Knight',null,'#c8e83a',1,`raised by the Lich King from the ${FAC[u.dkFac]?FAC[u.dkFac].name:'dead'}: its attacks lay Rot; it crumbles if the Lich King dies`);
+    if(u.risen)add('risen','☠','Risen',null,'#c8e83a',1,`risen from the ${FAC[u.dkFac]?FAC[u.dkFac].name:'dead'}: its attacks lay Rot; it loses ${typeof talent==='function'&&talent(G.players[u.owner],'slowrot')?E.slowDecay:E.decay} HP at the end of each of your turns; when it falls its rots leap to the enemies beside it; it crumbles if the Lich King dies`);
     if(s.ghold===2)add('ghold','⛓','Holding',null,'#9aa3b5',0,'it held an enemy last turn: it cannot move this turn');
     if(s.dust)add('dust','⚱','Grave dust',null,'#c8e83a',1,'its next attack lays a second rot')}}catch(e){}return o}}
 if(typeof statusBadges==='function'){const f0=statusBadges;statusBadges=function(u){const o=f0.apply(this,arguments);try{if(u&&u.st&&u.st.claim!=null&&o&&o.push)o.unshift(['curse',0,'#1c2206','#e8ff5a','☠'])}catch(e){}return o}}
