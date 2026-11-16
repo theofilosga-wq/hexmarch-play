@@ -2980,7 +2980,7 @@ function ghoulMark(t){if(cov2On())return;if(!RULES.GHOULS||t.summon||t.monster||
   const by=t.st.curseBy!=null?byId(t.st.curseBy):null;let p=by&&by.owner>=0?G.players[by.owner]:null;
   if(!p||p.fac!=='curse'||!p.alive||tm(p.id)===tm(t.owner))p=G.players.find(x=>x.alive&&x.fac==='curse'&&tm(x.id)!==tm(t.owner));if(!p)return;
   p.ghoulQ=(p.ghoulQ||[]).concat([[t.q,t.r,t.name,rots]])}
-function ghoulFree(q,r,m){return passable(q,r)&&!(G.realm&&q===0&&r===0)&&!m.get(key(q,r))&&!isTrap(q,r)&&!(G.voids&&G.voids[key(q,r)])&&!(G.sinks&&G.sinks[key(q,r)])}
+function ghoulFree(q,r,m){return passable(q,r)&&!(G.realm&&q===0&&r===0)&&!m.get(key(q,r))&&!isTrap(q,r)&&!(G.voids&&G.voids[key(q,r)])&&!(G.sinks&&G.sinks[key(q,r)])&&!(G.realm&&((G.loot||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)||(G.sites||[]).some(x=>x.q===q&&x.r===r)||(G.relics||[]).some(x=>x.carrier==null&&x.q===q&&x.r===r)))/* v245: a Ghoul never steps onto a Crown Stone, loot, a relic or the Priests' fallen relic */}
 const ghoulCap=p=>RULES.GHOULS+(G&&G.realm?Math.floor((G.round-1)/5)+(p&&p.requiems||0):0);// v75 (brief): 2, +1 every 5 rounds, +1 per Requiem
 function ghoulTurn(p){if(!RULES.GHOULS||!p||p.fac!=='curse')return;
   const foes=()=>G.units.filter(v=>v.kind!=='wall'&&v.owner>=0&&!v.statue&&tm(v.owner)!==tm(p.id));
@@ -4030,7 +4030,7 @@ function useAbility(u,k,q,r,dest){
     case 'overload':{const area=shapeCells(u,k,q,r);const ts=areaUnits(u,A,area);for(const t of ts)applyHit(u,t,A);const hitSet=new Set(ts);const A1=Object.assign({},A,{dmg:1,special:null});
       for(const t of ts){const nx=G.units.filter(v=>v.kind!=='wall'&&!hitSet.has(v)&&tm(v.owner)!==tm(u.owner)&&alive(v)&&!v.statue&&!v.egg&&distUU(v,t)===1&&distUU(v,u)>1).sort((a,b)=>a.hp-b.hp||a.id-b.id)[0];
         if(nx){hitSet.add(nx);if(!SIM)vfx({k:'chain',pts:[[t.q,t.r],[nx.q,nx.r]],col:F.color});applyHit(u,nx,A1)}}break}// v77 (owner): the spark chains once per victim
-    case 'channel':/* v230 */case 'prayer':case 'darkprayer':/* v228 */case 'hailstorm':/* v227 */case 'brand':case 'blackpyre':/* v225 */case 'wintergrasp':/* v226 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':case 'claim':case 'gravehold':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
+    case 'channel':/* v230 */case 'prayer':case 'darkprayer':/* v228 */case 'hailstorm':/* v227 */case 'brand':case 'blackpyre':/* v225 */case 'wintergrasp':/* v226 */case 'timelock':case 'dashstrike':case 'stasisfield':case 'decoy':case 'stealtime':case 'snatch':case 'revert':case 'twingates':case 'lifegate':case 'riftshot':case 'abduct':case 'collapse':case 'oozesplit':case 'engulf':case 'devour2':case 'oozeburst':case 'flood':case 'slimespawn':case 'acidflask':case 'coalesce':case 'frostmerge':case 'claim':case 'gravehold':case 'borrow':newUse(u,k,A,tgt,q,r,dest);break;// v111 (v189: frostmerge)
     default:{
       const area=shapeCells(u,k,q,r);
       const ts=A.aim==='unit'?(tgt?[tgt]:[]):areaUnits(u,A,area);
@@ -6204,7 +6204,7 @@ function synPickOpen(p){return !!(p&&p.cpick&&p.cpick.tok===G.tok&&G.cur===p.id&
 function synPickContract(pid,id){const p=G.players[pid];if(!synPickOpen(p)||!p.cpick.ids.includes(id))return false;const t=byId(id);if(!t||!alive(t))return false;
   const old=byId(p.contract.id);p.contract={id,left:p.contract.left};p.cpick=null;if(!SIM){if(old!==t){addLog(p.id,`The informants' tip: the contract moves to the ${t.name} (${Math.ceil(t.hp)} HP).`);fx(t,'contract','#ffd766')}nTrk('chrono','','Contracts chosen',e=>e.uses++)}return true}
 function synPrice(p,it){const S=REALM.syn2;return it==='favour'?S.favour:it==='hire'?S.hire:it==='hour'?S.hour+S.hourStep*(p.hourN||0):99}
-const synFavourUnits=p=>G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&alive(v)&&abilsOf(v).some(k=>cdOf(v,k)>0));
+const synFavourUnits=p=>G.units.filter(v=>v.owner===p.id&&v.kind!=='wall'&&alive(v)&&(abilsOf(v).some(k=>cdOf(v,k)>0)||(RULES.SYN_BORROW&&v.st&&(v.st.debt||v.st.serve))));/* v245: a unit in debt can be bought a Favour too */
 const synHireList=p=>[...new Set((p.fallen||[]).filter(n=>{const d=FAC[p.fac].units.find(x=>x.name===n);return d&&!d.leader}))];/* the types the crew has lost, never the Broker; each fallen unit can be replaced once */
 function synCanBuy(p,it){if(!syn2(p)||(p.coins||0)<synPrice(p,it))return false;if(it==='favour')return synFavourUnits(p).length>0;if(it==='hire')return synHireList(p).length>0&&realmSpots(p).length>0;return it==='hour'}
 const synAnyBuy=p=>['favour','hire','hour'].some(it=>synCanBuy(p,it));
@@ -7529,7 +7529,50 @@ function gravePath(u,from,to){const D=hd(from[0],from[1],to[0],to[1]);if(D<=1)re
   return r}}
 try{FAC.curse.passive=FAC.curse.passive.replace('A grave is destroyed when an enemy unit steps onto it, or when an enemy ability changes the ground of its hex.','A grave is destroyed when an enemy unit steps onto it or walks over it (flyers and teleporters only where they land), or when an enemy ability changes the ground of its hex.')}catch(e){}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v243 2026-11-16";
+/* v245 THE CHRONO SYNDICATE LIVES ON BORROWED TIME (owner, 16 Nov 2026: "let's go and build the chrono"; the design he called "much better" on 15 Nov).
+   BORROW (every crew member's second ability, free, once a turn): a unit that has moved or acted takes a whole second turn now (move and act again;
+   its rests stay). It then OWES that turn (st.debt): on its side's next turn it stands frozen in time (st.serve: no move, no act, can be hit).
+   A BOUNTY PAYS EVERY DEBT: when the crew collects its contract, every debt is cleared and whoever was paying is free at once.
+   PAID IN FULL (the prize, no summon): at REALM.borrow.freeAt bounties the first Borrow of each turn leaves no debt; one more every freeStep after.
+   Steal Time also moves its ally's debt onto the enemy it robs (that enemy is stunned); Revert also takes the ally's debt onto the Timekeeper;
+   a Favour also clears the debt; a Pickpocket's hit delays its target's abilities; with the Broker dead no new contract is named. */
+RULES.SYN_BORROW=1;REALM.borrow={freeAt:5,freeStep:3};
+function borrowOn(){return !!(G&&G.realm&&RULES.SYN_BORROW)}
+function crewOf(u){return !!(u&&u.kind!=='wall'&&u.owner>=0&&G.players[u.owner]&&G.players[u.owner].fac==='chrono'&&!u.summon)}
+function borrowFreeAll(p){const n=p.rung||0,E=REALM.borrow;return n>=E.freeAt?1+Math.floor((n-E.freeAt)/E.freeStep):0}
+function borrowFree(p){return Math.max(0,borrowFreeAll(p)-(p.borTok===G.tok?(p.borFree||0):0))}
+function debtFree(u){if(!u||!u.st)return false;let was=false;if(u.st.debt){u.st.debt=0;was=true}if(u.st.serve){u.st.serve=0;u.moved=false;u.acted=false;was=true}return was}
+ABIL.borrow={name:'Borrow',cost:0,cd:0,aim:'self',special:'borrow',free:1,bot:'borrow',
+  desc:'Free, once a turn, after this unit has moved or acted: it takes a whole second turn now, moving and acting again (its ability still rests if it was used). It then owes that turn: on your next turn it stands frozen in time, cannot move or act, and can be hit. Collecting the contract clears every debt of the crew at once.'};
+for(const d of FAC.chrono.units)if(!d.ab2&&!d.book)d.ab2='borrow';
+{const f0=canAbil;canAbil=function(u,k){if(k==='borrow'){if(!borrowOn()||!crewOf(u)||G.cur!==u.owner||!(u.moved||u.acted)||u.borT===G.tok||(u.st&&(u.st.serve||u.st.debt||u.st.frozen>0)))return false}return f0.apply(this,arguments)}}
+{const f0=newUse;newUse=function(u,k,A,tgt,q,r,dest){if(A.special==='borrow'){const p=G.players[u.owner];const free=borrowFree(p)>0;u.moved=false;u.acted=false;u.freeMove=0;u.swings=0;u.borT=G.tok;
+    if(free){p.borFree=(p.borTok===G.tok?(p.borFree||0):0)+1;p.borTok=G.tok}else u.st.debt=1;
+    if(!SIM){fx(u,free?'borrowed time: paid in full':'borrowed time','#ffd766');addLog(u.owner,free?`The ${u.name} takes a second turn, paid in full: no debt.`:`The ${u.name} borrows a turn: it acts again now and owes its next turn.`);vfx({k:'buff',at:[u.q,u.r],col:FAC.chrono.color});nTrk('chrono',u.name,free?'Borrow (paid in full)':'Borrow (a turn owed)',e=>e.uses++)}return}
+  return f0.apply(this,arguments)}}
+/* the debt is served at the start of the crew's next turn, and ends with that turn */
+{const f0=beginTurn;beginTurn=function(){const r=f0.apply(this,arguments);try{if(borrowOn()&&!G.over&&!G.phase){const p=G.players[G.cur];if(p&&p.fac==='chrono')for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&u.st&&u.st.debt){u.st.debt=0;u.st.serve=1;u.moved=true;u.acted=true;if(!SIM){fx(u,'pays its borrowed turn','#9aa3b5');nTrk('chrono',u.name,'Debt paid (a turn frozen)',e=>e.uses++)}}}}catch(e){}return r}}
+{const f0=endTurn;endTurn=function(){try{if(borrowOn()&&!G.over&&!G.phase){const pid=G.cur;for(const u of G.units)if(u.owner===pid&&u.st&&u.st.serve)u.st.serve=0}}catch(e){}return f0.apply(this,arguments)}}
+{const f0=syn2Bounty;syn2Bounty=function(p,t,k){const r=f0.apply(this,arguments);try{if(borrowOn()&&p){let n=0;for(const u of G.units)if(u.owner===p.id&&u.kind!=='wall'&&debtFree(u)){n++;if(!SIM)fx(u,'debt paid by the bounty','#ffd766')}if(n&&!SIM){addLog(p.id,`The bounty pays the crew’s debts: ${n} unit${n===1?' is':'s are'} free.`);nTrk('chrono','','Debts paid by a bounty',e=>e.uses+=n)}}}catch(e){}return r}}
+{const f0=synSteal;synSteal=function(u,ally,dest){let owed=false,e=null;try{owed=borrowOn()&&ally&&ally.st&&!!(ally.st.debt||ally.st.serve);e=dest?unitAt(dest.q,dest.r):null}catch(x){}const r=f0.apply(this,arguments);
+  try{if(owed&&e&&alive(e)&&e.kind!=='wall'&&tm(e.owner)!==tm(u.owner)&&debtFree(ally)){freezeT(e,true);tSup('stasisTurns',1);if(!SIM){fx(e,'pays the stolen debt','#ffd766');addLog(u.owner,`The ${u.name} moves the ${ally.name}’s debt onto the ${e.name}: it loses its next turn.`);nTrk('chrono',u.name,'Debt moved onto an enemy',x=>x.uses++)}}}catch(x){}return r}}
+{const f0=synRevert;synRevert=function(u,tgt){let owed=false;try{owed=borrowOn()&&tgt&&tgt!==u&&tgt.st&&!!tgt.st.debt}catch(x){}const r=f0.apply(this,arguments);
+  try{if(owed&&alive(u)&&alive(tgt)){if(tgt.st)tgt.st.debt=0;u.st.debt=1;if(!SIM){fx(u,'takes the debt','#ffd766');addLog(u.owner,`The ${u.name} takes the ${tgt.name}’s debt on itself.`);nTrk('chrono',u.name,'Debt taken over',x=>x.uses++)}}else if(borrowOn()&&tgt&&tgt.st&&owed===false&&tgt.st.debt===undefined){}}catch(x){}return r}}
+{const f0=synBuy;synBuy=function(p,it,arg){let fu=null;try{if(borrowOn()&&it==='favour'){fu=arg!=null?byId(arg):null;if(!fu||fu.owner!==p.id||!synFavourUnits(p).includes(fu))fu=synFavourUnits(p)[0]||null}}catch(x){}const r=f0.apply(this,arguments);try{if(r&&fu&&debtFree(fu)&&!SIM)fx(fu,'favour: debt cleared','#ffd766')}catch(x){}return r}}
+/* no Broker, no new contract */
+{const f0=contractTick;contractTick=function(p){const had=p&&p.contract?p.contract.id:null;const r=f0.apply(this,arguments);try{if(borrowOn()&&p&&p.fac==='chrono'&&p.brokerDead&&p.contract&&p.contract.id!==had&&!G.units.some(u=>u.owner===p.id&&u.leader&&u.kind!=='wall'&&alive(u))){p.contract=null;p.cpick=null;if(!SIM)addLog(p.id,'With the Broker dead nobody names a new contract.')}}catch(x){}return r}}
+/* a Pickpocket's hit lifts a moment of its target's time */
+{const f0=attack;attack=function(u,t){const pick=borrowOn()&&u&&t&&u.name==='Pickpocket'&&crewOf(u)&&t.kind!=='wall'&&t.owner>=0&&tm(t.owner)!==tm(u.owner);const a0=u&&u.acted;const r=f0.apply(this,arguments);try{if(pick&&alive(t)&&u.acted&&!a0)applyDelay(u,t)}catch(x){}return r}}
+FAC.chrono.passive='Living on borrowed time. Phase Walk: every unit moves by teleporting to any free hex within its move range. Borrow: once a turn, a crew member that has moved or acted may take a whole second turn at once; it then owes that turn and stands frozen in time on your next one, helpless. Contracts: the Broker names one enemy at a time; whoever of the crew kills it collects the bounty: 1 coin for Buy Time, one rung of the ladder for good, and EVERY DEBT OF THE CREW IS PAID at once. Paid in full: at 5 bounties the first Borrow of each of your turns leaves no debt; every 3 bounties after that, one more. The Chrono Thief can move an ally’s debt onto the enemy it robs (that enemy loses its turn); the Timekeeper can take an ally’s debt on itself; a Favour clears one. With the Broker dead no new contract is named. '+FAC.chrono.passive.replace(/^Phase Walk:[^.]*\.\s*/,'');
+try{ABIL.stealtime.desc+=' If that ally owes a borrowed turn, the debt moves onto the enemy as well: it is stunned and loses its next turn.';ABIL.revert.desc+=' If that ally owes a borrowed turn, the Timekeeper takes the debt on itself.';ABIL.snatch.desc+=' The Pickpocket’s basic hit also makes its target’s abilities rest 1 turn longer.'}catch(e){}
+NEW_BOT.add('borrow');
+{const f0=newHeur;newHeur=function(u,k,q,r,ctx,dest){const A=ABIL[k];if(A&&A.bot==='borrow'){if(!u.acted)return 0;const p=G.players[u.owner];const free=borrowFree(p)>0;const reach=effMov(u)+1,hit=Math.max(1,effAtk(u)+1);
+    const c=p.contract?byId(p.contract.id):null;const near=ctx.foes.filter(f=>f.owner>=0&&!inert(f)&&distUU(u,f)<=reach);
+    if(c&&alive(c)&&distUU(u,c)<=reach&&c.hp<=hit*1.2)return 5;/* the kill pays the debt */if(free&&near.length)return 2.6;const low=near.find(f=>f.hp<=hit);if(low)return 2.2+(low.leader?2:0);return 0}
+  return f0.apply(this,arguments)}}
+{const f0=kill;kill=function(t){const br=borrowOn()&&t&&t.kind!=='wall'&&t.leader&&crewOf(t)?t.owner:null;const r=f0.apply(this,arguments);try{if(br!=null&&!alive(t)&&G.players[br])G.players[br].brokerDead=1}catch(e){}return r}}
+
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v244 2026-11-16";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -13620,6 +13663,14 @@ function gravesDraw(now){if(!G||!G.realm||!G.graves||!G.graves.length||G.phase||
     ctx.fillStyle='#1b2008';ctx.font=`700 ${Math.round(s*0.7)}px Rajdhani,system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(out?'☠':String(Math.max(1,g.cd||1)),x,y-s*0.05)}
   ctx.restore()}
 {const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{gravesDraw(now)}catch(e){}}}
+
+/* v245: borrowed time on the page */
+{const f0=unitStatuses;unitStatuses=function(u){const o=f0.apply(this,arguments);try{const s=u&&u.st;if(s&&o&&o.push&&typeof borrowOn==='function'&&borrowOn()){const add=(k,ic,nm,n,col,good,tip)=>o.push({k,ic,nm,n,col,good,tip});
+    if(s.debt)add('debt','⏳','Owes a turn',null,'#ffd766',0,'it borrowed a turn: on its side’s next turn it stands frozen in time. Collecting the contract clears it.');
+    if(s.serve)add('serve','⌛','Paying its debt',null,'#9aa3b5',0,'frozen in time this turn: it cannot move or act. Collecting the contract frees it at once.')}}catch(e){}return o}}
+if(typeof statusBadges==='function'){const f0=statusBadges;statusBadges=function(u){const o=f0.apply(this,arguments);try{if(u&&u.st&&(u.st.debt||u.st.serve)&&o&&o.push)o.unshift(['stun',0,'#3a2f08','#ffd766',u.st.serve?'⌛':'⏳'])}catch(e){}return o}}
+{const f0=enginePill;enginePill=function(p){let h=f0.apply(this,arguments);try{if(p&&p.fac==='chrono'&&typeof borrowOn==='function'&&borrowOn()){const fr=borrowFreeAll(p),E=REALM.borrow,n=p.rung||0,owe=G.units.filter(u=>u.owner===p.id&&u.st&&(u.st.debt||u.st.serve)).length;
+      const nx=n<E.freeAt?E.freeAt:E.freeAt+E.freeStep*(fr);h+=`<span class="sc eng" style="border-color:${FAC.chrono.color}" title="Borrow: a crew member takes a second turn now and owes its next one. A bounty pays every debt. Paid in full: free Borrows a turn; the next one comes at ${nx} bounties."><b>${fr}</b><small> free Borrow${fr===1?'':'s'} a turn${owe?` · ${owe} in debt`:''}</small></span>`}}catch(e){}return h}}
 
 /* v117 ACTION CAMERA, stage 1 (owner 23 Oct 2026: "watch attacks and abilities happen, with a camera that follows the attack or the projectile").
    1. On EVERY turn (yours too) an attack, ability or death that happens off screen pulls the camera there; a long shot (5+ hexes) is followed from shooter to target.
