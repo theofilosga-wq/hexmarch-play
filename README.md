@@ -1,6 +1,6 @@
 # Hexmarch play page
 
-Built from the private hexmarch repo, commit 71ea5b8.
+Built from the private hexmarch repo, commit 3151c06.
 
 Play: https://theofilosga-wq.github.io/hexmarch-play/
 Simulation results (War Room): https://theofilosga-wq.github.io/hexmarch-play/war-room.html
