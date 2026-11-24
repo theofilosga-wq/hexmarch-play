@@ -7757,7 +7757,7 @@ function crewSwap(L,name){if(L.includes(name)||!L.length)return L;const cnt={};f
 RULES.DRAIN_ROOT=1;
 function drainRootAt(u){return Math.max(1,drainNeed(u)-1)}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v263 2026-11-24";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v264 2026-11-24";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -9751,7 +9751,7 @@ function fxMarker(b,t0,dur,rad,col,close){const T=THREE,e={t0,dur,g:new T.Group(
   e.update=(k,now)=>{m.opacity=(0.35+0.4*k)*(0.75+0.25*Math.sin(now/60));const q=close===false?rad*(0.3+0.7*k):rad-(rad-1)*k;r2.scale.set(q,q,1)};return fxAdd(e)}
 function fxJet(a,b,t0,dur,rad,pal){const T=THREE,c=(pal||PAL.fire),dir=new T.Vector3(b[0]-a[0],b[1]-a[1],b[2]-a[2]),L=dir.length()||1;dir.normalize();const e={t0,dur,g:new T.Group()},up=new T.Vector3(0,1,0),mk=(r,cc,sp)=>{const mat=fxMat({mask:3,erode:0.26,rx:2.4,ry:1.6,s1y:sp,s2y:sp*0.6,s2x:0.3,c0:cc[0],c1:cc[1],c2:cc[2]}),m=fxMesh(new T.ConeGeometry(r,1,16,1,true),mat);m.quaternion.setFromUnitVectors(up,dir.clone().multiplyScalar(-1));e.g.add(m);return m},o=mk(rad,c.o,2.6),i=mk(rad*0.55,c.i,3.4);
   e.update=(k,now)=>{const g=Math.min(1,k*5),len=L*g,out=k>0.75?(k-0.75)/0.25:0;for(const m of [o,i]){m.material.uniforms.uTime.value=now/1000;m.material.uniforms.uErode.value=(m===o?0.26:0.3)+0.7*out;m.scale.set(1+0.06*Math.sin(now/50),len,1+0.06*Math.cos(now/60));m.position.set(a[0]+dir.x*len/2,a[1]+dir.y*len/2,a[2]+dir.z*len/2)}};return fxAdd(e)}
-const fxSnd=(k,ms)=>{try{if(typeof playSound!=='function')return;if(ms)setTimeout(()=>{try{playSound(k)}catch(e){}},ms);else playSound(k)}catch(e){}};
+const fxSnd=(k,ms)=>{try{if(typeof playSound!=='function')return;if(k==='cast'&&GLFX.sk)k=GLFX.sk;/* v264: inside an ability's effect the plain chime becomes the army's voice */if(ms)setTimeout(()=>{try{playSound(k)}catch(e){}},ms);else playSound(k)}catch(e){}};
 
 FXA.kindle=(ev,t0)=>{const a=fxP(ev.from,1.6),b=fxP(ev.to,0.25),cells=(ev.cells&&ev.cells.length?ev.cells:fxRing6(ev.to)).slice(0,40),t1=t0+1080;fxDark(t0,3900,0.64);fxSnd('cast');fxSnd('ult',1080);
   fxMarker(b,t0,1080,2.6);fxGlow(a[0],a[1],a[2],'#ff5a1a',t0,760,0.3,2.3);fxEmbers(a[0],a[2],t0,800,18,1.2);fxLit(a[0],a[1],a[2],'#ff6a1a',t0,900,2.2,8);fxBall(a,b,t0+700,380,0.5,1.1);
@@ -10023,7 +10023,7 @@ FXK.btell=(ev,t0)=>{const cells=(ev.cells||[]).slice(0,40);if(!cells.length)retu
   fxGlow(m[0],m[1],m[2],'#a24aff',t,900,0.4,2.4);fxGlow(m[0],m[1],m[2],'#ffffff',t+250,500,0.15,0.9);fxLit(m[0],m[1],m[2],'#a24aff',t,1100,2.2,16);fxSnd('cast',Math.max(0,t-t0));
   if(ev.kind!=='roar'){fxBeam(m,[g[0],g[1]+0.4,g[2]],'#d9a8ff',t+300,520,0.07);fxMarker(g,t+420,800,ev.kind==='spit'?1.9:1.5,'#d9a8ff',true)}else fxRingHard(g,t+300,800,6.5,'#b06bff');
   fxHexes(cells,c,t+430,1100,55,'#b06bff');return Math.round(t-t0+1250)};
-
+{const f0=glFx;glFx=function(ev,t0){try{GLFX.sk=(ev&&ev.k==='ab'&&typeof sndAb==='function')?sndAb(ev):null}catch(e){GLFX.sk=null}try{return f0(ev,t0)}finally{GLFX.sk=null}}}
 
 /* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
 /* v257: the land is rebuilt at the moment the Beast lands, which holds the page for about half a second. A flash of light covers the board for
@@ -10064,7 +10064,26 @@ function playSound(k){if(!SND.on||!SND.ok)return;const n=performance.now();if(SN
   else if(k==='death'){noise(0,0.3,0.26,700);tone(110,0,0.35,'triangle',0.12,45)}
   else if(k==='ann'){[392,523.3,659.3].forEach((f,i)=>tone(f,i*0.09,0.42,'triangle',0.11));tone(98,0,0.5,'sawtooth',0.06,82)}// announcement banner: a short rising fanfare
   else if(k==='turn'){tone(659.3,0,0.22,'sine',0.08);tone(987.8,0.12,0.36,'sine',0.07)}// your turn: a two-note chime
+  /* v264 A VOICE PER ARMY: an ability sounds like the army that casts it (all short and quiet, the same loudness as the old chime) */
+  else if(k==='fire'){noise(0,0.5,0.2,650);tone(123.5,0,0.45,'sawtooth',0.1,62);tone(370,0.03,0.25,'triangle',0.05,185)}// a low rush of flame
+  else if(k==='ice'){[1568,2093,2637].forEach((f,i)=>tone(f,i*0.04,0.34,'triangle',0.06));noise(0,0.1,0.07,6000);tone(784,0.1,0.5,'sine',0.04)}// glass and frost
+  else if(k==='holy'){[523.3,659.3,784,1046.5].forEach((f,i)=>tone(f,i*0.03,0.9,'sine',0.055))}// a soft major chord
+  else if(k==='dark'){[196,233.1,277.2].forEach((f,i)=>tone(f,i*0.05,0.7,'triangle',0.07));noise(0,0.4,0.08,420)}// a low minor murmur
+  else if(k==='steel'){tone(1244.5,0,0.22,'triangle',0.07,1174.7);tone(1661.2,0,0.16,'square',0.03);noise(0,0.07,0.12,3200);tone(146.8,0,0.2,'sawtooth',0.06,110)}// a short clang
+  else if(k==='stone'){tone(73.4,0,0.5,'sine',0.2,41);noise(0,0.38,0.24,380);noise(0.12,0.3,0.1,900)}// a heavy thud and rubble
+  else if(k==='rift'){tone(82.4,0,0.6,'sawtooth',0.1,55);tone(87.3,0,0.6,'sawtooth',0.07,58);tone(311.1,0.05,0.45,'sine',0.06,466.2)}// two low voices out of tune
+  else if(k==='time'){tone(1760,0,0.06,'square',0.08);tone(1318.5,0.11,0.06,'square',0.08);tone(880,0.22,0.3,'sine',0.1,440)}// two ticks and a falling note
+  else if(k==='nature'){tone(392,0,0.5,'sine',0.07);tone(587.3,0.08,0.5,'sine',0.06);noise(0.02,0.3,0.05,1800)}// breath and two notes
+  else if(k==='heal'){tone(659.3,0,0.35,'sine',0.1,880);tone(987.8,0.12,0.45,'sine',0.07,1318.5)}// two rising notes
+  else if(k==='roar'){noise(0,1.2,0.4,520);tone(61.7,0,1.2,'sawtooth',0.2,36.7);tone(92.5,0.05,0.9,'sawtooth',0.1,49)}// the Beast roars
+  else if(k==='beastmark'){tone(65.4,0,1.0,'sine',0.16,98);tone(196,0.3,0.7,'triangle',0.05,207.7);noise(0.2,0.5,0.05,500)}// the Beast gathers: a low note that climbs
+  else if(k==='crown'){[392,523.3,659.3,784,1046.5].forEach((f,i)=>tone(f,i*0.11,0.7,'triangle',0.1));tone(98,0,1.1,'sawtooth',0.08,98);noise(0.5,0.4,0.06,3000)}// a King is crowned
+  else if(k==='point'){tone(1318.5,0,0.3,'sine',0.09);tone(1975.5,0.09,0.5,'sine',0.07)}// a point scored
+  else if(k==='call'){tone(220,0,0.3,'triangle',0.13,330);tone(330,0.18,0.35,'triangle',0.1)}// a unit answers the call
 }
+/* which voice an ability has: the caster's army (a Priest in shadow sounds dark) */
+const SND_ARMY={fire:'fire',ice:'ice',arcane:'holy',warband:'steel',giants:'stone',curse:'dark',chrono:'time',rift:'rift',mage:'nature',ooze:'dark'};
+function sndAb(ev){try{let f=ev.fac,u=null;if(ev.from&&typeof unitAt==='function')u=unitAt(ev.from[0],ev.from[1]);if(!f&&u&&u.owner>=0)f=P(u.owner).fac;if(f==='arcane'&&u&&u.shadow)return 'dark';const A=typeof ABIL!=='undefined'&&ABIL[ev.ab];if(A&&A.heal&&!A.dmg)return 'heal';/* a pure heal sounds like one, whatever the army */return SND_ARMY[f]||'cast'}catch(e){return 'cast'}}
 function resetVFX(skipExisting){ANIMS.length=0;fxSeen=skipExisting&&G&&G.fxLog&&G.fxLog.length?G.fxLog[G.fxLog.length-1].id:0;
   annSeen=skipExisting&&G&&G.annLog&&G.annLog.length?G.annLog[G.annLog.length-1].id:0;if(typeof annClear==='function')annClear()}
 function vUnit(){return VIEW==='3d'?CAM.S:SZ}
@@ -10113,7 +10132,7 @@ function pumpVFX(now){
     if(ev.k==='death'&&(ev.leader||ev.big))shakeUntil=now+320;
     if(ev.k==='thefall'&&typeof fitBoard==='function'){window.FALL_HOLD=Date.now()+FALL_WAIT+4400;window.FALL_LAND=Date.now()+FALL_WAIT+4200*0.38;{const rd=()=>{try{if(typeof GL!=='undefined'&&GL)GL.sig='';if(typeof refresh==='function')refresh()}catch(x){}};setTimeout(rd,30);const rd2=()=>{if(fallPre()){setTimeout(rd2,Math.min(400,Math.max(30,window.FALL_LAND-Date.now()+40)));return}fallFlash(rd)};setTimeout(rd2,FALL_WAIT+4200*0.38+40)}try{if(typeof glModel==='function'&&typeof MODELS!=='undefined'&&MODELS['Rift Beast']){const f=MODELS['Rift Beast'].file;glModel(typeof f==='function'?f():f).catch(()=>{})}}catch(x){}try{fitBoard()}catch(x){}setTimeout(()=>{try{fitBoard()}catch(x){}},150);setTimeout(()=>{try{if(G&&typeof frameArmy==='function'){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human')||{}).id;if(me!=null)frameArmy(me)}}catch(x){}},FALL_WAIT+4500)}// v100: the whole board for the Fall, then back to your army
     if(ev.k==='ult')playSound(ev.team?'team':'ult');if(ev.k==='relic')relicArrived(ev);if(ev.k==='well'){playSound('cast');if(ev.msg)toast(ev.msg,3200)}if(ev.k==='reveal')playSound('reveal');if(ev.k==='death')playSound(ev.leader?'leader':'death');
-    if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain'||ev.k==='bsweep')playSound('hit');if(ev.k==='bspit')playSound('cast');if(ev.k==='broar')playSound('ult');if(ev.k==='crack')playSound('crack');if(ev.k==='ab'&&ev.shape!=='gainap')playSound('cast');
+    if(ev.k==='slash'||ev.k==='bolt'||ev.k==='lob'||ev.k==='chain'||ev.k==='bsweep')playSound('hit');if(ev.k==='bsweep'||ev.k==='bspit')playSound('rift');if(ev.k==='broar')playSound('roar');if(ev.k==='btell')playSound('beastmark');if(ev.k==='rise')playSound('call');if(ev.k==='crack')playSound('crack');if(ev.k==='ab'&&ev.shape!=='gainap')playSound(sndAb(ev));
     if(ev.k==='ab'&&ev.ab==='coil')ev.col=FAC.gnomes.color;
     // Act 1 announcements (v23): a message on screen and a sound; the pictures are drawn below
     // with announcements on, the banner replaces the toast for the wall, the beast and the Wellspring; the round-before warnings stay toasts
@@ -11692,7 +11711,7 @@ function annNext(){
   el.innerHTML=`<div class="ann-t">${x.t}</div>${x.s?`<div class="ann-s">${x.s}</div>`:''}`;
   el.style.setProperty('--annc',x.col||'#e8b84e');el.dataset.k=e.k;el.classList.toggle('moment',isMoment(e));annPlace(el);
   el.hidden=false;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
-  if(typeof playSound==='function')playSound(isMoment(e)?'ult':'ann');
+  if(typeof playSound==='function')playSound(({king:'crown',throne:'crown',score:'point',steal:'point',chest:'relic',loot:'relic'})[e.k]||(isMoment(e)?'ult':'ann'));/* v264: the crowning, a point and a prize have their own sound */
   ANN.t=setTimeout(()=>{el.classList.remove('show');ANN.t=setTimeout(()=>{el.hidden=true;ANN.cur=null;annNext()},300)},isMoment(e)?3800:3000)}
 function annClear(){ANN.q.length=0;clearTimeout(ANN.t);ANN.cur=null;const el=$('#annBanner');if(el){el.hidden=true;el.classList.remove('show')}ANN.feed.length=0;annFeedRender()}
 function annSet(on){ANN.on=on;try{localStorage.setItem('hexmarch.ann',on?'on':'off')}catch(e){}if(!on)annClear();syncAnnBtn()}
