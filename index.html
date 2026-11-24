@@ -636,6 +636,87 @@ body:not(.home) #histTopBtn{display:none}/* v170b: match history lives on the ho
 .funbox label{font-size:13px;opacity:.8;margin-top:6px}.funbox input{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:inherit}
 @media (prefers-reduced-motion:reduce){#engRow .sc.eng.bump{animation:none}}
 
+/* v255 THE GAME SCREEN (owner 24 Nov 2026: "you can't play it full screen like League of Legends: it takes your whole screen and anything you need to
+   know or input is done in that screen, no side panel"). On a laptop (body.focus.fwide) the board is the whole screen; the turn bar, the score, the
+   unit's buttons and End turn float over it. The unit card is a floating sheet opened with Details (or the C key). Phones are untouched. */
+body.focus.fwide .wrap{padding:0!important}
+body.focus.fwide .game>div:first-child{display:flex!important;flex-direction:column;position:relative;height:100dvh;pointer-events:none;padding:8px 12px 0;box-sizing:border-box}
+body.focus.fwide .boardbox{position:absolute!important;inset:0;z-index:0;border:0;border-radius:0;pointer-events:auto;max-width:none!important;height:auto;scrollbar-width:none}
+body.focus.fwide .boardbox::-webkit-scrollbar{display:none}
+body.focus.fwide .game>div:first-child::before{content:"";position:absolute;left:0;right:0;top:0;height:120px;z-index:1;pointer-events:none;background:linear-gradient(rgba(6,8,13,.78),rgba(6,8,13,0))}
+body.focus.fwide .game>div:first-child::after{content:"";position:absolute;left:0;right:0;bottom:0;height:150px;z-index:1;pointer-events:none;background:linear-gradient(rgba(6,8,13,0),rgba(6,8,13,.7))}
+body.focus.fwide .turnbar,body.focus.fwide .scorestrip,body.focus.fwide .engrow,body.focus.fwide #doomBanner{position:relative;z-index:5;pointer-events:none;background:none!important;flex:none;overflow:visible}
+body.focus.fwide .turnbar>*,body.focus.fwide .scorestrip>*,body.focus.fwide .engrow>*,body.focus.fwide #doomBanner{pointer-events:auto}
+body.focus.fwide .turnbar .spacer{pointer-events:none}
+body.focus.fwide .turnbar{flex-wrap:nowrap!important;gap:8px;margin:0 0 6px;padding:0}
+body.focus.fwide .turnbar #apBox{order:0!important;flex:0 1 auto!important;color:#dfe5f0;text-shadow:0 1px 4px #000;font-size:13.5px}
+body.focus.fwide .turnbar .chip#curChip{flex:0 0 auto!important;background:rgba(14,18,27,.86);backdrop-filter:blur(6px)}
+body.focus.fwide .turnbar .btn.sm,body.focus.fwide .scorestrip .sc,body.focus.fwide .engrow .sc{background:rgba(14,18,27,.82);backdrop-filter:blur(6px)}
+body.focus.fwide .scorestrip,body.focus.fwide .engrow{text-shadow:0 1px 4px #000}
+body.focus.fwide #rulesPlayBtn{order:20}body.focus.fwide #menuBtn{order:21}
+body.focus.fwide .turnbar .spacer{order:10;flex:1 1 auto}
+/* End turn, Undo and the Ultimate: bottom right, where a game keeps them */
+body.focus.fwide #endBtn{position:fixed;right:18px;bottom:18px;z-index:7;font-size:19px;padding:15px 30px;border-radius:14px;box-shadow:0 8px 26px rgba(0,0,0,.55)}
+body.focus.fwide #undoBtn{position:fixed;right:18px;bottom:84px;z-index:7;background:rgba(14,18,27,.9)!important;padding:9px 16px;font-size:14.5px}
+body.focus.fwide #ultBtn{position:fixed;right:18px;bottom:132px;z-index:7;background:rgba(14,18,27,.92);padding:10px 16px;font-size:15px;max-width:260px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+body.focus.fwide #takeBots{position:fixed;right:18px;bottom:182px;z-index:7}
+/* the unit's buttons and your units: one bar, bottom centre */
+body.focus.fwide .dock{position:absolute!important;left:0;right:0;bottom:12px;margin:0 auto!important;width:min(1000px,calc(100vw - 470px));min-width:520px;z-index:6;pointer-events:none;overflow:visible!important;display:flex;flex-direction:column-reverse;gap:6px;padding:0!important;max-height:none;font-size:14px}
+body.focus.fwide .dock>*{pointer-events:auto}
+body.focus.fwide .dock .actionbar{background:rgba(16,20,30,.9);backdrop-filter:blur(8px);border-color:#2f3a50;box-shadow:0 10px 34px rgba(0,0,0,.55);padding:10px 12px;gap:8px;border-radius:14px}
+body.focus.fwide .dock .abtn{flex:1 1 0;min-width:104px;min-height:52px;font-size:14px;padding:6px 8px}
+body.focus.fwide .dock .ab-btns{flex-wrap:wrap;gap:6px}
+body.focus.fwide .dock .ab-head{align-items:center}body.focus.fwide .dock .ab-head img{width:40px;height:40px}
+body.focus.fwide .dock .ab-sub{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.focus.fwide .dock .actionbar>.ab-sub{white-space:normal}
+body.focus.fwide .dock .actionbar{position:relative}
+body.focus.fwide .dock .ab-desc{position:absolute;left:0;right:0;bottom:calc(100% + 8px);background:rgba(16,20,30,.96);border:1px solid #2f3a50;border-radius:12px;padding:10px 12px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.55);display:none;z-index:3}
+body.focus.fwide .dock .actionbar.tip .ab-desc{display:block}
+body.focus.fwide .dock .abtn small{font-size:12px}
+body.focus.fwide .dock .unitstrip{position:fixed;left:12px;bottom:14px;top:auto;flex-direction:column-reverse;flex-wrap:wrap-reverse;align-content:flex-start;max-height:calc(100dvh - 190px);width:auto;overflow:visible;padding:0;gap:5px;z-index:6}
+body.focus.fwide .dock .unitstrip::-webkit-scrollbar{display:none}
+body.focus.fwide .dock .uchip{width:58px;font-size:12px;background:rgba(16,20,30,.88);backdrop-filter:blur(6px)}
+body.focus.fwide .dock .uchip img{width:34px;height:34px}body.focus.fwide .dock .uchip .hp{width:44px;height:4px}
+body.focus.fwide .dock .tgts{flex-wrap:nowrap;overflow-x:auto;max-height:none}
+body.focus.fwide .ab-head h3{font-size:18px}
+/* the unit card: a sheet on the right, closed until asked for */
+body.focus.fwide .dock #unitCard{position:fixed;right:18px;top:118px;bottom:236px;width:min(400px,30vw);min-width:330px;margin:0;overflow:auto;z-index:8;background:rgba(16,20,30,.95);backdrop-filter:blur(8px);border-color:#2f3a50;box-shadow:0 14px 44px rgba(0,0,0,.6);font-size:14px;display:none;scrollbar-width:thin}
+body.focus.fwide.hudcard .dock #unitCard{display:block}
+#hudCardX{display:none}
+body.focus.fwide.hudcard #hudCardX{display:inline-flex;position:fixed;right:26px;top:126px;z-index:9;padding:4px 10px}
+body.focus.fwide .menupanel{top:50px;right:12px;max-height:calc(100dvh - 70px);overflow:auto;scrollbar-width:thin}
+body.focus.fwide #tutBox{bottom:auto;top:118px;left:18px;transform:none;width:min(420px,calc(100vw - 36px))}
+body.focus.fwide .toast{bottom:auto;top:128px}
+.menupanel.hudmenu{top:50%!important;left:50%;right:auto!important;transform:translate(-50%,-50%);width:min(940px,calc(100vw - 48px));max-height:calc(100dvh - 60px)!important;padding:22px 24px 24px;border-radius:18px;background:rgba(15,19,28,.97);border-color:#34405a;box-shadow:0 0 0 100vmax rgba(4,6,10,.62),0 30px 80px rgba(0,0,0,.7);gap:14px}
+.menupanel.hudmenu .mtitle{font:900 26px var(--display,sans-serif);letter-spacing:.14em;text-align:center;color:#e8ecf4}.menupanel.hudmenu .mtitle span{color:#e8b84a}
+.menupanel.hudmenu .mgrid{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:20px;align-items:start}
+.menupanel.hudmenu .mcol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.menupanel.hudmenu .mh{font:700 12px var(--display,sans-serif);letter-spacing:.14em;text-transform:uppercase;color:#8d95a9;margin-bottom:4px}
+.menupanel.hudmenu .btn{min-height:40px;font-size:14.5px;justify-content:flex-start;text-align:left;width:100%}
+.menupanel.hudmenu .btn.primary{justify-content:center;min-height:48px;font-size:16px;margin-bottom:6px}
+.menupanel.hudmenu .mleave{margin-top:10px;color:#ffb3b3;border-color:#5a2f36}
+.menupanel.hudmenu .mcol:last-child .btn{min-height:35px;font-size:14px;padding-top:5px;padding-bottom:5px}
+/* v255: while the opening film plays, the game screen shows nothing but the film */
+body.cine.fwide .turnbar,body.cine.fwide .scorestrip,body.cine.fwide .engrow,body.cine.fwide .dock,body.cine #annBanner,body.cine #annFeed,body.cine #uxRing,body.cine .toast{visibility:hidden!important}
+/* v255 THE TITLE SCREEN */
+body.home .brand{display:none}body.home .top{justify-content:flex-end;margin-bottom:10px}
+.hero{position:relative;min-height:calc(100dvh - 96px);border-radius:18px;overflow:hidden;margin-bottom:26px;display:flex;align-items:center;border:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(7,9,14,.96) 0%,rgba(7,9,14,.86) 30%,rgba(7,9,14,.3) 62%,rgba(7,9,14,.1) 100%),url(models/ui/title.jpg) center/cover no-repeat #0a0d12}
+.hero-in{position:relative;z-index:1;padding:36px clamp(20px,5vw,64px);width:min(520px,100%);box-sizing:border-box;display:flex;flex-direction:column;gap:10px}
+.hero-logo{font:900 clamp(40px,6.2vw,78px)/1 var(--display,sans-serif);letter-spacing:.1em;color:#eef1f7;text-shadow:0 4px 30px rgba(0,0,0,.7)}.hero-logo span{color:var(--gold,#e8b84a)}
+.hero-tag{color:#c3cad8;font-size:clamp(14px,1.5vw,18px);letter-spacing:.04em;margin-bottom:18px;text-shadow:0 2px 10px #000}
+.hero-set{display:flex;align-items:center;gap:10px}.hero-set label{font:700 12px var(--display,sans-serif);letter-spacing:.14em;text-transform:uppercase;color:#aab3c5;flex:none}
+.hero-set select{flex:1;min-width:0;font-size:16px;padding:10px 12px;background:rgba(10,13,19,.85)}
+.hero-vs{font-size:13.5px;color:#aab3c5;line-height:1.5;text-shadow:0 1px 6px #000}
+.hero-play{font-size:22px!important;padding:17px 20px!important;border-radius:14px;margin:8px 0 12px;letter-spacing:.06em;box-shadow:0 10px 34px rgba(232,184,74,.22)}
+.hero-menu{display:flex;flex-direction:column;gap:2px}
+.hero-item{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:baseline;gap:12px;padding:10px 12px;border-radius:10px;font:700 18px var(--display,sans-serif);color:#e6eaf2;border-left:3px solid transparent;transition:background .12s,border-color .12s,padding-left .12s}
+.hero-item small{font:400 13px var(--body,sans-serif);color:#8d95a9}
+.hero-item:hover,.hero-item:focus-visible{background:rgba(255,255,255,.07);border-left-color:var(--gold,#e8b84a);padding-left:18px}
+.hero-foot{position:absolute;right:16px;bottom:12px;font-size:11.5px;color:rgba(220,226,238,.55);text-shadow:0 1px 4px #000}
+@media (max-width:760px){.hero{min-height:calc(100dvh - 110px);align-items:flex-end;background:linear-gradient(180deg,rgba(7,9,14,.25) 0%,rgba(7,9,14,.8) 38%,rgba(7,9,14,.97) 70%),url(models/ui/title.jpg) 58% top/auto 62% no-repeat #0a0d12}.hero-in{padding:22px 16px 30px}.hero-item{font-size:16.5px;padding:9px 10px}.hero-item small{display:none}.hero-foot{display:none}}
+body.focus.fwide .menupanel{pointer-events:auto}
+
 </style>
 
 <div class="wrap">
@@ -7660,7 +7741,7 @@ function crewSwap(L,name){if(L.includes(name)||!L.length)return L;const cnt={};f
 RULES.DRAIN_ROOT=1;
 function drainRootAt(u){return Math.max(1,drainNeed(u)-1)}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v254 2026-11-23";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v255 2026-11-24";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -7812,7 +7893,7 @@ function draw3D(now){
     if(u.beast&&fallPre())continue;/* v116: not there until it lands */
     if(u.beast){drawBeast3D(u,pts,x,z,sx,sy,now);queueStatusBadges(ctx,u,sx,sy-CAM.S*0.6,CAM.S*0.5,CAM.S*0.5);continue}
     if(u.cityWall){const [tx,ty]=proj(x,z,0.95);if(u.hp<u.maxhp&&typeof wallPill==='function')wallPill(ctx,u,tx,ty,CAM.S*0.5);if(hl.atk.has(u.id))groundRing(x,z,0.8,'#ff6161',Math.max(2,CAM.S*0.1));drawnUnits.push({u,rect:[sx-0.6*CAM.S,sy-CAM.S*0.9,sx+0.6*CAM.S,sy+0.4*CAM.S],cell:[u.q,u.r]});continue}/* v194: a breakable wall keeps its look */
-    if(u.monster&&GLON){const top=glUnit(u,pts,x,z,now,false);const [tx,ty]=proj(x,z,top+0.15);drawMonster2D(ctx,u,tx,ty-CAM.S*0.32,CAM.S*0.5,now);queueStatusBadges(ctx,u,sx,sy-CAM.S*0.5,CAM.S*0.4,CAM.S*0.45);
+    if(u.monster&&GLON){const top=glUnit(u,pts,x,z,now,false);if(window.INTRO_ON)continue;/* v255: no badges or health pills in the film */const [tx,ty]=proj(x,z,top+0.15);drawMonster2D(ctx,u,tx,ty-CAM.S*0.32,CAM.S*0.5,now);queueStatusBadges(ctx,u,sx,sy-CAM.S*0.5,CAM.S*0.4,CAM.S*0.45);
       if(hl.atk.has(u.id))groundRing(x,z,0.8,'#ff6161',Math.max(2,CAM.S*0.1));drawnUnits.push({u,rect:[sx-0.6*CAM.S,ty-CAM.S*0.9,sx+0.6*CAM.S,sy+0.4*CAM.S],cell:[u.q,u.r]});continue}
     if(u.monster){const crate=u.monster==='crate',top=hexTop(x,z,0.6,crate?0.45:0.3),bot=hexTop(x,z,0.6,0);
       for(let i=0;i<6;i++){const j=(i+1)%6,na=Math.PI/180*(60*i),nz=Math.cos(na)*s+Math.sin(na)*c;if(nz<=0)continue;polyPath([top[i],top[j],bot[j],bot[i]]);ctx.fillStyle=mix(crate?'#6b4423':'#2a2140','#000000',0.4-0.3*nz);ctx.fill()}
@@ -7841,7 +7922,7 @@ function draw3D(now){
     const bar=hasBarrier(u),bk=0.5+0.5*Math.sin(now/520+u.id);
     if(bar){ctx.save();ctx.shadowColor='#ffd766';ctx.shadowBlur=8;for(const [px2,pz2] of pts)groundRing(px2,pz2,0.9,`rgba(255,215,102,${0.5+0.3*bk})`,Math.max(2,CAM.S*0.08));ctx.restore()}
     let headY,baseTop;const [hx]=proj(0,0,0);const face=hx>=sx?1:-1;const fk=FIG_K();
-    if(GLON){const top=glUnit(u,pts,x,z,now,spent);headY=proj(x,z,top+0.1)[1];baseTop=proj(x,z,0.17)[1]}
+    if(GLON){const top=glUnit(u,pts,x,z,now,spent);headY=proj(x,z,top+0.1)[1];baseTop=proj(x,z,0.17)[1];if(window.INTRO_ON)continue}
     else{
     if(big){const [a1,b1]=proj(pts[0][0],pts[0][1],0),[a2,b2]=proj(pts[1][0],pts[1][1],0);
       ctx.save();ctx.lineCap='round';ctx.strokeStyle=mix(col,'#000000',0.35);ctx.lineWidth=CAM.S*0.95*Math.cos(CAM.tilt)+2;ctx.beginPath();ctx.moveTo(a1,b1);ctx.lineTo(a2,b2);ctx.stroke();ctx.restore();
@@ -7915,7 +7996,7 @@ function drawProp3D(f,x,z,sx,sy,s,c,p,now){
 }
 // The Rift Beast (3D): a hunched rift creature over its 3 hexes: dark base, a swollen body with horns, glowing eyes, the HP bar floating above.
 function drawBeast3D(u,pts,x,z,sx,sy,now){const big=pts.length>3;pts=beastHull(pts);const S=CAM.S*(big?2.4:1),V=S*Math.sin(CAM.tilt),br=0.5+0.5*Math.sin((now||0)/380),hit=hl.hitIds.has(u.id);// v80: the city-sized Beast
-  if(window.GLON_NOW){const top=glUnit(u,pts,x,z,now,false);const f=GL.figs.get(u.id+'|'+u.name+'|monster|');if(f&&f.userData.model){// v82b: the real Beast model stands on the hexes; only the ring, the HP bar and the name are drawn here
+  if(window.GLON_NOW){const top=glUnit(u,pts,x,z,now,false);if(window.INTRO_ON)return;const f=GL.figs.get(u.id+'|'+u.name+'|monster|');if(f&&f.userData.model){// v82b: the real Beast model stands on the hexes; only the ring, the HP bar and the name are drawn here
     if(hit||G.inspect===u.id){ctx.save();const base=pts.map(([a,b])=>proj(a,b,0));ctx.beginPath();base.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();ctx.strokeStyle=hit?'#ffaa3c':'#ffffff';ctx.lineWidth=Math.max(2,S*0.12);ctx.stroke();ctx.restore()}
     if(hl.atk.has(u.id))for(const [a,b] of pts)groundRing(a,b,0.84,'#ff6161',Math.max(2,S*0.1));
     const [hx,hy]=proj(x,z,top+0.3);const bw=S*2.2,bh=Math.max(4,S*0.2),bx0=hx-bw/2,by0=hy,pct=Math.max(0,u.hp/u.maxhp);ctx.save();
@@ -10456,7 +10537,7 @@ function netApply(doc){
   const fresh=!old||old.v!==s.v||!old.fxLog||(s.fxLog&&s.fxLog.length&&old.fxLog.length&&s.fxLog[0].id<old.fxLog[0].id&&s.fxSeq<old.fxSeq);
   G=s;
   if(keep&&keep.view===G.cur){G.sel=keep.sel;G.inspect=keep.inspect}
-  if(screen!=='game'){showScreen('game');if(window.innerWidth<700)setFocus(true);layout();centerBoard();resetVFX(true)}
+  if(screen!=='game'){showScreen('game');if(window.innerWidth<700||hudWanted())setFocus(true);layout();centerBoard();resetVFX(true)}
   else if(fresh)resetVFX(true);
   refresh();
   if(G.over){showOver();return}
@@ -11122,7 +11203,17 @@ function renderSetup(){
   // online room: a joiner sees the room's settings (the host decides them); the host's seats live in the Online game box
   const inRoom=typeof netOnline==='function'&&netOnline(),roomGuest=inRoom&&!netIsHost(),roomHostLobby=inRoom&&netIsHost()&&NET.game.status==='lobby';
   const VID=location.hostname.endsWith('github.io')?'':'https://theofilosga-wq.github.io/hexmarch-play/';
-  $('#setupView').innerHTML=`
+  /* v255 THE TITLE SCREEN: the page opens on the game's picture with a short main menu; Play starts the game set up below (you choose your army here) */
+  const hi=Math.max(0,cfg.seats.slice(0,cfg.n).findIndex(x=>x.ctrl==='human')),foes=cfg.seats.slice(0,cfg.n).filter((x,i)=>i!==hi),nBots=foes.filter(x=>x.ctrl==='bot').length;
+  const hero=inRoom?'':`<div class="hero"><div class="hero-in">
+     <div class="hero-logo">HEX<span>MARCH</span></div>
+     <div class="hero-tag">A kingdom, a crown, and what fell on them.</div>
+     <div class="hero-set"><label for="heroFac">You lead</label><select id="heroFac" data-seat="${hi}" aria-label="Your army">${HKEYS().map(k=>`<option value="${k}" ${k===cfg.seats[hi].fac?'selected':''}>${FAC[k].name}${HOME_TIER[k]?' · '+HOME_TIER[k].toLowerCase():''}</option>`).join('')}</select></div>
+     <div class="hero-vs">against ${foes.map(x=>`<b style="color:${FAC[x.fac].color}">${FAC[x.fac].name}</b>`).join(', ')}${nBots?` · ${nBots===foes.length?'':nBots+' '}${({easy:'Easy',normal:'Normal',hard:'Hard'})[cfg.botLevel||'normal']} bot${nBots>1?'s':''}`:''}</div>
+     <button class="btn primary hero-play" id="heroPlay">▶ Play</button>
+     <div class="hero-menu"><button class="hero-item" id="heroTut">Tutorial<small>learn it in 5 minutes</small></button><button class="hero-item" data-go="setupCard">Custom game<small>players, bots, options</small></button><button class="hero-item" data-go="onlineBox">Play online<small>friends on their own devices</small></button><button class="hero-item" data-go="armiesBox">The armies<small>ten armies, every unit in 3D</small></button><button class="hero-item" id="heroRules">How to play<small>the rules, searchable</small></button></div>
+    </div><div class="hero-foot">${typeof VERSION!=='undefined'?VERSION:''}</div></div>`;
+  $('#setupView').innerHTML=hero+`
    <div class="home-top">
     <div class="card" id="setupCard">${roomGuest?netRoomSummary():`
       <div class="label">Play on this device</div>
@@ -11159,11 +11250,13 @@ function renderSetup(){
         <div class="hint" style="margin-top:6px">A narrated video with subtitles. <a href="${VID}tutorial.mp4" target="_blank" rel="noopener" style="color:var(--gold)">Open it in a new tab</a></div></div></div>
     </div>
    </div>
-   <div class="home-info">
+   <div class="home-info" id="armiesBox">
     <div><div class="label">Ten armies <span class="hint" style="text-transform:none;letter-spacing:0">· simplest first · tap an army to open it, a unit to see it in 3D</span></div><div class="facs">${facs}</div>
       <p class="hint" style="margin:12px 0 0">Each army has up to 10 slots (a giant takes 2). <button class="btn sm" id="balBtn2" style="margin-top:6px">See the War Room numbers</button></p></div>
    </div>`;
   {const mo=$('#moreOpts');if(mo)mo.ontoggle=()=>{setupMore=mo.open}}
+  if($('#heroPlay')){$('#heroPlay').onclick=()=>{cfg.vs=false;startGame()};$('#heroTut').onclick=()=>{const b=$('#tutBtn');if(b)b.click()};$('#heroRules').onclick=()=>showRules();
+    $('#setupView').querySelectorAll('.hero-item[data-go]').forEach(b=>b.onclick=()=>{const t=document.getElementById(b.dataset.go);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})}
   if($('#rulesBtn2'))$('#rulesBtn2').onclick=()=>showRules();if($('#quickBtn2'))$('#quickBtn2').onclick=()=>showQuick();
   if($('#vidBtn'))$('#vidBtn').onclick=()=>{const b=$('#vidBox'),open=b.hidden;b.hidden=!open;$('#vidBtn').setAttribute('aria-expanded',String(open));$('#vidBtn').textContent=open?'✕ Hide video':'▶ Video';if(open){const v=$('#tutVideo');if(v)try{v.play()}catch(e){}}};
   $('#setupView').querySelectorAll('button[data-n]').forEach(b=>b.onclick=()=>{cfg.n=+b.dataset.n;if(cfg.n!==4)cfg.map='random';renderSetup()});
@@ -11254,7 +11347,7 @@ function newGameUI(){
   if(cfg.map==='wilds'||cfg.map==='realm'){cfg.n=4;cfg.teams=false;cfg.mode='warlord';wildsSeats()}
   const vs=!!cfg.vs&&cfg.map==='realm';let seatsUsed=seats;if(vs){const me=seats.find(s=>s.ctrl==='human')||seats[0];seatsUsed=[{fac:me.fac,ctrl:'human',talent:me.talent},{fac:'ooze',ctrl:'bot'},{fac:'ooze',ctrl:'bot'},{fac:'ooze',ctrl:'bot'}]}/* v147 Fight the Ooze: you alone against three Ooze bots on one team */
   curtain=null;newGame({n:cfg.n,teams:cfg.teams,vs,mode:cfg.mode,map:['wilds','realm'].includes(cfg.map)?cfg.map:null,collapse:cfg.collapse!==false,deploy:cfg.deploy!==false,relics:cfg.relics!==false,timer:cfg.timer||0,botLevel:cfg.botLevel||'normal',seats:seatsUsed});resetVFX(false);
-  if(window.innerWidth<700&&!document.body.classList.contains('focus'))setFocus(true);
+  if((window.innerWidth<700||hudWanted())&&!document.body.classList.contains('focus'))setFocus(true);
   const firstHuman=G.players.find(p=>p.ctrl==='human');faceHome(firstHuman?firstHuman.id:0);CAM.az=CAM.azT;
   layout();centerBoard();refresh();
   if(firstHuman)setTimeout(()=>{if(G&&screen==='game')frameArmy(firstHuman.id)},140);
@@ -11457,6 +11550,7 @@ function annFeedRender(){const el=$('#annFeed');if(!el)return;const now=Date.now
   el.innerHTML=ANN.feed.map(f=>`<div class="af-i" style="--c:${f.col};animation-delay:-${now-f.t0}ms"><span class="af-r">R${f.round||G.round}</span>${f.t}</div>`).join('')+(!wide&&ANN.feed.length>1?`<span class="af-n">${ANN.fopen?'▾':ANN.feed.length}</span>`:'');
   el.hidden=false;annFeedPlace(el)}
 function annFeedPlace(el){const bb=$('#boardbox');const r=bb&&bb.getBoundingClientRect();if(!r||!r.width)return;
+  if(document.body.classList.contains('fwide')){const a=$('#engRow')||$('#scoreStrip'),ar=a&&a.getBoundingClientRect();el.style.left='';el.style.bottom='';el.style.right='14px';el.style.top=Math.round((ar&&ar.bottom?ar.bottom:96)+10)+'px';el.style.width='270px';el.style.maxWidth='';return}
   const vh=window.innerHeight,vw=window.innerWidth;const bottom=Math.min(r.bottom,vh)-8;
   if(el.classList.contains('wide')){el.style.left='';el.style.right=Math.max(8,vw-Math.min(r.right,vw)+8)+'px';el.style.top='';el.style.bottom=Math.max(8,vh-bottom)+'px';el.style.width=Math.min(270,r.width-24)+'px';el.style.maxWidth=''}
   else{el.style.right='';el.style.left=(Math.max(0,r.left)+8)+'px';el.style.top='';el.style.bottom=Math.max(8,vh-bottom)+'px';el.style.width='';el.style.maxWidth=Math.max(160,Math.min(r.width,vw)-60)+'px'}}
@@ -11625,7 +11719,7 @@ const comfyHex=()=>window.innerWidth<700?(VIEW==='3d'?42:40):(VIEW==='3d'?66:60)
 function hexPx(){return VIEW==='3d'?CAM.S:SZ}
 function selectUnit(u){if(!u)return;G.sel=u.id;G.inspect=null;G.amode=null;G.aim=null;G.tile=null;refresh();
   if(hexPx()<comfyHex()*0.8){const [sx,sy]=screenOf(u.q,u.r);zoomAt(zoom*comfyHex()/hexPx(),sx,sy)}revealUnit(u)}
-function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);const rc=box.getBoundingClientRect(),m=Math.max(40,(VIEW==='3d'?CAM.S:SZ)*1.6);
+function revealUnit(u){const box=$('#boardbox');const [sx,sy]=screenOf(u.q,u.r);const rc=freeRect(box),m=Math.max(40,(VIEW==='3d'?CAM.S:SZ)*1.6,document.body.classList.contains('fwide')?rc.height*0.24:0);/* v255: in the game screen a selected unit is brought well inside the free part, so its move dots do not hide under the bars */
   if(sx<rc.left+m||sx>rc.right-m)box.scrollLeft+=sx-(rc.left+rc.width/2);if(sy<rc.top+m||sy>rc.bottom-m)box.scrollTop+=sy-(rc.top+rc.height/2)}
 /* Status chips (v27, owner: "selecting a unit must show its buffs and debuffs noticeably"): every temporary state the engine keeps on a unit,
    as {k, ic (icon), nm (name), n (turns left, or a short text), col, good, tip}. Shown on the unit card and in the dock header; the board draws
@@ -11789,7 +11883,7 @@ function wireDock(){
   const u=G.sel!=null?byId(G.sel):null;
   on('#abX',()=>{G.sel=null;G.inspect=null;G.amode=null;G.aim=null;refresh()});
   on('#abNext',nextUnit);
-  on('#abInfo',()=>{if(document.body.classList.contains('focus'))document.body.classList.add('drawer');else $('#unitCard').scrollIntoView({behavior:'smooth',block:'start'})});
+  on('#abInfo',()=>hudCard());
   on('#abAtk',()=>{const tg=attackTargets(u);if(tg.length===1)attack(u,tg[0]);else{const t=$('.tgts');if(t)t.scrollIntoView({block:'nearest'})}});
   // one button per ability or spell: abAbil, abAbil2, abAbil3 (a spellbook has 2 or 3)
   if(u)abilsOf(u).forEach((k,i)=>on(i?'#abAbil'+(i+1):'#abAbil',()=>aimAbil(u,k)));
@@ -11798,7 +11892,7 @@ function wireDock(){
   document.querySelectorAll('#actionBar [data-atk]').forEach(b=>b.onclick=()=>{const t=byId(+b.dataset.atk);if(t&&u)attack(u,t)});
   document.querySelectorAll('#actionBar [data-aim]').forEach(b=>b.onclick=()=>{const t=byId(+b.dataset.aim);if(!t||!u)return;const k=cells(t).find(([q,r])=>hl.aim.has(key(q,r)));if(!k)return;if(G.aim&&G.aim[0]===k[0]&&G.aim[1]===k[1])castAt(u,G.amode,k[0],k[1]);else{G.aim=k;refresh()}});
   // hover or touch a button: its plain description replaces the line under the buttons; leave it and the default line comes back
-  const dl=$('#abDesc');if(dl){const show=i=>{dl.innerHTML=DOCK_DESC[i]||''};const back=()=>show(+dl.dataset.def);
+  const dl=$('#abDesc');if(dl){const show=i=>{dl.innerHTML=DOCK_DESC[i]||''};{const ab=$('#actionBar');ab.classList.remove('tip');ab.querySelectorAll('.abtn[data-d]').forEach(b=>{b.addEventListener('pointerenter',()=>ab.classList.add('tip'));b.addEventListener('pointerleave',()=>ab.classList.remove('tip'))})}const back=()=>show(+dl.dataset.def);
     document.querySelectorAll('#actionBar [data-d]').forEach(b=>{const i=+b.dataset.d;b.addEventListener('pointerenter',()=>show(i));b.addEventListener('focus',()=>show(i));b.addEventListener('pointerleave',back);b.addEventListener('blur',back);
       b.addEventListener('pointerdown',()=>{show(i);if(b.disabled)setTimeout(back,2600)})})}
 }
@@ -11811,10 +11905,18 @@ function renderMenu(){const m=$('#menuPanel');m.innerHTML=`<button class="btn sm
   m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;m.hidden=true;
     if(k==='info')document.body.classList.add('drawer');if(k==='view')$('#viewBtn').click();if(k==='rot')CAM.azT+=Math.PI/3;if(k==='zin')zoomBtn(1.35);if(k==='zout')zoomBtn(1/1.35);if(k==='fit')fitBoard();if(k==='army'&&G){const me=isHumanTurn()?G.cur:(G.players.find(p=>p.ctrl==='human'&&(!netOnline()||p.uid===NET.me))||{}).id;if(me!=null)frameArmy(me)}
     if(k==='threat'){THREAT_ON=!THREAT_ON;try{localStorage.setItem('hexmarch.threat',THREAT_ON?'on':'off')}catch(e){}toast(THREAT_ON?'Move dots show the damage you would take there next turn, and enemies near your selected unit show how many of its hits they take':'Planning numbers hidden',2600);refresh()}
-    if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='world'&&typeof glWorldSet==='function'){glWorldSet(!glWorldOn());toast(glWorldOn()?'Big world: mountains, trees and walls at the units’ scale (a look test)':'Big world off: the usual board')}if(k==='land'&&typeof landSet==='function'){landSet(!landOn());toast(landOn()?'One land: the prototype landscape (same rules, new ground)':'One land off: the usual board')}if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='fx'&&typeof GLFX!=='undefined'){GLFX.on=!GLFX.on;try{localStorage.setItem('hexmarch.fx',GLFX.on?'on':'off')}catch(e){}if(!GLFX.on&&GLFX.amb){GL.scene.remove(GLFX.amb);GLFX.amb=null}else if(typeof glAmbientBuild==='function')glAmbientBuild();toast(GLFX.on?'3D effects on: flames, light, impacts.':'3D effects off: the flat overlay effects only.',2600)}if(k==='vp'){VP.on=!VP.on;try{localStorage.setItem('hexmarch.vp',VP.on?'on':'off')}catch(e){}layout();toast(VP.on?'Only the visible part of the board is drawn (sharp and light).':'Classic drawing: the whole board is drawn at once.',3000)}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='acam'&&typeof ACAM!=='undefined'){ACAM.on=!ACAM.on;try{localStorage.setItem('hexmarch.actioncam',ACAM.on?'on':'off')}catch(e){}toast(ACAM.on?'Action camera on: the view follows attacks, with slow motion on kills.':'Action camera off.',2600)}if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit')setFocus(false)})}
+    if(k==='ring'){UX.ring=!UX.ring;try{localStorage.setItem('hexmarch.ring',UX.ring?'on':'off')}catch(e){}refresh()}if(k==='kb')kbHelp();if(k==='world'&&typeof glWorldSet==='function'){glWorldSet(!glWorldOn());toast(glWorldOn()?'Big world: mountains, trees and walls at the units’ scale (a look test)':'Big world off: the usual board')}if(k==='land'&&typeof landSet==='function'){landSet(!landOn());toast(landOn()?'One land: the prototype landscape (same rules, new ground)':'One land off: the usual board')}if(k==='topv'){TOPVIEW=!TOPVIEW;try{localStorage.setItem('hexmarch.topview',TOPVIEW?'on':'off')}catch(e){}layout();toast(TOPVIEW?'The camera looks from above while a unit is selected':'The camera stays in the side view')}if(k==='gl'){glSetPref(GL.pref==='off');layout();toast(GL.pref!=='off'?'3D models on':'3D models off: the lighter drawn tabletop is back')}if(k==='fx'&&typeof GLFX!=='undefined'){GLFX.on=!GLFX.on;try{localStorage.setItem('hexmarch.fx',GLFX.on?'on':'off')}catch(e){}if(!GLFX.on&&GLFX.amb){GL.scene.remove(GLFX.amb);GLFX.amb=null}else if(typeof glAmbientBuild==='function')glAmbientBuild();toast(GLFX.on?'3D effects on: flames, light, impacts.':'3D effects off: the flat overlay effects only.',2600)}if(k==='vp'){VP.on=!VP.on;try{localStorage.setItem('hexmarch.vp',VP.on?'on':'off')}catch(e){}layout();toast(VP.on?'Only the visible part of the board is drawn (sharp and light).':'Classic drawing: the whole board is drawn at once.',3000)}if(k==='hp'){SHOW_HP=!SHOW_HP;try{localStorage.setItem('hexmarch.hp',SHOW_HP?'on':'off')}catch(e){}}if(k==='snd')$('#sndBtn').click();if(k==='newroom'){if(MENU_RESET&&Date.now()-MENU_RESET<6000){MENU_RESET=0;netNewSetup()}else{MENU_RESET=Date.now();toast('Tap “New game in this room” again to end this game for everyone and go back to the setup.',5000)}}if(k==='pause')pauseGame();if(k==='ann')annSet(!ANN.on);if(k==='acam'&&typeof ACAM!=='undefined'){ACAM.on=!ACAM.on;try{localStorage.setItem('hexmarch.actioncam',ACAM.on?'on':'off')}catch(e){}toast(ACAM.on?'Action camera on: the view follows attacks, with slow motion on kills.':'Action camera off.',2600)}if(k==='cam'){CAMF.on=!CAMF.on;CAMF.paused=false;try{localStorage.setItem('hexmarch.camfollow',CAMF.on?'on':'off')}catch(e){}toast(CAMF.on?'The camera follows other players’ moves':'The camera stays where you leave it');if(CAMF.on)camTurnStart()}if(k==='quick')showQuick();if(k==='rules')showRules();if(k==='hist'&&window.showHistory)showHistory();if(k==='score')showScoreCard();if(k==='exit'){try{if(WIDE())localStorage.setItem('hexmarch.hud','0')}catch(e){}setFocus(false)}})}
 function readyUnits(){return G.units.filter(u=>u.owner===G.cur&&u.kind!=='wall'&&!inert(u)&&visibleUnit(u)&&(((!u.moved||u.freeMove>0)&&moveOpts(u).size)||attackTargets(u).length||canAbil(u)))}
 function nextUnit(){const r=readyUnits();if(!r.length){toast('Nothing left to do: end your turn');return}const i=r.findIndex(u=>u.id===G.sel);selectUnit(r[(i+1)%r.length])}
-function setFocus(on){document.body.classList.toggle('focus',on);document.body.classList.remove('drawer');$('#focusBtn').textContent=on?(window.innerWidth<700?'✕ Exit':'Exit full screen'):'⛶ Full screen';
+/* v255 THE GAME SCREEN: on a laptop a game opens with the board over the whole screen (hudWanted); the unit card is a floating sheet (hudCard).
+   hexmarch.hud: '0' = the player left it with Exit full screen, '1' = forced (tests). Automated browsers keep the old page unless forced. */
+function freeRect(box){const rc=box.getBoundingClientRect();if(!document.body.classList.contains('fwide'))return rc;const d=$('#actionBar'),dr=d&&d.getBoundingClientRect(),a=$('#engRow')||$('#scoreStrip'),ar=a&&a.getBoundingClientRect();
+  const top=Math.max(rc.top,(ar&&ar.bottom)||0)+6,bottom=Math.min(rc.bottom,dr&&dr.height?dr.top-8:rc.bottom-150),left=rc.left+76,right=rc.right-16;return {left,right,top,bottom,width:right-left,height:bottom-top}}
+function hudWanted(){let v=null;try{v=localStorage.getItem('hexmarch.hud')}catch(e){}if(v==='1')return WIDE();if(v==='0'||navigator.webdriver)return false;return WIDE()}
+function hudCard(on){const b=document.body;if(!b.classList.contains('fwide')){if(b.classList.contains('focus'))b.classList.add('drawer');else{const c=$('#unitCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'})}return}
+  if(on==null)on=!b.classList.contains('hudcard');b.classList.toggle('hudcard',!!on);
+  if(!$('#hudCardX')){const x=document.createElement('button');x.id='hudCardX';x.className='btn sm';x.textContent='✕';x.title='Close (C)';x.onclick=()=>hudCard(false);document.body.appendChild(x)}}
+function setFocus(on){document.body.classList.toggle('focus',on);document.body.classList.remove('drawer');if(!on)document.body.classList.remove('hudcard');$('#focusBtn').textContent=on?(window.innerWidth<700?'✕ Exit':'Exit full screen'):'⛶ Full screen';
   try{if(on&&document.documentElement.requestFullscreen&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
   setTimeout(()=>{layout();centerBoard();if(on&&G&&isHumanTurn())frameArmy(G.cur)},80)}
 function boardMaxH(w){
@@ -11828,6 +11930,7 @@ function boardMaxH(w){
 /* On laptops and desktops (1000 px and wider, not in full-screen play) the dock with the action bar and unit strip moves into the
    right-hand column above the unit card, so the board can use the whole height and the buttons are always in view. */
 function placeDock(){const d=$('#dock'),side=$('aside.side'),bb=$('#boardbox');if(!d||!side||!bb)return;
+  {const uc=$('#unitCard');if(uc&&placeDock.home&&!(WIDE()&&document.body.classList.contains('focus'))&&uc.parentElement!==placeDock.home)placeDock.home.appendChild(uc)}/* v255: the card goes home before the dock moves (leaving full screen used to throw here) */
   const wide=WIDE()&&!document.body.classList.contains('focus');
   if(wide){if(d.parentElement!==side)side.insertBefore(d,$('#unitCard'))}else if(d.previousElementSibling!==bb)bb.insertAdjacentElement('afterend',d);
   document.body.classList.toggle('wide',wide);
@@ -12864,7 +12967,7 @@ cv.addEventListener('pointerdown',e=>{camUserTook();
 let lpTimer=null,lpInsp=false;
 // Long-press: open a unit's full card without selecting or acting.
 function lpInspect(u){if(navigator.vibrate)try{navigator.vibrate(15)}catch(e){}
-  G.inspect=u.id;lpInsp=true;if(document.body.classList.contains('focus'))document.body.classList.add('drawer');else{refresh();$('#unitCard')&&$('#unitCard').scrollIntoView({behavior:'smooth',block:'center'});return}
+  G.inspect=u.id;lpInsp=true;if(document.body.classList.contains('fwide')){refresh();hudCard(true);return}if(document.body.classList.contains('focus'))document.body.classList.add('drawer');else{refresh();$('#unitCard')&&$('#unitCard').scrollIntoView({behavior:'smooth',block:'center'});return}
   refresh()}
 cv.addEventListener('pointermove',e=>{
   if(!ptrs.has(e.pointerId))return;
@@ -12899,7 +13002,7 @@ cv.addEventListener('pointerup',e=>{
 });
 let lastTap=null;
 // Zoom to z (at least the current zoom) and scroll so the given screen point sits in the middle of the board box.
-function centreOn(cx,cy,z){const box=$('#boardbox');if(z&&Math.abs(z-zoom)>0.001)zoomAt(z,cx,cy);const rc=box.getBoundingClientRect();box.scrollLeft+=cx-(rc.left+rc.width/2);box.scrollTop+=cy-(rc.top+rc.height/2)}
+function centreOn(cx,cy,z){const box=$('#boardbox');if(z&&Math.abs(z-zoom)>0.001)zoomAt(z,cx,cy);const rc=window.INTRO_ON?box.getBoundingClientRect():freeRect(box);box.scrollLeft+=cx-(rc.left+rc.width/2);box.scrollTop+=cy-(rc.top+rc.height/2)}
 /* Frame an army: zoom so all its pieces fit the board box with a hex or two to spare, and centre on them (v26). The whole-board view is zoom 1.
    Used at the start of each human turn, when entering full-screen play and from the menu ("Show my army"). */
 /* Follow camera (v31, owner 1 Oct 2026): during turns that are not played on this device (bots, online opponents) the view pulls back to a
@@ -12918,7 +13021,7 @@ function camMediumZoom(){const S0=(zoom=1,layout(),VIEW==='3d'?CAM.S:SZ);const w
 function camPanTo(hexes,smooth){
   const box=$('#boardbox');if(!box||!box.clientWidth||!hexes.length)return false;
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const [q,r] of hexes){const [sx,sy]=screenOf(q,r);x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy);y1=Math.max(y1,sy)}
-  const br=box.getBoundingClientRect(),mx=br.width*0.18,my=br.height*0.18;
+  const br=freeRect(box),mx=br.width*0.18,my=br.height*0.18;
   if(smooth&&x0>=br.left+mx&&x1<=br.right-mx&&y0>=br.top+my&&y1<=br.bottom-my)return false;// already well in view
   const tl=box.scrollLeft+(x0+x1)/2-(br.left+br.width/2),tt=box.scrollTop+(y0+y1)/2-(br.top+br.height/2);
   camStop();const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -12951,7 +13054,7 @@ function frameArmy(pid){if(window.FALL_HOLD&&Date.now()<window.FALL_HOLD)return;
   // v42: the turn starts at a comfortable hex size (comfyHex) centred on the army, even if the whole army no longer fits on screen
   const z=Math.max(1,Math.min(ZMAX,comfyHex()/S));
   zoom=z;layout();bbox();CAM.az=az;
-  const br=box.getBoundingClientRect();
+  const br=freeRect(box);
   box.scrollLeft+=(x0+x1)/2-(br.left+br.width/2);box.scrollTop+=(y0+y1)/2-(br.top+br.height/2)}
 function fitBoard(){zoom=1;layout();centerBoard()}
 cv.addEventListener('pointercancel',e=>{endPtr(e);drag=null;clearTimeout(lpTimer);if(typeof UX!=='undefined'){UX.drag=null;UX.dragTo=null}});
@@ -13026,7 +13129,8 @@ function clickCell(q,r){
 }
 $('#undoBtn').onclick=()=>doUndo();
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!e.target.closest('input,textarea')){e.preventDefault();doUndo()}});
-$('#focusBtn').onclick=()=>setFocus(!document.body.classList.contains('focus'));
+$('#focusBtn').onclick=()=>{const on=!document.body.classList.contains('focus');try{if(WIDE())localStorage.setItem('hexmarch.hud',on?'':'0')}catch(e){}setFocus(on)};
+document.addEventListener('keydown',e=>{if((e.key==='c'||e.key==='C')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&document.body.classList.contains('fwide')&&!/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||'')&&$('#overlay').hidden)hudCard()});
 $('#menuBtn').onclick=e=>{e.stopPropagation();const m=$('#menuPanel');if(m.hidden){renderMenu();m.hidden=false}else m.hidden=true};
 document.addEventListener('pointerdown',e=>{const m=$('#menuPanel');if(m&&!m.hidden&&!e.target.closest('#menuPanel')&&!e.target.closest('#menuBtn'))m.hidden=true});
 $('#infoBtn').onclick=()=>{if(document.body.classList.contains('focus'))document.body.classList.toggle('drawer');else $('#heartCard').scrollIntoView({behavior:'smooth'})};
@@ -13058,7 +13162,7 @@ $('#rotL').onclick=()=>{CAM.azT-=Math.PI/3};
 $('#rotR').onclick=()=>{CAM.azT+=Math.PI/3};
 syncViewButtons();
 if($('#balBtn'))$('#balBtn').onclick=()=>showBalance();/* v137: the Balance report button is gone (owner) */
-$('#setupBtn').onclick=()=>showScreen('setup');
+$('#setupBtn').onclick=()=>{if(document.body.classList.contains('fwide'))setFocus(false);showScreen('setup')};
 $('#pauseBtn').onclick=()=>pauseGame();
 $('#takeBots').onclick=netTakeHost;
 setInterval(()=>{if(G&&screen==='game'&&netOnline()){const tb=$('#takeBots');tb.hidden=!(!netIsHost()&&P(G.cur).ctrl==='bot'&&!G.over&&Date.now()-NET.lastChange>12000)}},3000);
@@ -13176,6 +13280,19 @@ function beastTellDraw(now){if(!G||!G.realm||!G.beastPlan||!G.beastPlan.length||
       const t=(P.k==='sweep'?'SWEEP ':P.k==='spit'?'SPIT ':'ROAR ')+P.main+(P.k==='spit'?'/'+P.splash:'')+' · next round';if(typeof uxPill==='function')uxPill(x,y-fs*1.2,t,'#3a1460','#f0dcff',fs)}catch(e){}}
   ctx.restore()}
 {const f0=sitesDraw;sitesDraw=function(now){f0.apply(this,arguments);try{beastTellDraw(now)}catch(e){}}}
+/* v255 THE GAME MENU: in the laptop game screen the ☰ list of 25 switches becomes one window in three groups (Game, Camera, Settings), opened
+   with ☰ or Esc. The buttons and what they do are the old ones; only where they sit changed. "Leave the game" is new: the page header with
+   New game is hidden in this screen. */
+{const f0=renderMenu;renderMenu=function(){f0.apply(this,arguments);const m=$('#menuPanel');const hud=document.body.classList.contains('fwide');m.classList.toggle('hudmenu',hud);if(!hud)return;
+  const G1=['rules','quick','score','hist','pause','newroom'],G2=['army','fit','zin','zout','rot','view'],bs=new Map([...m.querySelectorAll('[data-m]')].map(b=>[b.dataset.m,b]));
+  const info=bs.get('info');if(info)info.textContent='Battle log and game info';const ex=bs.get('exit');if(ex)ex.textContent='Leave full screen (old layout)';
+  const col=(t,keys)=>{const d=document.createElement('div');d.className='mcol';d.innerHTML='<div class="mh">'+t+'</div>';for(const k of keys){const b=bs.get(k);if(b){d.appendChild(b);bs.delete(k)}}return d};
+  const a=col('Game',G1.concat(['info'])),b=col('Camera',G2),c=col('Settings',[...bs.keys()]);
+  const res=document.createElement('button');res.className='btn primary';res.textContent='▶ Back to the game';res.onclick=()=>{m.hidden=true};a.insertBefore(res,a.children[1]);
+  const lv=document.createElement('button');lv.className='btn sm mleave';lv.textContent='Leave the game';lv.onclick=()=>{if(lv.dataset.sure){m.hidden=true;setFocus(false);showScreen('setup')}else{lv.dataset.sure='1';lv.textContent='Leave? Press again to go to the start screen'}};a.appendChild(lv);
+  m.innerHTML='<div class="mtitle">HEX<span>MARCH</span></div>';const g=document.createElement('div');g.className='mgrid';g.append(a,b,c);m.appendChild(g)}}
+document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!document.body.classList.contains('fwide'))return;const m=$('#menuPanel');if(!m)return;if(!m.hidden){m.hidden=true;return}
+  if(!$('#overlay').hidden||window.INTRO_ON||(G&&(G.sel!=null||G.amode||G.aim||G.inspect!=null))||document.body.classList.contains('hudcard'))return;/* Esc first closes what is open; on an empty screen it opens the menu */renderMenu();m.hidden=false});
 
 /* Tutorial (v39, owner 3 Oct 2026: "make a tutorial"; rebuilt on the Realm in v170). "Play the tutorial" on the home page starts a short guided game:
    the Iron Warband (the introductory army) on the Realm, the other armies passing their turns. A coach box at the top explains one thing at a time and
@@ -13210,7 +13327,7 @@ function startTutorial(){
   for(const c of cand){const o=opts.find(o=>hd(o.q,o.r,c[0],c[1])===1);if(o){imp=c;tgt=[o.q,o.r];break}}
   if(imp){const f=labUnit(1,'Imp',imp[0],imp[1],{dir:0});f.hp=f.maxhp=Math.max(f.maxhp,12)}
   G.ap=G.apMax=99;TUT.on=true;TUT.i=0;TUT.mem={round0:G.round,tgt};
-  if(window.innerWidth<700&&!document.body.classList.contains('focus'))setFocus(true);
+  if((window.innerWidth<700||hudWanted())&&!document.body.classList.contains('focus'))setFocus(true);
   layout();try{frameArmy(0)}catch(e){centerBoard()}refresh();
   tutRender();clearInterval(TUT.timer);TUT.timer=setInterval(tutTick,300)}
 function tutStop(){TUT.on=false;clearInterval(TUT.timer);const b=document.getElementById('tutBox');if(b)b.remove()}
@@ -13493,7 +13610,7 @@ function uxRingBuild(){const el=uxRingEl(),u=uxSel();
     if(r==='ab'){const k=b.dataset.k;if(canAbil(v,k))aimAbil(v,k);else{const st=abState(v,k);toast(`${ABIL[k].name}: ${cdOf(v,k)>0?'resting, '+cdOf(v,k)+' more turn'+(cdOf(v,k)>1?'s':''):v.acted?'already acted this turn':'no target in reach'}${st&&st.text&&cdOf(v,k)<=0&&!v.acted?'':''}.`,2400)}}
     else if(r==='cast'){if(G.aim)castAt(v,G.amode,G.aim[0],G.aim[1])}
     else if(r==='cancel'){G.amode=null;G.aim=null;G.blinkT=null;refresh()}
-    else if(r==='card'){if(document.body.classList.contains('focus'))document.body.classList.add('drawer');else{const c=$('#unitCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'})}}
+    else if(r==='card'){hudCard()}
     else if(r==='x'){G.sel=null;G.amode=null;G.aim=null;refresh()}})}
 // every frame: keep the buttons just above the selected unit's head, hidden while it is off screen or being dragged
 function uxRingPlace(){const el=document.getElementById('uxRing');if(!el||el.hidden)return;const u=uxSel();if(!u||UX.drag&&UX.drag.on){el.style.visibility='hidden';return}
@@ -13698,16 +13815,18 @@ function introCut(f){const b=INTRO.el&&INTRO.el.querySelector('.iblack');if(!b){
 function introLook(q,r,z){const s=screenOf(q,r);centreOn(s[0],s[1],z)}
 function introRun(me){INTRO.on=true;window.INTRO_ON=true;const box=document.getElementById('boardbox'),rc=box.getBoundingClientRect(),F=FAC[me.fac],wide=typeof WIDE==='function'&&WIDE();
   window.FALL_HOLD=(window.FALL_HOLD||Date.now())+INTRO.post;const el=document.createElement('div');el.id='intro';INTRO.el=el;
-  el.style.cssText='position:fixed;z-index:60;left:'+rc.left+'px;top:'+rc.top+'px;width:'+rc.width+'px;height:'+rc.height+'px;pointer-events:none;overflow:hidden;border-radius:14px;font-family:Oxanium,system-ui,sans-serif';
+  const full=document.body.classList.contains('fwide');document.body.classList.add('cine');INTRO.az0=CAM.azT;
+  el.style.cssText=(full?'position:fixed;z-index:60;left:0;top:0;width:100vw;height:100dvh;border-radius:0;':'position:fixed;z-index:60;left:'+rc.left+'px;top:'+rc.top+'px;width:'+rc.width+'px;height:'+rc.height+'px;border-radius:14px;')+'pointer-events:none;overflow:hidden;font-family:Oxanium,system-ui,sans-serif';
   el.innerHTML='<div class="iblack" style="position:absolute;inset:0;background:#05070b;opacity:1;transition:opacity .3s"></div>'
-    +'<div style="position:absolute;left:0;right:0;top:0;height:11%;background:linear-gradient(#05070b,rgba(5,7,11,0))"></div><div style="position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(rgba(5,7,11,0),rgba(5,7,11,.92))"></div>'
-    +'<div class="ititle" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s;text-align:center;padding:0 16px"><div style="font-weight:900;letter-spacing:.14em;font-size:clamp(34px,7vw,86px);color:#e8ecf4">HEX<span style="color:#e8b84a">MARCH</span></div><div style="margin-top:10px;color:#aab3c5;font-size:clamp(13px,1.6vw,20px);letter-spacing:.08em">a kingdom, a crown, and what fell on them</div></div>'
+    +'<div style="position:absolute;left:0;right:0;top:0;height:16%;background:linear-gradient(#05070b 42%,rgba(5,7,11,0))"></div><div style="position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(rgba(5,7,11,0),rgba(5,7,11,.94) 62%,#05070b)"></div><div style="position:absolute;inset:0;box-shadow:inset 0 0 180px 40px rgba(3,4,7,.6)"></div>'
+    +'<div class="ititle" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .9s;text-align:center;padding:0 16px"><div style="font-weight:900;letter-spacing:.14em;font-size:clamp(34px,7vw,86px);color:#e8ecf4">HEX<span style="color:#e8b84a">MARCH</span></div><div style="margin-top:10px;color:#aab3c5;font-size:clamp(13px,1.6vw,20px);letter-spacing:.08em">a kingdom, a crown, and what fell on them</div></div>'
     +'<div class="icap" style="position:absolute;left:0;right:0;bottom:7%;text-align:center;padding:0 18px;transition:opacity .26s;opacity:0"></div>'
     +'<button class="iskip" style="position:absolute;right:12px;top:12px;pointer-events:auto;background:rgba(20,26,38,.85);color:#e8ecf4;border:1px solid #3a465c;border-radius:10px;padding:8px 14px;font:700 14px Oxanium,system-ui,sans-serif;cursor:pointer">Skip ▸</button>'
     +'<style>#intro .ibig{font-weight:800;color:#ffe3a3;font-size:clamp(18px,2.7vw,36px);text-shadow:0 2px 14px #000,0 0 3px #000}#intro .ismall{margin-top:6px;color:#e8ecf4;font-size:clamp(13px,1.5vw,19px);text-shadow:0 2px 10px #000,0 0 3px #000}</style>';
   document.body.appendChild(el);el.querySelector('.iskip').onclick=()=>introSkip();INTRO.key=e=>{if(e.key==='Escape')introSkip()};document.addEventListener('keydown',INTRO.key);
   const P=INTRO.pre,T=el.querySelector('.ititle'),B=el.querySelector('.iblack');
-  introAt(200,()=>{introLook(0,0,wide?2.5:2.1)});introAt(450,()=>{introLook(0,0,wide?2.5:2.1)});
+  introAt(200,()=>{introLook(0,0,wide?2.5:2.1)});introAt(450,()=>{introLook(0,0,wide?2.5:2.1)});introAt(1500,()=>{introLook(0,0,wide?2.5:2.1)});
+  introDrone(P+INTRO.post+4000);introDrift(-0.30,-0.02,6600);introAt(6600,()=>introDrift(0.10,0.34,P-1900-6600+300));introAt(P-1600,()=>introDrift(0,0,1));
   introAt(2300,()=>{T.style.opacity=0;B.style.opacity=0;introCap('A kingdom flourished here.','Its capital, the Crown City, stood on its rock in the heart of the canyon.')});
   introAt(6300,()=>{introCap('');introCut(()=>introLook(0,0,wide?1.45:1.3))});
   introAt(6900,()=>introCap('Its king wanted more.','He gathered the five Crown Stones and set them in his crown.'));
@@ -13718,8 +13837,14 @@ function introRun(me){INTRO.on=true;window.INTRO_ON=true;const box=document.getE
   introAt(P+7300,()=>{introCap('');introCut(()=>{const h=window.FALL_HOLD;window.FALL_HOLD=0;try{frameArmy(me.id)}catch(e){}window.FALL_HOLD=h})});
   introAt(P+7900,()=>introCap('Armies have come through the portals to take what is left.','You lead the '+F.name+'.'));
   INTRO.timers.push(setTimeout(()=>introEnd(),P+4400+INTRO.post-150))}
-function introEnd(){const was=INTRO.on;INTRO.on=false;window.INTRO_ON=false;if(INTRO.key){document.removeEventListener('keydown',INTRO.key);INTRO.key=null}introClear();if(was){try{localStorage.setItem('hexmarch.introN',String(introSeen()+1))}catch(e){}}}
-function introSkip(){if(!INTRO.on)return;const me=G&&G.players.find(p=>p.ctrl==='human');introEnd();try{const v=(typeof ACAM!=='undefined'&&ACAM.v)||performance.now();for(const a of ANIMS)if(a.ev.k==='thefall')a.t0=v-4300;if(typeof GLFX!=='undefined')for(const e of GLFX.live)if(e.t0>v)e.t0=v-1e7;
+/* v255: the camera circles the city slowly during the two city shots (CAM.az around the board's centre), and a low drone plays under the film */
+function introDrift(a,b,ms){cancelAnimationFrame(INTRO.raf||0);const t0=performance.now(),z=INTRO.az0||0;const f=()=>{if(!INTRO.on)return;const k=Math.min(1,(performance.now()-t0)/ms);CAM.az=CAM.azT=z+a+(b-a)*k;if(k<1)INTRO.raf=requestAnimationFrame(f)};f()}
+function introDrone(ms){try{const c=typeof sndCtx==='function'&&sndCtx();if(!c)return;const g=c.createGain(),t=c.currentTime,d=ms/1000;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.11*(SND.vol/0.45),t+2.5);g.gain.setValueAtTime(0.11*(SND.vol/0.45),t+d-3);g.gain.linearRampToValueAtTime(0,t+d);
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(220,t);lp.frequency.linearRampToValueAtTime(520,t+d*0.55);lp.frequency.linearRampToValueAtTime(180,t+d);lp.connect(g);g.connect(c.destination);
+    const os=[55,55.6,82.4,110.3].map((f,i)=>{const o=c.createOscillator();o.type=i<2?'sawtooth':'triangle';o.frequency.value=f;const og=c.createGain();og.gain.value=i<2?0.5:0.3;o.connect(og);og.connect(lp);o.start(t);o.stop(t+d+0.1);return o});INTRO.snd={g,os}}catch(e){}}
+function introQuiet(){const s=INTRO.snd;INTRO.snd=null;if(!s)return;try{const c=SND.ctx,t=c.currentTime;s.g.gain.cancelScheduledValues(t);s.g.gain.setValueAtTime(s.g.gain.value,t);s.g.gain.linearRampToValueAtTime(0,t+0.5);for(const o of s.os)o.stop(t+0.6)}catch(e){}}
+function introEnd(){const was=INTRO.on;INTRO.on=false;window.INTRO_ON=false;document.body.classList.remove('cine');cancelAnimationFrame(INTRO.raf||0);if(was&&INTRO.az0!=null){CAM.az=CAM.azT=INTRO.az0}if(INTRO.key){document.removeEventListener('keydown',INTRO.key);INTRO.key=null}introClear();if(was){try{localStorage.setItem('hexmarch.introN',String(introSeen()+1))}catch(e){}}}
+function introSkip(){if(!INTRO.on)return;const me=G&&G.players.find(p=>p.ctrl==='human');introQuiet();introEnd();try{const v=(typeof ACAM!=='undefined'&&ACAM.v)||performance.now();for(const a of ANIMS)if(a.ev.k==='thefall')a.t0=v-4300;if(typeof GLFX!=='undefined')for(const e of GLFX.live)if(e.t0>v)e.t0=v-1e7;
     window.FALL_LAND=Date.now()-1;window.QUAKE={t0:Date.now()-4000,dur:2300};window.FALL_HOLD=Date.now()+300;if(typeof GL!=='undefined'&&GL)GL.sig='';refresh();if(me)setTimeout(()=>{try{frameArmy(me.id)}catch(e){}},350)}catch(e){}}
 
 /* v238 THE PALE COVENANT on the page: the grave counter, the feed-or-raise window, the skull, the chips */
