@@ -7757,7 +7757,7 @@ function crewSwap(L,name){if(L.includes(name)||!L.length)return L;const cnt={};f
 RULES.DRAIN_ROOT=1;
 function drainRootAt(u){return Math.max(1,drainNeed(u)-1)}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v265 2026-11-24";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v266 2026-11-24";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -10547,7 +10547,7 @@ async function netCreate(){
   const first=seats.findIndex((s,i)=>s.ctrl==='human'&&i<cfg.n);if(first>=0)netClaim(first);
 }
 async function netJoin(code){
-  code=(code||'').toUpperCase().trim();if(!code||!NET.db)return;
+  code=(code||'').toUpperCase().trim();if(!code||!NET.db)return;try{localStorage.setItem('hexmarch.lastroom',code+'|'+Date.now())}catch(e){}/* v266: the code survives a reload, so a friend can come back without asking for it */
   netClear();NET.code=code;NET.seq=0;NET.game=null;NET.seats={};
   const gref=NET.db.doc('games/'+code);
   NET.unsubs.push(gref.onSnapshot(s=>{if(!s.exists){NET.err=(NET.mode==='p2p'&&window.P2P&&P2P.lastError)||`No game with code ${code}.`;NET.code=null;netSetupRefresh();return}const was=NET.game&&NET.game.status;NET.game=s.data();
@@ -10650,7 +10650,10 @@ async function netStart(){
   showScreen('game');newGame({n:c.n,teams:c.teams,mode:c.mode,map:['wilds','realm'].includes(c.map)?c.map:null,collapse:c.collapse!==false,deploy:c.deploy!==false,relics:c.relics!==false,timer:c.timer||0,botLevel:c.botLevel||'normal',seats:seats});resetVFX(false);
   NET.applying=false;
   netStampSeats();
+  /* v266: the host enters the game like everyone else: the full-screen game screen on a laptop, and its opening choice (Leader talent, starting unit) on its first turn */
+  try{if((window.innerWidth<700||hudWanted())&&!document.body.classList.contains('focus'))setFocus(true)}catch(e){}
   layout();centerBoard();refresh();
+  try{if(isHumanTurn()&&typeof openingShow==='function'){const pid=G.cur;setTimeout(()=>{try{openingShow(pid)}catch(e){}},300)}}catch(e){}
   try{await NET.db.doc('games/'+NET.code).update({status:'playing',started:Date.now(),cfg:c})}catch(e){}
   netPush();
   netKick();
@@ -10684,7 +10687,8 @@ function netApply(doc){
   else if(fresh)resetVFX(true);
   refresh();
   if(G.over){showOver();return}
-  if(isHumanTurn()&&!wasMine){toast('Your turn');if(CAM.follow)faceHome(G.cur)}
+  if(isHumanTurn()&&!wasMine){toast('Your turn');if(CAM.follow)faceHome(G.cur);/* v266: what a local turn start does: the opening choice in round 1, the Informants' choice, the camera on your army */
+    const pid=G.cur;try{if(typeof openingShow==='function')setTimeout(()=>{try{openingShow(pid)}catch(e){}},300);if(typeof synPickShow==='function')setTimeout(()=>{try{synPickShow(pid)}catch(e){}},700);setTimeout(()=>{try{if(G&&G.cur===pid&&isHumanTurn())frameArmy(pid)}catch(e){}},150);if(typeof playSound==='function')playSound('turn')}catch(e){}}
   if(typeof camStep==='function'){if(old&&old.cur!==G.cur)camTurnStart();else camStep()}
   netKick();
 }
@@ -10717,7 +10721,7 @@ function renderOnline(){
     el.innerHTML=`<div class="label">Play online</div>${netModeLine()}
       <p class="hint" style="margin:0 0 8px">Friends play from their own phones. ${p2p?'Set the seats in <b>Play on this device</b> (Human for people, Bot for bots), press <b>Create room</b> and share the 4-letter code; friends type it and press <b>Join room</b>.':'Set the seats in <b>Play on this device</b>, then create a game and share its code.'}</p>
       ${p2p?`<div class="row" style="margin-bottom:8px"><label class="hint" for="netName">Your name</label><input id="netName" maxlength="20" placeholder="Name" aria-label="Your name" value="${(P2P.myName()||'').replace(/"/g,'&quot;')}" style="width:130px;${INPUT_STYLE}"></div>`:''}
-      <div class="row"><button class="btn primary sm" id="netCreate">${p2p?'Create room':'Create online game'}</button><input id="netCode" maxlength="4" placeholder="CODE" aria-label="Room code" value="${p2p&&NET.lastCode||''}" style="width:80px;${INPUT_STYLE};text-transform:uppercase"><button class="btn sm" id="netJoinBtn">${p2p?'Join room':'Join'}</button></div>
+      <div class="row"><button class="btn primary sm" id="netCreate">${p2p?'Create room':'Create online game'}</button><input id="netCode" maxlength="4" placeholder="CODE" aria-label="Room code" value="${p2p&&(NET.lastCode||netLastRoom())||''}" style="width:80px;${INPUT_STYLE};text-transform:uppercase"><button class="btn sm" id="netJoinBtn">${p2p?'Join room':'Join'}</button></div>
       ${list?`<div class="label" style="margin-top:12px">Open games</div><div class="seats">${list}</div>`:''}
       ${NET.err?`<p class="hint" style="color:#ffb3b3;margin:8px 0 0">${NET.err}</p>`:''}${netStatusLine()}${p2p?'<details class="more"><summary>About the online beta</summary><p class="hint" style="margin:0">No accounts: the host\'s device holds the game, so the host keeps this page open until the game ends. Nothing is saved: a closed room cannot be resumed. If a friend cannot connect on mobile data, try Wi-Fi.</p></details>':''}`;
     const nm=$('#netName');if(nm){nm.onchange=()=>P2P.setName(nm.value);nm.onblur=()=>P2P.setName(nm.value)}
@@ -10769,6 +10773,7 @@ function renderOnline(){
   const ob=$('#netOpen');if(ob)ob.onclick=()=>{showScreen('game');layout();refresh()};
   $('#netLeave').onclick=netLeave;
 }
+function netLastRoom(){try{const v=(localStorage.getItem('hexmarch.lastroom')||'').split('|');return v[0]&&Date.now()-(+v[1]||0)<3*3600*1000?v[0]:''}catch(e){return ''}}
 
 /* Online beta without accounts: rooms that run phone to phone over WebRTC, using the PeerJS library.
    Used ONLY when the page is not inside claude.ai (no window.claude.use); inside claude.ai nothing here runs.
