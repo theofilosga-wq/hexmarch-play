@@ -716,6 +716,21 @@ body.home .brand{display:none}body.home .top{justify-content:flex-end;margin-bot
 .hero-foot{position:absolute;right:16px;bottom:12px;font-size:11.5px;color:rgba(220,226,238,.55);text-shadow:0 1px 4px #000}
 @media (max-width:760px){.hero{min-height:calc(100dvh - 110px);align-items:flex-end;background:linear-gradient(180deg,rgba(7,9,14,.25) 0%,rgba(7,9,14,.8) 38%,rgba(7,9,14,.97) 70%),url(models/ui/title.jpg) 58% top/auto 62% no-repeat #0a0d12}.hero-in{padding:22px 16px 30px}.hero-item{font-size:16.5px;padding:9px 10px}.hero-item small{display:none}.hero-foot{display:none}}
 body.focus.fwide .menupanel{pointer-events:auto}
+/* v259 THE SHOWCASE (owner's parked wish of October: see the figures up close): on a laptop the unit preview is no side panel any more. It takes
+   the whole screen: the figure large on a dark stage on the left (drag turns it, the wheel comes closer), its name and rules in a column on the right. */
+@media (min-width:1000px){
+  .uprev{pointer-events:auto;place-items:stretch;padding:0;z-index:70}
+  .uprev-back{display:block;background:radial-gradient(ellipse at 36% 46%,#1c2333 0%,#0c0f16 58%,#06080c 100%)}
+  .uprev-card{width:100%;max-width:none;height:100dvh;max-height:none;border:0;border-radius:0;background:transparent;box-shadow:none;padding:26px 30px 26px 0;display:grid;grid-template-columns:minmax(0,1fr) 440px;grid-auto-rows:min-content;column-gap:26px;row-gap:0;overflow:hidden auto;align-content:start}
+  .uprev-card>*{grid-column:2;margin-bottom:10px}
+  .uprev-card .pv-stage{grid-column:1;grid-row:1/span 60;height:calc(100dvh - 52px);margin:0;background:none;position:sticky;top:0;align-items:center;justify-content:center;overflow:hidden}
+  .uprev-card .pv-stage canvas{max-width:none}
+  .uprev-card h2{font-size:34px;letter-spacing:.02em}
+  .uprev-card p{font-size:15.5px}.uprev-card .pv-ab p{font-size:15px}.uprev-card .pv-stats{font-size:16.5px;color:#e8ecf4}
+  .uprev-card .pv-top{position:sticky;top:0;z-index:2}
+  .uprev-card .pv-nav .btn{min-width:54px;min-height:42px;font-size:22px}
+  .uprev-card .pv-stage::after{content:"drag to turn · scroll to zoom · ← → next unit · Esc to close";position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:12.5px;letter-spacing:.06em;color:rgba(200,208,224,.45);pointer-events:none}
+}
 
 </style>
 
@@ -7741,7 +7756,7 @@ function crewSwap(L,name){if(L.includes(name)||!L.length)return L;const cnt={};f
 RULES.DRAIN_ROOT=1;
 function drainRootAt(u){return Math.max(1,drainNeed(u)-1)}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v258 2026-11-24";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v259 2026-11-24";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -9145,7 +9160,7 @@ function glRender(){
   glCamera();GL.R.render(GL.scene,GL.cam)}
 
 /* ---------- the setup screen's unit preview: the same 3D miniature on a small turntable ---------- */
-const PV3={R:undefined,scene:null,cam:null,turn:null,fig:null,t0:0};
+const PV3={R:undefined,scene:null,cam:null,turn:null,fig:null,t0:0,spin:0,pitch:0,zoom:1,drag:null,last:0,big:false,top:1.5,dist:6};
 function glAnimFig(fig,t){const ud=fig.userData,lift=ud.hover?0.25+0.08*Math.sin(t*2.2):0;
   if(ud.hover)for(const ch of fig.children)if(!ch.userData.base){if(ch.userData.y0===undefined)ch.userData.y0=ch.position.y;ch.position.y=ch.userData.y0+lift}
   for(const o of ud.bob){if(o.userData.by===undefined)o.userData.by=o.position.y;o.position.y=o.userData.by+0.06*Math.sin(t*2.6+o.position.x*3);o.rotation.y=t*0.6}
@@ -9157,23 +9172,35 @@ function pvGL(){if(PV3.R!==undefined)return PV3.R;
     const sun=new T.DirectionalLight('#fff0d6',0.9);sun.position.set(-4,8,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-0.0006;Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:0.5,far:30});scene.add(sun);
     const rim=new T.DirectionalLight('#ffd09a',0.45);rim.position.set(5,4,-6);scene.add(rim);
     const cam=new T.PerspectiveCamera(30,240/200,0.1,100);const turn=new T.Group();scene.add(turn);
-    Object.assign(PV3,{R,scene,cam,turn});}catch(e){PV3.R=null}
+    Object.assign(PV3,{R,scene,cam,turn});
+    /* v259 THE SHOWCASE: drag turns the figure (and tips the camera a little), the wheel comes closer */
+    c.style.touchAction='none';c.style.cursor='grab';
+    c.addEventListener('pointerdown',e=>{PV3.drag={x:e.clientX,y:e.clientY,s:PV3.spin,p:PV3.pitch};try{c.setPointerCapture(e.pointerId)}catch(x){}c.style.cursor='grabbing'});
+    c.addEventListener('pointermove',e=>{const d=PV3.drag;if(!d)return;PV3.spin=d.s+(e.clientX-d.x)*0.012;PV3.pitch=Math.max(-0.25,Math.min(0.55,d.p+(e.clientY-d.y)*0.004));if(typeof PV!=='undefined'&&!PV.raf)glPreviewFrame(true)});
+    const up=()=>{PV3.drag=null;c.style.cursor='grab'};c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+    c.addEventListener('wheel',e=>{if(!PV3.big)return;e.preventDefault();PV3.zoom=Math.max(0.55,Math.min(1.5,PV3.zoom*(e.deltaY>0?1.1:0.91)))},{passive:false});}catch(e){PV3.R=null}
   return PV3.R}
 // puts the turntable canvas in place of the old 2D preview canvas; false = keep the 2D drawing
 function glPreview(holder,d,fac,big){const R=pvGL();if(!R||!holder)return false;const T=THREE;
   const old=holder.querySelector('canvas');if(old&&old!==R.domElement)old.replaceWith(R.domElement);else if(!old)holder.appendChild(R.domElement);
   R.domElement.setAttribute('aria-label',d.name+' miniature');
-  const W=Math.min(Math.max(260,(window.innerWidth||360)-48),440),H=Math.round(W*0.85);R.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R.setSize(W,H);PV3.cam.aspect=W/H;PV3.cam.updateProjectionMatrix();// v78b: the turntable fills a phone's width
+  const show=(window.innerWidth||0)>=1000&&holder.clientHeight>300;PV3.big=show;/* v259: on a laptop the figure fills the stage */
+  const W=show?Math.max(320,holder.clientWidth):Math.min(Math.max(260,(window.innerWidth||360)-48),440),H=show?Math.max(320,holder.clientHeight):Math.round(W*0.85);R.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R.setSize(W,H);PV3.cam.aspect=W/H;PV3.cam.updateProjectionMatrix();// v78b: the turntable fills a phone's width
   const turn=PV3.turn;while(turn.children.length){const o=turn.children[0];turn.remove(o);(o.userData.own||[]).forEach(g=>g.dispose())}
   const fig=buildFigure({name:d.name,size:big?2:1},fac);turn.add(fig);PV3.fig=fig;
   // a little island of hexes under the piece, tinted with the army colour (a giant's two hexes sit either side of the centre)
   const geo=gGeo('pvtile',()=>{const g=new T.CylinderGeometry(0.972,0.99,0.4,6);g.translate(0,-0.2,0);return g});
   const cells=[[0,0],[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];if(big)cells.push([2,0],[1,1],[2,-1]);const sh=big?-S3/2:0;
-  for(const [q,r] of cells){const [x,z]=world(q,r);const m=gMesh(geo,gMat(new T.Color(['#5b6150','#565c4c','#606656'][((q-r)%3+3)%3]).lerp(new T.Color(FAC[fac].color),0.25).getStyle(),{roughness:0.95}),x+sh,0,z);m.castShadow=false;turn.add(m)}
-  const top=fig.userData.top||1.5,dist=big?top*2.1+3.2:top*2.7+2.6;PV3.cam.position.set(0,top*0.5+dist*0.38,dist);PV3.cam.lookAt(0,top*0.5,0);PV3.t0=performance.now();
+  if(show){/* a plain round plinth in the army's colour: nothing competes with the figure */const pr=big?2.0:1.25,pl=new T.Mesh(new T.CylinderGeometry(pr,pr*1.04,0.16,56),gMat(new T.Color('#11151d').lerp(new T.Color(FAC[fac].color),0.1).getStyle(),{roughness:0.9}));pl.position.set(0,-0.08,0);pl.receiveShadow=true;pl.userData.own=[pl.geometry];turn.add(pl);
+    const rg=new T.Mesh(new T.TorusGeometry(pr*1.01,0.025,8,72),new T.MeshBasicMaterial({color:new T.Color(FAC[fac].color).lerp(new T.Color('#11151d'),0.35)}));rg.rotation.x=Math.PI/2;rg.position.y=0.005;rg.userData.own=[rg.geometry,rg.material];turn.add(rg)}
+  else for(const [q,r] of cells){const [x,z]=world(q,r);const m=gMesh(geo,gMat(new T.Color(['#5b6150','#565c4c','#606656'][((q-r)%3+3)%3]).lerp(new T.Color(FAC[fac].color),0.25).getStyle(),{roughness:0.95}),x+sh,0,z);m.castShadow=false;turn.add(m)}
+  const top=fig.userData.top||1.5,dist=show?(big?top*1.9+2.6:top*2.15+1.7):(big?top*2.1+3.2:top*2.7+2.6);PV3.top=top;PV3.dist=dist;PV3.spin=0;PV3.pitch=0;PV3.zoom=1;PV3.fit=0;PV3.last=performance.now();PV3.cam.position.set(0,top*0.5+dist*0.38,dist);PV3.cam.lookAt(0,top*0.5,0);PV3.t0=performance.now();
   glPreviewFrame(true);return true}
 function glPreviewFrame(still){if(!PV3.R||!PV3.fig)return;const t=(performance.now()-PV3.t0)/1000;
-  PV3.turn.rotation.y=still?0.35:0.35+t*0.45;glAnimFig(PV3.fig,t);PV3.R.render(PV3.scene,PV3.cam)}
+  const n=performance.now(),dt=Math.min(0.1,(n-(PV3.last||n))/1000);PV3.last=n;
+  if(PV3.big&&n-PV3.t0<8000&&n-(PV3.fit||0)>180){PV3.fit=n;/* the real model arrives a moment later and is taller than the stand-in: frame what is really there */try{const bx=new THREE.Box3().setFromObject(PV3.fig),tp=Math.max(1,bx.max.y),wd=Math.max(bx.max.x-bx.min.x,bx.max.z-bx.min.z);PV3.top=tp;PV3.dist=Math.max(tp,wd*0.8)*2.55+0.5}catch(e){}}if(!still&&!PV3.drag)PV3.spin+=dt*(PV3.big?0.32:0.45);PV3.turn.rotation.y=0.35+PV3.spin;
+  {const d=PV3.dist*PV3.zoom,a=0.36+PV3.pitch,cy=PV3.top*0.5;PV3.cam.position.set(0,cy+d*Math.sin(a)*1.05,d*Math.cos(a)*1.07);PV3.cam.lookAt(0,cy,0)}
+  glAnimFig(PV3.fig,t);PV3.R.render(PV3.scene,PV3.cam)}
 /* v189: a unit infused with ice turns pale and frosty (its own colours kept underneath); the Ice Golem is the Ice Statue, bigger */
 function glIceTint(fig){const ice=new THREE.Color('#cfefff');fig.traverse(o=>{if(!o.isMesh||!o.material||o.userData.base)return;const mats=Array.isArray(o.material)?o.material:[o.material];const out=mats.map(mt=>{const m=mt.clone();if(m.color)m.color.lerp(ice,0.5);if(m.emissive){m.emissive.set('#3aa6e0');m.emissiveIntensity=0.35}m.needsUpdate=true;return m});o.material=Array.isArray(o.material)?out:out[0]})}
 if(MODELS['Ice Statue']&&!MODELS['Ice Golem'])MODELS['Ice Golem']=Object.assign({},MODELS['Ice Statue'],{h:(MODELS['Ice Statue'].h||2.4)*1.4});
