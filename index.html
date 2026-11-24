@@ -7756,7 +7756,7 @@ function crewSwap(L,name){if(L.includes(name)||!L.length)return L;const cnt={};f
 RULES.DRAIN_ROOT=1;
 function drainRootAt(u){return Math.max(1,drainNeed(u)-1)}
 
-const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v260 2026-11-24";
+const BALANCE={"version":"v28","generated":"2026-09-30","modes":{"ffa":{"games":400,"armies":{"gnomes":{"winPct":37.4,"firstOutPct":23.9},"curse":{"winPct":25,"firstOutPct":20.6},"chrono":{"winPct":10.7,"firstOutPct":44},"mage":{"winPct":39.4,"firstOutPct":8.5},"arcane":{"winPct":17.3,"firstOutPct":15.3},"rift":{"winPct":16.1,"firstOutPct":23.2},"warband":{"winPct":24.8,"firstOutPct":13.7},"ice":{"winPct":13.2,"firstOutPct":17.2},"giants":{"winPct":34.9,"firstOutPct":12.8},"fire":{"winPct":27.2,"firstOutPct":10.1}}},"team":{"games":400,"armies":{"mage":{"winPct":58.2},"curse":{"winPct":48.2},"fire":{"winPct":58.5},"ice":{"winPct":42.4},"gnomes":{"winPct":68.0},"giants":{"winPct":57.7},"warband":{"winPct":62.6},"chrono":{"winPct":45.5},"arcane":{"winPct":18.0},"rift":{"winPct":41.8}}},"duel":{"games":400,"armies":{"rift":{"winPct":39.3},"chrono":{"winPct":27.0},"mage":{"winPct":51.2},"warband":{"winPct":80.2},"arcane":{"winPct":10.1},"giants":{"winPct":65.1},"ice":{"winPct":49.2},"curse":{"winPct":29.3},"fire":{"winPct":54.8},"gnomes":{"winPct":85.7}},"firstPct":55.5}}};const VERSION="v261 2026-11-24";
 /* Hexmarch tabletop view: a tilted, rotatable board with standing miniatures, drawn on the 2D canvas.
    World units: hex radius 1, x = √3(q + r/2), z = 1.5r, y up. */
 let VIEW='3d';try{VIEW=localStorage.getItem('hexmarch.view')||'3d'}catch(e){}
@@ -9987,6 +9987,31 @@ FXK.broar=(ev,t0)=>{const m=fxP([0,0],3.4),g=fxP([0,0],0.3),t1=t0+560,cells=(ev.
   for(let i=0;i<3;i++){const tt=t1+i*230;fxDome(g,tt,1250,8.5+i*2.6,i===1?PAL.rift:PAL.dread,{e0:0.55,flat:0.2,alpha:0.55-i*0.08});fxRingHard(g,tt,820,9+i*2.6,i===1?'#ffffff':'#b06bff')}
   fxPillars(fxPts(cells),g[0],g[2],t1+120,1100,42,PAL.rift,2.4);for(const c of cells.slice(0,8)){const q=fxP(c,0.2);fxChunks(q,t1+260,6,0.7,RIFT_SCAR)}
   fxDebris(g,t1,22);fxSmokeCol(g,t1+200,2200,6,1.6,RIFT_SMOKE);return 2700};
+/* v261 THE HIT LANDS WITH THE EFFECT, EVERYWHERE (v216 did it for abilities a unit casts). Blows that come from somewhere else, the Rift Beast's
+   sweep / spit / roar, an Ultimate, a delayed strike landing at a turn's start (hail, the Black Pyre, an answered prayer, an echo), also showed their
+   damage and their dead the moment the effect began. Now, before every frame, the board is compared with what the last frame showed: when a staged
+   effect that has not been drawn yet is waiting in the log, every unit that lost HP or died since then keeps its old look until that effect's
+   moment of impact (FXI for abilities, FXIK for other events, FXIU for each army's Ultimate). Nothing in the game's state changes. */
+Object.assign(FXI,{draintouch:500,shwither:500,anathema:500,blight:450,spiritflame:450,pyreburst:450,hailfall:350,prayerfall:450,darkfall:450});
+const FXIK={bsweep:880,bspit:1160,broar:640},FXIU={fire:300,ice:700,arcane:500,giants:400,mage:500};
+function fxImpactOf(ev){try{if(!ev)return 0;if(ev.k==='ab')return (FXA[ev.ab]&&FXI[ev.ab]&&!(ev.shape==='nova'&&ev.ab==='kindle'))?FXI[ev.ab]:0;if(ev.k==='ult')return (!ev.team&&FXU[ev.fac]&&FXIU[ev.fac])||0;return (FXK[ev.k]&&FXIK[ev.k])||0}catch(e){return 0}}
+let FXSNAP=null;
+function fxSnapTake(){try{if(G&&G.units)FXSNAP={g:G,tok:G.tok,m:G.units.map(u=>[u,u.hp])}}catch(e){}}
+function fxSnapPend(){try{if(!FXSNAP||FXSNAP.g!==G||FXSNAP.tok!==G.tok||!G.fxLog||typeof fxSeen==='undefined'||!GLFX.on||typeof glActive!=='function'||!glActive())return;
+    let d=0;for(let i=G.fxLog.length-1;i>=0;i--){const ev=G.fxLog[i];if(ev.id<=fxSeen)break;d=Math.max(d,fxImpactOf(ev))}if(!d)return;const until=Date.now()+d+120;
+    for(const [u,hp] of FXSNAP.m){if(FXPEND.some(p=>p.u===u))continue;const gone=G.units.indexOf(u)<0;if((gone&&u.hp<=0)||(!gone&&u.hp<hp))FXPEND.push({u:u,hp:hp,gone:gone,until:until,tok:G.tok})}}catch(e){}}
+{const f0=fxGhostsIn;fxGhostsIn=function(){if(!FXGD)fxSnapPend();return f0()}}
+{const f0=fxGhostsOut;fxGhostsOut=function(){if(FXGD===1)fxSnapTake();return f0()}}
+{const f0=fxDelay;fxDelay=function(ev,now){try{if(ev.k!=='ab'&&GLFX.on&&typeof glActive==='function'&&glActive()){const d=fxImpactOf(ev);if(d){GLFX.batch={f:now,d:d};return 0}}}catch(e){}return f0(ev,now)}}
+/* v261 WARM-UP: the first effect of a game used to hold the page for about a second (the graphics chip builds each kind of effect material the first
+   time it is drawn), which also swallowed the effect's opening beat. One of every kind is now drawn for a few frames far under the board when the
+   scene first exists, while the game is still loading behind the opening film or the opening window. */
+function fxWarm(){if(GLFX.warm||!GL.scene||typeof THREE==='undefined')return;GLFX.warm=1;try{const T=THREE,g=new T.Group(),add=o=>{o.frustumCulled=false;o.position.set(0,-300,0);o.scale.setScalar(0.01);g.add(o)};
+    add(fxMesh(new T.BoxGeometry(1,1,1),fxMat({})));add(fxMesh(new T.BoxGeometry(1,1,1),fxMat({add:1,mask:2})));add(fxSprite('dot','#ffffff',1));add(fxSprite('dot','#ffffff',1,true));add(fxPoints(2,'#ffffff',0.1));add(fxDisc('ring','#ffffff',1,true));add(fxDisc('hex','#ffffff',1,true));
+    add(fxMesh(new T.RingGeometry(0.8,1,8),new T.MeshBasicMaterial({color:'#ffffff',transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide})));add(fxMesh(new T.BoxGeometry(1,1,1),new T.MeshBasicMaterial({color:'#ffffff',transparent:true})));add(fxMesh(new T.BoxGeometry(1,1,1),new T.MeshBasicMaterial({color:'#ffffff',transparent:true,depthWrite:false})));
+    try{add(new T.Sprite(new T.SpriteMaterial({map:fxShardTex(),transparent:true,depthWrite:false,blending:T.AdditiveBlending})))}catch(e){}
+    GL.scene.add(g);fxPool();let n=0;const f=()=>{if(++n<6){requestAnimationFrame(f);return}try{GL.scene.remove(g);g.traverse(o=>{if(o.geometry)o.geometry.dispose()})}catch(e){}};requestAnimationFrame(f)}catch(e){}}
+{const f0=glFxTick;glFxTick=function(now){if(!GLFX.warm)fxWarm();return f0(now)}}
 
 
 /* v116: the opening wait (ms) before the Beast falls, and a check for 'the Beast has not landed yet' */
